@@ -181,11 +181,11 @@ def redesign_tv(s: str) -> str:
     end = '    private val obnova: Runnable = object : Runnable {\n'
     new = r'''    private fun ukazPrijem() {
         obrazovka = "prijem"
-        val pozadi = Color.parseColor("#070B14")
-        val karta = Color.parseColor("#111827")
-        val obrys = Color.parseColor("#33476B")
-        val akcent = Color.parseColor("#38BDF8")
-        val fialova = Color.parseColor("#A15CFF")
+        val pozadi = Color.parseColor("#070B19")
+        val karta = Color.parseColor("#111A33")
+        val obrys = Color.parseColor("#554078")
+        val akcent = Color.parseColor("#02D6FF")
+        val fialova = Color.parseColor("#A329FA")
         val zelena = Color.parseColor("#35E57D")
         val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE)
             as android.net.ConnectivityManager
@@ -240,7 +240,7 @@ def redesign_tv(s: str) -> str:
         val policka = (0 until 6).map {
             text("•", 44f, Color.WHITE, tucne = true).apply {
                 gravity = Gravity.CENTER
-                background = zaobleni(Color.parseColor("#10182C"), 14f, fialova)
+                background = zaobleni(Color.parseColor("#151B39"), 14f, fialova)
                 setPadding(dp(7), dp(9), dp(7), dp(9))
                 minWidth = dp(61)
                 kodRadek.addView(this,
@@ -261,7 +261,7 @@ def redesign_tv(s: str) -> str:
             gravity = Gravity.CENTER
             background = android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.parseColor("#7548E8"), Color.parseColor("#13BBF6"))
+                intArrayOf(Color.parseColor("#A329FA"), Color.parseColor("#02D6FF"))
             ).apply { cornerRadius = dp(13).toFloat() }
             setPadding(dp(17), dp(13), dp(17), dp(13))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -306,12 +306,16 @@ def redesign_tv(s: str) -> str:
             }
         val statusy = vodorovne().apply {
             gravity = Gravity.CENTER_VERTICAL
-            background = zaobleni(Color.parseColor("#101C32"), 20f, obrys)
+            background = zaobleni(Color.parseColor("#151B39"), 20f, obrys)
             setPadding(dp(20), dp(15), dp(20), dp(15))
         }
-        statusy.addView(stavItem("⌁", "Síť", "Připojeno"),
+        val sitStav = stavItem("⌁", "Síť", "Zjišťuji")
+        val sitLabel = sitStav.getChildAt(2) as TextView
+        statusy.addView(sitStav,
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        statusy.addView(stavItem("▣", "Přijímač", "Aktivní"),
+        val prijimacStav = stavItem("▣", "Přijímač", "Čeká")
+        val prijimacLabel = prijimacStav.getChildAt(2) as TextView
+        statusy.addView(prijimacStav,
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val stavTitulku = text("Čeká na telefon", 16f,
             Color.parseColor("#94A3B8")).apply {
@@ -358,8 +362,8 @@ def redesign_tv(s: str) -> str:
         val obsah = svisle().apply {
             background = android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                intArrayOf(pozadi, Color.parseColor("#0B1637"),
-                    Color.parseColor("#281353"))
+                intArrayOf(pozadi, Color.parseColor("#111A33"),
+                    Color.parseColor("#211047"))
             )
             setPadding(dp(36), dp(18), dp(36), dp(23))
             addView(vrsek, odsazeni(bottom = 22))
@@ -381,12 +385,22 @@ def redesign_tv(s: str) -> str:
                     policko.text = code?.getOrNull(index)?.toString() ?: "•"
                 }
                 val spojeno = IPhoneTVPairing.connectedRecently()
-                stavTitulku.text = if (spojeno) "Připojeno ✓"
-                    else "Čeká na telefon"
-                stavTitulku.setTextColor(if (spojeno) zelena
-                    else Color.parseColor("#94A3B8"))
+                val networkReady = ipTv != "Adresa se zjišťuje"
+                val receiverReady = PrijemService.bezi
+                val overlayReady = android.provider.Settings.canDrawOverlays(this@MainActivity)
+                sitLabel.text = if (networkReady) "IP: $ipTv" else "Nepřipojeno"
+                sitLabel.setTextColor(if (networkReady) zelena else Color.parseColor("#94A3B8"))
+                prijimacLabel.text = if (receiverReady) "Aktivní" else "Zastaven"
+                prijimacLabel.setTextColor(if (receiverReady) zelena else Color.parseColor("#94A3B8"))
+                stavTitulku.text = when {
+                    !overlayReady -> "Povol překryv"
+                    spojeno && receiverReady -> "Telefon připojen"
+                    else -> "Čeká na telefon"
+                }
+                stavTitulku.setTextColor(if (spojeno && receiverReady && overlayReady)
+                    zelena else Color.parseColor("#94A3B8"))
                 stavParovani.text = when {
-                    spojeno -> "✓ Telefon je spárovaný a připojený"
+                    spojeno && receiverReady -> "✓ Telefon je spárovaný a připojený"
                     code != null -> "Kód platí ještě $zbyva s"
                     IPhoneTVPairing.paired(this@MainActivity) ->
                         "Telefon je spárovaný · čekám na spojení"
