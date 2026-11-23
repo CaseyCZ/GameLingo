@@ -296,7 +296,7 @@ struct SubtitleSettingsView: View {
 
     private var outputControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            GLHeader(title: "České titulky", help: "Zelená určuje místo zobrazení českých dialogů na TV. Velikost písma je nezávislá na oranžovém překladu herních textů.")
+            GLHeader(title: "Přeložené titulky", help: "Zelená určuje místo zobrazení českých dialogů na TV. Velikost písma je nezávislá na oranžovém překladu herních textů.")
             Toggle("Zamknout polohu českých titulků", isOn: $model.outputLocked)
             if !model.outputLocked {
                 Text("Šířka titulků: \(Int(model.outputWidth * 100)) %")
