@@ -48,9 +48,10 @@ struct GameLingoSetupView: View {
                     VStack(alignment: .leading, spacing: 21) {
                         header
                         switch step {
-                        case 0: languageStep
-                        case 1: consoleStep
-                        case 2: outputStep
+                        case 0: welcomeStep
+                        case 1: languageStep
+                        case 2: consoleStep
+                        case 3: outputStep
                         default: readyStep
                         }
                     }
@@ -97,16 +98,67 @@ struct GameLingoSetupView: View {
         VStack(alignment: .leading, spacing: 12) {
             GLBrandWordmark()
             HStack(spacing: 8) {
-                ForEach(0..<4) { index in
+                ForEach(0..<5) { index in
                     Capsule()
                         .fill(index <= step ? GLNeon.cyan : GLStyle.surfaceAlt)
                         .frame(height: 5)
                 }
             }
             .padding(.bottom, 8)
-            Text(LocalizedStringKey(["Jazyky a překlad", "Vyber konzoli",
-                  "Kam zobrazit titulky?", "Kontrola nastavení"][step]))
+            Text(LocalizedStringKey(["Vítej v GameLingo", "Jazyky a překlad",
+                  "Vyber konzoli", "Kam zobrazit titulky?",
+                  "Kontrola nastavení"][step]))
                 .font(.title2.bold())
+        }
+    }
+
+    private var welcomeStep: some View {
+        VStack(spacing: 16) {
+            GLNeonPanel(emphasized: true, radius: 27) {
+                VStack(spacing: 16) {
+                    Image(systemName: "gamecontroller.fill")
+                        .font(.system(size: 60, weight: .semibold))
+                        .foregroundStyle(GLNeon.accent)
+                        .shadow(color: GLNeon.purple.opacity(0.55), radius: 17)
+                    GLBrandWordmark()
+                    Text("Vítej v GameLingo")
+                        .font(.system(size: 24, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text("Překládej dialogy a herní texty přímo během hraní.")
+                        .font(.subheadline)
+                        .foregroundStyle(GLNeon.mist)
+                        .multilineTextAlignment(.center)
+                    HStack(spacing: 17) {
+                        GLPlatformBadge(family: .xbox, size: 60)
+                        GLPlatformBadge(family: .playStation, size: 60)
+                        GLPlatformBadge(family: nil, isTelevision: true, size: 60)
+                    }
+                    .padding(.vertical, 11)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(20)
+            }
+            GLCard {
+                Label("Překlad v reálném čase", systemImage: "bolt.fill")
+                    .font(.headline)
+                Text("Rozpoznávání herních dialogů a nabídek.")
+                    .font(.subheadline)
+                    .foregroundStyle(GLNeon.mist)
+            }
+            GLCard {
+                Label("Xbox a PlayStation", systemImage: "gamecontroller.fill")
+                    .font(.headline)
+                Text("Vyber si konzoli a připoj Remote Play.")
+                    .font(.subheadline)
+                    .foregroundStyle(GLNeon.mist)
+            }
+            GLCard {
+                Label("Telefon a Google TV", systemImage: "tv")
+                    .font(.headline)
+                Text("Zobraz překlad na telefonu nebo na televizoru.")
+                    .font(.subheadline)
+                    .foregroundStyle(GLNeon.mist)
+            }
         }
     }
 
@@ -304,10 +356,10 @@ struct GameLingoSetupView: View {
 
     private var footer: some View {
         VStack(spacing: 9) {
-            if step < 3 {
+            if step < 4 {
                 GLPrimaryButton(title: "Pokračovat",
                                 systemImage: "arrow.right",
-                                disabled: step == 1 && devices.chosenConsole == nil) {
+                                disabled: step == 2 && devices.chosenConsole == nil) {
                     step += 1
                 }
             } else {
