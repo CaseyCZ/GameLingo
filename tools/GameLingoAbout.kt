@@ -14,10 +14,10 @@ import android.widget.TextView
 
 /** Same native brand, structure and open-source attribution as iPhone. */
 object GameLingoAbout {
-    fun show(activity: Activity) {
-        if (activity.isFinishing) return
+    /** Same About/Licence content on the tab and in the standalone TV dialog. */
+    fun content(activity: Activity, onDismiss: () -> Unit = {},
+                showClose: Boolean = false): LinearLayout {
         val d = GameLingoVisualKit.dp(activity, 1)
-        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18*d, 17*d, 18*d, 30*d)
@@ -30,10 +30,10 @@ object GameLingoAbout {
             gravity = Gravity.END
             isClickable = true
             isFocusable = true
-            setOnClickListener { dialog.dismiss() }
+            setOnClickListener { onDismiss() }
             setPadding(0, 6*d, 0, 14*d)
         }
-        page.addView(close)
+        if (showClose) page.addView(close)
         page.addView(GameLingoVisualKit.hero(activity),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 17*d })
@@ -78,6 +78,13 @@ object GameLingoAbout {
         link("Původní PlayCaption", "https://github.com/AdamRuzick4/PlayCaption-app")
         link("Chiaki / TP Play", "https://github.com/mB14ck22/tp-play")
 
+        return page
+    }
+
+    fun show(activity: Activity) {
+        if (activity.isFinishing) return
+        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val page = content(activity, onDismiss = { dialog.dismiss() }, showClose = true)
         val scroll = ScrollView(activity).apply {
             isFillViewport = true
             addView(page)
