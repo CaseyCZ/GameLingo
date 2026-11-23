@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -171,22 +172,30 @@ object GameLingoVisualKit {
         return bar
     }
 
-    fun platformEmblem(activity: Activity, family: String): TextView {
+    fun platformEmblem(activity: Activity, family: String): View {
         val xbox = family.equals("Xbox", ignoreCase = true)
-        return TextView(activity).apply {
-            text = if (xbox) "ⓧ" else if (family == "PlayStation") "PS" else "▭"
-            gravity = Gravity.CENTER
-            textSize = if (xbox) 32f else 24f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.WHITE)
+        val playStation = family.equals("PlayStation", ignoreCase = true)
+        val from = if (xbox) Color.parseColor("#1B7938")
+                   else if (playStation) Color.parseColor("#285ACA") else cyan
+        val to = if (xbox) Color.parseColor("#15283A")
+                 else if (playStation) Color.parseColor("#1F1445") else blue
+        return FrameLayout(activity).apply {
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                if (xbox) intArrayOf(Color.parseColor("#1B7938"), Color.parseColor("#15283A"))
-                else if (family == "PlayStation")
-                    intArrayOf(Color.parseColor("#285ACA"), Color.parseColor("#1F1445"))
-                else intArrayOf(cyan, blue)
-            ).apply { cornerRadius = dp(activity, 14).toFloat() }
-            contentDescription = family
+                intArrayOf(from, to)).apply {
+                cornerRadius = dp(activity, 14).toFloat()
+            }
+            addView(ImageView(activity).apply {
+                setImageResource(when {
+                    xbox -> R.drawable.gamelingo_xbox
+                    playStation -> R.drawable.gamelingo_playstation
+                    else -> android.R.drawable.ic_menu_slideshow
+                })
+                setColorFilter(Color.WHITE)
+                contentDescription = family
+                adjustViewBounds = true
+            }, FrameLayout.LayoutParams(dp(activity, 31),
+                dp(activity, 31), Gravity.CENTER))
         }
     }
 
