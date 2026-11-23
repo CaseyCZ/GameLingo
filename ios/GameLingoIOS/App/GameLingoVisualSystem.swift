@@ -174,3 +174,41 @@ struct GLNeonTitle: View {
         }
     }
 }
+
+struct GLDetailRow: View {
+    let icon: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        GLNeonPanel(radius: 19) {
+            HStack(spacing: 13) {
+                Image(systemName: icon)
+                    .font(.system(size: 21, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(width: 46, height: 46)
+                    .background(LinearGradient(
+                        colors: [GLNeon.cyan.opacity(0.72),
+                                 GLNeon.purple.opacity(0.78)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing),
+                        in: RoundedRectangle(cornerRadius: 13))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold,
+                                      design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(GLNeon.mist)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(GLNeon.mist)
+            }
+            .padding(14)
+        }
+    }
+}
