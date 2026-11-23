@@ -241,7 +241,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('onSettings = { openSettings() }',mobile)
         self.assertIn('fun openDevices() {',mobile)
         self.assertIn('GameLingoVisualKit.brandHeader(this)',mobile)
-        self.assertIn('onAbout = { GameLingoAbout.show(this) }',mobile)
+        self.assertIn('onAbout = { openTab(4) }',mobile)
         self.assertIn('GameLingoNavigation.kt',wiring)
         self.assertIn('GameLingoAbout.kt',wiring)
         self.assertIn("'onDevices = { openDevices() }'",wiring)
