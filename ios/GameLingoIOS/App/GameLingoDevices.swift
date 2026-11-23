@@ -10,7 +10,7 @@ enum GLConsoleFamily: String, Codable, CaseIterable, Identifiable {
     case playStation = "PlayStation"
 
     var id: String { rawValue }
-    var icon: String { self == .xbox ? "gamecontroller.fill" : "gamepad.fill" }
+    var icon: String { self == .xbox ? "xbox.logo" : "playstation.logo" }
 }
 
 enum GLSubtitleOutput: String, Codable, CaseIterable, Identifiable {
