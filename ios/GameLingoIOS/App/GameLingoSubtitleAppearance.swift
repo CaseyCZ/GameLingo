@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Native iPhone subtitle presentation. Google TV color and background remain
-/// receiver-owned: this picker only changes captions drawn on the phone.
+/// Shared five-color / three-background palette for native iPhone and TV.
+/// Each device has independent selected values. TV styles are applied only
+/// by the authenticated GameLingo receiver, never by drawing on the iPhone.
 enum GLPhoneSubtitleColor: String, CaseIterable, Identifiable, Codable {
     case white, yellow, cyan, green, purple
 
