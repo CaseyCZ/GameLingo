@@ -85,6 +85,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         ps=model.split("func start(_ console: RegisteredConsole)",1)[1]
         self.assertIn("frameCount = 0",ps)
 
+    def test_async_ocr_tasks_cannot_leak_between_remote_play_sessions(self):
+        model=code(IOS/"PlayCaptionIOSApp.swift")
+        options=model.split("guard let englishChoices = await",1)[1]
+        options=options.split("self.lastTranslatedChoiceItems = translated",1)[0]
+        self.assertIn("self.sessionRevision == currentSession",options)
+        self.assertIn("self.processingChoices = false",options)
+        self.assertIn("if self.sessionRevision == currentSession",model)
+        stopped=model.split("func stop() {",1)[1]
+        self.assertIn("processingChoices = false",stopped)
+        self.assertIn("processingOCR = false",stopped)
+
     def test_four_regions_and_output_selection(self):
         model=code(IOS/"PlayCaptionIOSApp.swift")
         edit=code(IOS/"SubtitleSettingsView.swift")
