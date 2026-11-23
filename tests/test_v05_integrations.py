@@ -31,6 +31,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                       'preferredTelevisionID'):
             self.assertIn(label,devices+panel)
 
+    def test_single_xbox_picker_and_no_legacy_ios_dashboard(self):
+        home=code(IOS/"GameLingoHome.swift")
+        setup=code(IOS/"GameLingoSetupView.swift")
+        device_ui=code(IOS/"GameLingoXboxScreen.swift")
+        model=code(IOS/"PlayCaptionIOSApp.swift")
+        for entry in (home, setup):
+            self.assertIn('GameLingoXboxScreen(devices: devices, auth: model.xbox)', entry)
+            self.assertNotIn("XboxRemotePlayView", entry)
+        self.assertIn("devices.addXbox(console)", device_ui)
+        self.assertIn("devices.preferredConsoleID", device_ui)
+        self.assertIn("XboxAccountView(auth: auth)", device_ui)
+        self.assertNotIn("struct ContentView: View", model)
+        self.assertNotIn("struct XboxRemotePlayView: View", model)
+        self.assertNotIn("private struct PlayCaptionSection", model)
+        self.assertIn("struct XboxAccountView: View", model)
+        self.assertIn("struct TVSelectionView: View", model)
+
     def test_actual_playstation_not_placeholder(self):
         ps=code(IOS/"PlayStation/GameLingoPlayStation.swift")
         core=code(IOS/"PlayStation/RemotePlaySession.swift")
