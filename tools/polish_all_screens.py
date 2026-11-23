@@ -278,7 +278,7 @@ def polish_phone_activity(s):
         '                setImageResource(R.drawable.gamelingo_ikona)\n                adjustViewBounds = true',
         "GameLingo live OCR header emblem")
     s=one(s,
-        '            setBackgroundColor(Color.parseColor("#111114"))',
+        '            setBackgroundColor(Color.parseColor("#070B14"))',
         '            background = GameLingoVisualKit.pageBackground(this@TelefonActivity)',
         "GameLingo native OCR toolbar")
     s=one(s,
@@ -286,7 +286,7 @@ def polish_phone_activity(s):
         '            text = "▣  Oblasti na obrazovce · " + Propojeni.Vysilac.cilJmeno',
         "GameLingo OCR section heading")
     s=one(s,
-        '            background = zaobleni(Color.parseColor("#333338"))\n'
+        '            background = zaobleni(Color.parseColor("#172033"))\n'
         '            setPadding(dp(12), dp(10), dp(12), dp(10))\n'
         '            setOnClickListener { spravaTelevize() }',
         '            background = GameLingoVisualKit.card(this@TelefonActivity)\n'
@@ -294,17 +294,17 @@ def polish_phone_activity(s):
         '            setOnClickListener { spravaTelevize() }',
         "GameLingo OCR header card")
     s=one(s,
-        '                setColor(Color.parseColor("#1A1C26"))',
+        '                setColor(Color.parseColor("#111827"))',
         '                setColor(Color.parseColor("#111A33"))',
         "GameLingo OCR preview")
     s=one(s,
-        '                setStroke(dp(2), Color.parseColor("#555A78"))',
+        '                setStroke(dp(2), Color.parseColor("#2A3850"))',
         '                setStroke(dp(2), Color.parseColor("#A329FA"))',
         "GameLingo OCR preview border")
     s=one(s,
-        '                    button.setTextColor(if (vybrano) Color.BLACK else Color.WHITE)\n'
-        '                    button.background = zaobleni(Color.parseColor(if (vybrano) "#3CFF6E" else "#303038")).apply {\n'
-        '                        setStroke(dp(2), Color.parseColor(if (vybrano) "#3CFF6E" else "#737380"))\n'
+        '                    button.setTextColor(Color.WHITE)\n'
+        '                    button.background = zaobleni(Color.parseColor(if (vybrano) "#0284C7" else "#172033")).apply {\n'
+        '                        setStroke(dp(2), Color.parseColor(if (vybrano) "#38BDF8" else "#2A3850"))\n'
         '                    }',
         '                    button.setTextColor(Color.WHITE)\n'
         '                    button.background = GameLingoVisualKit.card(this@TelefonActivity, selected = vybrano)',
