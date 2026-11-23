@@ -132,7 +132,7 @@ jobs:
               release/SHA256SUMS.txt \
               -R "$REPO" --target "$SOURCE" \
               --title "GameLingo 0.5.0 Beta 2" \
-              --prerelease --latest --notes-file release-notes.md
+              --prerelease --notes-file release-notes.md
           fi
 
           # Only after every new installer is present can old release
