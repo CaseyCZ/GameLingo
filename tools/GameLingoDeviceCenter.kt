@@ -297,12 +297,19 @@ object GameLingoDeviceCenter {
                 onTV()
             })
         }
+        val mobile = (c.resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_TYPE_MASK) !=
+            android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
         tvs.forEach { tv ->
-            add(root, line(c, tv.jmeno, tv.ip,
+            val savedPairing = mobile && GameLingoTVPairing.paired(c, tv.ip)
+            val descriptor = tv.ip + if (savedPairing) " · Spárováno kódem" else ""
+            add(root, line(c, tv.jmeno, descriptor,
                           tvStore.posledniId == tv.id) {
                 AlertDialog.Builder(c)
                     .setTitle(tv.jmeno)
-                    .setItems(arrayOf("Použít", "Odebrat")) { _, option ->
+                    .setItems(if (mobile)
+                        arrayOf("Použít", "Spárovat šest číslic z TV", "Odebrat")
+                        else arrayOf("Použít", "Odebrat")) { _, option ->
                         if (RemotePlayService.aktivni) {
                             AlertDialog.Builder(c)
                                 .setMessage("Nejdřív zastav probíhající překlad.")
@@ -311,11 +318,17 @@ object GameLingoDeviceCenter {
                             tvStore.vyber(tv.id)
                             onDismiss()
                             onUpdated()
+                        } else if (mobile && option == 1) {
+                            GameLingoTVPairing.show(c, tv) {
+                                onDismiss()
+                                onUpdated()
+                            }
                         } else {
                             AlertDialog.Builder(c)
                                 .setMessage("Odebrat " + tv.jmeno + "?")
                                 .setPositiveButton("Odebrat") { _, _ ->
                                     tvStore.odeber(tv.id)
+                                    if (mobile) GameLingoTVPairing.forget(c, tv.ip)
                                     onDismiss()
                                     onUpdated()
                                 }
