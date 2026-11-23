@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Final Android mobile parity compile on shared navigation, OCR controls, subtitle styling and selection state.
+# Rebuild verified mobile parity with secure six-digit TV PIN pairing and authenticated receiver check; TV UI unchanged.
 
 on:
   push:
