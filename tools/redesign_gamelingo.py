@@ -487,7 +487,7 @@ def main():
     p.write_text(transformed,encoding="utf8")
     if mode=="mobile":
         # Independent profile manager is checked into GameLingo, not into upstream.
-        for module in ("GameLingoProfiles.kt", "GameLingoSettings.kt", "GameLingoSubtitleAppearance.kt"):
+        for module in ("GameLingoProfiles.kt", "GameLingoSettings.kt", "GameLingoSubtitleAppearance.kt", "GameLingoDiagnostics.kt"):
             source=Path(__file__).with_name(module)
             (base/SRC/source.name).write_text(source.read_text(encoding="utf8"),encoding="utf8")
     print("GameLingo",mode,"reference dashboard installed; network and OCR unchanged")
