@@ -161,7 +161,7 @@ def main():
         filename=phone_file.name,
     )
     # UI mode selection is now brand blue. Green remains a pairing indicator.
-    phone=phone.replace('Color.parseColor(if (vybrano) "#3CFF6E" else "#303038")',
+    phone=phone.replace('Color.parseColor(if (vybrano) "#3CFF6E" else "#172033")',
                         'Color.parseColor(if (vybrano) "#0284C7" else "#172033")')
     phone=phone.replace('Color.parseColor(if (vybrano) "#3CFF6E" else "#737380")',
                         'Color.parseColor(if (vybrano) "#38BDF8" else "#2A3850")')
