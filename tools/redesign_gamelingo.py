@@ -42,13 +42,15 @@ def redesign_mobile(s: str) -> str:
                     onDevices = { openDevices() })
             }
             fun openAreas() {
-                if (nejakaKonzole)
-                    startActivity(Intent(this, TelefonActivity::class.java))
-                else android.app.AlertDialog.Builder(this)
-                    .setMessage("Nejprve vyber a připoj konzoli.")
-                    .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
-                    .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
-                    .setNegativeButton(android.R.string.cancel, null).show()
+                GameLingoRegions.show(this) {
+                    if (nejakaKonzole)
+                        startActivity(Intent(this, TelefonActivity::class.java))
+                    else android.app.AlertDialog.Builder(this)
+                        .setMessage("Nejprve vyber a připoj konzoli.")
+                        .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
+                        .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
+                        .setNegativeButton(android.R.string.cancel, null).show()
+                }
             }
 
             obsah.addView(GameLingoVisualKit.brandHeader(this) { openSettings() },
@@ -487,7 +489,7 @@ def main():
     p.write_text(transformed,encoding="utf8")
     if mode=="mobile":
         # Independent profile manager is checked into GameLingo, not into upstream.
-        for module in ("GameLingoProfiles.kt", "GameLingoSettings.kt", "GameLingoSubtitleAppearance.kt", "GameLingoDiagnostics.kt"):
+        for module in ("GameLingoProfiles.kt", "GameLingoSettings.kt", "GameLingoSubtitleAppearance.kt", "GameLingoDiagnostics.kt", "GameLingoRegions.kt"):
             source=Path(__file__).with_name(module)
             (base/SRC/source.name).write_text(source.read_text(encoding="utf8"),encoding="utf8")
     print("GameLingo",mode,"reference dashboard installed; network and OCR unchanged")
