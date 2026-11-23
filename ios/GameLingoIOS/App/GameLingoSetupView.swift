@@ -242,42 +242,10 @@ struct GameLingoSetupView: View {
     }
 
     private var xboxSetup: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 14) {
-                    XboxAccountView(auth: model.xbox)
-                    XboxRemotePlayView(auth: model.xbox)
-                    if !model.xbox.consoles.isEmpty {
-                        GLCard {
-                            GLHeader(title: "Použít Xbox")
-                            ForEach(model.xbox.consoles) { console in
-                                Button {
-                                    devices.addXbox(console)
-                                    showXbox = false
-                                } label: {
-                                    HStack {
-                                        Text(console.name)
-                                        Spacer()
-                                        Image(systemName: "checkmark.circle")
-                                    }
-                                    .padding(9)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                }
-                .padding(17)
-            }
-            .background(GLStyle.background.ignoresSafeArea())
-            .navigationTitle("Xbox")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Hotovo") { showXbox = false }
-                }
-            }
-        }
+        // The first-run wizard and home screen use the same Xbox setup.
+        // Console selection must be persisted in GameLingoDevices exactly once.
+        GameLingoXboxScreen(devices: devices, auth: model.xbox)
+            .environmentObject(model)
     }
 
     private var tvSetup: some View {
