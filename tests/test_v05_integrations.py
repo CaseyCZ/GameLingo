@@ -48,6 +48,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("struct XboxAccountView: View", model)
         self.assertIn("struct TVSelectionView: View", model)
 
+    def test_live_session_cannot_silently_change_selected_console(self):
+        panel=code(IOS/"GameLingoDevicesPanel.swift")
+        home=code(IOS/"GameLingoHome.swift")
+        self.assertIn('if !model.isRunning { devices.selectConsole(console.id) }', panel)
+        self.assertIn('guard !model.isRunning else { pendingRemove = nil; return }', panel)
+        self.assertIn('.disabled(model.isRunning)', panel)
+        self.assertIn('"Nastaveno"', home)
+        self.assertIn('"Probíhá překlad"', home)
+
     def test_actual_playstation_not_placeholder(self):
         ps=code(IOS/"PlayStation/GameLingoPlayStation.swift")
         core=code(IOS/"PlayStation/RemotePlaySession.swift")
