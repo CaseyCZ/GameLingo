@@ -20,6 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
       - name: Validate all installers and create new beta
         env:
           GH_TOKEN: ${{ secrets.GAMELINGO_RELEASE_TOKEN }}
@@ -118,9 +122,12 @@ jobs:
           # Separate tag creation from Release creation. This also makes
           # repository/tag permission problems visible independently.
           if ! gh api "repos/$REPO/git/ref/tags/$TAG" >/dev/null 2>&1; then
-            gh api -X POST "repos/$REPO/git/refs" \
-              -f ref="refs/tags/$TAG" -f sha="$SOURCE" \
-              --jq '{ref,sha:.object.sha}'
+            # Try authenticated Git transport. The GitHub REST ref-create
+            # endpoint returned integration 403 despite contents:write.
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag "$TAG" "$SOURCE"
+            git push origin "refs/tags/$TAG"
           fi
           test "$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')" = "$SOURCE"
 
