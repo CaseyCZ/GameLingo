@@ -191,7 +191,8 @@ struct GameLingoLanguageSettingsView: View {
                     }
                 }
                 .pickerStyle(.menu)
-            }            GLCard {
+            }
+            GLCard {
                 GLHeader(title: "Jazyk hry", help:
                     "Vyber jazyk, ve kterém hra zobrazuje původní dialogy.")
                 Picker("Rozpoznávat jazyk", selection: $model.gameLanguage) {
