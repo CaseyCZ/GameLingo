@@ -292,11 +292,21 @@ struct GameLingoHome: View {
             }
             if devices.subtitleOutput == .phone && !model.phoneSubtitle.isEmpty {
                 GLCard {
+                    GLHeader(title: "Dialog")
                     Text(model.phoneSubtitle)
                         .font(.system(size: 23, weight: .bold))
                         .foregroundStyle(.white)
                 }
-            } else if !model.lastCzech.isEmpty {
+            }
+            if devices.subtitleOutput == .phone && !model.lastChoices.isEmpty {
+                GLCard {
+                    GLHeader(title: "Herní texty")
+                    Text(model.lastChoices)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.yellow)
+                }
+            }
+            if devices.subtitleOutput == .googleTV && !model.lastCzech.isEmpty {
                 GLCard {
                     Text(model.lastCzech)
                         .font(.headline)
