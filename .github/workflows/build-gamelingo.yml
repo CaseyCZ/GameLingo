@@ -13,6 +13,7 @@ on:
 # QA v0.5.0: tests + PS4/PS5 core + iPhone + Android + Google TV.
 # One-source full matrix checkpoint: native iPhone PS core + latest P0/P1 navigation and TV focus.
 # Final source checkpoint includes session-revision OCR isolation and shared iOS theme.
+# Latest full validation: unified TV setup, old-receiver overlay clearing, Xbox device management.
 # QA after P0/P1: native TV picker, Xbox removal, single PS PIN UI, old-overlay retransmission cancellation.
 # Final reviewed UI checkpoint: saved Xbox, original settings, full-screen first run, acceptance plan.
 # Run on workflow revision only; do not auto-build full native matrix for every change.
