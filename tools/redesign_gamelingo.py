@@ -580,6 +580,10 @@ def main():
              '''                    titulek.text = obarviJmena(text, TelefonTitulky.barvy)
                     GameLingoPhoneSubtitleStyle.apply(this@TelefonActivity, titulek)
                     nastavVelikost(titulek)'''),
+            ('''                addView(titulek, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))''',
+             '''                addView(titulek, FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER))'''),
         )
         for old,new in changes:
             if code.count(old)!=1:
