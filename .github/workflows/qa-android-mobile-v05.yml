@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Checkpoint after Kotlin OCR native-card minimumHeight correction and target-language subtitle preview.
+# Final Android mobile parity compile on shared navigation, OCR controls, subtitle styling and selection state.
 
 on:
   push:
