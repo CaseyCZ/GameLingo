@@ -74,7 +74,13 @@ def redesign_mobile(s: str) -> str:
 
             val druhy = vodorovne()
             druhy.addView(akce("☷", "Nastavení překladu") {
-                ukazJazyk()
+                GameLingoSettings.show(this, nast,
+                    onAreas = {
+                        if (nejakaKonzole)
+                            startActivity(Intent(this, TelefonActivity::class.java))
+                        else ukazPripojeni()
+                    },
+                    onLanguage = { ukazJazyk() })
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 rightMargin = dp(10)
             })
@@ -377,8 +383,9 @@ def main():
     p.write_text(transformed,encoding="utf8")
     if mode=="mobile":
         # Independent profile manager is checked into GameLingo, not into upstream.
-        source=Path(__file__).with_name("GameLingoProfiles.kt")
-        (base/SRC/source.name).write_text(source.read_text(encoding="utf8"),encoding="utf8")
+        for module in ("GameLingoProfiles.kt", "GameLingoSettings.kt"):
+            source=Path(__file__).with_name(module)
+            (base/SRC/source.name).write_text(source.read_text(encoding="utf8"),encoding="utf8")
     print("GameLingo",mode,"reference dashboard installed; network and OCR unchanged")
 
 if __name__=="__main__":
