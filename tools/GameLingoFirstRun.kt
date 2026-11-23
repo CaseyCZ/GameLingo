@@ -39,7 +39,9 @@ object GameLingoFirstRun {
         var step = 0
         var consoleChoice = -1
         var tvChoice = -1
-        val dialog = Dialog(activity)
+        // Full-screen onboarding belongs to GameLingo, not to an upstream
+        // PlayCaption popup floating above the old landing page.
+        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
 
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -49,6 +51,19 @@ object GameLingoFirstRun {
                 cornerRadius = 25f
             }
         }
+        root.addView(TextView(activity).apply {
+            text = "GameLingo"
+            textSize = 30f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
+            setPadding(0, 0, 0, 4)
+        })
+        root.addView(TextView(activity).apply {
+            text = "Hraj. Rozuměj."
+            textSize = 14f
+            setTextColor(muted)
+            setPadding(0, 0, 0, 24)
+        })
         val heading = TextView(activity).apply {
             textSize = 26f
             typeface = Typeface.DEFAULT_BOLD
@@ -204,8 +219,8 @@ object GameLingoFirstRun {
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(
-            (activity.resources.displayMetrics.widthPixels * 0.94f).toInt(),
-            ViewGroup.LayoutParams.WRAP_CONTENT
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
         )
     }
 }
