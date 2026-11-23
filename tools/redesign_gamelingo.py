@@ -182,7 +182,7 @@ def redesign_mobile(s: str) -> str:
     if s.count(marker) != 1:
         raise RuntimeError("MainActivity native dashboard method missing")
     s = s.replace(marker,
-        "    private var selectedMobileTab = 0\\n" + marker, 1)
+        "    private var selectedMobileTab = 0\n" + marker, 1)
     # The shared title replaces PlayCaption's logo on PSN, Xbox, language and
     # setup screens. Do not touch the brand's transport strings.
     old = '''    private fun nadpisLogo() = ImageView(this).apply {
