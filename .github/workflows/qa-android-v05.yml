@@ -1,4 +1,5 @@
 name: GameLingo 0.5 Android / TV UI regression
+# P0/3 QA: saved Android Xbox removal/restore and shared TV picker (23 Nov).
 
 # QA checkpoint: P0 multi-device and unified native navigation; P1 TV D-pad focus.
 # This workflow intentionally runs only when explicitly revised or dispatched.
