@@ -301,7 +301,10 @@ object GameLingoDeviceCenter {
             android.content.res.Configuration.UI_MODE_TYPE_MASK) !=
             android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
         tvs.forEach { tv ->
-            val savedPairing = mobile && GameLingoTVPairing.paired(c, tv.ip)
+            // The six-digit GameLingo PIN protocol belongs to Android TV,
+            // not legacy LG webOS or Samsung display-only receivers.
+            val pinSupported = mobile && !tv.platforma.jenZobrazovac
+            val savedPairing = pinSupported && GameLingoTVPairing.paired(c, tv.ip)
             val descriptor = tv.ip + when {
                 !savedPairing -> ""
                 GameLingoTVPairing.connected(tv.ip) -> " · TV odpověděla"
@@ -311,7 +314,7 @@ object GameLingoDeviceCenter {
                           tvStore.posledniId == tv.id) {
                 AlertDialog.Builder(c)
                     .setTitle(tv.jmeno)
-                    .setItems(if (mobile)
+                    .setItems(if (pinSupported)
                         arrayOf("Použít", "Spárovat šest číslic z TV",
                             "Ověřit spojení", "Odebrat")
                         else arrayOf("Použít", "Odebrat")) { _, option ->
@@ -323,12 +326,12 @@ object GameLingoDeviceCenter {
                             tvStore.vyber(tv.id)
                             onDismiss()
                             onUpdated()
-                        } else if (mobile && option == 1) {
+                        } else if (pinSupported && option == 1) {
                             GameLingoTVPairing.show(c, tv) {
                                 onDismiss()
                                 onUpdated()
                             }
-                        } else if (mobile && option == 2) {
+                        } else if (pinSupported && option == 2) {
                             GameLingoTVPairing.verify(c, tv) { reachable ->
                                 onDismiss()
                                 onUpdated()
