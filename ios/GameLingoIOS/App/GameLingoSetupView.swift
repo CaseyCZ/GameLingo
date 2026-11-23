@@ -49,7 +49,8 @@ struct GameLingoSetupView: View {
                         header
                         switch step {
                         case 0: consoleStep
-                        case 1: outputStep
+                        case 1: languageStep
+                        case 2: outputStep
                         default: readyStep
                         }
                     }
@@ -57,7 +58,7 @@ struct GameLingoSetupView: View {
                 }
                 footer
             }
-            .background(GLStyle.background.ignoresSafeArea())
+            .background(GLNeonBackground())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -69,7 +70,7 @@ struct GameLingoSetupView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     GLHelpButton(title: "První spuštění", explanation:
-                        "Nejprve vyber zdroj hry, potom kam chceš titulky zobrazovat. K zařízení se přihlašuješ jeho vlastní oficiální metodou. Párování na Google TV používá šestimístný kód. Vše můžeš později změnit v Zařízeních.")
+                        "Vyber konzoli, jazyk hry a cílový jazyk překladu, potom výstup titulků. Google TV se páruje šestimístným kódem. Vše můžeš později změnit v Nastavení a Zařízeních.")
                 }
             }
         }
@@ -94,22 +95,17 @@ struct GameLingoSetupView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Image(systemName: "gamecontroller.fill")
-                    .font(.system(size: 27))
-                    .foregroundStyle(GLStyle.gradient)
-                Text("GameLingo")
-                    .font(.system(size: 29, weight: .bold, design: .rounded))
-            }
+            GLBrandWordmark()
             HStack(spacing: 8) {
-                ForEach(0..<3) { index in
+                ForEach(0..<4) { index in
                     Capsule()
-                        .fill(index <= step ? GLStyle.blue : GLStyle.surfaceAlt)
+                        .fill(index <= step ? GLNeon.cyan : GLStyle.surfaceAlt)
                         .frame(height: 5)
                 }
             }
             .padding(.bottom, 8)
-            Text(["Vyber konzoli", "Kam zobrazit titulky?", "Kontrola nastavení"][step])
+            Text(["Vyber konzoli", "Jazyky a překlad",
+                  "Kam zobrazit titulky?", "Kontrola nastavení"][step])
                 .font(.title2.bold())
         }
     }
@@ -123,14 +119,17 @@ struct GameLingoSetupView: View {
                     else { showPlayStation = true }
                 } label: {
                     HStack(spacing: 14) {
-                        Image(systemName: family.icon)
-                            .font(.title2)
-                            .foregroundStyle(GLStyle.blue)
-                            .frame(width: 44, height: 44)
-                            .background(GLStyle.surfaceAlt,
-                                        in: RoundedRectangle(cornerRadius: 13))
-                        Text(family.rawValue)
-                            .font(.headline).foregroundStyle(.white)
+                        GLPlatformBadge(family: family, size: 57)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(family.rawValue)
+                                .font(.system(size: 18, weight: .bold,
+                                              design: .rounded))
+                                .foregroundStyle(.white)
+                            Text(family == .xbox ? "Xbox Remote Play" :
+                                 "PlayStation 4 a 5")
+                                .font(.caption)
+                                .foregroundStyle(GLNeon.mist)
+                        }
                         Spacer()
                         if chosenFamily == family {
                             Image(systemName: "checkmark.circle.fill")
@@ -141,10 +140,13 @@ struct GameLingoSetupView: View {
                         }
                     }
                     .padding(14)
-                    .background(GLStyle.surface, in: RoundedRectangle(cornerRadius: 18))
-                    .overlay(RoundedRectangle(cornerRadius: 18)
-                        .strokeBorder(chosenFamily == family ? GLStyle.blue : GLStyle.border,
-                                      lineWidth: 1))
+                    .background(LinearGradient(
+                        colors: [GLNeon.panel, GLNeon.purple.opacity(0.15)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing),
+                        in: RoundedRectangle(cornerRadius: 19))
+                    .overlay(RoundedRectangle(cornerRadius: 19)
+                        .strokeBorder(chosenFamily == family ? GLNeon.cyan :
+                                      GLNeon.purple.opacity(0.45), lineWidth: 1.5))
                 }
                 .buttonStyle(.plain)
             }
@@ -172,6 +174,47 @@ struct GameLingoSetupView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var languageStep: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            GLNeonPanel(emphasized: true) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Jazyk aplikace", systemImage: "globe")
+                        .font(.headline)
+                    Text("Čeština")
+                        .font(.title3.bold())
+                        .foregroundStyle(GLNeon.cyan)
+                    Text("Rozhraní GameLingo je zatím kompletně dostupné v češtině.")
+                        .font(.caption)
+                        .foregroundStyle(GLNeon.mist)
+                }
+                .padding(17)
+            }
+            GLCard {
+                GLHeader(title: "Jazyk hry")
+                Picker("Rozpoznávat jazyk", selection: $model.gameLanguage) {
+                    ForEach(GLGameLanguage.allCases) { language in
+                        Text(language.title).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(model.isRunning)
+            }
+            GLCard {
+                GLHeader(title: "Překládat do")
+                Picker("Cílový jazyk", selection: $model.targetLanguage) {
+                    ForEach(GLTargetLanguage.allCases) { language in
+                        Text(language.title).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(model.isRunning)
+            }
+            Text("Tyto jazyky se použijí pro běžné dialogy i herní texty. Výběr můžeš později změnit v Nastavení.")
+                .font(.caption)
+                .foregroundStyle(GLNeon.mist)
         }
     }
 
@@ -228,6 +271,11 @@ struct GameLingoSetupView: View {
                 Text(devices.subtitleOutput.rawValue)
                     .foregroundStyle(.white)
             }
+            GLCard {
+                GLHeader(title: "Jazyky")
+                Text(model.gameLanguage.title + " → " + model.targetLanguage.title)
+                    .foregroundStyle(.white)
+            }
             if devices.chosenConsole == nil {
                 Label("Vyber konzoli", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
@@ -251,7 +299,7 @@ struct GameLingoSetupView: View {
 
     private var footer: some View {
         VStack(spacing: 9) {
-            if step < 2 {
+            if step < 3 {
                 GLPrimaryButton(title: "Pokračovat",
                                 systemImage: "arrow.right",
                                 disabled: step == 0 && devices.chosenConsole == nil) {
@@ -272,7 +320,7 @@ struct GameLingoSetupView: View {
             .accessibilityHint("Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních.")
         }
         .padding(17)
-        .background(GLStyle.surface.opacity(0.7))
+        .background(GLNeon.panel.opacity(0.78))
     }
 
     private var xboxSetup: some View {
