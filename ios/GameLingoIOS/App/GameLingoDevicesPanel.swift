@@ -106,8 +106,9 @@ struct GameLingoDevicesPanel: View {
                             }
                             Button("Odebrat", role: .destructive) {
                                 guard !model.isRunning else { return }
-                                if devices.preferredTelevisionID == television.id {
+                                if model.tv.ip == television.ipAddress {
                                     model.tv.forgetReceiver()
+                                    model.tv.ip = ""
                                 }
                                 devices.removeTelevision(television.id)
                             }
