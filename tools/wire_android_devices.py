@@ -20,7 +20,7 @@ def main():
         raise SystemExit("Usage: wire_android_devices.py <upstream>")
     upstream=Path(sys.argv[1])
     folder=upstream/SRC
-    for name in ("GameLingoDeviceCenter.kt","GameLingoPlayStationConsoles.kt"):
+    for name in ("GameLingoDeviceCenter.kt","GameLingoPlayStationConsoles.kt","GameLingoFirstRun.kt"):
         original=Path(__file__).with_name(name)
         (folder/name).write_text(original.read_text(encoding="utf-8"),encoding="utf-8")
 
@@ -40,6 +40,23 @@ def main():
     mobile_dashboard = 'druhy.addView(akce("▭", "Zařízení")' in code
     tv_dashboard = '"Překlad z telefonu"' in code and '"Přímo na TV"' in code
     if mobile_dashboard:
+        code=one(
+            code,
+            '''        prevezmiAccountId(intent)
+        ukazUvod()''',
+            '''        prevezmiAccountId(intent)
+        ukazUvod()
+        if (telefon && !GameLingoFirstRun.completed(this)) {
+            ui.post {
+                GameLingoFirstRun.show(this,
+                    connectXbox = { ukazPripojeniXbox() },
+                    connectPlayStation = { ukazPripojeni() },
+                    connectTV = { vyberVystupTv() },
+                    finished = { ukazHlavni() })
+            }
+        }''',
+            "mobile first-run wizard"
+        )
         # The main screen is produced by a separate UI generator. Allow harmless
         # indentation/layout adjustments without silently skipping the action.
         import re
@@ -62,7 +79,19 @@ def main():
         if code==source: raise RuntimeError("Device center wasn't attached")
 
     elif tv_dashboard:
-        print("Google TV landing screen uses its own GameLingo device actions")
+        code=one(
+            code,
+            '''            obsah.addView(volby, odsazeni(bottom = 9))''',
+            '''            obsah.addView(volby, odsazeni(bottom = 9))
+            obsah.addView(tlacitko("▭  Zařízení", 18f) {
+                '''+manager()+'''
+            }.apply {
+                gravity = Gravity.CENTER
+                background = zaobleni(Color.parseColor("#172033"), 15f)
+                setPadding(dp(16), dp(12), dp(16), dp(12))
+            }, odsazeni(bottom = 9))''',
+            "Google TV device center action"
+        )
     else:
         raise RuntimeError("Neither Android phone nor Google TV dashboard recognized")
 
