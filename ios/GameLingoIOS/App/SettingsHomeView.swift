@@ -1,92 +1,19 @@
 import SwiftUI
 
 // Compact GameLingo pages: titles and actions first, details in (?) Help.
+/// The same settings overview is displayed as an iPhone tab and as a sheet.
+/// All destinations are real screens, not placeholders.
 struct GameLingoSettingsView: View {
     @ObservedObject var model: CaptionAppModel
     @Environment(\.dismiss) private var dismiss
-    @State private var showRegions = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    GLNeonTitle(title: "Nastavení",
-                                subtitle: "Přizpůsobení překladu a titulků",
-                                icon: "gearshape.fill")
-                        .padding(.bottom, 6)
-                    sectionLabel("JAZYKY")
-                    NavigationLink {
-                        GameLingoLanguageSettingsView(model: model)
-                    } label: {
-                        GLDetailRow(icon: "globe",
-                                    title: "Jazyky",
-                                    detail: model.appLanguage.title + " · " +
-                                        model.gameLanguage.title + " → " +
-                                        model.targetLanguage.title)
-                    }
-                    .buttonStyle(.plain)
-
-                    sectionLabel("ROZPOZNÁVÁNÍ A PŘEKLAD")
-                    NavigationLink {
-                        GameLingoOCRSettingsView(model: model)
-                    } label: {
-                        GLDetailRow(icon: "text.viewfinder",
-                                    title: "OCR a rozpoznávání",
-                                    detail: "Rychlost, přesnost a filtrování textu")
-                    }
-                    .buttonStyle(.plain)
-                    NavigationLink {
-                        GameLingoTranslationSettingsView(model: model)
-                    } label: {
-                        GLDetailRow(icon: "character.book.closed",
-                                    title: "Překlad",
-                                    detail: "Časování a aktuálnost titulků")
-                    }
-                    .buttonStyle(.plain)
-                    Button { showRegions = true } label: {
-                        GLDetailRow(icon: "viewfinder",
-                                    title: "Oblasti obrazovky",
-                                    detail: "Čtyři nezávislé rámečky")
-                    }
-                    .buttonStyle(.plain)
-
-                    sectionLabel("ZOBRAZENÍ A DALŠÍ VOLBY")
-                    NavigationLink {
-                        GameLingoAppearanceSettingsView(model: model)
-                    } label: {
-                        GLDetailRow(icon: "captions.bubble",
-                                    title: "Vzhled titulků",
-                                    detail: "Písmo, velikost a poloha na TV")
-                    }
-                    .buttonStyle(.plain)
-                    NavigationLink {
-                        GameLingoProfilesScreen(model: model)
-                    } label: {
-                        GLDetailRow(icon: "gamecontroller",
-                                    title: "Profily her",
-                                    detail: "Uložené nastavení jednotlivých her")
-                    }
-                    .buttonStyle(.plain)
-                    NavigationLink {
-                        GameLingoDiagnosticsView(model: model)
-                    } label: {
-                        GLDetailRow(icon: "waveform.path.ecg",
-                                    title: "Diagnostika",
-                                    detail: "Připojení, snímky a testování")
-                    }
-                    .buttonStyle(.plain)
-                    NavigationLink {
-                        GameLingoLicenseView()
-                    } label: {
-                        GLDetailRow(icon: "info.circle",
-                                    title: "O aplikaci / Licence",
-                                    detail: "Verze, autoři a otevřený zdrojový kód")
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 20)
-                .padding(.bottom, 36)
+                GameLingoSettingsOverview(model: model)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 20)
+                    .padding(.bottom, 36)
             }
             .background(GLNeonBackground())
             .navigationTitle("")
@@ -95,20 +22,106 @@ struct GameLingoSettingsView: View {
                     Button("Hotovo") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showRegions) {
-                SubtitleSettingsView(model: model)
-            }
         }
         .tint(GLNeon.cyan)
         .preferredColorScheme(.dark)
     }
+}
 
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
+struct GameLingoSettingsOverview: View {
+    @ObservedObject var model: CaptionAppModel
+    @State private var showRegions = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            GLNeonTitle(title: "Nastavení",
+                        subtitle: "Přizpůsobení překladu a titulků",
+                        icon: "gearshape.fill")
+                .padding(.bottom, 5)
+
+            sectionLabel("JAZYKY")
+            NavigationLink {
+                GameLingoLanguageSettingsView(model: model)
+            } label: {
+                GLDetailRow(icon: "globe",
+                            title: "Jazyky",
+                            detail: model.appLanguage.title + " · " +
+                                model.gameLanguage.title + " → " +
+                                model.targetLanguage.title)
+            }
+            .buttonStyle(.plain)
+
+            sectionLabel("ROZPOZNÁVÁNÍ A PŘEKLAD")
+            NavigationLink {
+                GameLingoOCRSettingsView(model: model)
+            } label: {
+                GLDetailRow(icon: "viewfinder",
+                            title: "OCR a rozpoznávání",
+                            detail: "Citlivost, režim a filtrování textu")
+            }
+            .buttonStyle(.plain)
+            NavigationLink {
+                GameLingoTranslationSettingsView(model: model)
+            } label: {
+                GLDetailRow(icon: "character.book.closed.fill",
+                            title: "Překlad",
+                            detail: "Časování a aktuálnost titulků")
+            }
+            .buttonStyle(.plain)
+            Button { showRegions = true } label: {
+                GLDetailRow(icon: "rectangle.dashed",
+                            title: "Oblasti obrazovky",
+                            detail: "Čtyři nezávislé oblasti")
+            }
+            .buttonStyle(.plain)
+
+            sectionLabel("ZOBRAZENÍ A PROFILY")
+            NavigationLink {
+                GameLingoAppearanceSettingsView(model: model)
+            } label: {
+                GLDetailRow(icon: "text.bubble",
+                            title: "Vzhled titulků",
+                            detail: "Velikost, šířka a poloha titulků")
+            }
+            .buttonStyle(.plain)
+            NavigationLink {
+                GameLingoProfilesScreen(model: model)
+            } label: {
+                GLDetailRow(icon: "gamecontroller",
+                            title: "Profily her",
+                            detail: "Nastavení pro jednotlivé hry")
+            }
+            .buttonStyle(.plain)
+
+            sectionLabel("OBECNÉ")
+            NavigationLink {
+                GameLingoDiagnosticsView(model: model)
+            } label: {
+                GLDetailRow(icon: "waveform.path.ecg",
+                            title: "Diagnostika",
+                            detail: "Stav připojení a historie překladu")
+            }
+            .buttonStyle(.plain)
+            NavigationLink {
+                GameLingoLicenseView()
+            } label: {
+                GLDetailRow(icon: "info.circle",
+                            title: "O aplikaci / Licence",
+                            detail: "Autoři, licence a zdrojový kód")
+            }
+            .buttonStyle(.plain)
+        }
+        .sheet(isPresented: $showRegions) {
+            SubtitleSettingsView(model: model)
+        }
+    }
+
+    private func sectionLabel(_ title: String) -> some View {
+        Text(LocalizedStringKey(title))
             .font(.system(size: 11, weight: .bold, design: .rounded))
             .tracking(1.2)
             .foregroundStyle(GLNeon.cyan)
-            .padding(.top, 10)
+            .padding(.top, 8)
     }
 }
 
