@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Audit checkpoint: compile Android after correcting false readiness and invalid first-run completion.
+# Native five-tab parity checkpoint: verify embedded real devices, settings, regions and about pages.
 
 on:
   push:
