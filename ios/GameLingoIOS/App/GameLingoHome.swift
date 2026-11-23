@@ -558,23 +558,9 @@ struct GameLingoHome: View {
     }
 
     private var tvScreen: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 13) {
-                    TVSelectionView(tv: model.tv)
-                }
-                .padding(18)
-            }
-            .background(GLVisual.navy.ignoresSafeArea())
-            .navigationTitle("Google TV")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Hotovo") { tvSheet = false }
-                }
-            }
+        GameLingoTVSetupScreen(devices: devices, tv: model.tv) {
+            tvSheet = false
         }
-        .tint(GLVisual.cyan)
     }
 }
 
