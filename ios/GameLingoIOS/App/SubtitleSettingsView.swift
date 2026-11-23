@@ -477,11 +477,10 @@ struct SubtitleSettingsView: View {
                                  outputFont: model.choicesOutputFont)
         } else {
             guard model.choicesEnabled else { return }
-            // During a game, resend only the current real translation at its
-            // new coordinates. The sample is reserved for idle preview mode.
-            if model.isRunning {
+            // Prefer the real live translation, but the preview button must
+            // still work if OCR has not recognized any yellow-area text yet.
+            if model.isRunning && model.relocateActiveChoices() {
                 orangePreviewTask?.cancel()
-                model.relocateActiveChoices()
                 return
             }
             orangePreviewTask?.cancel()
@@ -491,7 +490,9 @@ struct SubtitleSettingsView: View {
                                  outputFont: model.choicesOutputFont)
             orangePreviewTask = Task { @MainActor in
                 try? await Task.sleep(for: .seconds(6))
-                guard !Task.isCancelled, !model.isRunning else { return }
+                guard !Task.isCancelled else { return }
+                // Do not erase a newer real game translation after the demo.
+                if model.isRunning && model.relocateActiveChoices() { return }
                 model.tv.sendChoices([], area: model.choicesArea,
                                      asText: model.choicesTextMode,
                                      outputArea: model.choicesOutputArea,
