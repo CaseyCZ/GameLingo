@@ -17,10 +17,21 @@ struct GameLingoDevicesPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-                Text("Moje zařízení").font(.title2.bold())
-                Spacer()
+                GLNeonTitle(title: "Konzole a zařízení",
+                            subtitle: "Správa konzolí, TV a výstupu titulků",
+                            icon: "display.2")
                 GLHelpButton(title: "Zařízení", explanation:
-                    "Můžeš přidat více Xboxů, PlayStationů i televizí. U konzolí vyber výchozí, kterou bude GameLingo překládat. Xbox se přihlašuje přes Microsoft, PS5/PS4 přes Sony a osmimístný PIN. Pro Google TV je samostatný šestimístný párovací kód. Uložené zařízení nemusí být právě online.")
+                    "Můžeš přidat více Xboxů, PlayStationů i televizí. Uložené zařízení nemusí být právě online; skutečné spojení ověřujeme až při překladu.")
+            }
+            HStack(spacing: 11) {
+                Button(action: addXbox) {
+                    platformCard(.xbox)
+                }
+                .buttonStyle(.plain)
+                Button(action: addPlayStation) {
+                    platformCard(.playStation)
+                }
+                .buttonStyle(.plain)
             }
             GLPrimaryButton(title: "Přidat zařízení", systemImage: "plus.circle") {
                 showAdd = true
@@ -30,21 +41,23 @@ struct GameLingoDevicesPanel: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
-            Text("Konzole").font(.headline).padding(.top, 4)
+            Text("Moje konzole")
+                .font(.system(size: 19, weight: .bold, design: .rounded))
+                .padding(.top, 4)
             if devices.consoles.isEmpty {
                 emptyRow("Žádná konzole", icon: "gamecontroller")
             }
             ForEach(devices.consoles) { console in
-                GLCard {
+                GLNeonPanel(emphasized: devices.preferredConsoleID == console.id) {
                     HStack(spacing: 12) {
-                        Image(systemName: console.family.icon)
-                            .font(.title2)
-                            .foregroundStyle(GLStyle.blue)
-                            .frame(width: 36)
-                        VStack(alignment: .leading, spacing: 3) {
+                        GLPlatformBadge(family: console.family, size: 54)
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(console.name).font(.headline)
-                            Text(console.family.rawValue)
-                                .font(.caption).foregroundStyle(GLStyle.muted)
+                            Text(devices.preferredConsoleID == console.id
+                                 ? "Vybraná konzole" : console.family.rawValue)
+                                .font(.caption)
+                                .foregroundStyle(devices.preferredConsoleID == console.id
+                                                 ? GLStyle.green : GLNeon.mist)
                         }
                         Spacer()
                         if devices.preferredConsoleID == console.id {
@@ -72,27 +85,33 @@ struct GameLingoDevicesPanel: View {
                         .accessibilityLabel("Spravovat " + console.name)
                     }
                     .contentShape(Rectangle())
+                    .padding(13)
                     .onTapGesture {
                         if !model.isRunning { devices.selectConsole(console.id) }
                     }
                 }
             }
 
-            Text("Televize").font(.headline).padding(.top, 5)
+            Text("Televize")
+                .font(.system(size: 19, weight: .bold, design: .rounded))
+                .padding(.top, 5)
             if devices.televisions.isEmpty {
                 emptyRow("Žádná televize", icon: "tv")
             }
             ForEach(devices.televisions) { television in
-                GLCard {
+                GLNeonPanel(emphasized: devices.preferredTelevisionID == television.id) {
                     HStack(spacing: 12) {
-                        Image(systemName: "tv")
-                            .foregroundStyle(GLStyle.blue)
-                            .frame(width: 36)
-                        VStack(alignment: .leading, spacing: 3) {
+                        GLPlatformBadge(family: nil, isTelevision: true, size: 54)
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(television.name).font(.headline)
-                            Text(television.ipAddress)
-                                .font(.caption.monospaced())
-                                .foregroundStyle(GLStyle.muted)
+                            Text(devices.preferredTelevisionID == television.id
+                                 ? (model.tv.receiverConnected ? "TV připojena" :
+                                    "TV uložena – čekám na spojení")
+                                 : "Uložená televize")
+                                .font(.caption)
+                                .foregroundStyle(devices.preferredTelevisionID == television.id &&
+                                                 model.tv.receiverConnected
+                                                 ? GLStyle.green : GLNeon.mist)
                         }
                         Spacer()
                         if devices.preferredTelevisionID == television.id {
@@ -101,9 +120,11 @@ struct GameLingoDevicesPanel: View {
                         }
                         Menu {
                             Button("Použít") {
+                                guard !model.isRunning else { return }
                                 devices.selectTelevision(television.id)
                                 devices.prepareTV(model.tv)
                             }
+                            .disabled(model.isRunning)
                             Button("Odebrat", role: .destructive) {
                                 guard !model.isRunning else { return }
                                 if model.tv.ip == television.ipAddress {
@@ -119,6 +140,7 @@ struct GameLingoDevicesPanel: View {
                                 .foregroundStyle(GLStyle.blue)
                         }
                     }
+                    .padding(13)
                 }
             }
             GLCard {
@@ -176,6 +198,22 @@ struct GameLingoDevicesPanel: View {
             Button("Zrušit", role: .cancel) { pendingRemove = nil }
         } message: {
             Text("Odebere zařízení z GameLingo. U PlayStationu také odstraní jeho uložené párovací klíče.")
+        }
+    }
+
+    private func platformCard(_ family: GLConsoleFamily) -> some View {
+        GLNeonPanel(radius: 19) {
+            VStack(spacing: 9) {
+                GLPlatformBadge(family: family, size: 64)
+                Text(family.rawValue)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("\(devices.consoles.filter { $0.family == family }.count) uložených")
+                    .font(.caption)
+                    .foregroundStyle(GLNeon.mist)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 15)
         }
     }
 
