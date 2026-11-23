@@ -149,18 +149,20 @@ struct GameLingoSettingsOverview: View {
             }
             .tint(GLNeon.cyan)
             .preferredColorScheme(.dark)
-        }
-        .sheet(isPresented: $showXbox) {
-            GameLingoXboxScreen(devices: model.devices, auth: model.xbox)
-                .environmentObject(model)
-        }
-        .sheet(isPresented: $showPlayStation) {
-            GameLingoPlayStationSetup(devices: model.devices)
-                .environmentObject(model)
-        }
-        .sheet(isPresented: $showTV) {
-            GameLingoTVSetupScreen(devices: model.devices, tv: model.tv) {
-                showTV = false
+            // Pairing sheets must be presented from the visible Devices sheet,
+            // not from the already-covered settings window.
+            .sheet(isPresented: $showXbox) {
+                GameLingoXboxScreen(devices: model.devices, auth: model.xbox)
+                    .environmentObject(model)
+            }
+            .sheet(isPresented: $showPlayStation) {
+                GameLingoPlayStationSetup(devices: model.devices)
+                    .environmentObject(model)
+            }
+            .sheet(isPresented: $showTV) {
+                GameLingoTVSetupScreen(devices: model.devices, tv: model.tv) {
+                    showTV = false
+                }
             }
         }
     }
