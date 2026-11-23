@@ -543,8 +543,8 @@ def main():
         service=base/SRC/"RemotePlayService.kt"
         code=service.read_text(encoding="utf8")
         checks=(
-            ('        super.onCreate()\\n        ui.post(pribehHlidac)',
-             '        super.onCreate()\\n        if (telefon) GameLingoOCRConfig.load(this)\\n        ui.post(pribehHlidac)'),
+            ('        super.onCreate()\n        ui.post(pribehHlidac)',
+             '        super.onCreate()\n        if (telefon) GameLingoOCRConfig.load(this)\n        ui.post(pribehHlidac)'),
             ('if (telefon) INTERVAL_MS_TELEFON else if (uspora) INTERVAL_MS_USPORA else INTERVAL_MS',
              'if (telefon) GameLingoOCRConfig.intervalMs() else if (uspora) INTERVAL_MS_USPORA else INTERVAL_MS'),
         )
