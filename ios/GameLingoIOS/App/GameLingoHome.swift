@@ -31,23 +31,12 @@ struct GameLingoHome: View {
     @State private var showPSLoginPIN = false
     @State private var psLoginPIN = ""
 
-    private enum Page: String, CaseIterable, Identifiable {
-        case home = "Domů"
-        case regions = "Obrazovka"
-        case devices = "Konzole"
-        case settings = "Nastavení"
-        case about = "O aplikaci"
+    private enum Page: Int, CaseIterable, Identifiable {
+        case home, regions, devices, settings, about
 
-        var id: String { rawValue }
-        var icon: String {
-            switch self {
-            case .home: return "house.fill"
-            case .regions: return "rectangle.dashed"
-            case .devices: return "gamecontroller"
-            case .settings: return "slider.horizontal.3"
-            case .about: return "info.circle"
-            }
-        }
+        var id: Int { rawValue }
+        var title: String { GameLingoUIContract.tabs[rawValue].title }
+        var icon: String { GameLingoUIContract.tabs[rawValue].symbol }
     }
 
     var body: some View {
@@ -617,7 +606,7 @@ struct GameLingoHome: View {
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: option.icon).font(.system(size: 20))
-                        Text(LocalizedStringKey(option.rawValue))
+                        Text(LocalizedStringKey(option.title))
                             .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundStyle(tab == option ? .white : GLNeon.mist)
