@@ -52,10 +52,19 @@ def android(root: Path, mode: str):
         "GameLingoDeviceCenter.show", "GameLingoPlayStationConsoles.capture",
         "Vyber konzoli")
     if mode == "mobile":
-        contains(base / "MainActivity.kt", "GameLingoFirstRun.show")
+        contains(base / "MainActivity.kt",
+            "GameLingoFirstRun.show", "GameLingoNavigation.create",
+            "GameLingoAbout.show(this)", "onDevices = { GameLingoDeviceCenter.show")
+        contains(base / "GameLingoNavigation.kt",
+            '"Domů"', '"Oblasti"', '"Profily"', '"Zařízení"', '"O aplikaci"')
+        contains(base / "GameLingoAbout.kt", "AGPL-3.0")
     else:
-        contains(base / "MainActivity.kt", "Překlad z telefonu", "Přímo na TV")
+        contains(base / "MainActivity.kt",
+            "Překlad z telefonu", "Přímo na TV",
+            "nastavDpad(", "nextFocusRightId", "nextFocusLeftId")
     text = (base / "MainActivity.kt").read_text(encoding="utf8")
+    if '"PlayCaption"' in text or 'PlayCaption – hlavní obrazovka' in text:
+        raise AssertionError("Original PlayCaption brand remains user-visible")
     if 'seznam.getOrNull()?.firstOrNull()' in text:
         raise AssertionError("Android still selects first Xbox instead of prompting")
     contains(base / "GameLingoFirstRun.kt",
