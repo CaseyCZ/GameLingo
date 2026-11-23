@@ -1,9 +1,9 @@
 name: Publish only newest GameLingo Beta (iOS, Android and Google TV)
 
 on:
-  push:
-    branches: [feature/gamelingo-v05-platform-rebuild]
-    paths: [".github/workflows/publish-gamelingo-current.yml"]
+  # The default GITHUB_TOKEN can build but is denied Git tags and Releases
+  # (HTTP 403). Manually dispatch only after adding the dedicated repository
+  # secret GAMELINGO_RELEASE_TOKEN with Contents:write and Actions:read.
   workflow_dispatch:
 
 permissions:
@@ -22,10 +22,14 @@ jobs:
     steps:
       - name: Validate all installers and create new beta
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GAMELINGO_RELEASE_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::Missing GAMELINGO_RELEASE_TOKEN. Set repository Actions secret with Contents:write + Actions:read, then rerun."
+            exit 1
+          fi
           REPO="$GITHUB_REPOSITORY"
           TAG="v0.5.0-beta.2"
           BUILD_SOURCE="89c78ef8f1d339d1b29c28d3f1406422dd313418"
