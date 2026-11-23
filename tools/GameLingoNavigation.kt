@@ -18,28 +18,20 @@ import android.widget.TextView
  * snippets. No PlayCaption navigation labels or behavior are reused.
  */
 object GameLingoNavigation {
-    private data class Destination(
-        val icon: String,
-        val label: String,
-        val action: () -> Unit
-    )
-
     fun create(
         activity: Activity,
         onHome: () -> Unit,
         onAreas: () -> Unit,
-        onProfiles: () -> Unit,
         onDevices: () -> Unit,
+        onSettings: () -> Unit,
         onAbout: () -> Unit
     ): LinearLayout {
         fun dp(v: Int): Int = (v * activity.resources.displayMetrics.density + 0.5f).toInt()
-        val destinations = listOf(
-            Destination("⌂", "Domů", onHome),
-            Destination("▣", "Oblasti", onAreas),
-            Destination("♧", "Profily", onProfiles),
-            Destination("▭", "Zařízení", onDevices),
-            Destination("ⓘ", "O aplikaci", onAbout)
-        )
+        val actions = listOf(onHome, onAreas, onDevices, onSettings, onAbout)
+        val destinations = GameLingoUIContract.tabs
+        require(destinations.size == actions.size) {
+            "iOS/Android mobile navigation contract is not in sync"
+        }
 
         return LinearLayout(activity).apply {
             tag = "gamelingo-bottom-nav"
@@ -54,8 +46,8 @@ object GameLingoNavigation {
             destinations.forEachIndexed { index, destination ->
                 val active = index == 0
                 addView(TextView(activity).apply {
-                    text = destination.icon + "\n" + destination.label
-                    contentDescription = destination.label
+                    text = destination.glyph + "\n" + destination.title
+                    contentDescription = destination.title
                     textSize = 11.5f
                     maxLines = 2
                     gravity = Gravity.CENTER
@@ -69,7 +61,7 @@ object GameLingoNavigation {
                         setColor(Color.parseColor(if (active) "#442080" else "#111A33"))
                         cornerRadius = dp(11).toFloat()
                     }
-                    setOnClickListener { destination.action() }
+                    setOnClickListener { actions[index]() }
                     setOnFocusChangeListener { view: View, hasFocus: Boolean ->
                         view.background = GradientDrawable().apply {
                             setColor(Color.parseColor(if (hasFocus) "#31256D" else if (active) "#442080" else "#111A33"))
