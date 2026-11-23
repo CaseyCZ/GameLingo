@@ -33,6 +33,19 @@ object GameLingoPhoneSubtitleStyle {
         require(selected in backgrounds)
         prefs(c).edit().putString("background", selected).apply()
     }
+    /** Same target-language preview phrases as SwiftUI; no language choices change. */
+    fun sample(context: Context): String = when (GameLingoLanguages.target(context)) {
+        "en" -> "That's a great plan!"
+        "sk" -> "To je skvelý plán!"
+        "de" -> "Das ist ein toller Plan!"
+        "pl" -> "To świetny plan!"
+        "fr" -> "C'est un excellent plan !"
+        "es" -> "¡Es un gran plan!"
+        "it" -> "È un ottimo piano!"
+        "pt" -> "É um ótimo plano!"
+        else -> "To je skvělý plán!"
+    }
+
     fun textColor(selected: String): Int = when (selected) {
         "yellow" -> Color.YELLOW
         "cyan" -> Color.parseColor(GameLingoUIContract.Palette.cyan)
