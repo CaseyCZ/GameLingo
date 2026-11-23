@@ -349,6 +349,14 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("private fun receiverPort(ip: String)",android)
         self.assertIn("receiverPort(tv.ip)",android)
         self.assertIn("receiverPort(ip)",android)
+        # The native Android caption sender must use the same resolved port,
+        # not merely the PIN handshake and PING.
+        sender=code(TOOLS/"wire_android_devices.py")
+        for call in ('GameLingoTVPairing.portFor(cil.first)',
+                     'GameLingoTVPairing.portFor(ip)'):
+            self.assertIn(call, sender)
+        self.assertIn("fun portFor(ip: String): Int", android)
+        self.assertIn("checkedPortAt", android)
 
     def test_tv_style_control_and_live_game_profile_save(self):
         """TV style is authenticated and persisted; running games may be saved."""
