@@ -146,6 +146,10 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("clearOverlays(at: oldValue)",tv)
         self.assertIn("func clearOverlays(at address: String)",tv)
         self.assertIn("forceDatagram: true",tv)
+        clear=tv.split("func clearOverlays(at address: String)",1)[1]
+        clear=clear.split("func sendSubtitle(",1)[0]
+        self.assertIn("repeatTask?.cancel()",clear)
+        self.assertIn("repeatTask = nil",clear)
         self.assertIn('let choices = Data("PCV1',tv)
         self.assertIn('let dialogue = Data([',tv)
         self.assertIn("devices.prepareTV(model.tv)", home)
