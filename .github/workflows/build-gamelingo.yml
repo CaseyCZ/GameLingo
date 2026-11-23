@@ -28,6 +28,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Check iOS platform routing, device manager and PS4/PS5 OCR source contracts
+        run: python tools/verify_gamelingo.py
       - name: Generate original GameLingo icon
         run: |
           python -m pip install pillow
@@ -126,6 +128,7 @@ jobs:
           python kit/tools/polish_all_screens.py mobile upstream
           python kit/tools/android_multi_xbox.py upstream
           python kit/tools/wire_android_devices.py upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode mobile
           sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
       - name: Build Android phone APK
         working-directory: upstream
@@ -180,6 +183,7 @@ jobs:
           python kit/tools/polish_all_screens.py tv upstream
           python kit/tools/android_multi_xbox.py upstream
           python kit/tools/wire_android_devices.py upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
           grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
           grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
           grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
