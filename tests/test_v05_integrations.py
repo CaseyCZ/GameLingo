@@ -212,6 +212,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             else:
                 self.assertIn(marker,tv)
 
+    def test_android_can_remove_and_restore_xbox_without_signing_out(self):
+        manager=code(TOOLS/"GameLingoDeviceCenter.kt")
+        for marker in (
+            '"Použít", "Připojit", "Odebrat"',
+            '"hiddenXboxIds"',
+            'filterNot { it.id in hiddenXboxIds }',
+            '"Vrátit odebrané Xboxy"',
+            'update.remove("selectedXboxId")',
+            'RemotePlayService.aktivni',
+            'getStringSet("hiddenXboxIds"',
+        ):
+            self.assertIn(marker,manager)
+        self.assertNotIn("XboxUcet.odhlas",manager)
+
     def test_pinned_native_source_and_build(self):
         workflow=code(ROOT/".github/workflows/build-gamelingo.yml")
         project=code(ROOT/"ios/GameLingoIOS/project.yml")
