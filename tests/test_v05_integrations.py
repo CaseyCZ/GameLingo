@@ -66,9 +66,11 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("devices.chosenTelevision != nil", relocation)
         self.assertIn("devices.prepareTV(tv)", relocation)
         self.assertIn("tv.sendChoices(", relocation)
-        self.assertIn("devices.$preferredTelevisionID", home)
-        self.assertIn("devices.$subtitleOutput", home)
+        self.assertIn(".onChange(of: devices.preferredTelevisionID)", home)
+        self.assertIn(".onChange(of: devices.subtitleOutput)", home)
         self.assertIn("selectedTV.ipAddress", home)
+        self.assertIn("previous == .googleTV && output == .phone", home)
+        self.assertIn('model.tv.sendSubtitle("", duration: 0)', home)
         self.assertIn("devices.prepareTV(model.tv)", home)
         self.assertIn("GameLingo iOS 0.5.0", model)
 
