@@ -75,64 +75,126 @@ def tv(s):
     if s.count(start)!=1 or end not in s[s.index(start):]:
         raise RuntimeError("Google TV landing screen UI anchors missing")
     new = '''        } else {
-            // Own minimal GameLingo TV landing screen. Both previous modes
-            // remain available: use phone receiver or console Remote Play.
+            // Original GameLingo ten-foot UI, never a recoloured upstream menu.
             obsah.background = GameLingoVisualKit.pageBackground(this)
-            val titulek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
-            titulek.addView(GameLingoVisualKit.hero(this), LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            titulek.addView(GameLingoHelp.button(this, "tv"),
-                LinearLayout.LayoutParams(dp(58), dp(58)))
-            obsah.addView(titulek, odsazeni(bottom = 22))
-            povoleni?.let { obsah.addView(it, odsazeni(bottom = 12)) }
-
-            obsah.addView(sekce("Konzole"), odsazeni(bottom = 6))
-            obsah.addView(konzole, odsazeni(bottom = 15))
-            obsah.addView(stavRadek, odsazeni(bottom = 20))
-
-            obsah.addView(sekce("Zobrazování"), odsazeni(bottom = 6))
-            dlazdiceTel = dlazdice("▣", "Překlad z telefonu", "",
-                Color.parseColor("#111A33")) { hratSTelefonem() }
-            dlazdiceTv = dlazdice("▤", "Přímo na TV", "",
-                Color.parseColor("#111A33")) {
-                if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
+            val hlava = vodorovne().apply {
+                gravity = Gravity.CENTER_VERTICAL
+                clipChildren = false
             }
-            // Both receiver modes need real D-pad focus, including a visible
-            // high-contrast outline independent of touch-only ripple effects.
-            fun nastavDpad(v: View, nazev: String) {
-                v.isFocusable = true
-                v.contentDescription = nazev
-                v.setOnFocusChangeListener { view, focused ->
-                    view.background = GameLingoVisualKit.card(this@MainActivity,
-                        selected = focused)
-                    view.scaleX = if (focused) 1.02f else 1f
-                    view.scaleY = if (focused) 1.02f else 1f
-                }
+            hlava.addView(GameLingoTVUi.brand(this),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            hlava.addView(GameLingoTVUi.action(this, "⚙  Nastavení") {
+                GameLingoTVUi.showSettings(this) { ukazHlavni() }
+            }, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                rightMargin = dp(14)
+            })
+            hlava.addView(GameLingoHelp.button(this, "tv"),
+                LinearLayout.LayoutParams(dp(63), dp(63)))
+            obsah.addView(hlava, odsazeni(bottom = 20))
+            povoleni?.let { obsah.addView(it, odsazeni(bottom = 13)) }
+
+            obsah.addView(GameLingoTVUi.title(this,
+                "Hraj. Rozuměj.", 33f), odsazeni(bottom = 5))
+            obsah.addView(GameLingoTVUi.title(this,
+                "Vyber, odkud bude GameLingo získávat a překládat text hry.",
+                16f, muted = true), odsazeni(bottom = 20))
+
+            obsah.addView(GameLingoTVUi.title(this, "ZPŮSOB PŘEKLADU", 16f).apply {
+                setTextColor(Color.parseColor("#02D6FF"))
+            }, odsazeni(bottom = 10))
+            dlazdiceTel = GameLingoTVUi.tile(
+                this, "▣", "Překlad z telefonu",
+                "iPhone nebo Android překládá hru, TV zobrazuje české titulky."
+            ) {
+                if (!android.provider.Settings.canDrawOverlays(this)) pozadejOPovoleni()
+                else hratSTelefonem()
+            }
+            dlazdiceTv = GameLingoTVUi.tile(
+                this, "▤", "Přímo na TV",
+                "TV se připojí k vybrané konzoli a sama překládá herní texty."
+            ) {
+                if (!android.provider.Settings.canDrawOverlays(this)) pozadejOPovoleni()
+                else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
             }
             dlazdiceTel.id = View.generateViewId()
             dlazdiceTv.id = View.generateViewId()
             dlazdiceTel.nextFocusRightId = dlazdiceTv.id
             dlazdiceTv.nextFocusLeftId = dlazdiceTel.id
-            nastavDpad(dlazdiceTel, "Překlad z telefonu")
-            nastavDpad(dlazdiceTv, "Přímo na TV")
             val volby = vodorovne().apply {
-                clipChildren = false; clipToPadding = false
-                setPadding(dp(8), dp(8), dp(8), dp(8))
+                clipChildren = false
+                clipToPadding = false
+                setPadding(dp(8), dp(7), dp(8), dp(8))
             }
             volby.addView(dlazdiceTel,
-                LinearLayout.LayoutParams(0, dp(132), 1f).apply {
-                    rightMargin = dp(18)
-                })
+                LinearLayout.LayoutParams(0, dp(168), 1f).apply {
+                rightMargin = dp(20)
+            })
             volby.addView(dlazdiceTv,
-                LinearLayout.LayoutParams(0, dp(132), 1f))
+                LinearLayout.LayoutParams(0, dp(168), 1f))
             obsah.addView(volby, odsazeni(bottom = 9))
-            volby.post {
-                if (!dlazdiceTel.hasFocus() && !dlazdiceTv.hasFocus()) {
-                    dlazdiceTel.requestFocus()
-                }
+            // The device centre is inserted here by wire_android_devices.py.
+
+            obsah.addView(GameLingoTVUi.title(this, "MOJE KONZOLE", 16f).apply {
+                setTextColor(Color.parseColor("#02D6FF"))
+            }, odsazeni(top = 16, bottom = 9))
+            val ulozenaPS = udaje.sparovano
+            val ulozenyXbox = XboxUcet.konzole(this) != null
+            val volbyKonzoli = vodorovne().apply {
+                clipChildren = false
+                clipToPadding = false
+                setPadding(dp(8), dp(5), dp(8), dp(7))
             }
-            obsah.addView(text("GameLingo TV", 14f,
-                Color.parseColor("#92A4C7")).apply { gravity = Gravity.CENTER })
+            val psDostupna = GameLingoTVUi.tile(
+                this, "PS", "PlayStation 5 / 4",
+                if (ulozenaPS) "Konzole uložená · vybrat nebo spravovat"
+                else "Přidat PlayStation a spárovat osmimístným PINem"
+            ) { ukazPripojeni() }
+            val xboxDostupny = GameLingoTVUi.tile(
+                this, "ⓧ", "Xbox Series / One",
+                if (ulozenyXbox) "Konzole uložená · vybrat nebo spravovat"
+                else "Přidat Xbox pomocí účtu Microsoft"
+            ) { ukazPripojeniXbox() }
+            psDostupna.id = View.generateViewId()
+            xboxDostupny.id = View.generateViewId()
+            psDostupna.nextFocusRightId = xboxDostupny.id
+            xboxDostupny.nextFocusLeftId = psDostupna.id
+            dlazdiceTel.nextFocusDownId = psDostupna.id
+            dlazdiceTv.nextFocusDownId = xboxDostupny.id
+            volbyKonzoli.addView(psDostupna,
+                LinearLayout.LayoutParams(0, dp(155), 1f).apply {
+                rightMargin = dp(20)
+            })
+            volbyKonzoli.addView(xboxDostupny,
+                LinearLayout.LayoutParams(0, dp(155), 1f))
+            obsah.addView(volbyKonzoli, odsazeni(bottom = 13))
+
+            // Genuine state, never imply that a saved device is connected.
+            val statusy = vodorovne().apply {
+                setPadding(dp(7), dp(5), dp(7), dp(5))
+            }
+            statusy.addView(GameLingoTVUi.statusPill(this, "Konzole",
+                if (RemotePlayService.aktivni) "Remote Play běží"
+                else if (nejakaKonzole) "Uložená · nepřipojena" else "Nepřidána",
+                RemotePlayService.aktivni),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply { rightMargin = dp(11) })
+            statusy.addView(GameLingoTVUi.statusPill(this, "Překryv titulků",
+                if (android.provider.Settings.canDrawOverlays(this)) "Povolen"
+                else "Vyžaduje povolení",
+                android.provider.Settings.canDrawOverlays(this)),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            obsah.addView(statusy, odsazeni(bottom = 11))
+            obsah.addView(GameLingoTVUi.title(this,
+                "Ovládání: šipky pro výběr • OK potvrdit • Zpět pro návrat",
+                14f, muted = true).apply { gravity = Gravity.CENTER })
+
+            volby.post {
+                if (!dlazdiceTel.hasFocus() && !dlazdiceTv.hasFocus())
+                    dlazdiceTel.requestFocus()
+            }
+
 '''
     s=s[:s.index(start)]+new+s[s.index(end, s.index(start)):]
     # TV receiver help is optional. Do not occupy extra width or remove the code.
