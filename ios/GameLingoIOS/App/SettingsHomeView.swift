@@ -22,7 +22,7 @@ struct PlayCaptionSettingsView: View {
                     NavigationLink {
                         PlayCaptionOCRSettingsView(model: model)
                     } label: {
-                        SettingsRow(symbol: "text.viewfinder", tint: .cyan,
+                        SettingsRow(symbol: "text.viewfinder", tint: GameLingoTheme.accent,
                                     title: "Rozpoznávání OCR",
                                     detail: "Rychlost, krátké dialogy a filtrování")
                     }
@@ -62,15 +62,18 @@ struct PlayCaptionSettingsView: View {
                     NavigationLink {
                         PlayCaptionDiagnosticsView(model: model)
                     } label: {
-                        SettingsRow(symbol: "waveform.path.ecg", tint: .cyan,
+                        SettingsRow(symbol: "waveform.path.ecg", tint: GameLingoTheme.accent,
                                     title: "Diagnostika",
                                     detail: "Stav přenosu, testovací titulek a log")
                     }
                 } footer: {
-                    Text("GameLingo iOS 0.1.0 · Český překlad her pro Xbox a Google TV.")
+                    Text("GameLingo iOS 0.2.0 · Český překlad her pro Xbox a Google TV.")
                 }
             }
-            .navigationTitle("Nastavení")
+            .scrollContentBackground(.hidden)
+        .background(GameLingoTheme.background.ignoresSafeArea())
+        .tint(GameLingoTheme.accent)
+        .navigationTitle("Nastavení")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -162,6 +165,9 @@ private struct PlayCaptionOCRSettingsView: View {
                 .disabled(model.isRunning)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(GameLingoTheme.background.ignoresSafeArea())
+        .tint(GameLingoTheme.accent)
         .navigationTitle("Rozpoznávání OCR")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -216,6 +222,9 @@ private struct PlayCaptionTranslationSettingsView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(GameLingoTheme.background.ignoresSafeArea())
+        .tint(GameLingoTheme.accent)
         .navigationTitle("Překlad")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -265,6 +274,9 @@ private struct PlayCaptionAppearanceSettingsView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(GameLingoTheme.background.ignoresSafeArea())
+        .tint(GameLingoTheme.accent)
         .navigationTitle("Vzhled titulků")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -312,7 +324,7 @@ private struct PlayCaptionProfilesView: View {
                             model.applyGameProfile(profile)
                         }
                         .buttonStyle(.bordered)
-                        .tint(.blue)
+                        .tint(GameLingoTheme.action)
                         .disabled(model.isRunning)
                     }
                 }
@@ -333,6 +345,9 @@ private struct PlayCaptionProfilesView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(GameLingoTheme.background.ignoresSafeArea())
+        .tint(GameLingoTheme.accent)
         .navigationTitle("Profily her")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -365,7 +380,7 @@ private struct PlayCaptionDiagnosticsView: View {
 
             Section("Testování") {
                 Button {
-                    model.tv.sendSubtitle("Zkušební titulek PlayCaption iOS", duration: 8_000, preview: true)
+                    model.tv.sendSubtitle("Zkušební titulek GameLingo", duration: 8_000, preview: true)
                 } label: {
                     Label("Odeslat zkušební titulek na TV", systemImage: "tv")
                 }
@@ -393,6 +408,9 @@ private struct PlayCaptionDiagnosticsView: View {
                 Text("Log může obsahovat texty z hry, IP televize a názvy konzolí. Před odesláním ho zkontroluj. Tokeny účtu se do logu záměrně nepřidávají.")
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(GameLingoTheme.background.ignoresSafeArea())
+        .tint(GameLingoTheme.accent)
         .navigationTitle("Diagnostika")
         .navigationBarTitleDisplayMode(.inline)
     }
