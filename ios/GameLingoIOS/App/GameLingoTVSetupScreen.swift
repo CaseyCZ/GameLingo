@@ -42,7 +42,7 @@ struct GameLingoTVSetupScreen: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 11) {
                     GLNeonTitle(title: "Google TV",
                                 subtitle: "Připojení a párování televize",
                                 icon: "tv.fill")
@@ -67,8 +67,10 @@ struct GameLingoTVSetupScreen: View {
                                         }
                                         Spacer()
                                         if selectedTelevision?.id == record.id {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundStyle(GLStyle.green)
+                                            Text(tv.receiverConnected ? "Připojeno" : "Vybraná")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(tv.receiverConnected
+                                                                 ? GLStyle.green : GLNeon.cyan)
                                         }
                                     }
                                     .padding(10)
@@ -115,7 +117,7 @@ struct GameLingoTVSetupScreen: View {
                             .foregroundStyle(GLStyle.muted)
                     }
                 }
-                .padding(18)
+                .padding(14)
             }
             .background(GLNeonBackground())
             .navigationTitle("Google TV")
@@ -224,7 +226,10 @@ private struct GameLingoTVPairingPanel: View {
 
             GLCard {
                 GLHeader(title: "Párování televize",
-                         help: "Na televizi spusť GameLingo TV a opiš šest číslic. Uložení IP adresy neznamená úspěšné párování. Pro živý překlad je nutné potvrzené spojení.")
+                         help: "Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Opiš nový šestimístný kód. Uložená IP neznamená spárování.")
+                Text("1. Na TV otevři Překlad z telefonu. 2. Opiš šestimístný kód. 3. Zvol Spárovat.")
+                    .font(.caption)
+                    .foregroundStyle(GLNeon.mist)
                 HStack(spacing: 10) {
                     Image(systemName: tv.receiverConnected
                           ? "checkmark.circle.fill" : "link.circle")
