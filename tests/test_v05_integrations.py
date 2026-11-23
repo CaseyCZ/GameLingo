@@ -226,6 +226,13 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(marker,manager)
         self.assertNotIn("XboxUcet.odhlas",manager)
 
+    def test_single_native_playstation_login_pin_prompt(self):
+        home=code(IOS/"GameLingoHome.swift")
+        self.assertIn('.alert("Přihlašovací PIN PlayStation"',home)
+        self.assertIn('model.playStation.submitLoginPIN(psLoginPIN)',home)
+        self.assertNotIn('playStationLoginPIN',home)
+        self.assertNotIn('GLHeader(title: "PIN PlayStation"',home)
+
     def test_pinned_native_source_and_build(self):
         workflow=code(ROOT/".github/workflows/build-gamelingo.yml")
         project=code(ROOT/"ios/GameLingoIOS/project.yml")
