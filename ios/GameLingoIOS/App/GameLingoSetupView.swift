@@ -22,6 +22,25 @@ struct GameLingoSetupView: View {
         return model.playStation.findSavedConsole(id: selected.id) != nil
     }
 
+    private var televisionPaired: Bool {
+        guard devices.subtitleOutput == .googleTV else { return true }
+        guard let chosen = devices.chosenTelevision else { return false }
+        return model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines) ==
+            chosen.ipAddress && model.tv.receiverPaired
+    }
+
+    private var canFinish: Bool {
+        consoleRegistered && televisionPaired
+    }
+
+    private func finishSetup() {
+        // Completing or skipping first-run setup does not claim a console is
+        // connected. The dashboard still checks Xbox/PS and TV readiness.
+        devices.completedSetup = true
+        onFinished()
+        dismiss()
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -68,6 +87,9 @@ struct GameLingoSetupView: View {
         .onReceive(model.xbox.$consoles) { list in
             devices.refreshXbox(list)
         }
+        .onReceive(model.playStation.registrations.$consoles) { list in
+            devices.refreshPlayStation(list)
+        }
     }
 
     private var header: some View {
@@ -87,7 +109,7 @@ struct GameLingoSetupView: View {
                 }
             }
             .padding(.bottom, 8)
-            Text(["Vyber konzoli", "Kam zobrazit titulky?", "Připraveno"][step])
+            Text(["Vyber konzoli", "Kam zobrazit titulky?", "Kontrola nastavení"][step])
                 .font(.title2.bold())
         }
     }
@@ -210,10 +232,19 @@ struct GameLingoSetupView: View {
                 Label("Vyber konzoli", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
             }
-            if devices.chosenConsole?.family == .playStation {
-                Text("Dokončení závisí na ověřeném připojení PS Remote Play.")
+            Label(consoleRegistered
+                  ? "Konzole je spárovaná, spojení se ověří až při spuštění."
+                  : "Konzole zatím není spárovaná.",
+                  systemImage: consoleRegistered ? "checkmark.circle" : "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(consoleRegistered ? GLStyle.green : .orange)
+            if devices.subtitleOutput == .googleTV {
+                Label(televisionPaired
+                      ? "Párovací klíč TV je uložen, živé spojení se ověří při spuštění."
+                      : "Televizi je potřeba vybrat a spárovat.",
+                      systemImage: televisionPaired ? "checkmark.circle" : "exclamationmark.triangle")
                     .font(.caption)
-                    .foregroundStyle(GLStyle.muted)
+                    .foregroundStyle(televisionPaired ? GLStyle.green : .orange)
             }
         }
     }
@@ -229,13 +260,16 @@ struct GameLingoSetupView: View {
             } else {
                 GLPrimaryButton(title: "Dokončit nastavení",
                                 systemImage: "checkmark",
-                                disabled: devices.chosenConsole == nil ||
-                                    !consoleRegistered) {
-                    devices.completedSetup = true
-                    onFinished()
-                    dismiss()
+                                disabled: !canFinish) {
+                    finishSetup()
                 }
             }
+            Button("Nastavit později") {
+                finishSetup()
+            }
+            .font(.subheadline)
+            .foregroundStyle(GLStyle.muted)
+            .accessibilityHint("Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních.")
         }
         .padding(17)
         .background(GLStyle.surface.opacity(0.7))
