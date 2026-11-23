@@ -15,10 +15,10 @@ import android.widget.TextView
 
 /** GameLingo native Android settings, editing real PlayStation/Xbox OCR settings. */
 object GameLingoSettings {
-    private val bg = Color.parseColor("#070B14")
-    private val card = Color.parseColor("#111827")
-    private val accent = Color.parseColor("#38BDF8")
-    private val muted = Color.parseColor("#94A3B8")
+    private val bg = Color.parseColor(GameLingoUIContract.Palette.background)
+    private val card = Color.parseColor(GameLingoUIContract.Palette.panel)
+    private val accent = Color.parseColor(GameLingoUIContract.Palette.cyan)
+    private val muted = Color.parseColor(GameLingoUIContract.Palette.muted)
     private fun rounded(color: Int, radius: Float = 17f) =
         GradientDrawable().apply { setColor(color); cornerRadius = radius }
 
