@@ -112,13 +112,14 @@ object GameLingoDeviceCenter {
         ).apply { bottomMargin = 13 })
     }
 
-    fun show(c: Activity,
+    /** Shared content for the native mobile device tab and the TV dialog. */
+    fun content(c: Activity,
              onXbox: () -> Unit,
              onPlayStation: () -> Unit,
              onTV: () -> Unit,
-             onUpdated: () -> Unit = {}) {
-        if (c.isFinishing) return
-        val dialog = Dialog(c, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+             onUpdated: () -> Unit = {},
+             onDismiss: () -> Unit = {},
+             showClose: Boolean = false): LinearLayout {
         val root = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(c)
@@ -146,7 +147,7 @@ object GameLingoDeviceCenter {
                 .setTitle("Přidat zařízení")
                 .setItems(arrayOf("Xbox", "PlayStation 5 / 4",
                                   "Google TV / Android TV")) { _, selected ->
-                    dialog.dismiss()
+                    onDismiss()
                     when (selected) {
                         0 -> onXbox()
                         1 -> onPlayStation()
@@ -167,7 +168,7 @@ object GameLingoDeviceCenter {
             val saved = GameLingoPlayStationConsoles.list(c)
             if (saved.isEmpty()) {
                 add(consoles, line(c, "PlayStation", "Přidat PS5 / PS4") {
-                    dialog.dismiss()
+                    onDismiss()
                     onPlayStation()
                 })
             } else {
@@ -183,7 +184,7 @@ object GameLingoDeviceCenter {
                                             .setMessage("Nejdřív zastav probíhající překlad.")
                                             .setPositiveButton("OK", null).show()
                                     } else if (GameLingoPlayStationConsoles.select(c, ps.ip)) {
-                                        dialog.dismiss()
+                                        onDismiss()
                                         onUpdated()
                                     }
                                 } else {
@@ -197,8 +198,8 @@ object GameLingoDeviceCenter {
                                         .setMessage("Odebrat " + ps.name + "?")
                                         .setPositiveButton("Odebrat") { _, _ ->
                                             GameLingoPlayStationConsoles.remove(c, ps.ip)
-                                            dialog.dismiss()
-                                            show(c, onXbox, onPlayStation, onTV, onUpdated)
+                                            onDismiss()
+                                            onUpdated()
                                         }
                                         .setNegativeButton("Zrušit", null).show()
                                 }
@@ -250,14 +251,14 @@ object GameLingoDeviceCenter {
                                                 if (prefs.getString("selectedXboxId", null) == xbox.id)
                                                     update.remove("selectedXboxId")
                                                 update.apply()
-                                                dialog.dismiss()
+                                                onDismiss()
                                                 onUpdated()
                                             }
                                             .setNegativeButton("Zrušit", null)
                                             .show()
                                     } else {
                                         prefs.edit().putString("selectedXboxId", xbox.id).apply()
-                                        dialog.dismiss()
+                                        onDismiss()
                                         if (option == 1) onXbox() else onUpdated()
                                     }
                                 }.show()
@@ -272,7 +273,7 @@ object GameLingoDeviceCenter {
                                     .setPositiveButton("OK", null).show()
                             } else {
                                 prefs.edit().remove("hiddenXboxIds").apply()
-                                dialog.dismiss()
+                                onDismiss()
                                 onUpdated()
                             }
                         })
@@ -282,7 +283,7 @@ object GameLingoDeviceCenter {
         } else {
             xboxStatus.text = "Xbox: nepřihlášeno"
             add(consoles, line(c, "Přidat Xbox", "Přihlásit Microsoft") {
-                dialog.dismiss()
+                onDismiss()
                 onXbox()
             })
         }
@@ -292,7 +293,7 @@ object GameLingoDeviceCenter {
         val tvs = tvStore.seznam()
         if (tvs.isEmpty()) {
             add(root, line(c, "Google TV", "Přidat televizor") {
-                dialog.dismiss()
+                onDismiss()
                 onTV()
             })
         }
@@ -308,15 +309,15 @@ object GameLingoDeviceCenter {
                                 .setPositiveButton("OK", null).show()
                         } else if (option == 0) {
                             tvStore.vyber(tv.id)
-                            dialog.dismiss()
+                            onDismiss()
                             onUpdated()
                         } else {
                             AlertDialog.Builder(c)
                                 .setMessage("Odebrat " + tv.jmeno + "?")
                                 .setPositiveButton("Odebrat") { _, _ ->
                                     tvStore.odeber(tv.id)
-                                    dialog.dismiss()
-                                    show(c, onXbox, onPlayStation, onTV, onUpdated)
+                                    onDismiss()
+                                    onUpdated()
                                 }
                                 .setNegativeButton("Zrušit", null).show()
                         }
@@ -325,7 +326,19 @@ object GameLingoDeviceCenter {
             })
         }
 
-        add(root, line(c, "Hotovo") { dialog.dismiss() })
+        if (showClose) add(root, line(c, "Hotovo") { onDismiss() })
+        return root
+    }
+
+    fun show(c: Activity,
+             onXbox: () -> Unit,
+             onPlayStation: () -> Unit,
+             onTV: () -> Unit,
+             onUpdated: () -> Unit = {}) {
+        if (c.isFinishing) return
+        val dialog = Dialog(c, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val root = content(c, onXbox, onPlayStation, onTV, onUpdated,
+            onDismiss = { dialog.dismiss() }, showClose = true)
         val scroll = ScrollView(c).apply { isFillViewport = true }
         scroll.addView(root)
         dialog.setContentView(scroll)
@@ -335,6 +348,8 @@ object GameLingoDeviceCenter {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
-        scroll.post { addDeviceButton.requestFocus() }
+        scroll.post {
+            root.findFocus()?.requestFocus()
+        }
     }
 }
