@@ -52,7 +52,7 @@ object GameLingoOCRSettings {
                 orientation = LinearLayout.VERTICAL
                 background = GameLingoVisualKit.card(activity)
                 setPadding(d(16), d(15), d(16), d(15))
-                minHeight = d(67)
+                minimumHeight = d(67)
                 isClickable = enabled
                 isFocusable = enabled
                 alpha = if (enabled) 1f else 0.5f
