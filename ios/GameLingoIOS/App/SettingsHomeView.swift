@@ -123,7 +123,7 @@ struct GameLingoLanguageSettingsView: View {
                     "Vyber jazyk, ve kterém hra zobrazuje původní dialogy.")
                 Picker("Rozpoznávat jazyk", selection: $model.gameLanguage) {
                     ForEach(GLGameLanguage.allCases) { language in
-                        Text(language.title).tag(language)
+                        Text(LocalizedStringKey(language.title)).tag(language)
                     }
                 }
                 .pickerStyle(.menu)
@@ -134,7 +134,7 @@ struct GameLingoLanguageSettingsView: View {
                     "Vyber cílový jazyk pro dialogy i herní texty.")
                 Picker("Cílový jazyk", selection: $model.targetLanguage) {
                     ForEach(GLTargetLanguage.allCases) { language in
-                        Text(language.title).tag(language)
+                        Text(LocalizedStringKey(language.title)).tag(language)
                     }
                 }
                 .pickerStyle(.menu)
@@ -145,7 +145,7 @@ struct GameLingoLanguageSettingsView: View {
                     "Jazyk tlačítek a nabídky GameLingo. Nemění jazyk hry ani překladu.")
                 Picker("Jazyk aplikace", selection: $model.appLanguage) {
                     ForEach(GLAppLanguage.allCases) { language in
-                        Text(language.title).tag(language)
+                        Text(LocalizedStringKey(language.title)).tag(language)
                     }
                 }
                 .pickerStyle(.menu)
@@ -235,7 +235,7 @@ private struct GameLingoTranslationSettingsView: View {
 
     var body: some View {
         GLScreen(title: "Překlad", help:
-            "Doba zobrazení řídí, jak dlouho český titulek zůstane na televizi. Starší překlady může GameLingo zahodit, pokud se mezitím objeví nový dialog. Překlad EN → CZ používá stejnou službu jako ověřená předchozí verze.") {
+            "Doba zobrazení určuje, jak dlouho titulek zůstane na televizi. Starší překlady může GameLingo zahodit po zobrazení nového dialogu. Jazyk hry a překladu lze změnit v sekci Jazyky.") {
             GLCard {
                 GLValueSlider(title: "Doba titulku",
                     value: "\(Int(model.subtitleDuration)) s",
