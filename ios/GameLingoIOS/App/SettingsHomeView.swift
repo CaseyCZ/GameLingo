@@ -51,8 +51,8 @@ struct GameLingoSettingsOverview: View {
                 GLDetailRow(icon: "globe",
                             title: "Jazyky",
                             detail: model.appLanguage.title + " · " +
-                                model.gameLanguage.title + " → " +
-                                model.targetLanguage.title)
+                                model.gameLanguage.localizedTitle + " → " +
+                                model.targetLanguage.localizedTitle)
             }
             .buttonStyle(.plain)
 
