@@ -277,22 +277,24 @@ object GameLingoFirstRun {
                     rightMargin = 8
                 })
             }
-            footer.addView(button(if (step == 4) "Dokončit nastavení" else "Pokračovat") {
+            val finalStep = step == 4
+            val canContinue = when (step) {
+                2 -> consoleChoice >= 0
+                4 -> consoleRegistered() && televisionSaved()
+                else -> true
+            }
+            footer.addView(button(if (finalStep) "Dokončit nastavení" else "Pokračovat") {
                 if (step < 4) {
-                    // The console is required only before the output step,
-                    // exactly as in the iPhone welcome flow.
-                    if (step != 2 || consoleChoice >= 0) {
-                        step++
-                        redraw()
-                    }
+                    step++
+                    redraw()
                 } else {
-                    val valid = consoleRegistered() && televisionSaved()
-                    if (valid) finish()
-                    else if (!consoleRegistered() && consoleChoice >= 0)
-                        finish(open = if (consoleChoice == 0) 1 else 2)
-                    else if (tvChoice == 1 && !televisionSaved())
-                        finish(open = 3)
+                    // iOS uses a disabled completion button until setup is valid.
+                    // Pairing actions above must not pretend completion succeeded.
+                    if (canContinue) finish()
                 }
+            }.apply {
+                isEnabled = canContinue
+                alpha = if (canContinue) 1f else 0.48f
             }, LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
