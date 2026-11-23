@@ -128,12 +128,19 @@ def redesign_mobile(s: str) -> str:
 
             // Show genuine connection state, not fabricated green indicators.
             obsah.addView(GameLingoVisualKit.status(this,
-                if (RemotePlayService.aktivni) "Probíhá připojení / překlad"
-                else if (nejakaKonzole) "Připraveno ke spuštění"
-                else "Připoj konzoli",
-                if (nejakaKonzole) "Aktuální stav připojení je zobrazen níže."
-                else "Připojení Xbox / PlayStation otevři v Zařízeních.",
-                nejakaKonzole
+                if (RemotePlayService.aktivni) "Relace Remote Play je spuštěna"
+                else if (!nejakaKonzole) "Nejprve připoj konzoli"
+                else if (!tvStore.pouzeTelefon && savedTv == null)
+                    "Vyber nebo spáruj televizi"
+                else "Konzole je nastavená · připojení neověřeno",
+                if (RemotePlayService.aktivni)
+                    "Příjem snímků a úspěšný překlad ověř podle živého stavu níže."
+                else if (!tvStore.pouzeTelefon && savedTv == null)
+                    "Přidej televizor ve správě zařízení."
+                else "Uložené zařízení samo o sobě nepotvrzuje živé spojení.",
+                // Without a confirmed video frame and TV receiver handshake
+                // never display the same green connected state as live iOS.
+                false
             ), odsazeni(bottom = 9))
             obsah.addView(stavRadek, odsazeni(bottom = 12))
 
