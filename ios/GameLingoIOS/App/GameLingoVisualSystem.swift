@@ -50,9 +50,16 @@ struct GLNeonBackground: View {
 }
 
 struct GLNeonPanel<Content: View>: View {
-    var emphasized = false
-    var radius: CGFloat = 21
-    @ViewBuilder let content: Content
+    let emphasized: Bool
+    let radius: CGFloat
+    let content: Content
+
+    init(emphasized: Bool = false, radius: CGFloat = 21,
+         @ViewBuilder content: () -> Content) {
+        self.emphasized = emphasized
+        self.radius = radius
+        self.content = content()
+    }
 
     var body: some View {
         content
