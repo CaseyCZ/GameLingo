@@ -61,8 +61,8 @@ object GameLingoSubtitleAppearance {
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = dp(18) })
         layout.addView(text(
-            "Velikost písma a šířka zelené oblasti překladu. Poloha a oblasti OCR " +
-                "zůstávají samostatně v Oblastech obrazovky.",
+            "Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. " +
+                "Přesná poloha rámečků zůstává v Oblastech obrazovky.",
             14f, muted
         ), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
@@ -84,8 +84,8 @@ object GameLingoSubtitleAppearance {
         }
         addCard(previewCard)
 
-        var font = prefs.getFloat("tvPismo", 1f).coerceIn(0.5f, 2.5f)
-        var width = prefs.getFloat("tvSirka", 0.62f).coerceIn(0.2f, 1f)
+        var font = prefs.getFloat("tvPismo", 1f).coerceIn(0.70f, 1.80f)
+        var width = prefs.getFloat("tvSirka", 0.62f).coerceIn(0.30f, 0.95f)
         val sliders = mutableListOf<SeekBar>()
         fun publish() {
             prefs.edit().putFloat("tvPismo", font).putFloat("tvSirka", width).apply()
@@ -96,11 +96,12 @@ object GameLingoSubtitleAppearance {
             Propojeni.Vysilac.nastavRozvrh(area)
         }
         fun scalePreview() {
-            preview.textSize = (18f * font).coerceIn(12f, 39f)
-            preview.maxWidth = (activity.resources.displayMetrics.widthPixels * width).toInt()
+            preview.textSize = (18f * GameLingoPhoneSubtitleStyle.scale(activity))
+                .coerceIn(12f, 39f)
+            GameLingoPhoneSubtitleStyle.apply(activity, preview)
         }
         fun slider(label: String, min: Int, max: Int, initial: Int,
-                   onChanged: (Int) -> Unit) {
+                   forTelevision: Boolean = false, onChanged: (Int) -> Unit) {
             val card = LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
                 background = GameLingoVisualKit.card(activity)
@@ -122,21 +123,93 @@ object GameLingoSubtitleAppearance {
                         onChanged(actual)
                         refresh(actual)
                         scalePreview()
-                        publish()
+                        if (forTelevision) publish()
                     }
                     override fun onStartTrackingTouch(seek: SeekBar) {}
                     override fun onStopTrackingTouch(seek: SeekBar) {}
                 })
             }
-            sliders.add(bar)
+            if (forTelevision) sliders.add(bar)
             card.addView(bar)
             addCard(card)
         }
 
-        slider("Velikost písma", 50, 250, (font * 100).toInt()) {
+        layout.addView(text("TITULKY NA TELEFONU", 14f, cyan, true),
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(12) })
+        slider("Velikost písma", 70, 180,
+            (GameLingoPhoneSubtitleStyle.scale(activity) * 100).toInt()) {
+            GameLingoPhoneSubtitleStyle.setScale(activity, it / 100f)
+        }
+
+        val phoneColors = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = GameLingoVisualKit.card(activity)
+            setPadding(dp(10), dp(12), dp(10), dp(12))
+        }
+        GameLingoPhoneSubtitleStyle.colors.forEach { choice ->
+            phoneColors.addView(TextView(activity).apply {
+                text = "●"
+                textSize = 29f
+                gravity = Gravity.CENTER
+                contentDescription = "Barva textu: " + when (choice) {
+                    "yellow" -> "Žlutá"
+                    "cyan" -> "Tyrkysová"
+                    "green" -> "Zelená"
+                    "purple" -> "Fialová"
+                    else -> "Bílá"
+                }
+                setTextColor(GameLingoPhoneSubtitleStyle.textColor(choice))
+                setOnClickListener {
+                    GameLingoPhoneSubtitleStyle.setColor(activity, choice)
+                    scalePreview()
+                }
+            }, LinearLayout.LayoutParams(0, dp(55), 1f))
+        }
+        layout.addView(text("Barva textu", 16f, bold = true))
+        addCard(phoneColors)
+
+        val backgrounds = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = GameLingoVisualKit.card(activity)
+            setPadding(dp(6), dp(12), dp(6), dp(12))
+        }
+        GameLingoPhoneSubtitleStyle.backgrounds.forEach { choice ->
+            backgrounds.addView(TextView(activity).apply {
+                text = when (choice) {
+                    "dark" -> "Tmavé"
+                    "translucent" -> "Průhledné"
+                    else -> "Žádné"
+                }
+                gravity = Gravity.CENTER
+                textSize = 13f
+                setTextColor(Color.WHITE)
+                contentDescription = "Pozadí: " + text
+                background = GameLingoVisualKit.card(activity,
+                    GameLingoPhoneSubtitleStyle.background(activity) == choice)
+                setOnClickListener {
+                    GameLingoPhoneSubtitleStyle.setBackground(activity, choice)
+                    scalePreview()
+                }
+            }, LinearLayout.LayoutParams(0, dp(54), 1f).apply {
+                leftMargin = dp(3); rightMargin = dp(3)
+            })
+        }
+        layout.addView(text("Pozadí", 16f, bold = true))
+        addCard(backgrounds)
+
+        layout.addView(text("TITULKY NA TV", 14f, cyan, true),
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8); bottomMargin = dp(12) })
+        slider("Velikost písma TV", 70, 180, (font * 100).toInt(),
+            forTelevision = true) {
             font = it / 100f
         }
-        slider("Šířka titulků", 20, 100, (width * 100).toInt()) {
+        slider("Šířka titulků", 30, 95, (width * 100).toInt(),
+            forTelevision = true) {
             width = it / 100f
         }
 
