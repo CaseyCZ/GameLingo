@@ -69,6 +69,18 @@ def main():
             raise RuntimeError("Mobile bottom navigation is not wired to devices")
 
     elif tv_dashboard:
+        # TV first boot has its own welcome and three real language choices.
+        # The upstream beta promotion is not part of GameLingo.
+        code=one(code,
+            '''                else if (nast.jazyk == null) ukazJazyk()
+                else if (maUkazatBetu()) ukazBetu() else pokracuj()''',
+            '''                else if (nast.jazyk == null) {
+                    GameLingoTVUi.showWelcome(this@MainActivity) { language ->
+                        nast.jazyk = language
+                        ukazHlavni()
+                    }
+                } else ukazHlavni()''',
+            "TV native welcome instead of PlayCaption beta")
         code=one(
             code,
             '''            obsah.addView(volby, odsazeni(bottom = 9))''',
