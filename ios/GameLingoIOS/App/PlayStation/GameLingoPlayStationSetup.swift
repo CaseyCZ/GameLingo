@@ -247,7 +247,7 @@ private struct GameLingoPSConnectionView: View {
             if newState == .succeeded {
                 devices.refreshPlayStation(ps.registered)
                 if let console = ps.registered.first(where: { $0.address == host }) {
-                    devices.selectConsole("ps:" + console.id)
+                    devices.addRegisteredPlayStation(console)
                 }
                 // Do not keep a one-time PlayStation PIN in SwiftUI state.
                 pin = ""
