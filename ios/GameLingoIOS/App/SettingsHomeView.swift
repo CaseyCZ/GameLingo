@@ -487,7 +487,6 @@ struct GameLingoProfilesScreen: View {
                     Text(savedProfileMessage)
                         .font(.subheadline)
                         .foregroundStyle(GLStyle.green)
-                        .accessibilityAddTraits(.updatesFrequently)
                 }
             }
             if model.gameProfiles.isEmpty {
