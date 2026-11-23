@@ -5,8 +5,6 @@ on:
     branches:
       - feature/gamelingo-v05-platform-rebuild
     paths:
-      - "ios/**"
-      - "tools/**"
       - ".github/workflows/build-gamelingo.yml"
   workflow_dispatch:
 
