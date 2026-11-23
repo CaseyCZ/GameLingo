@@ -48,8 +48,8 @@ struct GameLingoSetupView: View {
                     VStack(alignment: .leading, spacing: 21) {
                         header
                         switch step {
-                        case 0: consoleStep
-                        case 1: languageStep
+                        case 0: languageStep
+                        case 1: consoleStep
                         case 2: outputStep
                         default: readyStep
                         }
@@ -104,7 +104,7 @@ struct GameLingoSetupView: View {
                 }
             }
             .padding(.bottom, 8)
-            Text(LocalizedStringKey(["Vyber konzoli", "Jazyky a překlad",
+            Text(LocalizedStringKey(["Jazyky a překlad", "Vyber konzoli",
                   "Kam zobrazit titulky?", "Kontrola nastavení"][step]))
                 .font(.title2.bold())
         }
@@ -307,7 +307,7 @@ struct GameLingoSetupView: View {
             if step < 3 {
                 GLPrimaryButton(title: "Pokračovat",
                                 systemImage: "arrow.right",
-                                disabled: step == 0 && devices.chosenConsole == nil) {
+                                disabled: step == 1 && devices.chosenConsole == nil) {
                     step += 1
                 }
             } else {
