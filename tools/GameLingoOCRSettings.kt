@@ -66,13 +66,14 @@ object GameLingoOCRSettings {
             add(card)
         }
         fun toggle(title: String, caption: String, active: Boolean,
+                   available: Boolean = canEdit,
                    changed: (Boolean) -> Unit) {
             val row = LinearLayout(activity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 background = GameLingoVisualKit.card(activity)
                 setPadding(d(15), d(13), d(15), d(13))
-                alpha = if (canEdit) 1f else 0.5f
+                alpha = if (available) 1f else 0.5f
             }
             val words = LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
@@ -85,8 +86,8 @@ object GameLingoOCRSettings {
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             row.addView(Switch(activity).apply {
                 isChecked = active
-                isEnabled = canEdit
-                setOnCheckedChangeListener { _, value -> if (canEdit) changed(value) }
+                isEnabled = available
+                setOnCheckedChangeListener { _, value -> if (available) changed(value) }
             })
             add(row)
         }
@@ -119,7 +120,9 @@ object GameLingoOCRSettings {
         }
         toggle("Rozšířit hledání",
             "Při automatickém režimu zahrne širší část obrazu.",
-            GameLingoOCRConfig.expandSearch) {
+            GameLingoOCRConfig.expandSearch,
+            available = canEdit && GameLingoOCRConfig.mode != "classic" &&
+                !OblastTitulku.rucne) {
             GameLingoOCRConfig.setExpandSearch(activity, it)
         }
         toggle("Ruční oblast OCR",
@@ -127,6 +130,8 @@ object GameLingoOCRSettings {
             OblastTitulku.rucne) {
             OblastTitulku.rucne = it
             OblastTitulku.uloz(activity)
+            dialog.dismiss()
+            show(activity, onAreas)
         }
         action("Oblasti obrazovky",
             "Upravit modrý, zelený, žlutý a oranžový rámeček.") {
