@@ -103,6 +103,38 @@ def main():
                                 AutoStart.nastavZapnuto(this, true)''',
         "PlayStation registration success")
 
+    if mobile_dashboard:
+        # The Android TV pairing code may select 41990-41993, but the
+        # upstream mobile subtitle sender independently used 41989 for ALL
+        # PCT1/PCV1 data. Route caption, choices, preview and clear through
+        # the asynchronously refreshed GameLingoTVPairing port cache.
+        transport = folder/"Propojeni.kt"
+        src = transport.read_text(encoding="utf-8")
+        for old, new, label in (
+            (
+                'data.forEach { s.send(DatagramPacket(it, it.size, kam, PORT_TITULKY)) }',
+                'data.forEach { s.send(DatagramPacket(it, it.size, kam, GameLingoTVPairing.portFor(ip))) }',
+                "Android subtitle clear",
+            ),
+            (
+                's.send(DatagramPacket(cil.third, cil.third.size, kam, PORT_TITULKY))',
+                's.send(DatagramPacket(cil.third, cil.third.size, kam, GameLingoTVPairing.portFor(cil.first)))',
+                "Android caption immediate delivery",
+            ),
+            (
+                's.send(DatagramPacket(data, data.size, kam, PORT_TITULKY))',
+                's.send(DatagramPacket(data, data.size, kam, GameLingoTVPairing.portFor(ip)))',
+                "Android caption repeat",
+            ),
+            (
+                's.send(DatagramPacket(v, v.size, kam, PORT_TITULKY))',
+                's.send(DatagramPacket(v, v.size, kam, GameLingoTVPairing.portFor(ip)))',
+                "Android game text/choices repeat",
+            ),
+        ):
+            src = one(src, old, new, label)
+        transport.write_text(src, encoding="utf-8")
+
     mainFile.write_text(code,encoding="utf-8")
 
     profiles=folder/"TvProfily.kt"
