@@ -57,7 +57,13 @@ def android(root: Path, mode: str):
             "GameLingoVisualKit.brandHeader(this)",
             "GameLingoAbout.show(this)", "onDevices = { openDevices() }")
         contains(base / "GameLingoNavigation.kt",
-            '"Domů"', '"Oblasti"', '"Profily"', '"Zařízení"', '"O aplikaci"')
+            "GameLingoUIContract.tabs", "onSettings: () -> Unit")
+        contains(base / "GameLingoUIContract.kt",
+            '"Domů"', '"Obrazovka"', '"Konzole"', '"Nastavení"', '"O aplikaci"')
+        contains(base / "GameLingoSettings.kt",
+            "GameLingoUIContract.settingsSections", "GameLingoDiagnostics.show")
+        contains(base / "GameLingoRegions.kt",
+            "Čtyři nezávislé oblasti", "onEdit()")
         contains(base / "GameLingoAbout.kt", "AGPL-3.0")
         contains(base / "GameLingoVisualKit.kt", "fun deviceCard(", "fun navigationTile(", "fun hero(")
         contains(base / "GameLingoLanguages.kt", "fun game(", "fun target(", "fun choose(")
