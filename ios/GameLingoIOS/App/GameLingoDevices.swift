@@ -102,12 +102,14 @@ final class GameLingoDevices: ObservableObject {
         // selection or TV address when upgrading to this device library.
         let previousXboxID = defaults.string(forKey: "selectedXboxServerID") ?? ""
         if !previousXboxID.isEmpty &&
+            !hiddenConsoleIDs.contains("xbox:" + previousXboxID) &&
             !consoles.contains(where: { $0.id == "xbox:" + previousXboxID }) {
             consoles.append(GLConsoleRecord(id: "xbox:" + previousXboxID,
                                            family: .xbox,
                                            name: "Xbox"))
         }
-        if preferredConsoleID == nil && !previousXboxID.isEmpty {
+        if preferredConsoleID == nil && !previousXboxID.isEmpty &&
+            !hiddenConsoleIDs.contains("xbox:" + previousXboxID) {
             preferredConsoleID = "xbox:" + previousXboxID
         }
         if let previousIP = defaults.string(forKey: "tvIP"),
@@ -151,6 +153,17 @@ final class GameLingoDevices: ObservableObject {
     func refreshPlayStation(_ registered: [RegisteredConsole]) {
         for ps in registered {
             let id = "ps:" + ps.id
+            guard !hiddenConsoleIDs.contains(id) else { continue }
+            // Pairing replaces the earlier IP-only placeholder, rather than
+            // presenting the same PlayStation twice with different IDs.
+            let placeholderID = "ps:" + ps.address.lowercased()
+            if placeholderID != id,
+               consoles.contains(where: { $0.id == placeholderID }) {
+                consoles.removeAll(where: { $0.id == placeholderID })
+                if preferredConsoleID == placeholderID {
+                    preferredConsoleID = id
+                }
+            }
             if let index = consoles.firstIndex(where: { $0.id == id }) {
                 consoles[index].name = ps.nickname
                 consoles[index].address = ps.address
@@ -165,12 +178,21 @@ final class GameLingoDevices: ObservableObject {
         persist()
     }
 
+    func addRegisteredPlayStation(_ console: RegisteredConsole) {
+        // Explicit successful registration can re-add a previously removed PS.
+        let id = "ps:" + console.id
+        hiddenConsoleIDs.remove(id)
+        refreshPlayStation([console])
+        selectConsole(id)
+    }
+
     func addPlayStation(name: String, address: String) {
         let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !name.isEmpty else { return }
         // Discovery and registration are separate: saving an address must NOT
         // mark the console paired or pretend that Remote Play works.
         let id = "ps:" + trimmed.lowercased()
+        hiddenConsoleIDs.remove(id)
         let device = GLConsoleRecord(id: id, family: .playStation,
                                      name: name, address: trimmed)
         if let index = consoles.firstIndex(where: { $0.id == id }) {
@@ -222,6 +244,12 @@ final class GameLingoDevices: ObservableObject {
     }
 
     func removeTelevision(_ id: String) {
+        // The previous TV IP must not silently recreate a deleted receiver at
+        // next app launch through legacy UserDefaults migration.
+        if let target = televisions.first(where: { $0.id == id }),
+           defaults.string(forKey: "tvIP") == target.ipAddress {
+            defaults.removeObject(forKey: "tvIP")
+        }
         televisions.removeAll(where: { $0.id == id })
         if preferredTelevisionID == id { preferredTelevisionID = nil }
         persist()
