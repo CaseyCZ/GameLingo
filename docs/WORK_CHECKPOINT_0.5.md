@@ -17,7 +17,9 @@
 
 **Důležité:** nové iOS/Android/TV soubory po `12e0bcb` ještě potřebují kompletní sestavení z jednoho společného SHA. Bez fyzického testu na konzoli PS4/PS5, Xboxu, Android telefonu a Google TV nemůže být žádný výrobní Release ani merge.
 
-**Další úkol po přerušení:** ověřit novou kompletní build matici (její číslo doplnit níže), případnou chybu v macOS/Xcode nebo Gradle opravit a spustit znovu. Poté pokračovat podle [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md) — úspěšná kompilace nestačí.
+**Nová kompletní build matice:** [GitHub Actions 45214580730](https://github.com/CaseyCZ/GameLingo/actions/runs/45214580730), zdrojový commit `658b9b2` (spuštěno; výsledek ověřit). Testy integrace před spuštěním nativních kompilací **PASS**. Požadované výstupy: nepodepsaná iOS IPA, Android APK, Google TV APK a kontrolní SHA-256 ze stejného SHA.
+
+**Další úkol po přerušení:** otevři tento run, zkontroluj výsledky každého jobu a tři instalační balíčky. Pokud se sestavení nepovede, oprav konkrétní chybový log, neodhaduj úspěch. Pak pokračuj podle [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md) — samotná kompilace nenahrazuje připojení ke konzolím, OCR a obraz na HDMI.
 
 ## Úkoly podle původního auditu
 
