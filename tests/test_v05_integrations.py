@@ -306,6 +306,27 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoPhoneSubtitleStyle.setBackground(activity, choice)",subtitle)
         self.assertIn("forTelevision = true",subtitle)
 
+    def test_tv_iphone_pairing_retries_are_identical_and_safe(self):
+        receiver=code(TOOLS/"IPhoneTVPairing.kt")
+        patch=code(TOOLS/"patch_tv_iphone.py")
+        ios=code(IOS/"PlayCaptionTV.swift")
+        native=code(TOOLS/"redesign_gamelingo.py")
+        # Both clients must use one exact protocol, not two superficially
+        # similar PIN screens that cannot communicate.
+        self.assertIn("PCPAIR1\\tPAIR",ios)
+        self.assertIn("PCPAIR1\\\\tOK",patch)
+        self.assertIn("IPhoneTVPairing.confirm(c, code, id)",patch)
+        self.assertIn("lastSuccessPhoneId",receiver)
+        self.assertIn("lastSuccessToken",receiver)
+        self.assertIn("REPLY_RETRY_WINDOW_MS = 15_000L",receiver)
+        self.assertIn("input == lastSuccessPin && phoneId == lastSuccessPhoneId",receiver)
+        self.assertIn("self.pairingRetryTask = Task",ios)
+        self.assertIn("self.pairingRetryTask?.cancel()",ios)
+        self.assertIn("for _ in 0..<3",ios)
+        self.assertIn("let request = Data(",ios)
+        self.assertIn("var shownCode: String? = IPhoneTVPairing.startCode()",native)
+        self.assertIn("PrijemService.statistikaPrijmu()",native)
+
     def test_tv_remote_control_and_receiver_modes(self):
         screen=code(TOOLS/"polish_all_screens.py")
         receiver=code(TOOLS/"redesign_gamelingo.py")
