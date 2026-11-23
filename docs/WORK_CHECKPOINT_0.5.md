@@ -60,6 +60,17 @@
 - **P0/1 P0/2 Android průvodce:** `54f694d`, `64fe409` — vlastní celostránkový branded průvodce namísto plovoucího okna přes původní úvodní stránku.
 - **Nový cílový stav:** po poslední úpravě zdroje vytvořit jediný finální build iOS + Android + TV z jednoho SHA, ověřit artefakty a ponechat PR jako draft do dokončení [fyzických testů](PHYSICAL_QA_0.5.md).
 
+### Navázání po přerušení — další úpravy 23. 11. 2026
+
+- **P0/1 iOS PlayStation přihlašovací UI:** `6176cf1`, `1a1e15d` – odstraněno duplicitní PIN pole na hlavní obrazovce, zůstává jeden nativní PIN dialog a regresní test.
+- **P0/3 Android Xboxy:** `4acba8c`, `e6990ff` – možnost odebrat Xbox z místního seznamu bez odhlášení Microsoft účtu, perzistentní skrytí a obnovení, zablokováno za běžícího překladu. Regresní test zahrnuje odstranění vybraného ID.
+- **P0/3 TV změna za běhu:** `1e30445`, `29b0a0d`, `65ae20a`, `8d5d68e`, `3c4b665`, `c6ed723` – sdílený iOS TV výběr a mazání starých překryvů na *původní* IP před přepnutím; testy nového chování.
+- **P1/7 dřívější plná matice:** [run 45212887689](https://github.com/CaseyCZ/GameLingo/actions/runs/45212887689) **PASS** na `796a5be`: iPhone IPA, Android APK, Google TV APK, checksumy. **Po tomto buildu následovaly další změny kódu, proto tyto artefakty nejsou poslední kandidát.**
+- **P1/7 novější Android/TV QA:** [run 45213686310](https://github.com/CaseyCZ/GameLingo/actions/runs/45213686310) spuštěn ze zdrojů obsahujících `4acba8c` (odebrání Xboxů) a výběr TV. Výsledek je nutné zkontrolovat.
+- **Nová rychlá CI:** [run 45214058201](https://github.com/CaseyCZ/GameLingo/actions/runs/45214058201) **PASS** na `c6ed723`; statické kontrakty a Swift parse nejsou fyzické testy.
+
+**Další jasný krok pro pokračování:** 1) zkontroluj Android/TV QA run 45213686310 a oprav případné Kotlin chyby; 2) zkontroluj poslední SHA větve, 3) spusť úplnou sestavovací matici iOS/Android/TV na nejnovějším SHA (workflow `.github/workflows/build-gamelingo.yml` běží při explicitní revizi), 4) zaznamenej výsledné SHA256 do nového dokladu, 5) fyzicky otestuj body v [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md). Nemergovat do Master a nepovažovat Real Remote Play/HDMI titulky za otestované bez skutečné konzole/TV.
+
 ## Evidence práce a další jednotlivé kroky
 
 | Krok | Důkaz / commit | Stav |
