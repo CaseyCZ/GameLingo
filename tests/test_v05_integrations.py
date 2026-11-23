@@ -133,8 +133,10 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         home=code(IOS/"GameLingoHome.swift")
         relocation=model.split("func relocateActiveChoices() -> Bool", 1)[1]
         relocation=relocation.split("func stop()", 1)[0]
-        self.assertIn("devices.subtitleOutput == .googleTV", relocation)
-        self.assertIn("devices.chosenTelevision != nil", relocation)
+        self.assertIn("verifiedTelevisionOutput", relocation)
+        self.assertIn("let selected = devices.chosenTelevision", model)
+        self.assertIn("tv.receiverPaired && tv.receiverConnected", model)
+        self.assertIn("selected.ipAddress", model)
         self.assertIn("devices.prepareTV(tv)", relocation)
         self.assertIn("tv.sendChoices(", relocation)
         self.assertIn(".onChange(of: devices.preferredTelevisionID)", home)
@@ -154,6 +156,13 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('let dialogue = Data([',tv)
         self.assertIn("devices.prepareTV(model.tv)", home)
         self.assertIn("GameLingo iOS 0.5.0", model)
+
+    def test_both_translation_lanes_require_verified_tv_receiver(self):
+        model=code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn("private var verifiedTelevisionOutput: Bool",model)
+        self.assertIn("tv.receiverPaired && tv.receiverConnected",model)
+        self.assertIn("if self.verifiedTelevisionOutput {\n                                self.tv.sendChoices",model)
+        self.assertIn("if self.verifiedTelevisionOutput {\n                                    self.tv.sendSubtitle",model)
 
     def test_android_and_google_tv_supported(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
