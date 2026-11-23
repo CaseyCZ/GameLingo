@@ -201,6 +201,9 @@ struct GLScreen<Content: View>: View {
             .padding(.bottom, 35)
         }
         .background(GLNeonBackground())
+        // The main GameLingo dashboard intentionally hides its bar; pushed
+        // settings pages must restore Back navigation on every iPhone size.
+        .toolbar(.visible, for: .navigationBar)
         .navigationTitle(LocalizedStringKey(title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
