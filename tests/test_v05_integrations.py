@@ -57,6 +57,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('subtitleOutput == .phone',model)
         self.assertIn('model.lastChoices',code(IOS/"GameLingoHome.swift"))
 
+    def test_subtitles_go_only_to_selected_output_and_television(self):
+        model=code(IOS/"PlayCaptionIOSApp.swift")
+        home=code(IOS/"GameLingoHome.swift")
+        relocation=model.split("func relocateActiveChoices() -> Bool", 1)[1]
+        relocation=relocation.split("func stop()", 1)[0]
+        self.assertIn("devices.subtitleOutput == .googleTV", relocation)
+        self.assertIn("devices.chosenTelevision != nil", relocation)
+        self.assertIn("devices.prepareTV(tv)", relocation)
+        self.assertIn("tv.sendChoices(", relocation)
+        self.assertIn("devices.$preferredTelevisionID", home)
+        self.assertIn("devices.$subtitleOutput", home)
+        self.assertIn("selectedTV.ipAddress", home)
+        self.assertIn("devices.prepareTV(model.tv)", home)
+        self.assertIn("GameLingo iOS 0.5.0", model)
+
     def test_android_and_google_tv_supported(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         psstore=code(TOOLS/"GameLingoPlayStationConsoles.kt")
