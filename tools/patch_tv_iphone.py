@@ -410,6 +410,45 @@ def main() -> None:
          '            lp.y = (vystup[1] * h).toInt().coerceIn(0, (h.toInt() - lp.height).coerceAtLeast(0))\n'
          '        }\n'
          '        okno("volby") { wm.updateViewLayout(seznam, lp) }\n')
+    # Style settings arrive in authenticated PCPAIR1 STYLE messages and are
+    # applied to both the green dialogue output and orange game text output.
+    # Do not alter the yellow OCR input region color or non-GameLingo apps.
+    once(overlay,
+         '            PixelFormat.OPAQUE\n        )\n        lp.alpha = 1f',
+         '            PixelFormat.TRANSLUCENT\n        )\n        lp.alpha = 1f')
+    once(overlay,
+         '    private val konecUpravy = Runnable { textView?.setBackgroundColor(POZADI) }',
+         '    private val konecUpravy = Runnable { textView?.setBackgroundColor(\n'
+         '        GameLingoTVCaptionStyle.background(this)) }')
+    once(overlay,
+         '                setColor(POZADI)\n'
+         '                setStroke((3 * d).toInt(), ZELENA, 14 * d, 8 * d)',
+         '                setColor(GameLingoTVCaptionStyle.background(this@OverlayService))\n'
+         '                setStroke((3 * d).toInt(), ZELENA, 14 * d, 8 * d)')
+    once(overlay,
+         '        pod.visibility = tv.visibility\n',
+         '        // Legacy opaque underlay must not hide a translucent/none style.\n'
+         '        pod.visibility = if (GameLingoTVCaptionStyle.isDark(this))\n'
+         '            tv.visibility else android.view.View.INVISIBLE\n')
+    once(overlay,
+         '        textView?.apply {\n'
+         '            this.text = text\n',
+         '        textView?.apply {\n'
+         '            setTextColor(GameLingoTVCaptionStyle.textColor(this@OverlayService))\n'
+         '            this.text = text\n')
+    once(overlay,
+         '        if (volby.isEmpty()) { seznam.visibility = android.view.View.INVISIBLE; return }\n',
+         '        // The orange translated game-text overlay uses the same style\n'
+         '        // as dialogue captions, independently from the yellow OCR box.\n'
+         '        seznam.background = android.graphics.drawable.GradientDrawable().apply {\n'
+         '            setColor(GameLingoTVCaptionStyle.background(this@OverlayService))\n'
+         '            cornerRadius = 10 * d\n'
+         '        }\n'
+         '        if (volby.isEmpty()) { seznam.visibility = android.view.View.INVISIBLE; return }\n')
+    once(overlay,
+         '                } else setTextColor(ZLUTA)\n',
+         '                } else setTextColor(GameLingoTVCaptionStyle.textColor(this@OverlayService))\n')
+
     print("iPhone TV PCV1 output geometry enabled: yellow OCR and orange output independent.")
     print("PlayCaption iPhone-only TV receiver + six-digit device pairing ready.")
 
