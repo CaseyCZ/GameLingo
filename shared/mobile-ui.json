@@ -1,0 +1,55 @@
+{
+  "version": "0.5",
+  "tabs": [
+    {
+      "key": "home",
+      "title": "Domů",
+      "swift": "house.fill",
+      "android": "⌂"
+    },
+    {
+      "key": "regions",
+      "title": "Obrazovka",
+      "swift": "rectangle.dashed",
+      "android": "▣"
+    },
+    {
+      "key": "devices",
+      "title": "Konzole",
+      "swift": "gamecontroller",
+      "android": "🎮"
+    },
+    {
+      "key": "settings",
+      "title": "Nastavení",
+      "swift": "slider.horizontal.3",
+      "android": "⚙"
+    },
+    {
+      "key": "about",
+      "title": "O aplikaci",
+      "swift": "info.circle",
+      "android": "ⓘ"
+    }
+  ],
+  "setupSteps": [
+    "Vítej v GameLingo",
+    "Jazyky a překlad",
+    "Vyber konzoli",
+    "Kam zobrazit titulky?",
+    "Kontrola nastavení"
+  ],
+  "settingsSections": [
+    "JAZYKY",
+    "ROZPOZNÁVÁNÍ A PŘEKLAD",
+    "ZOBRAZENÍ A PROFILY",
+    "OBECNÉ"
+  ],
+  "colors": {
+    "background": "#070B19",
+    "panel": "#111A33",
+    "cyan": "#02D6FF",
+    "purple": "#A329FA",
+    "muted": "#92A4C7"
+  }
+}
