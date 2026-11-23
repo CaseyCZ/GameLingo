@@ -93,9 +93,19 @@ object GameLingoTVUi {
             }
             contentDescription = heading + ". " + detail
         }
-        box.addView(title(a, symbol, 29f).apply {
-            setTextColor(cyan)
-        })
+        if (symbol == "PS" || symbol == "ⓧ") {
+            box.addView(ImageView(a).apply {
+                setImageResource(if (symbol == "PS")
+                    R.drawable.gamelingo_playstation else R.drawable.gamelingo_xbox)
+                setColorFilter(Color.WHITE)
+                adjustViewBounds = true
+                contentDescription = if (symbol == "PS") "PlayStation" else "Xbox"
+            }, LinearLayout.LayoutParams(dp(a, 34), dp(a, 34)))
+        } else {
+            box.addView(title(a, symbol, 29f).apply {
+                setTextColor(cyan)
+            })
+        }
         box.addView(title(a, heading, 22f), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
