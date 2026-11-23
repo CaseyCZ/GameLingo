@@ -167,8 +167,8 @@ struct GLNeonTitle: View {
                 .overlay(RoundedRectangle(cornerRadius: 14)
                     .strokeBorder(GLNeon.cyan.opacity(0.30)))
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.title2.bold()).foregroundStyle(.white)
-                Text(subtitle).font(.caption).foregroundStyle(GLNeon.mist)
+                Text(LocalizedStringKey(title)).font(.title2.bold()).foregroundStyle(.white)
+                Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(GLNeon.mist)
             }
             Spacer(minLength: 0)
         }
@@ -194,11 +194,11 @@ struct GLDetailRow: View {
                         endPoint: .bottomTrailing),
                         in: RoundedRectangle(cornerRadius: 13))
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(.system(size: 16, weight: .semibold,
                                       design: .rounded))
                         .foregroundStyle(.white)
-                    Text(detail)
+                    Text(LocalizedStringKey(detail))
                         .font(.caption)
                         .foregroundStyle(GLNeon.mist)
                         .fixedSize(horizontal: false, vertical: true)
