@@ -16,3 +16,14 @@ enum GLAppLanguage: String, CaseIterable, Identifiable, Codable {
         }
     }
 }
+
+/// Resolve dynamic labels against the language selected inside GameLingo.
+/// SwiftUI Text(LocalizedStringKey) uses the same .lproj catalog automatically.
+enum GLInterfaceText {
+    static func localized(_ key: String) -> String {
+        let language = UserDefaults.standard.string(forKey: "gamelingo.appLanguage") ?? "cs"
+        guard let path = Bundle.main.path(forResource: language, ofType: "lproj"),
+              let bundle = Bundle(path: path) else { return key }
+        return bundle.localizedString(forKey: key, value: key, table: "Localizable")
+    }
+}
