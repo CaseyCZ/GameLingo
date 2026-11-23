@@ -209,6 +209,73 @@ def polish_phone_activity(s):
           '            text = ""', "old help caption")
     s=s.replace('text = "100 % = výchozí čas · méně % = kratší zobrazení. Platí od další stránky."',
                 'text = ""')
+    # The actual Android OCR editor follows the iPhone's four-zone palette.
+    # Do not replace its drag coordinates, slider values, locks or UDP output.
+    s=one(s,
+        '                setImageResource(R.drawable.logo)\n                adjustViewBounds = true',
+        '                setImageResource(R.drawable.gamelingo_ikona)\n                adjustViewBounds = true',
+        "GameLingo live OCR header emblem")
+    s=one(s,
+        '            setBackgroundColor(Color.parseColor("#111114"))',
+        '            background = GameLingoVisualKit.pageBackground(this@TelefonActivity)',
+        "GameLingo native OCR toolbar")
+    s=one(s,
+        '            text = "⚙ " + t("tvNastaveni") + " · " + Propojeni.Vysilac.cilJmeno',
+        '            text = "▣  Oblasti na obrazovce · " + Propojeni.Vysilac.cilJmeno',
+        "GameLingo OCR section heading")
+    s=one(s,
+        '            background = zaobleni(Color.parseColor("#333338"))\n'
+        '            setPadding(dp(12), dp(10), dp(12), dp(10))\n'
+        '            setOnClickListener { spravaTelevize() }',
+        '            background = GameLingoVisualKit.card(this@TelefonActivity)\n'
+        '            setPadding(dp(12), dp(10), dp(12), dp(10))\n'
+        '            setOnClickListener { spravaTelevize() }',
+        "GameLingo OCR header card")
+    s=one(s,
+        '                setColor(Color.parseColor("#1A1C26"))',
+        '                setColor(Color.parseColor("#111A33"))',
+        "GameLingo OCR preview")
+    s=one(s,
+        '                setStroke(dp(2), Color.parseColor("#555A78"))',
+        '                setStroke(dp(2), Color.parseColor("#A329FA"))',
+        "GameLingo OCR preview border")
+    s=one(s,
+        '                    button.setTextColor(if (vybrano) Color.BLACK else Color.WHITE)\n'
+        '                    button.background = zaobleni(Color.parseColor(if (vybrano) "#3CFF6E" else "#303038")).apply {\n'
+        '                        setStroke(dp(2), Color.parseColor(if (vybrano) "#3CFF6E" else "#737380"))\n'
+        '                    }',
+        '                    button.setTextColor(Color.WHITE)\n'
+        '                    button.background = GameLingoVisualKit.card(this@TelefonActivity, selected = vybrano)',
+        "GameLingo translation modes")
+    # Match iPhone: four meaningfully colored, individually configured regions.
+    legend = '''        val glRegions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(13), 0, dp(12))
+        }
+        listOf(
+            "Modrá" to Color.parseColor("#3557FF"),
+            "Zelená" to Color.parseColor("#3CFF6E"),
+            "Žlutá" to Color.parseColor("#FFD54A"),
+            "Oranžová" to Color.parseColor("#FF9E34")
+        ).forEach { (name, color) ->
+            glRegions.addView(TextView(this).apply {
+                text = name
+                textSize = 11f
+                gravity = Gravity.CENTER
+                setTextColor(color)
+                setTypeface(null, Typeface.BOLD)
+                minHeight = dp(43)
+                background = GameLingoVisualKit.card(this@TelefonActivity)
+                contentDescription = "Oblast " + name
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                .apply { rightMargin = dp(4) })
+        }
+        obal.addView(glRegions)
+'''
+    s=one(s,
+        '        obal.addView(LgDevModeView(this) {',
+        legend + '        obal.addView(LgDevModeView(this) {',
+        "GameLingo four OCR zone legend")
     # Dynamic errors and actual status indicators remain in napoveda.
     return s
 
