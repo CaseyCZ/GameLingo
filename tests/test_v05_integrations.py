@@ -142,6 +142,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(step,first_run)
         self.assertIn('AES/GCM/NoPadding',psstore)
         self.assertIn('setSingleChoiceItems',multi)
+        self.assertIn('if (predvybrany >= 0)',multi)
+        self.assertIn('zvolXbox(nalezene[predvybrany])',multi)
         self.assertIn('tv_dashboard',patches)
         self.assertIn('Překlad z telefonu',tv)
         self.assertIn('IPhoneTVPairing',receiver)
