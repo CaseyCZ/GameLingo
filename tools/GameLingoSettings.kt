@@ -244,8 +244,8 @@ object GameLingoSettings {
                 bottomMargin = 9 * d
             })
         }
-        section("JAZYKY")
-        menu("◎", "Jazyk hry a překladu",
+        section(GameLingoUIContract.settingsSections[0])
+        menu("◎", "Jazyky",
             GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
                 GameLingoLanguages.game(activity)) + " → " +
             GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
@@ -253,26 +253,31 @@ object GameLingoSettings {
             GameLingoLanguages.show(activity)
         }
 
-        section("ROZPOZNÁVÁNÍ A PŘEKLAD")
+        section(GameLingoUIContract.settingsSections[1])
         menu("▣", "OCR a rozpoznávání",
              "Čtyři oblasti a přesnost snímání") { onAreas() }
         menu("文", "Překlad", "Režimy, dialogy a časování") {
             showTranslation(activity, settings, onAreas, onLanguage)
         }
         menu("⌗", "Oblasti obrazovky",
-             "Dialogy, překlad a herní texty") { onAreas() }
+             "Čtyři nezávislé oblasti") { onAreas() }
 
-        section("ZOBRAZENÍ A DALŠÍ VOLBY")
+        section(GameLingoUIContract.settingsSections[2])
         menu("Aa", "Vzhled titulků",
-             "Skutečná velikost písma a šířka výstupu") {
+             "Velikost, šířka a poloha titulků") {
              GameLingoSubtitleAppearance.show(activity)
          }
         menu("♧", "Profily her",
              "Vlastní nastavení pro každou hru") {
             GameLingoProfiles.show(activity, settings) {}
         }
+        section(GameLingoUIContract.settingsSections[3])
         menu("▭", "Zařízení",
-             "Xbox, PlayStation a TV") { onDevices() }
+             "Xbox, PlayStation a Google TV") { onDevices() }
+        menu("≋", "Diagnostika",
+             "Stav relace a uložených zařízení") {
+            GameLingoDiagnostics.show(activity)
+        }
         menu("ⓘ", "O aplikaci / Licence",
              "GameLingo, zdroje a AGPLv3") {
             GameLingoAbout.show(activity)
