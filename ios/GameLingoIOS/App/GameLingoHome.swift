@@ -355,42 +355,67 @@ struct GameLingoHome: View {
 
     private var actionButton: some View {
         Button(action: startCurrentSource) {
-            HStack(spacing: 12) {
-                Image(systemName: model.isRunning ? "stop.fill" : "play.circle.fill")
-                    .font(.title3)
+            HStack(spacing: 13) {
+                Image(systemName: model.isRunning ? "stop.fill" : "play.fill")
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(.white.opacity(0.18), in: Circle())
                 Text(model.isRunning ? "Zastavit překlad" : "Spustit překlad")
-                    .font(.headline)
-                Spacer()
+                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.84)
+                Spacer(minLength: 0)
                 Image(systemName: "arrow.right")
+                    .font(.system(size: 17, weight: .semibold))
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 21)
-            .frame(height: 56)
-            .background(GLVisual.accent, in: RoundedRectangle(cornerRadius: 15))
+            .padding(.horizontal, 18)
+            .frame(height: 66)
+            .background(GLNeon.accent,
+                        in: RoundedRectangle(cornerRadius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(.white.opacity(0.35), lineWidth: 1))
+            .shadow(color: GLNeon.purple.opacity(0.35), radius: 16, y: 7)
         }
         .buttonStyle(.plain)
+        .accessibilityHint(model.isRunning
+                           ? "Ukončit aktuální Remote Play a překlad"
+                           : "Spustit překlad z vybrané konzole")
     }
 
     private var readiness: some View {
-        HStack(spacing: 12) {
-            Image(systemName: model.isRunning ? "waveform" :
-                  (consoleActuallyReady && outputActuallyReady
-                   ? "checkmark.circle.fill" : "circle.dashed"))
-                .foregroundStyle(consoleActuallyReady && outputActuallyReady
-                                 ? GLVisual.green : GLVisual.muted)
-            Text(model.isRunning
-                 ? model.status
-                 : (!consoleActuallyReady
-                    ? "Připoj konzoli" :
-                       (!outputActuallyReady ? "Spáruj TV" : "Připraveno ke spuštění")))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-            Spacer()
-            GLHelpButton(title: "Stav překladu",
-                explanation: "Nastaveno znamená, že je vybraná registrovaná konzole. Spojení se ověřuje až po spuštění Remote Play. Snímání aktivní se objeví teprve po přijetí obrazových snímků. Uložená IP sama o sobě neznamená spárování.")
+        GLNeonPanel(emphasized: consoleActuallyReady && outputActuallyReady) {
+            HStack(spacing: 13) {
+                Image(systemName: model.isRunning ? "waveform" :
+                      (consoleActuallyReady && outputActuallyReady
+                       ? "checkmark.circle.fill" : "exclamationmark.circle"))
+                    .font(.system(size: 29, weight: .medium))
+                    .foregroundStyle(consoleActuallyReady && outputActuallyReady
+                                     ? GLStyle.green : GLNeon.mist)
+                    .shadow(color: GLStyle.green.opacity(0.20), radius: 9)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.isRunning ? model.status :
+                         (consoleActuallyReady && outputActuallyReady
+                          ? "Připraveno ke spuštění" :
+                             (!consoleActuallyReady
+                              ? "Nejprve připoj konzoli" : "Spáruj televizi")))
+                        .font(.subheadline.bold())
+                        .foregroundStyle(consoleActuallyReady && outputActuallyReady
+                                         ? GLStyle.green : .white)
+                    Text(model.isRunning
+                         ? "Sleduj živý stav překladu"
+                         : "Překlad se spustí až po ověření konzole a výstupu.")
+                        .font(.caption)
+                        .foregroundStyle(GLNeon.mist)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                GLHelpButton(title: "Stav překladu",
+                    explanation: "Uložená konzole není automaticky připojená. Snímání aktivní se objeví až po přijetí video snímků; Google TV odpovídá na kontrolu spojení.")
+            }
+            .padding(15)
         }
-        .padding(14)
-        .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var regionsPage: some View {
@@ -501,24 +526,27 @@ struct GameLingoHome: View {
         .padding(.vertical, 6)
     }
 
-    private func tile(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+    private func tile(_ title: String, icon: String,
+                      action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 27))
-                    .foregroundStyle(.white)
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
+            GLNeonPanel(radius: 19) {
+                VStack(spacing: 10) {
+                    Image(systemName: icon)
+                        .font(.system(size: 27, weight: .medium))
+                        .foregroundStyle(GLNeon.accent)
+                    Text(title)
+                        .font(.system(size: 14, weight: .bold,
+                                      design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                        .frame(maxWidth: .infinity)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 96)
+                .padding(.horizontal, 5)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 92)
-            .padding(5)
-            .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 17))
-            .overlay(RoundedRectangle(cornerRadius: 17)
-                .strokeBorder(GLVisual.border, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -533,12 +561,18 @@ struct GameLingoHome: View {
                         Image(systemName: option.icon).font(.system(size: 20))
                         Text(option.rawValue).font(.system(size: 10, weight: .medium))
                     }
-                    .foregroundStyle(tab == option ? GLVisual.violet : GLVisual.muted)
+                    .foregroundStyle(tab == option ? .white : GLNeon.mist)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 11)
                     .background(
-                        tab == option ? GLVisual.violet.opacity(0.14) : Color.clear,
+                        tab == option
+                        ? GLNeon.purple.opacity(0.32) : Color.clear,
                         in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(tab == option ? GLNeon.purple.opacity(0.60) :
+                                      .clear, lineWidth: 1))
+                    .shadow(color: tab == option ? GLNeon.purple.opacity(0.24) :
+                             .clear, radius: 10)
                 }
                 .buttonStyle(.plain)
             }
@@ -546,9 +580,9 @@ struct GameLingoHome: View {
         .padding(.horizontal, 9)
         .padding(.top, 8)
         .padding(.bottom, 5)
-        .background(.regularMaterial)
+        .background(GLNeon.ink.opacity(0.98))
         .overlay(alignment: .top) {
-            Rectangle().fill(GLVisual.border).frame(height: 1)
+            Rectangle().fill(GLNeon.edge).frame(height: 1)
         }
     }
 
@@ -570,32 +604,48 @@ private struct GameLingoDeviceRow: View {
     let subtitle: String
     let connected: Bool
     let status: String
+    var family: GLConsoleFamily? = nil
+    var isTelevision: Bool = false
 
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(GLVisual.cyan)
-                .frame(width: 50, height: 50)
-                .background(GLVisual.navy, in: RoundedRectangle(cornerRadius: 14))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name).font(.headline).foregroundStyle(.white)
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(connected ? GLVisual.green : GLVisual.muted)
-                        .frame(width: 7, height: 7)
-                    Text(status)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(connected ? GLVisual.green : GLVisual.muted)
+        GLNeonPanel(emphasized: connected) {
+            HStack(spacing: 13) {
+                if family != nil || isTelevision {
+                    GLPlatformBadge(family: family, isTelevision: isTelevision,
+                                    size: 54)
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 23))
+                        .foregroundStyle(GLNeon.accent)
+                        .frame(width: 54, height: 54)
+                        .background(GLNeon.panel,
+                                    in: RoundedRectangle(cornerRadius: 15))
                 }
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(name)
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                    HStack(spacing: 7) {
+                        Circle()
+                            .fill(connected ? GLStyle.green : GLNeon.mist)
+                            .frame(width: 7, height: 7)
+                        Text(status)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(connected ? GLStyle.green :
+                                                GLNeon.mist)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(GLNeon.mist)
             }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .foregroundStyle(GLVisual.muted)
+            .padding(14)
         }
-        .padding(14)
-        .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18)
-            .strokeBorder(GLVisual.border, lineWidth: 1))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Otevřít a spravovat zařízení")
     }
 }
