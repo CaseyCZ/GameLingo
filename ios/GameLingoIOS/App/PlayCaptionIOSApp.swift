@@ -179,6 +179,15 @@ final class CaptionAppModel: ObservableObject {
     let playStation = GameLingoPlayStation()
     let devices = GameLingoDevices()
 
+    /// Never send game text to a stale, unpaired or offline receiver,
+    /// including after a live television switch.
+    private var verifiedTelevisionOutput: Bool {
+        guard devices.subtitleOutput == .googleTV,
+              let selected = devices.chosenTelevision else { return false }
+        return tv.receiverPaired && tv.receiverConnected &&
+            tv.ip.trimmingCharacters(in: .whitespacesAndNewlines) == selected.ipAddress
+    }
+
     @Published var phoneSubtitle = ""
     private var psStatusListener: AnyCancellable?
     private let pipeline = CaptionPipeline()
@@ -363,9 +372,11 @@ final class CaptionAppModel: ObservableObject {
                         self.lastChoicesSentAt = Date()
                         if self.devices.subtitleOutput == .googleTV {
                             self.devices.prepareTV(self.tv)
-                            self.tv.sendChoices(translated, area: area, asText: asText,
-                                                outputArea: self.choicesOutputArea,
-                                                outputFont: self.choicesOutputFont)
+                            if self.verifiedTelevisionOutput {
+                                self.tv.sendChoices(translated, area: area, asText: asText,
+                                                    outputArea: self.choicesOutputArea,
+                                                    outputFont: self.choicesOutputFont)
+                            }
                         }
                         self.write("Volby: \(translated.count) rozpoznaných položek")
                     }
@@ -406,8 +417,10 @@ final class CaptionAppModel: ObservableObject {
                                 self.phoneSubtitle = czech
                             } else {
                                 self.devices.prepareTV(self.tv)
-                                self.tv.sendSubtitle(czech,
-                                                     duration: Int(self.subtitleDuration * 1000))
+                                if self.verifiedTelevisionOutput {
+                                    self.tv.sendSubtitle(czech,
+                                                         duration: Int(self.subtitleDuration * 1000))
+                                }
                             }
                             self.write("CZ: \(czech)")
                         }
@@ -462,14 +475,13 @@ final class CaptionAppModel: ObservableObject {
     func relocateActiveChoices() -> Bool {
         // Moving the TV overlay must never transmit text while phone output
         // is selected, even if a previous TV session is still paired.
-        guard devices.subtitleOutput == .googleTV,
-              devices.chosenTelevision != nil,
-              isRunning, choicesEnabled,
+        guard isRunning, choicesEnabled,
               !lastTranslatedChoiceItems.isEmpty,
               let sentAt = lastChoicesSentAt,
               Date().timeIntervalSince(sentAt) <= (lastTranslatedChoiceIsText ? 300 : 45)
         else { return false }
         devices.prepareTV(tv)
+        guard verifiedTelevisionOutput else { return false }
         tv.sendChoices(lastTranslatedChoiceItems, area: choicesArea,
                        asText: lastTranslatedChoiceIsText,
                        outputArea: choicesOutputArea,
