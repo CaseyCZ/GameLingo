@@ -106,11 +106,12 @@ actor CaptionPipeline {
                    manualArea: CGRect?,
                    filterMenus: Bool,
                    mode: OCRMode = .classic,
-                   expandOnEmpty: Bool = false) -> RecognizedCaption? {
+                   expandOnEmpty: Bool = false,
+                   gameLanguage: GLGameLanguage = .english) -> RecognizedCaption? {
         let baseROI = manualArea.map { CGRect(
             x: $0.minX, y: 1 - $0.maxY, width: $0.width, height: $0.height
         ) } ?? region.rect
-        let settings = "\(baseROI)|\(filterMenus)|\(mode.rawValue)|\(expandOnEmpty)"
+        let settings = "\(baseROI)|\(filterMenus)|\(mode.rawValue)|\(expandOnEmpty)|\(gameLanguage.rawValue)"
         if settings != lastSettings {
             lastSettings = settings
             lastText = ""
@@ -130,7 +131,7 @@ actor CaptionPipeline {
         let roi = searchWide ? SubtitleRegion.wide.rect : baseROI
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
-        request.recognitionLanguages = ["en-US"]
+        request.recognitionLanguages = [gameLanguage.visionIdentifier]
         request.usesLanguageCorrection = true
         request.regionOfInterest = roi
 
@@ -187,8 +188,9 @@ actor CaptionPipeline {
     /// Returns nil when unchanged; [] when choices disappeared and TV should clear.
     func recognizeOptions(_ buffer: CVPixelBuffer,
                           area: CGRect,
-                          asText: Bool) -> [String]? {
-        let signature = "\(area)|\(asText)"
+                          asText: Bool,
+                          gameLanguage: GLGameLanguage = .english) -> [String]? {
+        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)"
         if signature != lastOptionsSettings {
             lastOptionsSettings = signature
             lastOptions = []
@@ -199,7 +201,7 @@ actor CaptionPipeline {
 
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
-        request.recognitionLanguages = ["en-US"]
+        request.recognitionLanguages = [gameLanguage.visionIdentifier]
         request.usesLanguageCorrection = true
         request.regionOfInterest = CGRect(x: area.minX,
                                            y: 1 - area.maxY,
@@ -251,33 +253,37 @@ actor CaptionPipeline {
         return words.count >= 4 && upperWords >= 3
     }
 
-    func translate(_ english: String) async -> String {
-        if let cached = lastTranslate[english] { return cached }
-        // Same online strategy as the reference Android PlayCaption. Unofficial endpoint.
+    func translate(_ original: String,
+                   from source: GLGameLanguage = .english,
+                   to target: GLTargetLanguage = .czech) async -> String {
+        if source.rawValue == target.rawValue { return original }
+        let cacheKey = source.rawValue + ":" + target.rawValue + ":" + original
+        if let cached = lastTranslate[cacheKey] { return cached }
+        // Preserve the previous translation service; language codes are now configurable.
         var components = URLComponents(string: "https://translate.googleapis.com/translate_a/single")
         components?.queryItems = [
             URLQueryItem(name: "client", value: "gtx"),
-            URLQueryItem(name: "sl", value: "en"),
-            URLQueryItem(name: "tl", value: "cs"),
+            URLQueryItem(name: "sl", value: source.rawValue),
+            URLQueryItem(name: "tl", value: target.rawValue),
             URLQueryItem(name: "dt", value: "t"),
-            URLQueryItem(name: "q", value: english)
+            URLQueryItem(name: "q", value: original)
         ]
-        guard let url = components?.url else { return english }
+        guard let url = components?.url else { return original }
         do {
             var req = URLRequest(url: url)
             req.timeoutInterval = 5
             let (data, response) = try await URLSession.shared.data(for: req)
             guard (response as? HTTPURLResponse)?.statusCode == 200,
                   let array = try JSONSerialization.jsonObject(with: data) as? [Any],
-                  let segments = array.first as? [[Any]] else { return english }
-            let czech = segments.compactMap { $0.first as? String }.joined()
+                  let segments = array.first as? [[Any]] else { return original }
+            let translated = segments.compactMap { $0.first as? String }.joined()
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !czech.isEmpty else { return english }
+            guard !translated.isEmpty else { return original }
             if lastTranslate.count > 250 { lastTranslate.removeAll() }
-            lastTranslate[english] = czech
-            return czech
+            lastTranslate[cacheKey] = translated
+            return translated
         } catch {
-            return english
+            return original
         }
     }
 }
