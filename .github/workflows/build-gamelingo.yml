@@ -8,12 +8,18 @@ on:
       - ".github/workflows/build-gamelingo.yml"
   workflow_dispatch:
 
+# A single current candidate per branch: outdated queued native builds
+# must not consume resources or be mistaken for the latest release candidate.
+concurrency:
+  group: gamelingo-v05-full-${{ github.ref }}
+  cancel-in-progress: true
+
 # Run full integration matrix only when this workflow is explicitly revised.
 # This prevents expensive native Chiaki builds for every draft source change.
 # QA v0.5.0: tests + PS4/PS5 core + iPhone + Android + Google TV.
 # One-source full matrix checkpoint: native iPhone PS core + latest P0/P1 navigation and TV focus.
 # Final source checkpoint includes session-revision OCR isolation and shared iOS theme.
-# Latest full validation: unified TV setup, old-receiver overlay clearing, Xbox device management.
+# Candidate validation: unified TV setup, Xbox/PlayStation selection, safe OCR output, native dashboard.
 # QA after P0/P1: native TV picker, Xbox removal, single PS PIN UI, old-overlay retransmission cancellation.
 # Final reviewed UI checkpoint: saved Xbox, original settings, full-screen first run, acceptance plan.
 # Run on workflow revision only; do not auto-build full native matrix for every change.
