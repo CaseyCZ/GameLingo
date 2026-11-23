@@ -20,20 +20,22 @@ struct GameLingoXboxScreen: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 17) {
-                    HStack(spacing: 14) {
-                        Image(systemName: "gamecontroller.fill")
-                            .font(.system(size: 30))
-                            .foregroundStyle(GLStyle.blue)
-                            .frame(width: 57, height: 57)
-                            .background(GLStyle.surfaceAlt,
-                                        in: RoundedRectangle(cornerRadius: 17))
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Můj Xbox").font(.title2.bold())
-                            Text("Účet, konzole a výběr pro překlad")
-                                .font(.subheadline)
-                                .foregroundStyle(GLStyle.muted)
+                    GLNeonTitle(title: "Můj Xbox",
+                                subtitle: "Účet, konzole a výběr pro překlad",
+                                icon: "gamecontroller.fill")
+                    GLNeonPanel(emphasized: true) {
+                        HStack(spacing: 13) {
+                            GLPlatformBadge(family: .xbox, size: 62)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Xbox Remote Play")
+                                    .font(.headline)
+                                Text("Microsoft účet a vlastní konzole")
+                                    .font(.caption)
+                                    .foregroundStyle(GLNeon.mist)
+                            }
+                            Spacer()
                         }
-                        Spacer()
+                        .padding(15)
                     }
 
                     // Preserve the working Microsoft device-code OAuth flow.
@@ -68,10 +70,7 @@ struct GameLingoXboxScreen: View {
                                     devices.addXbox(console)
                                 } label: {
                                     HStack(spacing: 13) {
-                                        Image(systemName: "gamecontroller.fill")
-                                            .font(.title2)
-                                            .frame(width: 38)
-                                            .foregroundStyle(GLStyle.blue)
+                                        GLPlatformBadge(family: .xbox, size: 44)
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(console.name)
                                                 .font(.headline)
@@ -94,12 +93,12 @@ struct GameLingoXboxScreen: View {
                                         }
                                     }
                                     .padding(13)
-                                    .background(GLStyle.surfaceAlt,
-                                                in: RoundedRectangle(cornerRadius: 14))
-                                    .overlay(RoundedRectangle(cornerRadius: 14)
+                                    .background(GLNeon.panel,
+                                                in: RoundedRectangle(cornerRadius: 17))
+                                    .overlay(RoundedRectangle(cornerRadius: 17)
                                         .strokeBorder(selectedXboxID == console.id
-                                                      ? GLStyle.blue : GLStyle.border,
-                                                      lineWidth: 1))
+                                                      ? GLNeon.cyan : GLNeon.purple.opacity(0.45),
+                                                      lineWidth: selectedXboxID == console.id ? 1.6 : 0.8))
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(model.isRunning)
@@ -129,7 +128,7 @@ struct GameLingoXboxScreen: View {
                 }
                 .padding(18)
             }
-            .background(GLStyle.background.ignoresSafeArea())
+            .background(GLNeonBackground())
             .navigationTitle("Xbox")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -139,7 +138,7 @@ struct GameLingoXboxScreen: View {
             }
         }
         .preferredColorScheme(.dark)
-        .tint(GLStyle.blue)
+        .tint(GLNeon.cyan)
         .task {
             if auth.signedIn && auth.consoles.isEmpty {
                 await auth.refreshConsoles()
