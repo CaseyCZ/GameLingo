@@ -9,7 +9,7 @@ struct GameLingoIOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            GameLingoHome()
                 .environmentObject(model)
                 .preferredColorScheme(.dark)
                 .onAppear { model.xbox.resumeLoginIfNeeded() }
@@ -407,7 +407,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func shareLogs() -> String {
-        (["GameLingo iOS 0.2.0", "Stav: \(status)"] + logLines).joined(separator: "\n")
+        (["GameLingo iOS 0.3.0", "Stav: \(status)"] + logLines).joined(separator: "\n")
     }
 }
 
@@ -525,7 +525,7 @@ struct ContentView: View {
                         .background(GameLingoTheme.card,
                                     in: RoundedRectangle(cornerRadius: 16))
                     }
-                    Text("GameLingo · CaseyCZ · testovací verze 0.2.0")
+                    Text("GameLingo · CaseyCZ · testovací verze 0.3.0")
                         .font(.caption2)
                         .foregroundStyle(GameLingoTheme.secondary)
                         .frame(maxWidth: .infinity)
