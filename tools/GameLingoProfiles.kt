@@ -135,9 +135,12 @@ object GameLingoProfiles {
             setPadding(22, 22, 22, 22)
             background = box(navy, cyan, 24f)
         }
-        outer.addView(text(activity, "🎮  Profily her", 24f, Color.WHITE, true))
-        outer.addView(text(activity, "Vlastní nastavení OCR, titulků a voleb pro každou hru.",
-            13f, muted))
+        val heading = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
+        heading.addView(text(activity, "Profily her", 24f, Color.WHITE, true),
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        heading.addView(GameLingoHelp.button(activity, "profiles"),
+            LinearLayout.LayoutParams(54, 54))
+        outer.addView(heading)
 
         val dialog = android.app.Dialog(activity)
         val scroll = ScrollView(activity)
