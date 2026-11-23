@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Google TV native UI candidate
-# Current UI checkpoint: native Google TV remote, language wizard, receiver pairing and vector Xbox/PS icons.
+# Current UI checkpoint: full GameLingo TV ten-foot navigation, multilingual first-run, signed receiver and original vector console marks.
 
 # QA checkpoint: P0 multi-device and unified native navigation; P1 TV D-pad focus.
 # This workflow intentionally runs only when explicitly revised or dispatched.
