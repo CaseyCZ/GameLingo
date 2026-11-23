@@ -40,6 +40,13 @@ jobs:
           set -euo pipefail
           brew install cmake ninja protobuf xcodegen
           export DEVELOPER_DIR="$(xcode-select -p)"
+          # The pinned TP Play script pins Python protobuf 7.36.0, while
+          # Homebrew protoc 36.2 generates code requiring 7.36.2. The core
+          # fails before compilation unless generator/runtime versions match.
+          PROTOC_VERSION="$(protoc --version | awk '{print $2}')"
+          PROTOBUF_RUNTIME="7.$PROTOC_VERSION"
+          echo "Matching protoc $PROTOC_VERSION to protobuf $PROTOBUF_RUNTIME"
+          /usr/bin/sed -i '' "s/7\\.36\\.0/$PROTOBUF_RUNTIME/g" ps-core/ios/scripts/build-core.sh
           bash ps-core/ios/scripts/build-core.sh iphoneos
           test -s ps-core/ios/.build/iphoneos/libTPPlayCore.a
           file ps-core/ios/.build/iphoneos/libTPPlayCore.a
