@@ -8,45 +8,184 @@ struct GameLingoSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            GLScreen(title: "Nastavení", help:
-                "Uprav tu čtení textu, překlad, vzhled titulků nebo profily. Jednotlivé volby mají vlastní nápovědu.") {
-                GLCard {
-                    NavigationLink { GameLingoOCRSettingsView(model: model) } label: {
-                        GLSettingsLink(icon: "text.viewfinder", title: "Rozpoznávání")
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    GLNeonTitle(title: "Nastavení",
+                                subtitle: "Přizpůsobení překladu a titulků",
+                                icon: "gearshape.fill")
+                        .padding(.bottom, 6)
+                    sectionLabel("JAZYKY")
+                    NavigationLink {
+                        GameLingoLanguageSettingsView(model: model)
+                    } label: {
+                        GLDetailRow(icon: "globe",
+                                    title: "Jazyk hry a překladu",
+                                    detail: model.gameLanguage.title + " → " +
+                                        model.targetLanguage.title)
                     }
-                    Divider().overlay(GLStyle.border)
-                    NavigationLink { GameLingoTranslationSettingsView(model: model) } label: {
-                        GLSettingsLink(icon: "character.bubble", title: "Překlad")
+                    .buttonStyle(.plain)
+
+                    sectionLabel("ROZPOZNÁVÁNÍ A PŘEKLAD")
+                    NavigationLink {
+                        GameLingoOCRSettingsView(model: model)
+                    } label: {
+                        GLDetailRow(icon: "text.viewfinder",
+                                    title: "OCR a rozpoznávání",
+                                    detail: "Rychlost, přesnost a filtrování textu")
                     }
-                    Divider().overlay(GLStyle.border)
+                    .buttonStyle(.plain)
+                    NavigationLink {
+                        GameLingoTranslationSettingsView(model: model)
+                    } label: {
+                        GLDetailRow(icon: "character.book.closed",
+                                    title: "Překlad",
+                                    detail: "Časování a aktuálnost titulků")
+                    }
+                    .buttonStyle(.plain)
                     Button { showRegions = true } label: {
-                        GLSettingsLink(icon: "rectangle.dashed", title: "Oblasti obrazovky")
+                        GLDetailRow(icon: "viewfinder",
+                                    title: "Oblasti obrazovky",
+                                    detail: "Čtyři nezávislé rámečky")
+                    }
+                    .buttonStyle(.plain)
+
+                    sectionLabel("ZOBRAZENÍ A DALŠÍ VOLBY")
+                    NavigationLink {
+                        GameLingoAppearanceSettingsView(model: model)
+                    } label: {
+                        GLDetailRow(icon: "captions.bubble",
+                                    title: "Vzhled titulků",
+                                    detail: "Písmo, velikost a poloha na TV")
+                    }
+                    .buttonStyle(.plain)
+                    NavigationLink {
+                        GameLingoProfilesScreen(model: model)
+                    } label: {
+                        GLDetailRow(icon: "gamecontroller",
+                                    title: "Profily her",
+                                    detail: "Uložené nastavení jednotlivých her")
+                    }
+                    .buttonStyle(.plain)
+                    NavigationLink {
+                        GameLingoDiagnosticsView(model: model)
+                    } label: {
+                        GLDetailRow(icon: "waveform.path.ecg",
+                                    title: "Diagnostika",
+                                    detail: "Připojení, snímky a testování")
+                    }
+                    .buttonStyle(.plain)
+                    NavigationLink {
+                        GameLingoLicenseView()
+                    } label: {
+                        GLDetailRow(icon: "info.circle",
+                                    title: "O aplikaci / Licence",
+                                    detail: "Verze, autoři a otevřený zdrojový kód")
                     }
                     .buttonStyle(.plain)
                 }
-                GLCard {
-                    NavigationLink { GameLingoAppearanceSettingsView(model: model) } label: {
-                        GLSettingsLink(icon: "captions.bubble", title: "Titulky na TV")
-                    }
-                    Divider().overlay(GLStyle.border)
-                    NavigationLink { GameLingoProfilesScreen(model: model) } label: {
-                        GLSettingsLink(icon: "gamecontroller", title: "Profily her")
-                    }
-                    Divider().overlay(GLStyle.border)
-                    NavigationLink { GameLingoDiagnosticsView(model: model) } label: {
-                        GLSettingsLink(icon: "waveform.path.ecg", title: "Diagnostika")
-                    }
-                }
+                .padding(.horizontal, 18)
+                .padding(.top, 20)
+                .padding(.bottom, 36)
             }
+            .background(GLNeonBackground())
+            .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Hotovo") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showRegions) { SubtitleSettingsView(model: model) }
+            .sheet(isPresented: $showRegions) {
+                SubtitleSettingsView(model: model)
+            }
         }
-        .tint(GLStyle.blue)
+        .tint(GLNeon.cyan)
         .preferredColorScheme(.dark)
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .bold, design: .rounded))
+            .tracking(1.2)
+            .foregroundStyle(GLNeon.cyan)
+            .padding(.top, 10)
+    }
+}
+
+struct GameLingoLanguageSettingsView: View {
+    @ObservedObject var model: CaptionAppModel
+
+    var body: some View {
+        GLScreen(title: "Jazyky", help:
+            "Jazyk hry určuje rozpoznávání textu na obrazovce. Jazyk překladu určuje, do jaké řeči se překládají dialogy a herní texty. Změnu proveď před spuštěním hry.") {
+            GLCard {
+                GLHeader(title: "Jazyk hry", help:
+                    "Vyber jazyk, ve kterém hra zobrazuje původní dialogy.")
+                Picker("Rozpoznávat jazyk", selection: $model.gameLanguage) {
+                    ForEach(GLGameLanguage.allCases) { language in
+                        Text(language.title).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(model.isRunning)
+            }
+            GLCard {
+                GLHeader(title: "Překládat do", help:
+                    "Vyber cílový jazyk pro dialogy i herní texty.")
+                Picker("Cílový jazyk", selection: $model.targetLanguage) {
+                    ForEach(GLTargetLanguage.allCases) { language in
+                        Text(language.title).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(model.isRunning)
+            }
+            GLCard {
+                GLHeader(title: "Jazyk aplikace")
+                Label("Čeština", systemImage: "globe.europe.africa")
+                    .font(.subheadline.weight(.semibold))
+                Text("Ovládací rozhraní je zatím v češtině. Další jazyky rozhraní se musí nejprve kompletně přeložit; jejich výběr zatím nenabízíme.")
+                    .font(.caption)
+                    .foregroundStyle(GLNeon.mist)
+            }
+        }
+    }
+}
+
+struct GameLingoLicenseView: View {
+    var body: some View {
+        GLScreen(title: "O aplikaci", help:
+            "GameLingo je nezávislá aplikace pro překlad her. Funkční základy a jejich licence jsou zachovány.") {
+            GLNeonPanel(emphasized: true) {
+                VStack(spacing: 9) {
+                    GLBrandWordmark()
+                    Text("Překlad herních dialogů a textů")
+                        .font(.subheadline)
+                        .foregroundStyle(GLNeon.mist)
+                    Text("Verze 0.5 Beta")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(GLNeon.cyan)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(25)
+            }
+            GLCard {
+                GLHeader(title: "Licence")
+                Text("GameLingo je otevřený projekt využívající části PlayCaptionu a Chiaki. Zdrojové kódy a změny jsou dostupné podle podmínek GNU AGPLv3.")
+                    .font(.subheadline)
+                Text("Nejde o oficiální aplikaci Sony, Microsoftu ani Google. Názvy konzolí jsou ochranné známky jejich vlastníků.")
+                    .font(.caption)
+                    .foregroundStyle(GLNeon.mist)
+            }
+            GLCard {
+                GLHeader(title: "Zdrojové kódy")
+                Link("GameLingo na GitHubu",
+                     destination: URL(string: "https://github.com/CaseyCZ/GameLingo")!)
+                Link("Původní PlayCaption",
+                     destination: URL(string: "https://github.com/AdamRuzick4/PlayCaption-app")!)
+                Link("Chiaki / TP Play",
+                     destination: URL(string: "https://github.com/mB14ck22/tp-play")!)
+            }
+        }
     }
 }
 
