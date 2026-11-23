@@ -44,7 +44,7 @@ struct GameLingoSettingsOverview: View {
                         icon: "gearshape.fill")
                 .padding(.bottom, 5)
 
-            sectionLabel("JAZYKY")
+            sectionLabel(GameLingoUIContract.settingsSections[0])
             NavigationLink {
                 GameLingoLanguageSettingsView(model: model)
             } label: {
@@ -56,7 +56,7 @@ struct GameLingoSettingsOverview: View {
             }
             .buttonStyle(.plain)
 
-            sectionLabel("ROZPOZNÁVÁNÍ A PŘEKLAD")
+            sectionLabel(GameLingoUIContract.settingsSections[1])
             NavigationLink {
                 GameLingoOCRSettingsView(model: model)
             } label: {
@@ -80,7 +80,7 @@ struct GameLingoSettingsOverview: View {
             }
             .buttonStyle(.plain)
 
-            sectionLabel("ZOBRAZENÍ A PROFILY")
+            sectionLabel(GameLingoUIContract.settingsSections[2])
             NavigationLink {
                 GameLingoAppearanceSettingsView(model: model)
             } label: {
@@ -98,7 +98,7 @@ struct GameLingoSettingsOverview: View {
             }
             .buttonStyle(.plain)
 
-            sectionLabel("OBECNÉ")
+            sectionLabel(GameLingoUIContract.settingsSections[3])
             Button {
                 if let onDevices { onDevices() }
                 else { showDevices = true }
