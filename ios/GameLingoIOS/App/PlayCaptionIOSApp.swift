@@ -13,6 +13,7 @@ struct GameLingoIOSApp: App {
         WindowGroup {
             GameLingoHome(devices: model.devices)
                 .environmentObject(model)
+                .environment(\.locale, Locale(identifier: model.appLanguage.rawValue))
                 .preferredColorScheme(.dark)
                 .onAppear { model.xbox.resumeLoginIfNeeded() }
                 .onChange(of: scenePhase) { _, phase in
@@ -29,6 +30,13 @@ final class CaptionAppModel: ObservableObject {
     @Published var lastCzech = ""
     @Published var frameCount = 0
     @Published var isRunning = false
+    @Published var appLanguage: GLAppLanguage = GLAppLanguage(
+        rawValue: UserDefaults.standard.string(forKey: "gamelingo.appLanguage") ?? ""
+    ) ?? .czech {
+        didSet {
+            UserDefaults.standard.set(appLanguage.rawValue, forKey: "gamelingo.appLanguage")
+        }
+    }
     @Published var gameLanguage: GLGameLanguage = GLGameLanguage(
         rawValue: UserDefaults.standard.string(forKey: "gamelingo.gameLanguage") ?? ""
     ) ?? .english {
