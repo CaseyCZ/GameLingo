@@ -55,7 +55,7 @@ def android(root: Path, mode: str):
         contains(base / "MainActivity.kt",
             "GameLingoFirstRun.show", "GameLingoNavigation.create",
             "GameLingoVisualKit.brandHeader(this)",
-            "GameLingoAbout.show(this)", "onDevices = { openDevices() }")
+            "GameLingoAbout.content(this)", "onDevices = { openDevices() }")
         contains(base / "GameLingoNavigation.kt",
             "GameLingoUIContract.tabs", "onSettings: () -> Unit")
         contains(base / "GameLingoUIContract.kt",
