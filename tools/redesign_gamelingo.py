@@ -174,6 +174,51 @@ def redesign_mobile(s: str) -> str:
 '''
     if s.count(old)!=1:raise RuntimeError("missing Android brand top-bar method")
     s=s.replace(old,new,1)
+    # Match iOS: the five-tab navigation stays fixed outside the scrolling page.
+    # Other Android screens (pairing, registration, help) keep their own layouts.
+    old_root = '''        setContentView(ScrollView(this).apply {
+            setBackgroundColor(CERNA)
+            isFillViewport = true
+            addView(ram)
+        })'''
+    new_root = '''        val fixedNavigation = if (telefon) (obsah as? ViewGroup)
+            ?.findViewWithTag<View>("gamelingo-bottom-nav") else null
+        if (fixedNavigation != null) {
+            (fixedNavigation.parent as? ViewGroup)?.removeView(fixedNavigation)
+            ram.setBackgroundColor(Color.TRANSPARENT)
+            val container = FrameLayout(this).apply {
+                background = GameLingoVisualKit.pageBackground(this@MainActivity)
+            }
+            val scrolling = ScrollView(this).apply {
+                background = GameLingoVisualKit.pageBackground(this@MainActivity)
+                isFillViewport = true
+                clipToPadding = false
+                setPadding(0, 0, 0, dp(94))
+                addView(ram)
+            }
+            container.addView(scrolling, FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ))
+            container.addView(fixedNavigation, FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM
+            ).apply {
+                leftMargin = dp(10)
+                rightMargin = dp(10)
+                bottomMargin = dp(5)
+            })
+            setContentView(container)
+        } else {
+            setContentView(ScrollView(this).apply {
+                setBackgroundColor(CERNA)
+                isFillViewport = true
+                addView(ram)
+            })
+        }'''
+    if s.count(old_root) != 1:
+        raise RuntimeError("Android native fixed navigation root missing")
+    s = s.replace(old_root, new_root, 1)
     return s
 
 def redesign_tv(s: str) -> str:
