@@ -223,7 +223,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("disabled: !canFinish", ios_setup)
         self.assertIn("Konzole je nastavená · připojení neověřeno", android)
         self.assertIn("Uložené zařízení samo o sobě nepotvrzuje živé spojení.", android)
-        self.assertIn('false\n            ), odsazeni(bottom = 9))', android)
+        self.assertIn("RemotePlayService.prehledSpojeni().uroven == UrovenSpojeni.OK", android)
+        self.assertIn("liveImage && tvStore.pouzeTelefon", android)
+        self.assertIn("Uložený televizor nepotvrzuje živé přijetí titulků.", android)
 
     def test_five_destinations_native_android_navigation(self):
         nav=code(TOOLS/"GameLingoNavigation.kt")
