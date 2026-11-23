@@ -1,5 +1,5 @@
 name: GameLingo iOS · Native UI candidate
-# iOS ONLY — compile complete independent GameLingo interface and keep release unchanged.
+# iOS ONLY — compile final GameLingo screens, language packs, console icons, subtitle appearance and working settings navigation; keep release unchanged.
 
 on:
   push:
