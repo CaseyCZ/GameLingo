@@ -41,6 +41,9 @@ struct GameLingoTVSetupScreen: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    GLNeonTitle(title: "Google TV",
+                                subtitle: "Připojení a párování televize",
+                                icon: "tv.fill")
                     if !devices.televisions.isEmpty {
                         GLCard {
                             GLHeader(title: "Moje televize", help:
@@ -51,8 +54,8 @@ struct GameLingoTVSetupScreen: View {
                                     devices.selectTelevision(record.id)
                                 } label: {
                                     HStack(spacing: 12) {
-                                        Image(systemName: "tv")
-                                            .foregroundStyle(GLStyle.blue)
+                                        GLPlatformBadge(family: nil,
+                                                        isTelevision: true, size: 46)
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(record.name).font(.headline)
                                             Text(record.ipAddress)
@@ -66,8 +69,12 @@ struct GameLingoTVSetupScreen: View {
                                         }
                                     }
                                     .padding(10)
-                                    .background(GLStyle.surfaceAlt,
-                                                in: RoundedRectangle(cornerRadius: 12))
+                                    .background(GLNeon.panel,
+                                                in: RoundedRectangle(cornerRadius: 16))
+                                    .overlay(RoundedRectangle(cornerRadius: 16)
+                                        .strokeBorder(selectedTelevision?.id == record.id
+                                                      ? GLNeon.cyan : GLNeon.purple.opacity(0.40),
+                                                      lineWidth: 1))
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -106,7 +113,7 @@ struct GameLingoTVSetupScreen: View {
                 }
                 .padding(18)
             }
-            .background(GLStyle.background.ignoresSafeArea())
+            .background(GLNeonBackground())
             .navigationTitle("Google TV")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -115,7 +122,7 @@ struct GameLingoTVSetupScreen: View {
                 }
             }
         }
-        .tint(GLStyle.blue)
+        .tint(GLNeon.cyan)
         .preferredColorScheme(.dark)
     }
 }
