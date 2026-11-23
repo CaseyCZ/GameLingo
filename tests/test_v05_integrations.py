@@ -149,7 +149,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('onAbout = { GameLingoAbout.show(this) }',mobile)
         self.assertIn('GameLingoNavigation.kt',wiring)
         self.assertIn('GameLingoAbout.kt',wiring)
-        self.assertIn('onDevices = { '+ "manager()" + ' },',wiring)
+        self.assertIn("'onDevices = { '+manager()+' },'",wiring)
         self.assertIn("AGPL-3.0",about)
 
     def test_tv_remote_control_and_receiver_modes(self):
