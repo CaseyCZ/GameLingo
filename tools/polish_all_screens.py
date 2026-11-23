@@ -72,7 +72,7 @@ def mobile(s):
 def tv(s):
     start = '        } else {\n            // televize: mřížka'
     end = '        }\n        nastavObsah(obsah, sirka = ViewGroup.LayoutParams.MATCH_PARENT)'
-    if s.count(start)!=1 or s.count(end)!=1:
+    if s.count(start)!=1 or end not in s[s.index(start):]:
         raise RuntimeError("Google TV landing screen UI anchors missing")
     new = '''        } else {
             // Own minimal GameLingo TV landing screen. Both previous modes
@@ -110,7 +110,7 @@ def tv(s):
             obsah.addView(text("GameLingo TV", 14f,
                 Color.parseColor("#94A3B8")).apply { gravity = Gravity.CENTER })
 '''
-    s=s[:s.index(start)]+new+s[s.index(end):]
+    s=s[:s.index(start)]+new+s[s.index(end, s.index(start)):]
     # TV receiver help is optional. Do not occupy extra width or remove the code.
     s=one(s,
         '        vrsek.addView(logo)\n',
