@@ -31,7 +31,7 @@ object GameLingoFirstRun {
         finished: () -> Unit
     ) {
         if (activity.isFinishing) return
-        val colors = arrayOf("#070B14", "#111827", "#38BDF8", "#94A3B8")
+        val colors = arrayOf("#070B19", "#111A33", "#02D6FF", "#9FB1D4")
         val navy = Color.parseColor(colors[0])
         val card = Color.parseColor(colors[1])
         val cyan = Color.parseColor(colors[2])
@@ -51,13 +51,7 @@ object GameLingoFirstRun {
                 cornerRadius = 25f
             }
         }
-        root.addView(TextView(activity).apply {
-            text = "GameLingo"
-            textSize = 30f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            setPadding(0, 0, 0, 4)
-        })
+        root.addView(GameLingoVisualKit.hero(activity))
         root.addView(TextView(activity).apply {
             text = "Hraj. Rozuměj."
             textSize = 14f
@@ -76,6 +70,11 @@ object GameLingoFirstRun {
             0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         headingRow.addView(GameLingoHelp.button(activity, "home"))
         root.addView(headingRow)
+        val progress = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 15, 0, 0)
+        }
+        root.addView(progress)
         val body = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, 20, 0, 0)
@@ -95,11 +94,7 @@ object GameLingoFirstRun {
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER_VERTICAL
             setPadding(19, 20, 19, 20)
-            background = GradientDrawable().apply {
-                setColor(card)
-                cornerRadius = 16f
-                setStroke(2, if (checked) cyan else Color.parseColor("#2A3850"))
-            }
+            background = GameLingoVisualKit.card(activity, selected = checked)
             isFocusable = true
             setOnClickListener { onClick() }
         }
@@ -133,23 +128,53 @@ object GameLingoFirstRun {
         redraw = {
             body.removeAllViews()
             footer.removeAllViews()
+            progress.removeAllViews()
+            for (index in 0 until 4) {
+                progress.addView(android.view.View(activity).apply {
+                    background = GradientDrawable().apply {
+                        setColor(if (index <= step) cyan else Color.parseColor("#23304C"))
+                        cornerRadius = GameLingoVisualKit.dp(activity, 4).toFloat()
+                    }
+                }, LinearLayout.LayoutParams(0,
+                    GameLingoVisualKit.dp(activity, 5), 1f).apply {
+                    rightMargin = GameLingoVisualKit.dp(activity, 8)
+                })
+            }
             heading.text = when (step) {
-                0 -> "Kde hraješ?"
-                1 -> "Kam zobrazit titulky?"
+                0 -> "Vyber konzoli"
+                1 -> "Jazyky"
+                2 -> "Kam zobrazit titulky?"
                 else -> "Zkontroluj nastavení"
             }
             when (step) {
                 0 -> {
-                    item("🎮  Xbox", consoleChoice == 0) {
+                    item("🟢  Xbox", consoleChoice == 0) {
                         consoleChoice = 0
                         redraw()
                     }
-                    item("🎮  PlayStation 5 / 4", consoleChoice == 1) {
+                    item("PS   PlayStation 5 / 4", consoleChoice == 1) {
                         consoleChoice = 1
                         redraw()
                     }
                 }
                 1 -> {
+                    item("🌐  Jazyk aplikace  •  " +
+                         GameLingoLanguages.name(GameLingoLanguages.appLanguages,
+                             GameLingoLanguages.app(activity)), true) {
+                        GameLingoLanguages.show(activity) { redraw() }
+                    }
+                    item("🎮  Jazyk hry  •  " +
+                         GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
+                             GameLingoLanguages.game(activity)), true) {
+                        GameLingoLanguages.show(activity) { redraw() }
+                    }
+                    item("文  Jazyk překladu  •  " +
+                         GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
+                             GameLingoLanguages.target(activity)), true) {
+                        GameLingoLanguages.show(activity) { redraw() }
+                    }
+                }
+                2 -> {
                     item("📱  Na telefonu", tvChoice == 0) {
                         tvChoice = 0
                         redraw()
@@ -163,6 +188,10 @@ object GameLingoFirstRun {
                     val selected = if (consoleChoice == 0) "Xbox" else "PlayStation"
                     val output = if (tvChoice == 0) "Telefon" else "Google TV"
                     item("$selected   →   $output", true) {}
+                    item(GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
+                             GameLingoLanguages.game(activity)) + "  →  " +
+                         GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
+                             GameLingoLanguages.target(activity)), true) {}
                     body.addView(TextView(activity).apply {
                         text = "Výběr není potvrzení spojení. Přihlášení a párování se ověří zvlášť."
                         textSize = 14f
@@ -200,10 +229,11 @@ object GameLingoFirstRun {
                     rightMargin = 8
                 })
             }
-            footer.addView(button(if (step == 2) "Připojit" else "Pokračovat") {
-                if (step < 2) {
+            footer.addView(button(if (step == 3) "Připojit" else "Pokračovat") {
+                if (step < 3) {
                     if ((step == 0 && consoleChoice >= 0) ||
-                        (step == 1 && tvChoice >= 0)) {
+                        step == 1 ||
+                        (step == 2 && tvChoice >= 0)) {
                         step++
                         redraw()
                     }
@@ -212,7 +242,9 @@ object GameLingoFirstRun {
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
         redraw()
-        val scroll = ScrollView(activity)
+        val scroll = ScrollView(activity).apply {
+            fillViewport = true
+        }
         scroll.addView(root)
         dialog.setContentView(scroll)
         dialog.setCancelable(false)
