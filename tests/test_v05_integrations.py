@@ -62,7 +62,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         psstore=code(TOOLS/"GameLingoPlayStationConsoles.kt")
         multi=code(TOOLS/"android_multi_xbox.py")
         patches=code(TOOLS/"wire_android_devices.py")
-        tv=code(TOOLS/"redesign_gamelingo.py")
+        tv=code(TOOLS/"polish_all_screens.py")
+        receiver=code(TOOLS/"redesign_gamelingo.py")
         self.assertIn('onPlayStation',manager)
         self.assertIn('onXbox',manager)
         self.assertIn('onTV',manager)
@@ -70,7 +71,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('setSingleChoiceItems',multi)
         self.assertIn('tv_dashboard',patches)
         self.assertIn('Překlad z telefonu',tv)
-        self.assertIn('IPhoneTVPairing',tv)
+        self.assertIn('IPhoneTVPairing',receiver)
 
     def test_pinned_native_source_and_build(self):
         workflow=code(ROOT/".github/workflows/build-gamelingo.yml")
