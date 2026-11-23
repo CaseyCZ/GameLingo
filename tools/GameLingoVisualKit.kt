@@ -18,12 +18,12 @@ import android.widget.TextView
  * design language. Transport, OCR and console pairing stay in their own code.
  */
 object GameLingoVisualKit {
-    private val cyan = Color.parseColor("#02D6FF")
-    private val blue = Color.parseColor("#3557FF")
-    private val purple = Color.parseColor("#A329FA")
-    private val ink = Color.parseColor("#070B19")
-    private val panel = Color.parseColor("#111A33")
-    private val muted = Color.parseColor("#92A4C7")
+    private val cyan = Color.parseColor(GameLingoUIContract.Palette.cyan)
+    private val blue = Color.parseColor(GameLingoUIContract.Palette.blue)
+    private val purple = Color.parseColor(GameLingoUIContract.Palette.purple)
+    private val ink = Color.parseColor(GameLingoUIContract.Palette.background)
+    private val panel = Color.parseColor(GameLingoUIContract.Palette.panel)
+    private val muted = Color.parseColor(GameLingoUIContract.Palette.muted)
 
     fun dp(c: Context, value: Int): Int =
         (c.resources.displayMetrics.density * value + 0.5f).toInt()
