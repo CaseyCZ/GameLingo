@@ -327,6 +327,35 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("var shownCode: String? = IPhoneTVPairing.startCode()",native)
         self.assertIn("PrijemService.statistikaPrijmu()",native)
 
+    def test_tv_style_control_and_live_game_profile_save(self):
+        """TV style is authenticated and persisted; running games may be saved."""
+        ios=code(IOS/"PlayCaptionTV.swift")
+        model=code(IOS/"PlayCaptionIOSApp.swift")
+        settings=code(IOS/"SettingsHomeView.swift")
+        regions=code(IOS/"SubtitleSettingsView.swift")
+        patch=code(TOOLS/"patch_tv_iphone.py")
+        style=code(TOOLS/"GameLingoTVCaptionStyle.kt")
+        self.assertIn("func updateCaptionStyle(color: String, background: String)", ios)
+        self.assertIn("let body = \"STYLE", ios)
+        self.assertIn("self.updateCaptionStyle(", ios)
+        self.assertIn("tvTextColor: tvTextColor.rawValue",model)
+        self.assertIn("tvBackground: tvBackground.rawValue",model)
+        self.assertIn("if let name = profile.tvTextColor",model)
+        self.assertIn("if let name = profile.tvBackground",model)
+        self.assertIn('Text("Barva textu na TV")',settings)
+        self.assertIn('Picker("Pozadí na TV"',settings)
+        self.assertIn('savedProfileMessage',settings)
+        self.assertNotIn('disabled: profileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty\n                        || model.isRunning',settings)
+        self.assertIn("if model.isRunning && model.relocateActiveChoices()",regions)
+        self.assertIn("GameLingoTVCaptionStyle.kt",patch)
+        self.assertIn('"STYLE" -> {',patch)
+        self.assertIn("GameLingoTVCaptionStyle.save(c, textColor, background)",patch)
+        self.assertIn("PixelFormat.TRANSLUCENT",patch)
+        self.assertIn("pod.visibility = if (GameLingoTVCaptionStyle.isDark(this))",patch)
+        for item in ('"white"', '"yellow"', '"cyan"', '"green"', '"purple"',
+                     '"none"', '"dark"', '"translucent"'):
+            self.assertIn(item,style)
+
     def test_tv_remote_control_and_receiver_modes(self):
         screen=code(TOOLS/"polish_all_screens.py")
         receiver=code(TOOLS/"redesign_gamelingo.py")
