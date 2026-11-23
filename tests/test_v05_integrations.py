@@ -176,7 +176,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('onTV',manager)
         first_run=code(TOOLS/"GameLingoFirstRun.kt")
         self.assertIn('GameLingoFirstRun.show',patches)
-        for step in ('Kde hraješ?', 'Kam zobrazit titulky?',
+        for step in ('Vyber konzoli', 'Jazyky', 'Kam zobrazit titulky?',
                      'Nastavit později', 'connectPlayStation()', 'connectTV()'):
             self.assertIn(step,first_run)
         self.assertIn('AES/GCM/NoPadding',psstore)
