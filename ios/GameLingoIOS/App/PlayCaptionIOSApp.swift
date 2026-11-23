@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 import SafariServices
+import Combine
+import CoreVideo
 
 @main
 struct GameLingoIOSApp: App {
@@ -9,7 +11,7 @@ struct GameLingoIOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            GameLingoHome()
+            GameLingoHome(devices: model.devices)
                 .environmentObject(model)
                 .preferredColorScheme(.dark)
                 .onAppear { model.xbox.resumeLoginIfNeeded() }
@@ -174,6 +176,11 @@ final class CaptionAppModel: ObservableObject {
 
     let tv = PlayCaptionTV()
     let xbox = XboxAuthorization()
+    let playStation = GameLingoPlayStation()
+    let devices = GameLingoDevices()
+
+    @Published var phoneSubtitle = ""
+    private var psStatusListener: AnyCancellable?
     private let pipeline = CaptionPipeline()
     private var remotePlay: XboxRemotePlay?
     private var processingChoices = false
@@ -292,9 +299,24 @@ final class CaptionAppModel: ObservableObject {
         }
         play.onFrame = { [weak self] buffer in
             Task { @MainActor in
-                guard let self, self.isRunning,
-                      self.sessionRevision == currentSession else { return }
-                self.frameCount += 1
+                await self?.processFrame(buffer, currentSession: currentSession)
+            }
+        }
+        Task {
+            do { try await play.connect(console: console) }
+            catch {
+                self.status = "Remote Play: \(error.localizedDescription)"
+                write("CHYBA Remote Play: \(error.localizedDescription)")
+                stop()
+            }
+        }
+    }
+
+    /// Both Xbox WebRTC and PS4/PS5 Chiaki video feed these same OCR and
+    /// translation lanes. Source-specific networking is kept outside.
+    private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int) async {
+        guard isRunning, sessionRevision == currentSession else { return }
+        self.frameCount += 1
 
                 // Choices use an independent region and may be translated while
                 // standard captions continue; don't block dialogue reading.
@@ -357,22 +379,48 @@ final class CaptionAppModel: ObservableObject {
                                 return
                             }
                             self.lastCzech = czech
-                            self.tv.sendSubtitle(czech,
-                                                 duration: Int(self.subtitleDuration * 1000))
+                            if self.devices.subtitleOutput == .phone {
+                                self.phoneSubtitle = czech
+                            } else {
+                                self.devices.prepareTV(self.tv)
+                                self.tv.sendSubtitle(czech,
+                                                     duration: Int(self.subtitleDuration * 1000))
+                            }
                             self.write("CZ: \(czech)")
                         }
                     }
                 }
+    }
+
+    /// Actual native PlayStation Remote Play, not just a console entry.
+    func start(_ console: RegisteredConsole) {
+        guard !isRunning else { return }
+        isRunning = true
+        sessionRevision += 1
+        let currentSession = sessionRevision
+        processingOCR = false
+        processingChoices = false
+        lastTranslatedChoiceItems = []
+        lastChoicesSentAt = nil
+        phoneSubtitle = ""
+        Task { await pipeline.resetDialogue() }
+        UIApplication.shared.isIdleTimerDisabled = true
+        status = "Připojuji PlayStation…"
+        write("PlayStation Remote Play: " + console.nickname)
+
+        psStatusListener?.cancel()
+        psStatusListener = playStation.$status.sink { [weak self] value in
+            Task { @MainActor in
+                guard let self, self.sessionRevision == currentSession,
+                      self.isRunning else { return }
+                self.status = value
             }
         }
-        Task {
-            do { try await play.connect(console: console) }
-            catch {
-                self.status = "Remote Play: \(error.localizedDescription)"
-                write("CHYBA Remote Play: \(error.localizedDescription)")
-                stop()
+        playStation.start(console: console, onFrame: { [weak self] frame in
+            Task { @MainActor in
+                await self?.processFrame(frame, currentSession: currentSession)
             }
-        }
+        })
     }
 
     /// Move the already-translated game text without altering the current OCR
@@ -396,6 +444,10 @@ final class CaptionAppModel: ObservableObject {
         processingOCR = false
         remotePlay?.stop()
         remotePlay = nil
+        playStation.stop()
+        psStatusListener?.cancel()
+        psStatusListener = nil
+        phoneSubtitle = ""
         isRunning = false
         UIApplication.shared.isIdleTimerDisabled = false
         tv.sendSubtitle("", duration: 0)
