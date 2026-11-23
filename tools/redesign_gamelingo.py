@@ -554,12 +554,46 @@ def main():
             code=code.replace(old,new,1)
         service.write_text(code,encoding="utf8")
 
+        # Apply the same locally selected font, foreground and background to
+        # the actual in-game captions on the Android phone (not a fake preview).
+        phone=base/SRC/"TelefonActivity.kt"
+        code=phone.read_text(encoding="utf8")
+        changes=(
+            ('''    private fun nastavVelikost(t: TextView) {
+        t.setAutoSizeTextTypeUniformWithConfiguration(
+            14, VELIKOSTI[velikost].toInt(), 1, android.util.TypedValue.COMPLEX_UNIT_SP)
+    }''',
+             '''    private fun nastavVelikost(t: TextView) {
+        val scale = if (Propojeni.Vysilac.cilIp == null)
+            GameLingoPhoneSubtitleStyle.scale(this) else 1f
+        t.setAutoSizeTextTypeUniformWithConfiguration(
+            14, (VELIKOSTI[velikost] * scale).toInt().coerceAtLeast(14),
+            1, android.util.TypedValue.COMPLEX_UNIT_SP)
+    }'''),
+            ('''            nastavVelikost(this)
+            setOnClickListener {''',
+             '''            nastavVelikost(this)
+            GameLingoPhoneSubtitleStyle.apply(this@TelefonActivity, this)
+            setOnClickListener {'''),
+            ('''                    titulek.text = obarviJmena(text, TelefonTitulky.barvy)
+                    titulek.setTextColor(Color.WHITE)''',
+             '''                    titulek.text = obarviJmena(text, TelefonTitulky.barvy)
+                    GameLingoPhoneSubtitleStyle.apply(this@TelefonActivity, titulek)
+                    nastavVelikost(titulek)'''),
+        )
+        for old,new in changes:
+            if code.count(old)!=1:
+                raise RuntimeError("Android phone caption renderer anchor changed: "+old[:65])
+            code=code.replace(old,new,1)
+        phone.write_text(code,encoding="utf8")
+
         # Independent native UI belongs only to GameLingo's Android mobile
         # build, never to the Google TV remote-control receiver application.
         for module in ("GameLingoProfiles.kt", "GameLingoSettings.kt",
                        "GameLingoSubtitleAppearance.kt", "GameLingoDiagnostics.kt",
                        "GameLingoRegions.kt", "GameLingoOCRConfig.kt",
-                       "GameLingoOCRSettings.kt"):
+                       "GameLingoOCRSettings.kt",
+                       "GameLingoPhoneSubtitleStyle.kt"):
             source=Path(__file__).with_name(module)
             (base/SRC/source.name).write_text(source.read_text(encoding="utf8"),encoding="utf8")
     print("GameLingo",mode,"reference dashboard installed; network and OCR unchanged")
