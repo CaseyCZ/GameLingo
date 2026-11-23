@@ -19,6 +19,7 @@ final class GameLingoPlayStation: ObservableObject {
     private var session: RemotePlaySession?
     private var subscriptions = Set<AnyCancellable>()
     private var sessionRevision = 0
+    private var onEnded: ((String) -> Void)?
 
     var registered: [RegisteredConsole] { registrations.consoles }
 
@@ -65,8 +66,10 @@ final class GameLingoPlayStation: ObservableObject {
     }
 
     func start(console: RegisteredConsole,
-               onFrame: @escaping @Sendable (CVPixelBuffer) -> Void) {
+               onFrame: @escaping @Sendable (CVPixelBuffer) -> Void,
+               onEnded: @escaping (String) -> Void) {
         stop()
+        self.onEnded = onEnded
         sessionRevision &+= 1
         let revision = sessionRevision
         let name = console.nickname.isEmpty ? "PlayStation" : console.nickname
@@ -107,6 +110,7 @@ final class GameLingoPlayStation: ObservableObject {
                     self.status = "PlayStation: " + message
                     self.isRunning = false
                     self.needsLoginPIN = false
+                    self.onEnded?(message)
                 }
             }
             .store(in: &subscriptions)
@@ -120,6 +124,7 @@ final class GameLingoPlayStation: ObservableObject {
 
     func stop() {
         sessionRevision &+= 1
+        onEnded = nil
         subscriptions.removeAll()
         let old = session
         session = nil
