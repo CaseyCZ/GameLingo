@@ -49,6 +49,8 @@ def redesign_mobile(s: str) -> str:
                 .firstOrNull { it.selected }
             val selectedXbox = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
                 .getString("selectedXboxId", null)
+            val liveImage = RemotePlayService.aktivni &&
+                RemotePlayService.prehledSpojeni().uroven == UrovenSpojeni.OK
             val primaryFamily = when {
                 selectedXbox != null -> "Xbox"
                 psSelected != null -> "PlayStation"
@@ -63,9 +65,10 @@ def redesign_mobile(s: str) -> str:
             }
             obsah.addView(GameLingoVisualKit.deviceCard(
                 this, primaryFamily, primaryName,
-                if (nejakaKonzole) "Nastaveno · spojení ověřím při spuštění"
+                if (liveImage) "Snímání aktivní"
+                else if (nejakaKonzole) "Nastaveno · spojení ověřím při spuštění"
                 else "Přidat Xbox nebo PlayStation",
-                false
+                liveImage
             ) { openDevices() }, odsazeni(bottom = 10))
 
             val tvStore = TvProfily(this)
@@ -77,7 +80,7 @@ def redesign_mobile(s: str) -> str:
                 if (tvStore.pouzeTelefon) "Titulky na telefonu"
                 else if (savedTv == null) "Vyber nebo spáruj televizi"
                 else "Televize uložena · spojení se ověří",
-                false
+                tvStore.pouzeTelefon
             ) { openDevices() }, odsazeni(bottom = 18))
 
             obsah.addView(GameLingoVisualKit.cta(
@@ -115,19 +118,22 @@ def redesign_mobile(s: str) -> str:
 
             // Show genuine connection state, not fabricated green indicators.
             obsah.addView(GameLingoVisualKit.status(this,
-                if (RemotePlayService.aktivni) "Relace Remote Play je spuštěna"
+                if (liveImage && tvStore.pouzeTelefon) "Snímání aktivní"
+                else if (RemotePlayService.aktivni && !tvStore.pouzeTelefon)
+                    "Remote Play běží · TV spojení neověřeno"
+                else if (RemotePlayService.aktivni) "Připojuji / načítám snímky"
                 else if (!nejakaKonzole) "Nejprve připoj konzoli"
                 else if (!tvStore.pouzeTelefon && savedTv == null)
                     "Vyber nebo spáruj televizi"
                 else "Konzole je nastavená · připojení neověřeno",
-                if (RemotePlayService.aktivni)
-                    "Příjem snímků a úspěšný překlad ověř podle živého stavu níže."
-                else if (!tvStore.pouzeTelefon && savedTv == null)
-                    "Přidej televizor ve správě zařízení."
+                if (liveImage && tvStore.pouzeTelefon)
+                    "Video snímky se přijímají, titulky zpracovává OCR."
+                else if (!tvStore.pouzeTelefon)
+                    "Uložený televizor nepotvrzuje živé přijetí titulků."
                 else "Uložené zařízení samo o sobě nepotvrzuje živé spojení.",
-                // Without a confirmed video frame and TV receiver handshake
-                // never display the same green connected state as live iOS.
-                false
+                // Green status only with an actual live video source and
+                // local phone output. The TV has no verified ACK in this lane.
+                liveImage && tvStore.pouzeTelefon
             ), odsazeni(bottom = 9))
             obsah.addView(stavRadek, odsazeni(bottom = 12))
 
