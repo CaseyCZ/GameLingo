@@ -321,7 +321,7 @@ struct GameLingoHome: View {
         VStack(alignment: .leading, spacing: 15) {
             sectionTitle("O aplikaci", detail: "GameLingo – hraj a rozuměj svým hrám")
             infoRow("GameLingo", "Překlad herních dialogů a textů na telefonu i TV")
-            infoRow("Verze pro iPhone", "0.3.0 Beta · Xbox")
+            infoRow("Verze pro iPhone", "0.4.0 Beta · Xbox")
             infoRow("Google TV", "Přenos českých titulků přes domácí síť")
             infoRow("Autor", "CaseyCZ")
             Text("GameLingo je nezávislý open-source projekt navazující na PlayCaption. Xbox, PlayStation a Google TV jsou ochranné známky svých vlastníků.")
