@@ -27,29 +27,8 @@ struct SubtitleSettingsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Zvol oblast, kterou chceš upravit, a posuň ji v náhledu televize. Každá oblast má vlastní nastavení.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Modrá – odkud číst dialogy", systemImage: "square.dashed")
-                            .foregroundStyle(.blue)
-                        Label("Zelená – kam zobrazit české dialogy", systemImage: "square.dashed")
-                            .foregroundStyle(.green)
-                        Label("Žlutá – odkud číst volby / herní text", systemImage: "square.dashed")
-                            .foregroundStyle(.yellow)
-                        Label("Oranžová – kam zobrazit překlad žluté oblasti",
-                              systemImage: "square.dashed")
-                            .foregroundStyle(.orange)
-                    }
-                    .font(.caption)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(GameLingoTheme.card,
-                                in: RoundedRectangle(cornerRadius: 12))
-
-                    Picker("Co upravovat", selection: $editing) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Picker("Oblast", selection: $editing) {
                         Text("Modrá").tag(Area.reading)
                         Text("Zelená").tag(Area.output)
                         Text("Žlutá").tag(Area.choices)
@@ -57,33 +36,39 @@ struct SubtitleSettingsView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    television
-                    Text("Dotkni se místa v náhledu, kam chceš posunout vybraný rámeček. Změny se ukládají automaticky.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    if editing == .reading {
-                        readControls
-                    } else if editing == .output {
-                        outputControls
-                    } else if editing == .choices {
-                        choicesControls
-                    } else {
-                        choicesOutputControls
+                    GLCard {
+                        television
+                    }
+                    GLCard {
+                        if editing == .reading {
+                            readControls
+                        } else if editing == .output {
+                            outputControls
+                        } else if editing == .choices {
+                            choicesControls
+                        } else {
+                            choicesOutputControls
+                        }
                     }
                 }
                 .padding(16)
             }
+            .background(GLStyle.background.ignoresSafeArea())
             .onDisappear { orangePreviewTask?.cancel() }
-            .navigationTitle("Oblasti obrazovky")
-            .tint(GameLingoTheme.accent)
+            .navigationTitle("Oblasti")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    GLHelpButton(title: "Oblasti", explanation:
+                        "Modrá: odkud číst dialogy. Zelená: kam zobrazit české titulky. Žlutá: odkud číst herní texty a volby. Oranžová: kam zobrazit jejich český překlad. Vyber barvu a přetáhni její oblast v náhledu. Každá oblast má vlastní velikost a polohu. Změny se ukládají automaticky.")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Hotovo") { dismiss() }
                 }
             }
         }
+        .tint(GLStyle.blue)
+        .preferredColorScheme(.dark)
     }
 
     private var television: some View {
@@ -187,8 +172,7 @@ struct SubtitleSettingsView: View {
 
     private var readControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Modrý rámeček – odkud číst titulky")
-                .font(.headline)
+            GLHeader(title: "Čtení dialogů", help: "Modrá je vstup OCR. Automatika sleduje vybranou část obrazu, ručně nastavíš přesný rámeček. Funkce filtrování může zachytit i některé nápisy ve hře.")
             Picker("Způsob čtení", selection: $model.manualOCR) {
                 Text("Automaticky").tag(false)
                 Text("Ručně").tag(true)
@@ -209,7 +193,7 @@ struct SubtitleSettingsView: View {
                         set: { updateOCRSize(width: nil, height: CGFloat($0)) }
                     ), in: 0.05...0.60)
                 }
-                Button("Ukázat modrý rámeček na televizi") {
+                Button("Náhled na TV") {
                     model.tv.showOCRRegion(model.manualOCRBox, visible: true)
                 }.buttonStyle(.bordered)
             } else {
@@ -218,13 +202,9 @@ struct SubtitleSettingsView: View {
                         Text(preset.title).tag(preset)
                     }
                 }.pickerStyle(.menu)
-                Text("Automatika čte spodní část obrazu. Pokud se překládají tlačítka nebo mapa, přepni na ruční oblast a vyber jen místo s dialogy.")
-                    .font(.caption).foregroundStyle(.secondary)
             }
             Toggle("Filtrovat položky herního menu", isOn: $model.filterMenuText)
-            Text("Filtr může odstranit také dialog psaný velkými písmeny. Lze ho kdykoli vypnout.")
-                .font(.caption).foregroundStyle(.secondary)
-            Button("Obnovit oblast podle Androidu") {
+            Button("Obnovit oblast") {
                 model.manualOCRBox = CGRect(x: 0.10, y: 0.72,
                                             width: 0.80, height: 0.25)
                 showOnTV()
@@ -234,8 +214,7 @@ struct SubtitleSettingsView: View {
 
     private var outputControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Zelený rámeček – kam poslat české titulky")
-                .font(.headline)
+            GLHeader(title: "České titulky", help: "Zelená určuje místo zobrazení českých dialogů na TV. Velikost písma je nezávislá na oranžovém překladu herních textů.")
             Toggle("Zamknout polohu českých titulků", isOn: $model.outputLocked)
             if !model.outputLocked {
                 Text("Šířka titulků: \(Int(model.outputWidth * 100)) %")
@@ -243,7 +222,7 @@ struct SubtitleSettingsView: View {
                 Text("Velikost písma: \(Int(model.outputFont * 100)) %")
                 Slider(value: $model.outputFont, in: 0.70...1.80)
             }
-            Button("Ukázat české titulky na Google TV") {
+            Button("Náhled na TV") {
                 showOnTV()
             }
             .buttonStyle(.borderedProminent)
@@ -255,15 +234,12 @@ struct SubtitleSettingsView: View {
                 model.outputFont = 1
                 showOnTV()
             }.font(.subheadline)
-            Text("Tato poloha se přenáší se všemi českými titulky. Funguje s aplikací GameLingo TV na Google TV.")
-                .font(.caption).foregroundStyle(.secondary)
         }
     }
 
     private var choicesControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Žlutý rámeček – volby odpovědí a herní texty")
-                .font(.headline)
+            GLHeader(title: "Herní texty", help: "Žlutá oblast čte originální anglické herní texty, nabídky nebo možnosti odpovědí. Jejich překlad se zobrazuje samostatně v oranžové oblasti.")
             Toggle("Překládat volby / texty", isOn: $model.choicesEnabled)
             if model.choicesEnabled {
                 Picker("Typ obsahu", selection: $model.choicesTextMode) {
@@ -284,7 +260,7 @@ struct SubtitleSettingsView: View {
                         set: { updateChoicesSize(width: nil, height: CGFloat($0)) }
                     ), in: 0.10...1.0)
                 }
-                Button("Ukázat žlutý rámeček na Google TV") {
+                Button("Náhled na TV") {
                     model.tv.sendChoices([], area: model.choicesArea,
                                          asText: model.choicesTextMode, showFrame: true,
                                          outputArea: model.choicesOutputArea,
@@ -297,16 +273,11 @@ struct SubtitleSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Button("Obnovit výchozí oblast podle Androidu") {
+                Button("Obnovit oblast") {
                     model.choicesArea = CGRect(x: 0.55, y: 0.45,
                                                width: 0.40, height: 0.35)
                     showOnTV()
                 }.font(.subheadline)
-                Text("Polohu českého překladu nastav v oranžové oblasti. Naše vlastní TV aplikace ji podporuje nezávisle na žluté oblasti.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Experimentální režim: GameLingo umí číst a zobrazovat herní volby a text na televizoru. Aktuální nastavení můžeš uložit do profilu hry.")
-                    .font(.caption).foregroundStyle(.orange)
             } else {
                 Text("Volby jsou vypnuté, takže OCR dál čte pouze oblast dialogových titulků.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -316,11 +287,7 @@ struct SubtitleSettingsView: View {
 
     private var choicesOutputControls: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Oranžový rámeček – kam zobrazit překlad herních textů")
-                .font(.headline)
-            Text("Žlutý rámeček určuje, odkud se anglický text čte. Oranžový určuje jeho české zobrazení na Google TV.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            GLHeader(title: "Překlad herních textů", help: "Oranžová je výstup překladu ze žluté oblasti. Při hraní se aktuální přeložený text při změně polohy ihned přesune. Písmo můžeš měnit nezávisle na běžných titulcích.")
             if model.choicesEnabled {
                 Toggle("Zamknout oranžový rámeček", isOn: $model.choicesOutputLocked)
                 if !model.choicesOutputLocked {
@@ -336,7 +303,7 @@ struct SubtitleSettingsView: View {
                     ), in: 0.08...0.40)
                 }
                 gameTextFontControl
-                Button("Ukázat oranžový překlad na Google TV") {
+                Button("Náhled na TV") {
                     showOnTV()
                 }
                 .buttonStyle(.borderedProminent)
@@ -358,7 +325,7 @@ struct SubtitleSettingsView: View {
     /// The yellow rectangle is OCR input only.
     private var gameTextFontControl: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Velikost písma českého překladu: \(Int(model.choicesOutputFont * 100)) %")
+            Text("Velikost písma: \(Int(model.choicesOutputFont * 100)) %")
             Slider(value: Binding(
                 get: { model.choicesOutputFont },
                 set: { newValue in
@@ -367,9 +334,6 @@ struct SubtitleSettingsView: View {
                 }
             ), in: 0.60...2.00, step: 0.05)
                 .tint(.orange)
-            Text("Mění jen překlad herních textů a voleb. Klasické titulky zůstávají beze změny.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
