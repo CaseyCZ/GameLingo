@@ -17,11 +17,13 @@ private enum GLVisual {
 
 struct GameLingoHome: View {
     @EnvironmentObject private var model: CaptionAppModel
-    @AppStorage("selectedXboxServerID") private var selectedXboxServerID = ""
+    @ObservedObject var devices: GameLingoDevices
 
     @State private var tab: Page = .home
     @State private var xboxSheet = false
+    @State private var playStationSheet = false
     @State private var tvSheet = false
+    @State private var setupSheet = false
     @State private var regionsSheet = false
     @State private var profilesSheet = false
     @State private var settingsSheet = false
@@ -81,7 +83,26 @@ struct GameLingoHome: View {
         .tint(GLVisual.cyan)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $xboxSheet) { xboxScreen }
+        .sheet(isPresented: $playStationSheet) {
+            GameLingoPlayStationSetup(devices: devices)
+                .environmentObject(model)
+        }
         .sheet(isPresented: $tvSheet) { tvScreen }
+        .sheet(isPresented: $setupSheet) {
+            GameLingoSetupView(devices: devices, onFinished: {})
+                .environmentObject(model)
+        }
+        .onAppear {
+            devices.refreshXbox(model.xbox.consoles)
+            devices.refreshPlayStation(model.playStation.registered)
+            if !devices.completedSetup { setupSheet = true }
+        }
+        .onReceive(model.xbox.$consoles) { consoles in
+            devices.refreshXbox(consoles)
+        }
+        .onReceive(model.playStation.registrations.$consoles) { consoles in
+            devices.refreshPlayStation(consoles)
+        }
         .sheet(isPresented: $regionsSheet) { SubtitleSettingsView(model: model) }
         .sheet(isPresented: $profilesSheet) {
             NavigationStack {
@@ -130,62 +151,121 @@ struct GameLingoHome: View {
         .padding(.bottom, 6)
     }
 
+    private var activeConsoleName: String {
+        devices.chosenConsole?.name ?? "Vybrat konzoli"
+    }
+
+    private var consoleActuallyReady: Bool {
+        guard let choice = devices.chosenConsole else { return false }
+        if choice.family == .xbox {
+            return model.xbox.signedIn && devices.activeXbox(from: model.xbox) != nil
+        }
+        return model.playStation.findSavedConsole(id: choice.id) != nil
+    }
+
+    private var outputActuallyReady: Bool {
+        if devices.subtitleOutput == .phone { return true }
+        return model.tv.receiverConnected && devices.chosenTelevision != nil
+    }
+
+    private func openSelectedConsole() {
+        switch devices.chosenConsole?.family {
+        case .xbox: xboxSheet = true
+        case .playStation: playStationSheet = true
+        case nil: setupSheet = true
+        }
+    }
+
+    private func startCurrentSource() {
+        guard !model.isRunning else {
+            model.stop()
+            return
+        }
+        guard let record = devices.chosenConsole else {
+            setupSheet = true
+            return
+        }
+        guard outputActuallyReady else {
+            if devices.subtitleOutput == .googleTV { tvSheet = true }
+            return
+        }
+        if record.family == .xbox {
+            guard let xbox = devices.activeXbox(from: model.xbox) else {
+                xboxSheet = true
+                return
+            }
+            model.start(xbox)
+        } else {
+            guard let ps = model.playStation.findSavedConsole(id: record.id) else {
+                playStationSheet = true
+                return
+            }
+            model.start(ps)
+        }
+    }
+
     private var homePage: some View {
         VStack(spacing: 12) {
-            Button { xboxSheet = true } label: {
+            HStack {
+                Text("Moje hra").font(.headline)
+                Spacer()
+                Button {
+                    tab = .devices
+                } label: {
+                    Label("Přidat", systemImage: "plus.circle.fill")
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
+            Button { openSelectedConsole() } label: {
                 GameLingoDeviceRow(
-                    icon: "gamecontroller.fill",
-                    name: "Xbox",
-                    subtitle: "Remote Play",
-                    connected: model.xbox.signedIn,
-                    status: model.xbox.signedIn ? "Účet připojen" : "Připojit konzoli"
+                    icon: devices.chosenConsole?.family.icon ?? "gamecontroller",
+                    name: activeConsoleName,
+                    subtitle: devices.chosenConsole?.family.rawValue ?? "Konzole",
+                    connected: consoleActuallyReady,
+                    status: consoleActuallyReady ? "Připraveno" : "Připojit"
                 )
             }
             .buttonStyle(.plain)
-            Button { tvSheet = true } label: {
+            Button {
+                if devices.subtitleOutput == .phone { tab = .devices }
+                else { tvSheet = true }
+            } label: {
                 GameLingoDeviceRow(
-                    icon: "tv.fill",
-                    name: "Google TV",
-                    subtitle: "Titulky přímo na obrazovce",
-                    connected: model.tv.receiverConnected,
-                    status: model.tv.receiverConnected ? "Spárováno" : "Spárovat TV"
+                    icon: devices.subtitleOutput == .phone ? "smartphone" : "tv.fill",
+                    name: devices.subtitleOutput.rawValue,
+                    subtitle: "",
+                    connected: outputActuallyReady,
+                    status: outputActuallyReady ? "Připraveno" : "Spárovat"
                 )
             }
             .buttonStyle(.plain)
             actionButton
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 11) {
-                tile("Oblasti na obrazovce", icon: "rectangle.dashed") { regionsSheet = true }
+            LazyVGrid(columns: [GridItem(.flexible()),
+                                GridItem(.flexible())], spacing: 11) {
+                tile("Oblasti", icon: "rectangle.dashed") { regionsSheet = true }
                 tile("Profily her", icon: "gamecontroller") { profilesSheet = true }
-                tile("Nastavení překladu", icon: "slider.horizontal.3") { settingsSheet = true }
+                tile("Překlad", icon: "slider.horizontal.3") { settingsSheet = true }
                 tile("Zařízení", icon: "display.2") { tab = .devices }
             }
             readiness
-            if !model.lastCzech.isEmpty {
-                VStack(alignment: .leading, spacing: 7) {
-                    Text("Poslední český překlad")
-                        .font(.caption)
-                        .foregroundStyle(GLVisual.muted)
-                    Text(model.lastCzech)
-                        .font(.body.weight(.semibold))
+            if devices.subtitleOutput == .phone && !model.phoneSubtitle.isEmpty {
+                GLCard {
+                    Text(model.phoneSubtitle)
+                        .font(.system(size: 23, weight: .bold))
                         .foregroundStyle(.white)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(15)
-                .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 16))
+            } else if !model.lastCzech.isEmpty {
+                GLCard {
+                    Text(model.lastCzech)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                }
             }
         }
     }
 
     private var actionButton: some View {
-        Button {
-            if model.isRunning {
-                model.stop()
-            } else if let console = model.xbox.consoles.first(where: { $0.id == selectedXboxServerID }) {
-                model.start(console)
-            } else {
-                xboxSheet = true
-            }
-        } label: {
+        Button(action: startCurrentSource) {
             HStack(spacing: 12) {
                 Image(systemName: model.isRunning ? "stop.fill" : "play.circle.fill")
                     .font(.title3)
@@ -200,30 +280,28 @@ struct GameLingoHome: View {
             .background(GLVisual.accent, in: RoundedRectangle(cornerRadius: 15))
         }
         .buttonStyle(.plain)
-        .accessibilityHint("Bez vybraného Xboxu otevře výběr konzole")
     }
 
     private var readiness: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: model.isRunning ? "waveform" : "checkmark.circle.fill")
-                .font(.title2)
-                .foregroundStyle(GLVisual.green)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(model.isRunning ? "Překlad probíhá" : (model.xbox.signedIn ? (model.tv.receiverConnected ? "Připraveno" : "Připoj Google TV") : "Připoj Xbox"))
-                    .font(.subheadline.bold())
-                    .foregroundStyle(GLVisual.green)
-                Text(model.isRunning ? model.status : (model.xbox.signedIn ? "Spáruj TV nebo přejdi k překladu." : "Zvol svoji konzoli."))
-                    .font(.caption)
-                    .foregroundStyle(GLVisual.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
+        HStack(spacing: 12) {
+            Image(systemName: model.isRunning ? "waveform" :
+                  (consoleActuallyReady && outputActuallyReady
+                   ? "checkmark.circle.fill" : "circle.dashed"))
+                .foregroundStyle(consoleActuallyReady && outputActuallyReady
+                                 ? GLVisual.green : GLVisual.muted)
+            Text(model.isRunning
+                 ? model.status
+                 : (!consoleActuallyReady
+                    ? "Připoj konzoli" :
+                       (!outputActuallyReady ? "Spáruj TV" : "Připraveno")))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+            Spacer()
+            GLHelpButton(title: "Stav překladu",
+                explanation: "Stav Připraveno znamená, že je vybraná skutečně registrovaná konzole a připravený výstup titulků. Uložení IP adresy samo o sobě nestačí k párování.")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16)
-            .strokeBorder(GLVisual.border, lineWidth: 1))
     }
 
     private var regionsPage: some View {
@@ -294,34 +372,19 @@ struct GameLingoHome: View {
     }
 
     private var devicesPage: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            sectionTitle("Moje zařízení", detail: "Připojení herní konzole a televize")
-            Button { xboxSheet = true } label: {
-                GameLingoDeviceRow(icon: "gamecontroller.fill", name: "Xbox",
-                    subtitle: "Vybrat konzoli, účet a Remote Play",
-                    connected: model.xbox.signedIn,
-                    status: model.xbox.signedIn ? "Přihlášeno" : "Připojit")
-            }
-            .buttonStyle(.plain)
-            Button { tvSheet = true } label: {
-                GameLingoDeviceRow(icon: "tv.fill", name: "Google TV / Android TV",
-                    subtitle: "Lokální síť a šestimístný párovací kód",
-                    connected: model.tv.receiverConnected,
-                    status: model.tv.receiverConnected ? "Připojeno" : "Spárovat")
-            }
-            .buttonStyle(.plain)
-            sectionTitle("Další platformy", detail: "GameLingo pro další zařízení")
-            infoRow("PlayStation 5 / 4", "Dostupný základ pro Android. Na iOS zatím ne.")
-            infoRow("Android telefon", "Samostatná GameLingo aplikace s Remote Play.")
-            infoRow("PC", "Připravujeme.")
-        }
+        GameLingoDevicesPanel(
+            devices: devices,
+            addXbox: { xboxSheet = true },
+            addPlayStation: { playStationSheet = true },
+            addTV: { tvSheet = true }
+        )
     }
 
     private var aboutPage: some View {
         VStack(alignment: .leading, spacing: 15) {
             sectionTitle("O aplikaci", detail: "GameLingo – hraj a rozuměj svým hrám")
             infoRow("GameLingo", "Překlad herních dialogů a textů na telefonu i TV")
-            infoRow("Verze pro iPhone", "0.4.0 Beta · Xbox")
+            infoRow("iPhone", "Xbox / PlayStation 5 / PlayStation 4")
             infoRow("Google TV", "Přenos českých titulků přes domácí síť")
             infoRow("Autor", "CaseyCZ")
             Text("GameLingo je nezávislý open-source projekt navazující na PlayCaption. Xbox, PlayStation a Google TV jsou ochranné známky svých vlastníků.")
