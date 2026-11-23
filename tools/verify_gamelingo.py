@@ -66,7 +66,7 @@ def android(root: Path, mode: str):
     contains(base / "GameLingoPlayStationConsoles.kt",
              "AndroidKeyStore", "AES/GCM/NoPadding", "fun select(")
     if mode == "tv":
-        contains(base / "PrijemService.kt", "IPhoneTVPairing")
+        contains(base / "Propojeni.kt", "IPhoneTVPairing.verify")
         contains(base / "OverlayService.kt", "EXTRA_VYSTUP_VOLEB")
 
 
