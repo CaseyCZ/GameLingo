@@ -70,6 +70,15 @@ def android(root: Path, mode: str):
         contains(base / "GameLingoAbout.kt", "AGPL-3.0")
         contains(base / "GameLingoVisualKit.kt", "fun deviceCard(", "fun navigationTile(", "fun hero(")
         contains(base / "GameLingoLanguages.kt", "fun game(", "fun target(", "fun choose(")
+        contains(base / "GameLingoSettings.kt", "GameLingoOCRSettings.show", "GameLingoSubtitleAppearance.show")
+        contains(base / "GameLingoOCRConfig.kt", "fun intervalMs()", "filterMenuText", "expandSearch")
+        contains(base / "RemotePlayService.kt", "GameLingoOCRConfig.load(this)",
+                 "GameLingoOCRConfig.intervalMs()")
+        contains(base / "VyberTitulku.kt", "GameLingoOCRConfig.filterMenuText",
+                 "GameLingoOCRConfig.expandSearch")
+        contains(base / "TelefonActivity.kt", "GameLingoPhoneSubtitleStyle.apply",
+                 "GameLingoPhoneSubtitleStyle.scale")
+        contains(base / "GameLingoPhoneSubtitleStyle.kt", "fun setColor(", "fun setBackground(")
         contains(base / "Prekladac.kt", "zdrojovyJazyk", "nastavZdroj(")
     else:
         contains(base / "MainActivity.kt",
