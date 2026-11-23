@@ -55,7 +55,7 @@ struct GLHelpButton: View {
                         Label(LocalizedStringKey(title), systemImage: "questionmark.circle.fill")
                             .font(.title2.bold())
                             .foregroundStyle(GLStyle.blue)
-                        Text(explanation)
+                        Text(LocalizedStringKey(explanation))
                             .font(.body)
                             .foregroundStyle(.white)
                             .fixedSize(horizontal: false, vertical: true)
@@ -63,7 +63,7 @@ struct GLHelpButton: View {
                     .padding(22)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .background(GLStyle.background.ignoresSafeArea())
+                .background(GLNeonBackground())
                 .navigationTitle("Nápověda")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
