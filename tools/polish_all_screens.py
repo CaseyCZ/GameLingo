@@ -77,8 +77,9 @@ def tv(s):
     new = '''        } else {
             // Own minimal GameLingo TV landing screen. Both previous modes
             // remain available: use phone receiver or console Remote Play.
+            obsah.background = GameLingoVisualKit.pageBackground(this)
             val titulek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
-            titulek.addView(logoRadek, LinearLayout.LayoutParams(0,
+            titulek.addView(GameLingoVisualKit.hero(this), LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             titulek.addView(GameLingoHelp.button(this, "tv"),
                 LinearLayout.LayoutParams(dp(58), dp(58)))
@@ -91,9 +92,9 @@ def tv(s):
 
             obsah.addView(sekce("Zobrazování"), odsazeni(bottom = 6))
             dlazdiceTel = dlazdice("▣", "Překlad z telefonu", "",
-                Color.parseColor("#172033")) { hratSTelefonem() }
+                Color.parseColor("#111A33")) { hratSTelefonem() }
             dlazdiceTv = dlazdice("▤", "Přímo na TV", "",
-                Color.parseColor("#172033")) {
+                Color.parseColor("#111A33")) {
                 if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
             }
             // Both receiver modes need real D-pad focus, including a visible
@@ -102,12 +103,8 @@ def tv(s):
                 v.isFocusable = true
                 v.contentDescription = nazev
                 v.setOnFocusChangeListener { view, focused ->
-                    view.background = android.graphics.drawable.GradientDrawable().apply {
-                        setColor(Color.parseColor(if (focused) "#263A61" else "#172033"))
-                        cornerRadius = dp(18).toFloat()
-                        setStroke(dp(if (focused) 3 else 1),
-                            Color.parseColor(if (focused) "#38BDF8" else "#33476B"))
-                    }
+                    view.background = GameLingoVisualKit.card(this@MainActivity,
+                        selected = focused)
                     view.scaleX = if (focused) 1.02f else 1f
                     view.scaleY = if (focused) 1.02f else 1f
                 }
@@ -135,7 +132,7 @@ def tv(s):
                 }
             }
             obsah.addView(text("GameLingo TV", 14f,
-                Color.parseColor("#94A3B8")).apply { gravity = Gravity.CENTER })
+                Color.parseColor("#92A4C7")).apply { gravity = Gravity.CENTER })
 '''
     s=s[:s.index(start)]+new+s[s.index(end, s.index(start)):]
     # TV receiver help is optional. Do not occupy extra width or remove the code.
