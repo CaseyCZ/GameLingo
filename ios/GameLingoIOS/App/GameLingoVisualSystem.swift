@@ -3,12 +3,12 @@ import SwiftUI
 // GameLingo's real, reusable visual language. These are native SwiftUI views,
 // not screenshots painted over controls. OCR/Remote Play continue underneath.
 enum GLNeon {
-    static let cyan = Color(red: 0.02, green: 0.84, blue: 1.00)
-    static let blue = Color(red: 0.18, green: 0.34, blue: 0.99)
-    static let purple = Color(red: 0.69, green: 0.16, blue: 0.99)
-    static let ink = Color(red: 0.025, green: 0.038, blue: 0.09)
-    static let panel = Color(red: 0.065, green: 0.10, blue: 0.20)
-    static let mist = Color(red: 0.57, green: 0.64, blue: 0.78)
+    static let cyan = GameLingoUIContract.Palette.cyan
+    static let blue = GameLingoUIContract.Palette.blue
+    static let purple = GameLingoUIContract.Palette.purple
+    static let ink = GameLingoUIContract.Palette.background
+    static let panel = GameLingoUIContract.Palette.panel
+    static let mist = GameLingoUIContract.Palette.muted
 
     static let accent = LinearGradient(
         colors: [cyan, blue, purple],
