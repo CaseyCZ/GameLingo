@@ -79,7 +79,9 @@ object IPhoneTVPairing {
         code = null
         expiresAtMs = 0
         attempts = 0
-        lastAuthenticatedMs = now
+        // A successful PIN is only pairing, not an authenticated live
+        // connection. Show "connected" only after a verified PING or TEXT.
+        lastAuthenticatedMs = 0L
         token
     }
 
