@@ -327,6 +327,30 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("var shownCode: String? = IPhoneTVPairing.startCode()",native)
         self.assertIn("PrijemService.statistikaPrijmu()",native)
 
+    def test_tv_automatic_udp_port_fallback_is_coordinated(self):
+        """Do not move TV port without moving iOS/Android pairing and captions."""
+        tv_patch=code(TOOLS/"patch_tv_iphone.py")
+        ios=code(IOS/"PlayCaptionTV.swift")
+        android=code(TOOLS/"GameLingoTVPairing.kt")
+        tv_screen=code(TOOLS/"redesign_gamelingo.py")
+        self.assertIn("listOf(PORT_TITULKY, 41990, 41991, 41992, 41993)",tv_patch)
+        self.assertIn("reuseAddress = false",tv_patch)
+        self.assertIn("firstNotNullOfOrNull",tv_patch)
+        self.assertIn('casti[0] == "GLPORT1"',tv_patch)
+        self.assertIn('GLPORT1\\\\tPORT\\\\t$prijimaciPort',tv_patch)
+        self.assertIn("fun prijimaciPort()",tv_patch)
+        self.assertIn('PrijemService.prijimaciPort()',tv_screen)
+        self.assertIn("private func discoverReceiverPort(",ios)
+        self.assertIn('GLPORT1\\tQUERY',ios)
+        self.assertIn("for candidate in 41989...41993",ios)
+        self.assertIn("self.beginReceiverPairing(target: target, code: code, port: port)",ios)
+        self.assertIn("self.connectLiveReceiver(target: target, port: port)",ios)
+        self.assertIn("UInt16(cachedReceiverPort(target))",ios)
+        self.assertIn("private fun receiverPort(ip: String)",android)
+        self.assertIn("receiverPort(tv.ip)",android)
+        self.assertIn("receiverPort(ip)",android)
+        self.assertNotIn("PORT_TITULKY))\\n",tv_patch)
+
     def test_tv_style_control_and_live_game_profile_save(self):
         """TV style is authenticated and persisted; running games may be saved."""
         ios=code(IOS/"PlayCaptionTV.swift")
