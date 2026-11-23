@@ -1,5 +1,5 @@
-name: GameLingo 0.5 Android / TV UI regression
-# P0/3 QA: saved Android Xbox removal/restore and shared TV picker (23 Nov).
+name: GameLingo 0.5 Google TV native UI candidate
+# Current UI checkpoint: native Google TV remote, language wizard, receiver pairing and vector Xbox/PS icons.
 
 # QA checkpoint: P0 multi-device and unified native navigation; P1 TV D-pad focus.
 # This workflow intentionally runs only when explicitly revised or dispatched.
@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [mobile, tv]
+        mode: [tv]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,6 +57,7 @@ jobs:
           python kit/tools/polish_all_screens.py "$MODE" upstream
           python kit/tools/android_multi_xbox.py upstream
           python kit/tools/wire_android_devices.py upstream
+          python kit/tools/wire_gamelingo_languages.py upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode "$MODE"
           sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
       - name: Compile and verify APK
