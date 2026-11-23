@@ -407,7 +407,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func shareLogs() -> String {
-        (["GameLingo iOS 0.1.0", "Stav: \(status)"] + logLines).joined(separator: "\n")
+        (["GameLingo iOS 0.2.0", "Stav: \(status)"] + logLines).joined(separator: "\n")
     }
 }
 
@@ -494,7 +494,7 @@ struct ContentView: View {
                         .font(.headline)
                         .padding(.top, 3)
                     HStack(spacing: 12) {
-                        pendingTile(symbol: "playstation.logo", title: "PlayStation",
+                        pendingTile(symbol: "gamecontroller", title: "PlayStation",
                                     detail: "iOS – připravujeme")
                         pendingTile(symbol: "desktopcomputer", title: "PC",
                                     detail: "Ve vývoji")
@@ -525,7 +525,7 @@ struct ContentView: View {
                         .background(GameLingoTheme.card,
                                     in: RoundedRectangle(cornerRadius: 16))
                     }
-                    Text("GameLingo · CaseyCZ · testovací verze 0.1.0")
+                    Text("GameLingo · CaseyCZ · testovací verze 0.2.0")
                         .font(.caption2)
                         .foregroundStyle(GameLingoTheme.secondary)
                         .frame(maxWidth: .infinity)
@@ -678,7 +678,7 @@ private struct PlayCaptionSection<Content: View>: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: symbol)
                     .font(.system(size: 21, weight: .semibold))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(GameLingoTheme.accent)
                     .frame(width: 43, height: 43)
                     .background(Color.blue.opacity(0.15),
                                 in: RoundedRectangle(cornerRadius: 12))
@@ -695,10 +695,10 @@ private struct PlayCaptionSection<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.white.opacity(0.065),
+        .background(GameLingoTheme.card,
                     in: RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20)
-            .strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+            .strokeBorder(GameLingoTheme.border, lineWidth: 1))
     }
 }
 
@@ -750,9 +750,9 @@ struct XboxRemotePlayView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "gamecontroller.fill")
                         .font(.title3)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(GameLingoTheme.accent)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(selectedConsole?.name ?? "Vyber Xbox")
+                        Text(selectedConsole?.name ?? "Vyber konzoli Xbox")
                             .font(.headline)
                             .foregroundStyle(.primary)
                         Text(selectedConsole?.powerState ?? "Zvol konzoli pro překlad")
@@ -761,11 +761,11 @@ struct XboxRemotePlayView: View {
                     }
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(GameLingoTheme.accent)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(14)
-                .background(Color.white.opacity(0.075),
+                .background(GameLingoTheme.cardAlt.opacity(0.94),
                             in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14)
                     .strokeBorder(Color.white.opacity(0.13), lineWidth: 1))
@@ -792,7 +792,7 @@ struct XboxRemotePlayView: View {
                     model.start(console)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.red)
+                .tint(GameLingoTheme.action)
                 .disabled(selectedConsole == nil || model.isRunning)
                 Button("Zastavit") { model.stop() }
                     .buttonStyle(.bordered)
@@ -841,7 +841,7 @@ struct TVSelectionView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "tv.fill")
                         .font(.title2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(GameLingoTheme.accent)
                         .frame(width: 46, height: 46)
                         .background(Color.blue.opacity(0.18),
                                     in: RoundedRectangle(cornerRadius: 12))
@@ -857,7 +857,7 @@ struct TVSelectionView: View {
                     Spacer(minLength: 2)
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(GameLingoTheme.accent)
                         .accessibilityLabel("Vybraná televize")
                 }
                 .padding(13)
@@ -885,7 +885,7 @@ struct TVSelectionView: View {
                     Label("Změnit", systemImage: "arrow.left.arrow.right")
                 }
                 .buttonStyle(.bordered)
-                .tint(.blue)
+                .tint(GameLingoTheme.action)
             }
 
             if showDevices {
@@ -919,7 +919,7 @@ struct TVSelectionView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(10)
-                            .background(Color.white.opacity(0.06),
+                            .background(GameLingoTheme.cardAlt.opacity(0.90),
                                         in: RoundedRectangle(cornerRadius: 10))
                         }
                         .buttonStyle(.plain)
@@ -941,11 +941,11 @@ struct TVSelectionView: View {
                             editIP = false
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.blue)
+                        .tint(GameLingoTheme.action)
                     }
                 }
                 .padding(12)
-                .background(Color.white.opacity(0.045),
+                .background(GameLingoTheme.cardAlt.opacity(0.90),
                             in: RoundedRectangle(cornerRadius: 13))
             }
 
@@ -988,7 +988,7 @@ struct TVSelectionView: View {
                         tv.pairReceiver()
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.blue)
+                    .tint(GameLingoTheme.action)
                     .disabled(chosenIP.isEmpty || tv.receiverCode.count != 6)
                 }
                 Text(tv.receiverStatus)
@@ -996,7 +996,7 @@ struct TVSelectionView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(13)
-            .background(Color.white.opacity(0.045),
+            .background(GameLingoTheme.cardAlt.opacity(0.90),
                         in: RoundedRectangle(cornerRadius: 13))
 
             HStack(alignment: .top, spacing: 10) {
@@ -1009,7 +1009,7 @@ struct TVSelectionView: View {
                          ? "Televize potvrdila spojení"
                          : "Příjem titulků na TV zatím nepotvrzen")
                         .font(.subheadline.bold())
-                    Text("Na TV použij režim „S mobilem“ a potom testovací titulek.")
+                    Text("Na Google TV spusť GameLingo TV, zvol „Překlad z telefonu“ a poté odešli zkušební titulek.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1024,7 +1024,7 @@ struct TVSelectionView: View {
                     .padding(.vertical, 8)
             }
             .buttonStyle(.borderedProminent)
-            .tint(.red)
+            .tint(GameLingoTheme.action)
             .disabled(chosenIP.isEmpty)
 
             DisclosureGroup("Upravit text zkušebního titulku", isExpanded: $editTest) {
@@ -1065,7 +1065,7 @@ struct XboxAccountView: View {
                         Task { await auth.beginLogin() }
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.red)
+                    .tint(GameLingoTheme.action)
                 }
                 if let code = auth.currentCode {
                     Text("Na stránce Microsoftu zadej tento kód:")
@@ -1081,7 +1081,7 @@ struct XboxAccountView: View {
                             showMicrosoftBrowser = true
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.red)
+                        .tint(GameLingoTheme.action)
                     }
                     Text("Po přihlášení zavři prohlížeč tlačítkem Hotovo. Aplikace bude pokračovat se stejným kódem.")
                         .font(.caption)
@@ -1106,7 +1106,7 @@ struct XboxAccountView: View {
                         Label("Načíst moje konzole", systemImage: "gamecontroller")
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.blue)
+                    .tint(GameLingoTheme.action)
 
                     Button {
                         auth.signOut()
@@ -1114,7 +1114,7 @@ struct XboxAccountView: View {
                         Label("Odhlásit", systemImage: "rectangle.portrait.and.arrow.right")
                     }
                     .buttonStyle(.bordered)
-                    .tint(.red)
+                    .tint(GameLingoTheme.action)
                 }
             }
             Text(auth.status)
