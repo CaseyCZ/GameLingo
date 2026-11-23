@@ -198,6 +198,15 @@ struct GameLingoHome: View {
         devices.chosenConsole?.name ?? "Vybrat konzoli"
     }
 
+    private var activeConsoleStatus: String {
+        guard model.isRunning else {
+            return consoleActuallyReady ? "Nastaveno" : "Připojit"
+        }
+        // Remote Play creation is asynchronous. No decoded video frame means
+        // we are still connecting, not actively translating the game.
+        return model.frameCount > 0 ? "Snímání aktivní" : "Připojuji…"
+    }
+
     private var consoleActuallyReady: Bool {
         guard let choice = devices.chosenConsole else { return false }
         if choice.family == .xbox {
@@ -270,9 +279,8 @@ struct GameLingoHome: View {
                     icon: devices.chosenConsole?.family.icon ?? "gamecontroller",
                     name: activeConsoleName,
                     subtitle: devices.chosenConsole?.family.rawValue ?? "Konzole",
-                    connected: consoleActuallyReady,
-                    status: model.isRunning ? "Probíhá překlad" :
-                        (consoleActuallyReady ? "Nastaveno" : "Připojit")
+                    connected: model.isRunning && model.frameCount > 0,
+                    status: activeConsoleStatus
                 )
             }
             .buttonStyle(.plain)
@@ -379,7 +387,7 @@ struct GameLingoHome: View {
                 .foregroundStyle(.white)
             Spacer()
             GLHelpButton(title: "Stav překladu",
-                explanation: "Stav Připraveno znamená, že je vybraná skutečně registrovaná konzole a připravený výstup titulků. Uložení IP adresy samo o sobě nestačí k párování.")
+                explanation: "Nastaveno znamená, že je vybraná registrovaná konzole. Spojení se ověřuje až po spuštění Remote Play. Snímání aktivní se objeví teprve po přijetí obrazových snímků. Uložená IP sama o sobě neznamená spárování.")
         }
         .padding(14)
         .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 16))
