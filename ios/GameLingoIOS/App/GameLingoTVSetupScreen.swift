@@ -161,7 +161,7 @@ private struct GameLingoTVPairingPanel: View {
                             Image(systemName: "network")
                                 .font(.system(size: 20))
                                 .foregroundStyle(GLNeon.cyan)
-                                .frame(width: 55, height: 56)
+                                .frame(width: 48, height: 48)
                                 .background(GLNeon.panel,
                                             in: RoundedRectangle(cornerRadius: 15))
                                 .overlay(RoundedRectangle(cornerRadius: 15)
