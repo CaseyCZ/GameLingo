@@ -302,13 +302,18 @@ object GameLingoDeviceCenter {
             android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
         tvs.forEach { tv ->
             val savedPairing = mobile && GameLingoTVPairing.paired(c, tv.ip)
-            val descriptor = tv.ip + if (savedPairing) " · Spárováno kódem" else ""
+            val descriptor = tv.ip + when {
+                !savedPairing -> ""
+                GameLingoTVPairing.connected(tv.ip) -> " · TV odpověděla"
+                else -> " · Kód uložen, spojení neověřeno"
+            }
             add(root, line(c, tv.jmeno, descriptor,
                           tvStore.posledniId == tv.id) {
                 AlertDialog.Builder(c)
                     .setTitle(tv.jmeno)
                     .setItems(if (mobile)
-                        arrayOf("Použít", "Spárovat šest číslic z TV", "Odebrat")
+                        arrayOf("Použít", "Spárovat šest číslic z TV",
+                            "Ověřit spojení", "Odebrat")
                         else arrayOf("Použít", "Odebrat")) { _, option ->
                         if (RemotePlayService.aktivni) {
                             AlertDialog.Builder(c)
@@ -322,6 +327,16 @@ object GameLingoDeviceCenter {
                             GameLingoTVPairing.show(c, tv) {
                                 onDismiss()
                                 onUpdated()
+                            }
+                        } else if (mobile && option == 2) {
+                            GameLingoTVPairing.verify(c, tv) { reachable ->
+                                onDismiss()
+                                onUpdated()
+                                AlertDialog.Builder(c)
+                                    .setMessage(if (reachable)
+                                        "TV odpověděla na ověření. Příjem titulků ještě ověř ve hře."
+                                        else "TV neodpovídá. Ověř IP, připojení a případně zadej nový kód.")
+                                    .setPositiveButton("OK", null).show()
                             }
                         } else {
                             AlertDialog.Builder(c)
