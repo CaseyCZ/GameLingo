@@ -31,21 +31,21 @@ def main():
         (
             '    @Volatile var cil: String = cilovy\n        private set',
             '    @Volatile var cil: String = cilovy\n        private set\n'
-            '    @Volatile var zdroj: String = zdrojovy\n        private set\n\n'
+            '    @Volatile var zdrojovyJazyk: String = zdrojovy\n        private set\n\n'
             '    private fun upravVstup(text: String): String =\n'
-            '        if (zdroj == "en") upravSlang(text.trim()) else text.trim()'
+            '        if (zdrojovyJazyk == "en") upravSlang(text.trim()) else text.trim()'
         ),
         (
             '.setSourceLanguage(TranslateLanguage.ENGLISH)',
-            '.setSourceLanguage(TranslateLanguage.fromLanguageTag(zdroj) ?: TranslateLanguage.ENGLISH)'
+            '.setSourceLanguage(TranslateLanguage.fromLanguageTag(zdrojovyJazyk) ?: TranslateLanguage.ENGLISH)'
         ),
         (
             '    /** Přepne cílový jazyk (např. po změně v aplikaci). */',
             '    /** Changes the real source of every online and offline translation. */\n'
             '    fun nastavZdroj(kod: String) {\n'
-            '        if (kod == zdroj) return\n'
+            '        if (kod == zdrojovyJazyk) return\n'
             '        val stary = translator\n'
-            '        zdroj = kod\n'
+            '        zdrojovyJazyk = kod\n'
             '        translator = novyTranslator(cil)\n'
             '        cache.evictAll()\n'
             '        runCatching { stary.close() }\n'
@@ -59,15 +59,15 @@ def main():
         ),
         (
             'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=$cilJazyk',
-            'https://translate.googleapis.com/translate_a/single?client=gtx&sl=$zdroj&tl=$cilJazyk'
+            'https://translate.googleapis.com/translate_a/single?client=gtx&sl=$zdrojovyJazyk&tl=$cilJazyk'
         ),
         (
             'https://api-edge.cognitive.microsofttranslator.com/translate?from=en&to=$cil&api-version=3.0',
-            'https://api-edge.cognitive.microsofttranslator.com/translate?from=$zdroj&to=$cil&api-version=3.0'
+            'https://api-edge.cognitive.microsofttranslator.com/translate?from=$zdrojovyJazyk&to=$cil&api-version=3.0'
         ),
         (
             'https://api.mymemory.translated.net/get?langpair=en%7C$cil&q=',
-            'https://api.mymemory.translated.net/get?langpair=$zdroj%7C$cil&q='
+            'https://api.mymemory.translated.net/get?langpair=$zdrojovyJazyk%7C$cil&q='
         )
     ]
     for old, new in patch:
