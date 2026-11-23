@@ -166,6 +166,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("addRegisteredPlayStation(console)",ps_setup)
         self.assertIn("Nastavit později",android)
         self.assertIn("Výběr není potvrzení spojení",android)
+        self.assertIn("Theme_Material_NoActionBar_Fullscreen",android)
+        self.assertIn("ViewGroup.LayoutParams.MATCH_PARENT",android)
 
     def test_five_destinations_native_android_navigation(self):
         nav=code(TOOLS/"GameLingoNavigation.kt")
