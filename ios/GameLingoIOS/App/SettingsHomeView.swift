@@ -329,7 +329,7 @@ private struct GameLingoAppearanceSettingsView: View {
 
     var body: some View {
         GLScreen(title: "Titulky – vzhled", help:
-            "Barva a pozadí mění titulky zobrazované na iPhonu. Televizní přijímač má vlastní barvy a pozadí; na TV lze z iPhonu nastavit skutečnou velikost písma, šířku a polohu zeleného výstupu.") {
+            "iPhone a TV mají nezávislé barvy, pozadí i velikost titulků. TV přijímá změny barev přes ověřené spárování; ukázku zobrazíš tlačítkem Náhled na TV.") {
             GLNeonTitle(title: "Vzhled titulků",
                         subtitle: "Vlastní nastavení pro iPhone a TV",
                         icon: "captions.bubble.fill")
@@ -403,7 +403,40 @@ private struct GameLingoAppearanceSettingsView: View {
             }
             GLCard {
                 GLHeader(title: "Titulky na TV",
-                         help: "Zelený výstup titulků na Google TV. Barva a pozadí se mění přímo v televizním přijímači.")
+                         help: "Nastavení barev a pozadí platí jen pro připojený GameLingo TV přijímač. Barvu lze měnit nezávisle na titulkách na iPhonu.")
+                Text("Barva textu na TV")
+                    .font(.subheadline.bold())
+                HStack(spacing: 9) {
+                    ForEach(GLPhoneSubtitleColor.allCases) { choice in
+                        Button {
+                            model.tvTextColor = choice
+                        } label: {
+                            Circle().fill(choice.color)
+                                .frame(width: 36, height: 36)
+                                .overlay(Circle().strokeBorder(
+                                    model.tvTextColor == choice ? GLNeon.cyan : .white.opacity(0.4),
+                                    lineWidth: model.tvTextColor == choice ? 3 : 1))
+                                .overlay {
+                                    if model.tvTextColor == choice {
+                                        Image(systemName: "checkmark")
+                                            .font(.caption.bold())
+                                            .foregroundStyle(.black)
+                                    }
+                                }
+                        }
+                        .frame(minWidth: 44, minHeight: 44)
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("TV: " + choice.title)
+                        .accessibilityAddTraits(model.tvTextColor == choice
+                                                ? [.isSelected] : [])
+                    }
+                }
+                Picker("Pozadí na TV", selection: $model.tvBackground) {
+                    ForEach(GLPhoneSubtitleBackground.allCases) { choice in
+                        Text(LocalizedStringKey(choice.title)).tag(choice)
+                    }
+                }
+                .pickerStyle(.segmented)
                 Toggle("Zamknout polohu", isOn: $model.outputLocked)
                 GLValueSlider(title: "Velikost písma TV",
                     value: "\(Int(model.outputFont * 100)) %",
@@ -418,6 +451,9 @@ private struct GameLingoAppearanceSettingsView: View {
                 GLPrimaryButton(title: "Náhled na TV",
                                 systemImage: "tv",
                                 disabled: !tvPreviewAllowed) {
+                    model.tv.updateCaptionStyle(
+                        color: model.tvTextColor.rawValue,
+                        background: model.tvBackground.rawValue)
                     model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle,
                                           duration: 6_000, preview: true)
                 }
