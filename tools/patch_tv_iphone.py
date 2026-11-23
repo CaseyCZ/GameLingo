@@ -2,8 +2,9 @@
 """Build-only TCL C835 iPhone receiver test patch on pinned PlayCaption v0.22.
 
 Never modifies the original upstream repository. Does not touch Xbox/RemotePlay.
-The test APK installs with a separate application ID and listens on UDP 41989,
-so the original app must NOT have its "S telefonem" receiver running at the same time.
+The test APK installs with a separate application ID. It prefers UDP 41989;
+if already occupied it selects UDP 41990–41993 without sharing a socket.
+The iPhone and Android clients query the available receiver's port.
 """
 from __future__ import annotations
 import pathlib
@@ -60,11 +61,36 @@ def main() -> None:
     once(networking,
          '        @Volatile var posledniCisloTitulku = -1L\n            private set',
          '        @Volatile var posledniCisloTitulku = -1L\n            private set\n'
-         '        @Volatile var posledniParovaciStav = "žádný požadavek"\n            private set')
-    # Prevent two installed applications from silently sharing the same UDP port.
-    # If original PlayCaption is still receiving, this receiver fails visibly.
+         '        @Volatile var posledniParovaciStav = "žádný požadavek"\n            private set\n'
+         '        /** Actual bound UDP receiver port (zero until ready). */\n'
+         '        @Volatile var prijimaciPort = 0\n            private set')
+    # Prevent multiple apps sharing the same UDP port. Select a backup port
+    # if the original PlayCaption is already receiving.
     once(networking, '                        reuseAddress = true\n                        soTimeout = 1000',
          '                        reuseAddress = false\n                        soTimeout = 1000')
+    once(networking,
+         '                    val s = DatagramSocket(null).apply {\n'
+         '                        reuseAddress = false\n'
+         '                        soTimeout = 1000\n'
+         '                        bind(InetSocketAddress(PORT_TITULKY))\n'
+         '                    }',
+         '                    val s = listOf(PORT_TITULKY, 41990, 41991, 41992, 41993)\n'
+         '                        .firstNotNullOfOrNull { port ->\n'
+         '                            runCatching {\n'
+         '                                DatagramSocket(null).apply {\n'
+         '                                    reuseAddress = false\n'
+         '                                    soTimeout = 1000\n'
+         '                                    bind(InetSocketAddress(port))\n'
+         '                                }.also { prijimaciPort = port }\n'
+         '                            }.getOrNull()\n'
+         '                        } ?: throw java.net.BindException("UDP 41989–41993 obsazeny")')
+    once(networking,
+         '                        var casti = String(p.data, 0, p.length, Charsets.UTF_8).split("\\t")\n',
+         '                        var casti = String(p.data, 0, p.length, Charsets.UTF_8).split("\\t")\n'
+         '                        if (casti.size == 2 && casti[0] == "GLPORT1" && casti[1] == "QUERY") {\n'
+         '                            odpovez(s, p, "GLPORT1\\tPORT\\t$prijimaciPort")\n'
+         '                            continue\n'
+         '                        }\n')
     once(networking, '                        posledniCislo = cislo\n                        val doba =',
          '                        posledniCislo = cislo\n'
          '                        pocetTitulku += 1\n'
@@ -168,15 +194,16 @@ def main() -> None:
     after = '''        /** TV-only diagnostics: first packet, source and live port errors. */
         fun statistikaPrijmu(): String {
             val sluzba = this.instance ?: return "Příjem TV: služba ještě neběží."
-            val p = sluzba.prijimac ?: return "Příjem TV: čekám na spuštění UDP 41989."
+            val p = sluzba.prijimac ?: return "Příjem TV: čekám na spuštění UDP."
             val error = p.chyba
-            if (error != null) return "Chyba UDP 41989: $error.\\nZastav původní PlayCaption."
+            if (error != null) return "Chyba UDP: $error."
+            if (p.prijimaciPort == 0) return "Příjem TV: hledám volný UDP port."
             val age = if (p.posledniZprava > 0L)
                 ((System.currentTimeMillis() - p.posledniZprava).coerceAtLeast(0L) / 1000L).toString() + " s"
                 else "dosud žádná"
             val overlays = if (OverlayService.pripravena) "připraven" else "nepřipraven"
             val hidden = if (sluzba.skrytyMimoVstup) " / mimo TV vstup" else ""
-            return "UDP 41989 · zpráva před $age\\n" +
+            return "UDP ${p.prijimaciPort} · zpráva před $age\\n" +
                 "Párování: ${p.posledniParovaciStav}\\n" +
                 "Přijaté titulky: ${p.pocetTitulku} · z ${p.posledniIP.ifEmpty { "—" }}\\n" +
                 "Překryv: $overlays$hidden"
