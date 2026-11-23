@@ -53,6 +53,22 @@ private struct GameLingoPSConnectionView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 15) {
+                    GLNeonTitle(title: "PlayStation",
+                                subtitle: "PlayStation 4 / 5 Remote Play",
+                                icon: "gamecontroller.fill")
+                    GLNeonPanel(emphasized: true) {
+                        HStack(spacing: 14) {
+                            GLPlatformBadge(family: .playStation, size: 65)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Moje konzole").font(.headline)
+                                Text("Vyber konzoli nebo přidej novou")
+                                    .font(.caption)
+                                    .foregroundStyle(GLNeon.mist)
+                            }
+                            Spacer()
+                        }
+                        .padding(15)
+                    }
                     GLCard {
                         GLHeader(title: "PlayStation",
                                  help: "PS5: Nastavení → Systém → Remote Play → Povolit Remote Play a Propojit zařízení. PS4: Nastavení → Nastavení připojení Remote Play. Uvidíš osmimístný párovací kód. Přihlaš se svým účtem PlayStation přes oficiální stránku Sony.")
@@ -75,8 +91,7 @@ private struct GameLingoPSConnectionView: View {
                                     dismiss()
                                 } label: {
                                     HStack {
-                                        Image(systemName: "gamecontroller.fill")
-                                            .foregroundStyle(GLStyle.blue)
+                                        GLPlatformBadge(family: .playStation, size: 46)
                                         Text(console.nickname.isEmpty ? "PlayStation" : console.nickname)
                                             .foregroundStyle(.white)
                                         Spacer()
@@ -86,8 +101,10 @@ private struct GameLingoPSConnectionView: View {
                                         }
                                     }
                                     .padding(13)
-                                    .background(GLStyle.surfaceAlt,
-                                        in: RoundedRectangle(cornerRadius: 12))
+                                    .background(GLNeon.panel,
+                                        in: RoundedRectangle(cornerRadius: 15))
+                                    .overlay(RoundedRectangle(cornerRadius: 15)
+                                        .strokeBorder(GLNeon.edge.opacity(0.65), lineWidth: 1))
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -104,7 +121,7 @@ private struct GameLingoPSConnectionView: View {
                                     selectedStep = 1
                                 } label: {
                                     HStack {
-                                        Image(systemName: "gamepad.fill")
+                                        GLPlatformBadge(family: .playStation, size: 44)
                                         Text(console.name)
                                         Spacer()
                                         Text(console.isPS5 ? "PS5" : "PS4")
@@ -112,8 +129,10 @@ private struct GameLingoPSConnectionView: View {
                                     }
                                     .foregroundStyle(.white)
                                     .padding(12)
-                                    .background(GLStyle.surfaceAlt,
-                                        in: RoundedRectangle(cornerRadius: 12))
+                                    .background(GLNeon.panel,
+                                        in: RoundedRectangle(cornerRadius: 15))
+                                    .overlay(RoundedRectangle(cornerRadius: 15)
+                                        .strokeBorder(GLNeon.edge.opacity(0.65), lineWidth: 1))
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -227,7 +246,7 @@ private struct GameLingoPSConnectionView: View {
                 }
                 .padding(18)
             }
-            .background(GLStyle.background.ignoresSafeArea())
+            .background(GLNeonBackground())
             .navigationTitle("PlayStation")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -236,7 +255,7 @@ private struct GameLingoPSConnectionView: View {
                 }
             }
         }
-        .tint(GLStyle.blue)
+        .tint(GLNeon.cyan)
         .preferredColorScheme(.dark)
         .onAppear {
             ps.discover()
