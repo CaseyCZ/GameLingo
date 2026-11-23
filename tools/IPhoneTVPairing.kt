@@ -19,6 +19,14 @@ object IPhoneTVPairing {
     @Volatile private var code: String? = null
     @Volatile private var expiresAtMs = 0L
     @Volatile private var attempts = 0
+    // The TV may receive the PIN but its UDP OK reply can be lost. Repeating
+    // the same successful request briefly must return the SAME secret.
+    // A newly generated PIN or an explicit unpair invalidates this cache.
+    private var lastSuccessPin: String? = null
+    private var lastSuccessPhoneId: String? = null
+    private var lastSuccessToken: String? = null
+    private var lastSuccessAtMs = 0L
+    private const val REPLY_RETRY_WINDOW_MS = 15_000L
     @Volatile var lastAuthenticatedMs = 0L
         private set
 
@@ -30,6 +38,10 @@ object IPhoneTVPairing {
         code = pin
         expiresAtMs = SystemClock.elapsedRealtime() + 180_000L
         attempts = 0
+        lastSuccessPin = null
+        lastSuccessPhoneId = null
+        lastSuccessToken = null
+        lastSuccessAtMs = 0L
         pin
     }
 
@@ -40,6 +52,12 @@ object IPhoneTVPairing {
 
     /** Returns a 32-byte secret (hex) only after PIN succeeds. */
     fun confirm(ctx: Context, input: String, phoneId: String): String? = synchronized(lock) {
+        val now = SystemClock.elapsedRealtime()
+        if (lastSuccessAtMs > 0 && now - lastSuccessAtMs <= REPLY_RETRY_WINDOW_MS &&
+            input == lastSuccessPin && phoneId == lastSuccessPhoneId) {
+            // Never consume another PIN attempt or change the pairing secret.
+            return@synchronized lastSuccessToken
+        }
         val valid = input.length == 6 && input.all { it.isDigit() } &&
             phoneId.length in 8..90 &&
             code != null && SystemClock.elapsedRealtime() < expiresAtMs &&
@@ -54,10 +72,14 @@ object IPhoneTVPairing {
         val token = bytes.joinToString("") { "%02x".format(it) }
         prefs(ctx).edit().putString("phone_id", phoneId)
             .putString("token", token).apply()
+        lastSuccessPin = input
+        lastSuccessPhoneId = phoneId
+        lastSuccessToken = token
+        lastSuccessAtMs = now
         code = null
         expiresAtMs = 0
         attempts = 0
-        lastAuthenticatedMs = SystemClock.elapsedRealtime()
+        lastAuthenticatedMs = now
         token
     }
 
@@ -68,6 +90,10 @@ object IPhoneTVPairing {
         lastAuthenticatedMs = 0L
         code = null
         expiresAtMs = 0L
+        lastSuccessPin = null
+        lastSuccessPhoneId = null
+        lastSuccessToken = null
+        lastSuccessAtMs = 0L
     }
 
     fun verify(ctx: Context, phoneId: String, content: String, signatureHex: String): Boolean {
