@@ -20,7 +20,7 @@ def main():
         raise SystemExit("Usage: wire_android_devices.py <upstream>")
     upstream=Path(sys.argv[1])
     folder=upstream/SRC
-    for name in ("GameLingoDeviceCenter.kt","GameLingoPlayStationConsoles.kt","GameLingoFirstRun.kt","GameLingoAbout.kt","GameLingoNavigation.kt"):
+    for name in ("GameLingoDeviceCenter.kt","GameLingoPlayStationConsoles.kt","GameLingoFirstRun.kt","GameLingoAbout.kt","GameLingoNavigation.kt","GameLingoVisualKit.kt","GameLingoLanguages.kt"):
         original=Path(__file__).with_name(name)
         (folder/name).write_text(original.read_text(encoding="utf-8"),encoding="utf-8")
 
@@ -45,6 +45,11 @@ def main():
             '''        prevezmiAccountId(intent)
         ukazUvod()''',
             '''        prevezmiAccountId(intent)
+        if (telefon && !GameLingoFirstRun.completed(this) && nast.jazyk == null) {
+            // GameLingo's own welcome wizard now handles language choice.
+            // Avoid rendering the old PlayCaption language setup underneath it.
+            nast.jazyk = "cs"
+        }
         ukazUvod()
         if (telefon && !GameLingoFirstRun.completed(this)) {
             ui.post {
