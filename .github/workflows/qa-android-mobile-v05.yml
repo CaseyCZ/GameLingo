@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Compile parity candidate with working in-page navigation, OCR reader controls, and phone subtitle colors/background.
+# Compile reviewed iOS-parity Android with selected native tabs, OCR reader settings and rounded local subtitles.
 
 on:
   push:
