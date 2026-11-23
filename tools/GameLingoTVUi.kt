@@ -268,6 +268,44 @@ object GameLingoTVUi {
         languageRow("Jazyk překladu", GameLingoLanguages.targetLanguages,
             GameLingoLanguages.Kind.TARGET) { GameLingoLanguages.target(a) }
 
+        page.addView(title(a, "PŘEKLAD HRY", 16f).apply {
+            setTextColor(cyan)
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(a, 23)
+            bottomMargin = dp(a, 12)
+        })
+
+        val userSettings = Nastaveni(a)
+        fun toggle(title: String, detail: String,
+                   get: () -> Boolean, set: (Boolean) -> Unit) {
+            lateinit var choice: LinearLayout
+            fun summary(): String = detail + "  ·  " +
+                if (get()) "Zapnuto" else "Vypnuto"
+            choice = tile(a, "◎", title, summary()) {
+                set(!get())
+                (choice.getChildAt(2) as TextView).text = summary()
+            }
+            page.addView(choice, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = dp(a, 11)
+            })
+        }
+        toggle("Dialogy", "Překlad mluvených dialogů",
+            { userSettings.dialogy }, { userSettings.dialogy = it })
+        toggle("Herní texty", "Nápověda a úkoly v herním obraze",
+            { userSettings.napovedy }, { userSettings.napovedy = it })
+        toggle("Překrýt původní titulky", "Přeložený text přímo přes originál",
+            { userSettings.prekryvat }, { userSettings.prekryvat = it })
+        toggle("Příběhový režim", "Postupné čtení delších dialogů",
+            { userSettings.pribehovy }, { userSettings.pribehovy = it })
+        if (RemotePlayService.aktivni) {
+            page.addView(title(a,
+                "Změny nastavení překladu se projeví po novém spuštění.",
+                14f, muted = true))
+        }
+
         page.addView(title(a, "ZOBRAZENÍ", 16f).apply {
             setTextColor(cyan)
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -291,6 +329,18 @@ object GameLingoTVUi {
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(a, 11)
         })
+        page.addView(title(a, "DALŠÍ", 16f).apply {
+            setTextColor(cyan)
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(a, 20)
+            bottomMargin = dp(a, 12)
+        })
+        page.addView(tile(a, "ⓘ", "O aplikaci / Licence",
+            "Původní autoři, zdrojový kód a GNU AGPLv3") {
+            GameLingoAbout.show(a)
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT))
         val scroll = ScrollView(a).apply {
             isFillViewport = true
             addView(page)
