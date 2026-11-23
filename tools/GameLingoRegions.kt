@@ -16,10 +16,9 @@ import android.widget.TextView
  * opens the working TelefonActivity mini-TV layout, without fake coordinates.
  */
 object GameLingoRegions {
-    fun show(activity: Activity, onEdit: () -> Unit) {
-        if (activity.isFinishing) return
+    fun content(activity: Activity, onEdit: () -> Unit,
+                onDismiss: () -> Unit = {}, showClose: Boolean = false): LinearLayout {
         val d: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
-        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(d(20), d(20), d(20), d(26))
@@ -83,23 +82,31 @@ object GameLingoRegions {
             minHeight = d(58)
             isFocusable = true
             setOnClickListener {
-                dialog.dismiss()
+                onDismiss()
                 onEdit()
             }
         }, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, d(58)
         ).apply { topMargin = d(8); bottomMargin = d(12) })
-        page.addView(TextView(activity).apply {
+        if (showClose) page.addView(TextView(activity).apply {
             text = "Zpět"
             gravity = Gravity.CENTER
             textSize = 16f
             setTextColor(Color.WHITE)
             background = GameLingoVisualKit.card(activity)
             minHeight = d(52)
-            setOnClickListener { dialog.dismiss() }
+            setOnClickListener { onDismiss() }
         }, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, d(52)
         ))
+        return page
+    }
+
+    fun show(activity: Activity, onEdit: () -> Unit) {
+        if (activity.isFinishing) return
+        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val page = content(activity, onEdit,
+            onDismiss = { dialog.dismiss() }, showClose = true)
         val scroll = ScrollView(activity).apply {
             isFillViewport = true
             addView(page)
