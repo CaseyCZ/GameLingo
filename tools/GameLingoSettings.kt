@@ -154,12 +154,12 @@ object GameLingoSettings {
      * Jazyky, OCR, Překlad, Oblasti, Titulky, Profily, Zařízení, O aplikaci.
      * Every destination invokes an existing functional screen.
      */
-    fun show(activity: Activity, settings: Nastaveni,
+    /** A real embedded settings tab, reused by the full-screen settings entry point. */
+    fun content(activity: Activity, settings: Nastaveni,
              onAreas: () -> Unit, onLanguage: () -> Unit,
-             onDevices: () -> Unit = {}) {
-        if (activity.isFinishing) return
+             onDevices: () -> Unit = {},
+             onDismiss: () -> Unit = {}, showClose: Boolean = false): LinearLayout {
         val d = GameLingoVisualKit.dp(activity, 1)
-        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(20 * d, 15 * d, 20 * d, 24 * d)
@@ -176,7 +176,7 @@ object GameLingoSettings {
             setTextColor(Color.WHITE)
         }, LinearLayout.LayoutParams(0,
             ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        heading.addView(TextView(activity).apply {
+        if (showClose) heading.addView(TextView(activity).apply {
             text = "✕"
             textSize = 23f
             gravity = Gravity.CENTER
@@ -184,7 +184,7 @@ object GameLingoSettings {
             setTextColor(Color.WHITE)
             background = GameLingoVisualKit.card(activity)
             isFocusable = true
-            setOnClickListener { dialog.dismiss() }
+            setOnClickListener { onDismiss() }
         }, LinearLayout.LayoutParams(48 * d, 48 * d))
         page.addView(heading)
 
@@ -206,7 +206,7 @@ object GameLingoSettings {
                 setPadding(14 * d, 11 * d, 14 * d, 11 * d)
                 isFocusable = true
                 isClickable = true
-                setOnClickListener { dialog.dismiss(); open() }
+                setOnClickListener { onDismiss(); open() }
             }
             row.addView(TextView(activity).apply {
                 text = symbol
@@ -282,6 +282,16 @@ object GameLingoSettings {
              "GameLingo, zdroje a AGPLv3") {
             GameLingoAbout.show(activity)
         }
+        return page
+    }
+
+    fun show(activity: Activity, settings: Nastaveni,
+             onAreas: () -> Unit, onLanguage: () -> Unit,
+             onDevices: () -> Unit = {}) {
+        if (activity.isFinishing) return
+        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val page = content(activity, settings, onAreas, onLanguage, onDevices,
+            onDismiss = { dialog.dismiss() }, showClose = true)
         val scroll = ScrollView(activity).apply {
             isFillViewport = true
             addView(page)
