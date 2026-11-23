@@ -27,6 +27,7 @@ struct GameLingoHome: View {
     @State private var regionsSheet = false
     @State private var profilesSheet = false
     @State private var settingsSheet = false
+    @State private var licenseSheet = false
     @State private var showPSLoginPIN = false
     @State private var psLoginPIN = ""
 
@@ -138,6 +139,12 @@ struct GameLingoHome: View {
         }
         .sheet(isPresented: $settingsSheet) {
             GameLingoSettingsView(model: model)
+        }
+        .sheet(isPresented: $licenseSheet) {
+            NavigationStack {
+                GameLingoLicenseView()
+            }
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -444,8 +451,8 @@ struct GameLingoHome: View {
         HStack(spacing: 11) {
             RoundedRectangle(cornerRadius: 5).fill(color).frame(width: 9, height: 34)
             VStack(alignment: .leading, spacing: 3) {
-                Text(name).font(.subheadline.bold())
-                Text(detail).font(.caption).foregroundStyle(GLVisual.muted)
+                Text(LocalizedStringKey(name)).font(.subheadline.bold())
+                Text(LocalizedStringKey(detail)).font(.caption).foregroundStyle(GLVisual.muted)
             }
             Spacer()
         }
@@ -510,8 +517,8 @@ struct GameLingoHome: View {
 
     private func infoRow(_ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.headline)
-            Text(text).font(.subheadline).foregroundStyle(GLVisual.muted)
+            Text(LocalizedStringKey(title)).font(.headline)
+            Text(LocalizedStringKey(text)).font(.subheadline).foregroundStyle(GLVisual.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(15)
@@ -520,8 +527,8 @@ struct GameLingoHome: View {
 
     private func sectionTitle(_ title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.title2.bold())
-            Text(detail).font(.subheadline).foregroundStyle(GLVisual.muted)
+            Text(LocalizedStringKey(title)).font(.title2.bold())
+            Text(LocalizedStringKey(detail)).font(.subheadline).foregroundStyle(GLVisual.muted)
         }
         .padding(.vertical, 6)
     }
@@ -534,7 +541,7 @@ struct GameLingoHome: View {
                     Image(systemName: icon)
                         .font(.system(size: 27, weight: .medium))
                         .foregroundStyle(GLNeon.accent)
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(.system(size: 14, weight: .bold,
                                       design: .rounded))
                         .multilineTextAlignment(.center)
@@ -559,7 +566,8 @@ struct GameLingoHome: View {
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: option.icon).font(.system(size: 20))
-                        Text(option.rawValue).font(.system(size: 10, weight: .medium))
+                        Text(LocalizedStringKey(option.rawValue))
+                            .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundStyle(tab == option ? .white : GLNeon.mist)
                     .frame(maxWidth: .infinity)
@@ -631,7 +639,7 @@ private struct GameLingoDeviceRow: View {
                         Circle()
                             .fill(connected ? GLStyle.green : GLNeon.mist)
                             .frame(width: 7, height: 7)
-                        Text(status)
+                        Text(LocalizedStringKey(status))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(connected ? GLStyle.green :
                                                 GLNeon.mist)
