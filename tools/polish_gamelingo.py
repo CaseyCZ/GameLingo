@@ -71,7 +71,12 @@ def main():
     # Avoid advertising a specific TV manufacturer or displaying an abandoned
     # brand name, while keeping functional legacy services intact.
     main_src=main_src.replace("TCL C835","Google TV").replace("TCL Android TV","Google TV")
-    main_src=main_src.replace('"PlayCaption"', '"GameLingo"')
+    # Only the Android activity screen source; never change protocol constants.
+    main_src=main_src.replace("PlayCaption", "GameLingo")
+    main_src=main_src.replace("GameLingo iPhone · ORANGE V5 · iOS 0.3.2",
+                              "GameLingo TV · Přijímač titulků")
+    main_src=main_src.replace("Zastav původní GameLingo",
+                              "Zastav druhý spuštěný přijímač")
     main_src=replace_one(
         main_src,
         "FrameLayout.LayoutParams(dp(if (telefon) 230 else 140), ViewGroup.LayoutParams.WRAP_CONTENT)",
@@ -178,6 +183,13 @@ def main():
             # User-facing product identity only (not protocol magic).
             s=s.replace('"PlayCaption"','"GameLingo"')
             write(p,s)
+    # TV receiver diagnostics should use the new product name as well.
+    receiver=directory/"PrijemService.kt"
+    if receiver.exists():
+        current=receiver.read_text(encoding="utf-8")
+        receiver.write_text(current.replace("Zastav původní PlayCaption",
+                                            "Zastav druhý přijímač titulků"),
+                            encoding="utf-8")
     # Source language/translation table contains only display strings.
     translations=directory/"Texty.kt"
     s=translations.read_text(encoding="utf-8").replace("PlayCaption","GameLingo")
