@@ -522,8 +522,44 @@ def main():
     transformed=redesign_mobile(original) if mode=="mobile" else redesign_tv(original)
     p.write_text(transformed,encoding="utf8")
     if mode=="mobile":
-        # Independent profile manager is checked into GameLingo, not into upstream.
-        for module in ("GameLingoProfiles.kt", "GameLingoSettings.kt", "GameLingoSubtitleAppearance.kt", "GameLingoDiagnostics.kt", "GameLingoRegions.kt"):
+        # The mobile OCR settings modify the actual reader and its sampling
+        # interval. Preserve the TV decoder path and the user's languages.
+        select=base/SRC/"VyberTitulku.kt"
+        code=select.read_text(encoding="utf8")
+        before='''        }.filter { it.text.count(Char::isLetter) >= 3 }
+            .filter { (it.left + it.right) / 2f / sirka in 0.3f..0.7f }
+            .filterNot { jeMenu(it.text) }'''
+        after='''        }.filter { it.text.count(Char::isLetter) >=
+                (if (GameLingoOCRConfig.mode == "street") 2 else 3) }
+            .filter { (it.left + it.right) / 2f / sirka in
+                (if (GameLingoOCRConfig.expandSearch &&
+                     GameLingoOCRConfig.mode != "classic")
+                    0.15f..0.85f else 0.3f..0.7f) }
+            .filterNot { GameLingoOCRConfig.filterMenuText && jeMenu(it.text) }'''
+        if code.count(before)!=1:
+            raise RuntimeError("Android OCR native reader source changed")
+        select.write_text(code.replace(before,after,1),encoding="utf8")
+
+        service=base/SRC/"RemotePlayService.kt"
+        code=service.read_text(encoding="utf8")
+        checks=(
+            ('        super.onCreate()\\n        ui.post(pribehHlidac)',
+             '        super.onCreate()\\n        if (telefon) GameLingoOCRConfig.load(this)\\n        ui.post(pribehHlidac)'),
+            ('if (telefon) INTERVAL_MS_TELEFON else if (uspora) INTERVAL_MS_USPORA else INTERVAL_MS',
+             'if (telefon) GameLingoOCRConfig.intervalMs() else if (uspora) INTERVAL_MS_USPORA else INTERVAL_MS'),
+        )
+        for old,new in checks:
+            if code.count(old)!=1:
+                raise RuntimeError("Android OCR sampler source changed: "+old[:70])
+            code=code.replace(old,new,1)
+        service.write_text(code,encoding="utf8")
+
+        # Independent native UI belongs only to GameLingo's Android mobile
+        # build, never to the Google TV remote-control receiver application.
+        for module in ("GameLingoProfiles.kt", "GameLingoSettings.kt",
+                       "GameLingoSubtitleAppearance.kt", "GameLingoDiagnostics.kt",
+                       "GameLingoRegions.kt", "GameLingoOCRConfig.kt",
+                       "GameLingoOCRSettings.kt"):
             source=Path(__file__).with_name(module)
             (base/SRC/source.name).write_text(source.read_text(encoding="utf8"),encoding="utf8")
     print("GameLingo",mode,"reference dashboard installed; network and OCR unchanged")
