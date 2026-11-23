@@ -65,7 +65,10 @@ def android(root: Path, mode: str):
     else:
         contains(base / "MainActivity.kt",
             "Překlad z telefonu", "Přímo na TV",
-            "nastavDpad(", "nextFocusRightId", "nextFocusLeftId")
+            "GameLingoTVUi.tile(", "nextFocusRightId", "nextFocusLeftId")
+        contains(base / "GameLingoTVUi.kt",
+            "setOnFocusChangeListener", "isFocusable = true",
+            "showWelcome(", "showSettings(")
     text = (base / "MainActivity.kt").read_text(encoding="utf8")
     if '"PlayCaption"' in text or 'PlayCaption – hlavní obrazovka' in text:
         raise AssertionError("Original PlayCaption brand remains user-visible")
