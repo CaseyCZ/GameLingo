@@ -1,0 +1,87 @@
+name: Publish GameLingo 0.3.0 Beta 1
+
+on:
+  push:
+    branches:
+      - feature/gamelingo-v03-reference-ui
+    paths:
+      - ".github/workflows/publish-gamelingo-v03.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Validate release artifacts and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v0.3.0-beta.1"
+          REPO="$GITHUB_REPOSITORY"
+          SOURCE="0bf41be74867415d678073d1154ba2e56e6714e3"
+          BUILD_RUN="45177293412"
+          test "$(gh api "repos/$REPO/actions/runs/$BUILD_RUN" --jq '.conclusion')" = success
+          test "$(gh api "repos/$REPO/actions/runs/$BUILD_RUN" --jq '.head_sha')" = "$SOURCE"
+          mkdir -p release
+          gh run download "$BUILD_RUN" -R "$REPO" -n "GameLingo-v0.3.0-beta.1-all-installers" -D release
+          test -s release/GameLingo-iOS-v0.3.0-beta.1-unsigned.ipa
+          test -s release/GameLingo-Android-v0.3.0-beta.1-TEST.apk
+          test -s release/GameLingo-GoogleTV-v0.3.0-beta.1-TEST.apk
+          (cd release && sha256sum -c SHA256SUMS.txt)
+          if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
+            echo "Already published; do not replace or change artifacts."
+            exit 0
+          fi
+          cat > /tmp/game-lingo-v03.md <<'EOF'
+          ## 🎮 GameLingo 0.3.0 Beta 1 — vlastní design všech aplikací
+
+          Nové testovací sestavení podle schváleného GameLingo návrhu. **Tato verze už není jen přebarvený PlayCaption.** Základní aplikace mají vlastní úvodní obrazovky, navigaci, ikonu a vzhled v barvách CaseyCZ.
+
+          ### iPhone
+          - Nová hlavní obrazovka s kartami Xbox / Google TV.
+          - Modro-fialové tlačítko **Spustit překlad**, čtyři rychlé volby, spodní navigace.
+          - Samostatné obrazovky Domů, Oblasti, Profily, Zařízení a O aplikaci.
+          - Zachované přihlášení Xbox, výběr více konzolí, OCR dialogů, čtení herních textů a čtyři nezávislé oblasti.
+
+          ### Android telefon
+          - Přestavěný GameLingo dashboard se spouštěním překladu a výběrem zařízení.
+          - **PlayStation 5 / PlayStation 4 a Xbox Remote Play** jsou převzaty ze skutečného Android PlayCaption řešení, nikoliv jen ukázková tlačítka.
+          - Vlastní obrazovka nastavení OCR, herních textů, zobrazení a délky titulků.
+          - Nové **profily her**, které ukládají nastavení dialogů, voleb a jejich oblastí.
+
+          ### Google TV / Android TV
+          - Zcela nová úvodní obrazovka přijímače inspirovaná schváleným vizuálním směrem GameLingo.
+          - Šest samostatných polí pro párovací kód, stav telefonu, sítě a zobrazování titulků.
+          - Tlačítka pro zkušební titulek, opakování párování a ukončení přijímače.
+          - Zachovaný ověřený protokol Orange V5 s nezávislým zobrazením dialogů a herních textů.
+
+          ### Instalační soubory
+          - **GameLingo-iOS-v0.3.0-beta.1-unsigned.ipa** – iPhone, nutný vlastní Apple podpis.
+          - **GameLingo-Android-v0.3.0-beta.1-TEST.apk** – Android telefon (Xbox, PS5 / PS4).
+          - **GameLingo-GoogleTV-v0.3.0-beta.1-TEST.apk** – Google TV / Android TV.
+          - **SHA256SUMS.txt** – kontrolní součty originálních souborů.
+
+          ### ⚠️ Před testováním
+          - Jde o **beta vydání**: nové obrazovky se úspěšně sestavily, ale čekají na skutečný test na iPhonu, Android telefonu, Xboxu, PS5 a Google TV.
+          - **PS5 na iPhonu není podporováno**. Funkční PS5/PS4 Remote Play je v Android aplikaci, ne v iOS.
+          - Android APK jsou podepsané dočasným vývojovým klíčem; k přechodu z předchozí bety může být nutná odinstalace starého GameLingo. Instalace PlayCaptionu může zůstat samostatná.
+          - Při přenosu na TV zavři starý přijímač PlayCaption; dvě aplikace nesmějí současně poslouchat na UDP 41989.
+          - Opravdový překryv titulků na TV závisí na podpoře HDMI překryvu televizorem. Testováno původně na TCL C835, značka TV však není součástí názvu aplikace.
+          - Funkční síťové protokoly jsme při redesignu neměnili, ale nové sestavení potřebuje ověřit párování a texty ve skutečné hře.
+
+          Vychází z [PlayCaption](https://github.com/AdamRuzick4/PlayCaption-app) (AGPL-3.0). Zdrojové úpravy a stav projektu: [CaseyCZ/GameLingo](https://github.com/CaseyCZ/GameLingo).
+          EOF
+          gh release create "$TAG" \
+            release/GameLingo-iOS-v0.3.0-beta.1-unsigned.ipa \
+            release/GameLingo-Android-v0.3.0-beta.1-TEST.apk \
+            release/GameLingo-GoogleTV-v0.3.0-beta.1-TEST.apk \
+            release/SHA256SUMS.txt \
+            -R "$REPO" --target "$SOURCE" --title "GameLingo 0.3.0 Beta 1 – vlastní design" \
+            --prerelease --notes-file /tmp/game-lingo-v03.md
+          gh release view "$TAG" -R "$REPO" --json url,assets --jq '{url:.url,assets:[.assets[].name]}'
