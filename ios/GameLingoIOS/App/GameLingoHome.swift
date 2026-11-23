@@ -101,11 +101,25 @@ struct GameLingoHome: View {
             devices.prepareTV(model.tv)
             if !devices.completedSetup { setupSheet = true }
         }
-        .onReceive(devices.$preferredTelevisionID) { _ in
+        .onChange(of: devices.preferredTelevisionID) { previous, selected in
+            if previous != selected && model.isRunning &&
+                devices.subtitleOutput == .googleTV {
+                // Remove the previous receiver's overlay before changing its IP.
+                model.tv.sendSubtitle("", duration: 0)
+                model.tv.sendChoices([], area: model.choicesArea,
+                                     outputArea: model.choicesOutputArea)
+            }
             devices.prepareTV(model.tv)
         }
-        .onReceive(devices.$subtitleOutput) { output in
-            if output == .googleTV { devices.prepareTV(model.tv) }
+        .onChange(of: devices.subtitleOutput) { previous, output in
+            if previous == .googleTV && output == .phone {
+                // Switching to phone output should clear stale TV captions.
+                model.tv.sendSubtitle("", duration: 0)
+                model.tv.sendChoices([], area: model.choicesArea,
+                                     outputArea: model.choicesOutputArea)
+            } else if output == .googleTV {
+                devices.prepareTV(model.tv)
+            }
         }
         .onReceive(model.xbox.$consoles) { consoles in
             devices.refreshXbox(consoles)
