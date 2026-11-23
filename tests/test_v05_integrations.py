@@ -49,7 +49,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("PlayCaptionSettingsView",settings+home)
         self.assertIn("GameLingoSettingsView",settings+home)
         self.assertIn("struct XboxAccountView: View", model)
-        self.assertIn("struct TVSelectionView: View", model)
+        self.assertNotIn("struct TVSelectionView: View", model)
 
     def test_live_session_cannot_silently_change_selected_console(self):
         panel=code(IOS/"GameLingoDevicesPanel.swift")
@@ -66,7 +66,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         shared=code(IOS/"GameLingoTVSetupScreen.swift")
         for entry in (home, setup):
             self.assertIn("GameLingoTVSetupScreen(devices: devices, tv: model.tv)",entry)
-        self.assertIn("TVSelectionView(tv: tv)",shared)
+        self.assertIn("GameLingoTVPairingPanel(tv: tv, isRunning: model.isRunning)",shared)
+        self.assertIn("tv.pairReceiver()",shared)
+        self.assertIn("tv.forgetReceiver()",shared)
         self.assertIn("devices.addTelevision(",shared)
         self.assertIn('devices.selectTelevision("tv:" + address.lowercased())',shared)
         self.assertIn("devices.subtitleOutput = .googleTV",shared)
