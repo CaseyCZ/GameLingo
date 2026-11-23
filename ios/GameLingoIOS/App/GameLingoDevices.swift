@@ -130,6 +130,23 @@ final class GameLingoDevices: ObservableObject {
         persist()
     }
 
+    func refreshPlayStation(_ registered: [RegisteredConsole]) {
+        for ps in registered {
+            let id = "ps:" + ps.id
+            if let index = consoles.firstIndex(where: { $0.id == id }) {
+                consoles[index].name = ps.nickname
+                consoles[index].address = ps.address
+                consoles[index].lastSeen = Date()
+            } else {
+                consoles.append(GLConsoleRecord(
+                    id: id, family: .playStation,
+                    name: ps.nickname.isEmpty ? "PlayStation" : ps.nickname,
+                    address: ps.address, lastSeen: Date()))
+            }
+        }
+        persist()
+    }
+
     func addPlayStation(name: String, address: String) {
         let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !name.isEmpty else { return }
