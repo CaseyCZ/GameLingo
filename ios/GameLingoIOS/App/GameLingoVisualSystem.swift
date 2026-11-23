@@ -125,20 +125,15 @@ struct GLPlatformBadge: View {
                     .font(.system(size: size * 0.42))
                     .foregroundStyle(GLNeon.cyan)
             } else if family == .xbox {
-                ZStack {
-                    Circle().strokeBorder(Color.white, lineWidth: 2.2)
-                        .frame(width: size * 0.51, height: size * 0.51)
-                    Text("X")
-                        .font(.system(size: size * 0.46,
-                                      weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-            } else if family == .playStation {
-                Text("PS")
-                    .font(.system(size: size * 0.34,
-                                  weight: .black, design: .rounded))
-                    .italic()
+                Image(systemName: "xbox.logo")
+                    .font(.system(size: size * 0.57, weight: .regular))
                     .foregroundStyle(.white)
+                    .accessibilityLabel("Xbox")
+            } else if family == .playStation {
+                Image(systemName: "playstation.logo")
+                    .font(.system(size: size * 0.56, weight: .regular))
+                    .foregroundStyle(.white)
+                    .accessibilityLabel("PlayStation")
             } else {
                 Image(systemName: "gamecontroller.fill")
                     .font(.system(size: size * 0.40))
