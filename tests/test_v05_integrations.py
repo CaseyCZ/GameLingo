@@ -270,7 +270,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                        "GLNeonPanel(emphasized: connected)", "GLNeonBackground()"):
             self.assertIn(marker,home)
         for marker in ("GLBrandWordmark()", "GLPlatformBadge(family: family",
-                       "case 1: languageStep", "case 2: outputStep",
+                       "case 1: languageStep", "case 2: consoleStep", "case 3: outputStep",
                        "ForEach(0..<4)", "GLNeonBackground()"):
             self.assertIn(marker,setup)
         for marker in ("GLNeonTitle(", "GLNeonPanel(emphasized: true)",
@@ -299,7 +299,10 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for view in (settings,setup):
             self.assertIn("$model.gameLanguage",view)
             self.assertIn("$model.targetLanguage",view)
-        self.assertIn("Rozhraní GameLingo je zatím kompletně dostupné v češtině.",setup)
+        self.assertIn('selection: $model.appLanguage',setup)
+        self.assertIn('selection: $model.appLanguage',settings)
+        self.assertIn('Vítej v GameLingo',setup)
+        self.assertIn('ForEach(0..<5)',setup)
 
     def test_pinned_native_source_and_build(self):
         workflow=code(ROOT/".github/workflows/build-gamelingo.yml")
