@@ -45,6 +45,44 @@ object GameLingoLanguages {
     fun name(choices: List<Language>, code: String) =
         choices.firstOrNull { it.code == code }?.title ?: code
 
+    enum class Kind { APP, GAME, TARGET }
+
+    /** Same one-field selection behavior as the iOS SwiftUI pickers. */
+    fun choose(activity: Activity, kind: Kind, onChanged: () -> Unit = {}) {
+        val choices = when (kind) {
+            Kind.APP -> appLanguages
+            Kind.GAME -> gameLanguages
+            Kind.TARGET -> targetLanguages
+        }
+        val title = when (kind) {
+            Kind.APP -> "Jazyk aplikace"
+            Kind.GAME -> "Jazyk hry"
+            Kind.TARGET -> "Jazyk překladu"
+        }
+        val current = when (kind) {
+            Kind.APP -> app(activity)
+            Kind.GAME -> game(activity)
+            Kind.TARGET -> target(activity)
+        }
+        val index = choices.indexOfFirst { it.code == current }.coerceAtLeast(0)
+        AlertDialog.Builder(activity)
+            .setTitle(title)
+            .setSingleChoiceItems(choices.map { it.title }.toTypedArray(), index) {
+                picker, choice ->
+                val selected = choices[choice].code
+                when (kind) {
+                    Kind.APP -> Nastaveni(activity).jazyk = selected
+                    Kind.GAME -> activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                        .edit().putString("game", selected).apply()
+                    Kind.TARGET -> activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                        .edit().putString("target", selected).apply()
+                }
+                picker.dismiss()
+                onChanged()
+            }.setNegativeButton("Zrušit", null)
+            .show()
+    }
+
     fun show(activity: Activity, onChanged: () -> Unit = {}) {
         if (activity.isFinishing) return
         val container = LinearLayout(activity).apply {
