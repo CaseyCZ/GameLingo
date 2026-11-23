@@ -100,6 +100,15 @@ jobs:
           Licence AGPL-3.0 a původní projekt: [GameLingo](https://github.com/CaseyCZ/GameLingo), [PlayCaption](https://github.com/AdamRuzick4/PlayCaption-app).
           EOF
 
+          # Separate tag creation from Release creation. This also makes
+          # repository/tag permission problems visible independently.
+          if ! gh api "repos/$REPO/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            gh api -X POST "repos/$REPO/git/refs" \
+              -f ref="refs/tags/$TAG" -f sha="$SOURCE" \
+              --jq '{ref,sha:.object.sha}'
+          fi
+          test "$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')" = "$SOURCE"
+
           if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
             tag_sha="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')"
             test "$tag_sha" = "$SOURCE" || {
