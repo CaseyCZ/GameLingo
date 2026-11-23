@@ -3,7 +3,7 @@ name: GameLingo • iOS / Android / Google TV
 on:
   push:
     branches:
-      - feature/gamelingo-v03-reference-ui
+      - feature/gamelingo-v04-all-screens
     paths:
       - "ios/**"
       - "tools/**"
@@ -54,16 +54,16 @@ jobs:
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")
           test "$ID" = "cz.caseycz.gamelingo.ios"
           test "$LABEL" = "GameLingo"
-          test "$VERSION" = "0.3.0"
+          test "$VERSION" = "0.4.0"
           file "$APP/GameLingoIOS"
           mkdir -p "$PWD/.build/ipa/Payload"
           cp -R "$APP" "$PWD/.build/ipa/Payload/"
-          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v0.3.0-beta.1-unsigned.ipa" Payload)
-          unzip -t GameLingo-iOS-v0.3.0-beta.1-unsigned.ipa >/dev/null
+          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v0.4.0-beta.1-unsigned.ipa" Payload)
+          unzip -t GameLingo-iOS-v0.4.0-beta.1-unsigned.ipa >/dev/null
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-iOS-beta
-          path: GameLingo-iOS-v0.3.0-beta.1-unsigned.ipa
+          path: GameLingo-iOS-v0.4.0-beta.1-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
       - name: Preserve Xcode log if failed
@@ -99,11 +99,12 @@ jobs:
       - name: Brand independent Android mobile app
         run: |
           python -m pip install pillow
-          python -m py_compile kit/tools/polish_gamelingo.py kit/tools/redesign_gamelingo.py
+          python -m py_compile kit/tools/polish_gamelingo.py kit/tools/redesign_gamelingo.py kit/tools/polish_all_screens.py
           python kit/tools/brand_android.py mobile upstream
           python kit/tools/create_brand_assets.py android upstream
           python kit/tools/polish_gamelingo.py upstream
           python kit/tools/redesign_gamelingo.py mobile upstream
+          python kit/tools/polish_all_screens.py mobile upstream
           sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
       - name: Build Android phone APK
         working-directory: upstream
@@ -116,11 +117,11 @@ jobs:
           APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.mobile'"
-          cp "$APK" GameLingo-Android-v0.3.0-beta.1-TEST.apk
+          cp "$APK" GameLingo-Android-v0.4.0-beta.1-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-Android-beta
-          path: GameLingo-Android-v0.3.0-beta.1-TEST.apk
+          path: GameLingo-Android-v0.4.0-beta.1-TEST.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -155,6 +156,7 @@ jobs:
           python kit/tools/create_brand_assets.py android upstream
           python kit/tools/polish_gamelingo.py upstream
           python kit/tools/redesign_gamelingo.py tv upstream
+          python kit/tools/polish_all_screens.py tv upstream
           grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
           grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
           grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
@@ -170,11 +172,11 @@ jobs:
           APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'"
-          cp "$APK" GameLingo-GoogleTV-v0.3.0-beta.1-TEST.apk
+          cp "$APK" GameLingo-GoogleTV-v0.4.0-beta.1-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-GoogleTV-beta
-          path: GameLingo-GoogleTV-v0.3.0-beta.1-TEST.apk
+          path: GameLingo-GoogleTV-v0.4.0-beta.1-TEST.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -192,14 +194,14 @@ jobs:
       - name: Verify all outputs and calculate SHA-256
         run: |
           set -euo pipefail
-          test -s release/GameLingo-iOS-v0.3.0-beta.1-unsigned.ipa
-          test -s release/GameLingo-Android-v0.3.0-beta.1-TEST.apk
-          test -s release/GameLingo-GoogleTV-v0.3.0-beta.1-TEST.apk
+          test -s release/GameLingo-iOS-v0.4.0-beta.1-unsigned.ipa
+          test -s release/GameLingo-Android-v0.4.0-beta.1-TEST.apk
+          test -s release/GameLingo-GoogleTV-v0.4.0-beta.1-TEST.apk
           (cd release && sha256sum *.ipa *.apk > SHA256SUMS.txt)
           cat release/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-v0.3.0-beta.1-all-installers
+          name: GameLingo-v0.4.0-beta.1-all-installers
           path: release/
           if-no-files-found: error
           retention-days: 30
