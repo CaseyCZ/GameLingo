@@ -1,0 +1,44 @@
+name: GameLingo • quick regression checks
+
+on:
+  push:
+    branches:
+      - feature/gamelingo-v05-platform-rebuild
+    paths:
+      - "ios/**"
+      - "tools/**"
+      - "tests/**"
+      - ".github/workflows/fast-gamelingo-checks.yml"
+  pull_request:
+    branches:
+      - feature/gamelingo-v04-all-screens
+    paths:
+      - "ios/**"
+      - "tools/**"
+      - "tests/**"
+      - ".github/workflows/fast-gamelingo-checks.yml"
+  workflow_dispatch:
+
+# Native iOS/Android/Google TV packaging is deliberately separate.
+# This inexpensive workflow checks changes without downloading and building Chiaki.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python integration contracts
+        run: python3 -m unittest discover -s tests -p 'test_v05_integrations.py' -v
+      - name: Python tooling syntax
+        run: python3 -m compileall -q tools tests
+      - name: Parse every iOS Swift source
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v swiftc
+          while IFS= read -r -d '' file; do
+            swiftc -frontend -parse "$file"
+          done < <(find ios/GameLingoIOS/App -type f -name '*.swift' -print0)
