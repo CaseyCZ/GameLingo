@@ -3,16 +3,16 @@ import SwiftUI
 // GameLingo 0.5 — original navigation, native SwiftUI controls.
 // Remote Play, OCR, pairing and translation remain in CaptionAppModel.
 private enum GLVisual {
-    static let navy = Color(red: 7/255, green: 11/255, blue: 20/255)
-    static let card = Color(red: 17/255, green: 24/255, blue: 39/255)
-    static let border = Color(red: 43/255, green: 54/255, blue: 83/255)
-    static let cyan = Color(red: 17/255, green: 199/255, blue: 249/255)
-    static let violet = Color(red: 135/255, green: 80/255, blue: 255/255)
-    static let muted = Color(red: 148/255, green: 163/255, blue: 184/255)
-    static let green = Color(red: 53/255, green: 229/255, blue: 125/255)
-    static let accent = LinearGradient(
-        colors: [violet, Color(red: 63/255, green: 109/255, blue: 255/255), cyan],
-        startPoint: .leading, endPoint: .trailing)
+    // The dashboard reuses the same tokens as every other GameLingo screen.
+    // Do not allow an independent look to drift from settings or onboarding.
+    static let navy = GLStyle.background
+    static let card = GLStyle.surface
+    static let border = GLStyle.border
+    static let cyan = GLStyle.blue
+    static let violet = GLStyle.violet
+    static let muted = GLStyle.muted
+    static let green = GLStyle.green
+    static let accent = GLStyle.gradient
 }
 
 struct GameLingoHome: View {
