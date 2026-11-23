@@ -94,7 +94,9 @@ object GameLingoFirstRun {
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER_VERTICAL
             setPadding(19, 20, 19, 20)
-            background = GameLingoVisualKit.card(activity, selected = checked)
+            background = if (text == "Pokračovat" || text == "Připojit")
+                GameLingoVisualKit.primary(activity)
+                else GameLingoVisualKit.card(activity, selected = checked)
             isFocusable = true
             setOnClickListener { onClick() }
         }
@@ -161,17 +163,23 @@ object GameLingoFirstRun {
                     item("🌐  Jazyk aplikace  •  " +
                          GameLingoLanguages.name(GameLingoLanguages.appLanguages,
                              GameLingoLanguages.app(activity)), true) {
-                        GameLingoLanguages.show(activity) { redraw() }
+                        GameLingoLanguages.choose(activity, GameLingoLanguages.Kind.APP) {
+                            redraw()
+                        }
                     }
                     item("🎮  Jazyk hry  •  " +
                          GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
                              GameLingoLanguages.game(activity)), true) {
-                        GameLingoLanguages.show(activity) { redraw() }
+                        GameLingoLanguages.choose(activity, GameLingoLanguages.Kind.GAME) {
+                            redraw()
+                        }
                     }
                     item("文  Jazyk překladu  •  " +
                          GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
                              GameLingoLanguages.target(activity)), true) {
-                        GameLingoLanguages.show(activity) { redraw() }
+                        GameLingoLanguages.choose(activity, GameLingoLanguages.Kind.TARGET) {
+                            redraw()
+                        }
                     }
                 }
                 2 -> {
