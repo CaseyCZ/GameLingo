@@ -185,26 +185,61 @@ object GameLingoDeviceCenter {
                     val list = found.getOrNull().orEmpty()
                     xboxStatus.text = if (list.isEmpty()) "Xbox: žádná konzole"
                         else "Xbox"
-                    val selectedID = c.getSharedPreferences("gamelingo_devices",
-                        Activity.MODE_PRIVATE).getString("selectedXboxId", null)
-                    list.forEach { xbox ->
+                    val prefs = c.getSharedPreferences("gamelingo_devices",
+                        Activity.MODE_PRIVATE)
+                    val selectedID = prefs.getString("selectedXboxId", null)
+                    val hiddenXboxIds = prefs.getStringSet("hiddenXboxIds", emptySet())
+                        .orEmpty().toSet()
+                    list.filterNot { it.id in hiddenXboxIds }.forEach { xbox ->
                         add(consoles, line(c, xbox.jmeno, "Xbox Series / One",
                                           selectedID == xbox.id) {
                             AlertDialog.Builder(c)
                                 .setTitle(xbox.jmeno)
-                                .setItems(arrayOf("Použít", "Připojit")) { _, option ->
+                                .setItems(arrayOf("Použít", "Připojit", "Odebrat")) { _, option ->
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
                                             .setMessage("Nejdřív zastav probíhající překlad.")
                                             .setPositiveButton("OK", null).show()
                                         return@setItems
                                     }
-                                    c.getSharedPreferences("gamelingo_devices",
-                                        Activity.MODE_PRIVATE).edit()
-                                        .putString("selectedXboxId", xbox.id).apply()
-                                    dialog.dismiss()
-                                    if (option == 1) onXbox() else onUpdated()
+                                    if (option == 2) {
+                                        AlertDialog.Builder(c)
+                                            .setTitle("Odebrat Xbox?")
+                                            .setMessage("Konzole zmizí ze seznamu GameLingo, ale zůstane na tvém Microsoft účtu. Můžeš ji později znovu zobrazit.")
+                                            .setPositiveButton("Odebrat") { _, _ ->
+                                                val hidden = prefs.getStringSet("hiddenXboxIds", emptySet())
+                                                    .orEmpty().toMutableSet()
+                                                hidden.add(xbox.id)
+                                                val update = prefs.edit()
+                                                    .putStringSet("hiddenXboxIds", hidden)
+                                                if (prefs.getString("selectedXboxId", null) == xbox.id)
+                                                    update.remove("selectedXboxId")
+                                                update.apply()
+                                                dialog.dismiss()
+                                                onUpdated()
+                                            }
+                                            .setNegativeButton("Zrušit", null)
+                                            .show()
+                                    } else {
+                                        prefs.edit().putString("selectedXboxId", xbox.id).apply()
+                                        dialog.dismiss()
+                                        if (option == 1) onXbox() else onUpdated()
+                                    }
                                 }.show()
+                        })
+                    }
+                    if (hiddenXboxIds.isNotEmpty()) {
+                        add(consoles, line(c, "Vrátit odebrané Xboxy",
+                            "Znovu zobrazit ${hiddenXboxIds.size} konzolí") {
+                            if (RemotePlayService.aktivni) {
+                                AlertDialog.Builder(c)
+                                    .setMessage("Nejdřív zastav probíhající překlad.")
+                                    .setPositiveButton("OK", null).show()
+                            } else {
+                                prefs.edit().remove("hiddenXboxIds").apply()
+                                dialog.dismiss()
+                                onUpdated()
+                            }
                         })
                     }
                 }
