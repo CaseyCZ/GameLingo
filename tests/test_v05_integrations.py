@@ -45,6 +45,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("struct ContentView: View", model)
         self.assertNotIn("struct XboxRemotePlayView: View", model)
         self.assertNotIn("private struct PlayCaptionSection", model)
+        settings=code(IOS/"SettingsHomeView.swift")
+        self.assertNotIn("PlayCaptionSettingsView",settings+home)
+        self.assertIn("GameLingoSettingsView",settings+home)
         self.assertIn("struct XboxAccountView: View", model)
         self.assertIn("struct TVSelectionView: View", model)
 
