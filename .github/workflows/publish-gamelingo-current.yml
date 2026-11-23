@@ -1,4 +1,4 @@
-name: Publish current GameLingo Beta only
+name: Publish latest GameLingo 0.5 Beta (replace old release listings)
 
 on:
   push:
@@ -18,23 +18,55 @@ concurrency:
 
 jobs:
   release:
+    name: Publish only the newest verified iOS, Android and Google TV builds
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 125
     steps:
-      - name: Verify current build and publish short release
+      - name: Wait for verified three-platform release candidate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           REPO="$GITHUB_REPOSITORY"
-          TAG="v0.5.0-beta.1"
-          SOURCE="b9455b88ec78ae00a12be0642e08aac0e88f4d83"
-          BUILD_RUN="45216376426"
+          SOURCE="89c78ef8f1d339d1b29c28d3f1406422dd313418"
+          BUILD_RUN="45261196428"
 
-          # Never publish a different revision or a partial installer set.
+          actual_sha="$(gh api "repos/$REPO/actions/runs/$BUILD_RUN" --jq '.head_sha')"
+          test "$actual_sha" = "$SOURCE"
+
+          # Publishing before the common iOS + Android + TV matrix has
+          # completed could mix different source versions. Never do that.
+          for attempt in $(seq 1 240); do
+            state="$(gh api "repos/$REPO/actions/runs/$BUILD_RUN" --jq '.status + ":" + (.conclusion // "pending")')"
+            if [ "$state" = "completed:success" ]; then
+              echo "All three platforms compiled from $SOURCE"
+              exit 0
+            fi
+            if [[ "$state" == completed:* ]]; then
+              echo "::error::Three-platform build $BUILD_RUN failed: $state"
+              exit 1
+            fi
+            echo "Waiting for the same-revision three-platform build: $state"
+            sleep 30
+          done
+          echo "::error::Full three-platform build did not complete within publishing timeout."
+          exit 1
+
+      - name: Publish the new beta, then remove older GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TAG="v0.5.0-beta.2"
+          SOURCE="89c78ef8f1d339d1b29c28d3f1406422dd313418"
+          BUILD_RUN="45261196428"
+
           test "$(gh api "repos/$REPO/actions/runs/$BUILD_RUN" --jq '.conclusion')" = "success"
           test "$(gh api "repos/$REPO/actions/runs/$BUILD_RUN" --jq '.head_sha')" = "$SOURCE"
+
           mkdir -p release
           gh run download "$BUILD_RUN" -R "$REPO" \
             -n "GameLingo-v0.5.0-dev-all-installers" -D release
@@ -44,32 +76,54 @@ jobs:
               GameLingo-Android-v0.5.0-dev-TEST.apk \
               GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
               SHA256SUMS.txt; do
-            test -s "release/$filename"
+            test -s "release/$filename" || {
+              echo "::error::Missing release installer/checksum: $filename"
+              exit 1
+            }
           done
+
           (cd release && sha256sum -c SHA256SUMS.txt)
           unzip -t release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa >/dev/null
           unzip -t release/GameLingo-Android-v0.5.0-dev-TEST.apk >/dev/null
           unzip -t release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk >/dev/null
 
           cat > release-notes.md <<'EOF'
-          🎮 **GameLingo 0.5.0 Beta**
+          # GameLingo 0.5.0 Beta 2
 
-          Nová testovací verze pro **iPhone, Android a Google TV**.
+          Nové aktuální **testovací** vydání se třemi instalačními soubory, sestavenými ze stejné revize kódu pro iPhone, Android mobil a Google TV.
 
-          - Nové rozhraní a úvodní nastavení.
-          - Výběr více Xboxů, PlayStationů a televizorů.
-          - České titulky a překlad textů ve hrách.
-          - Jednodušší párování a správa zařízení.
+          ### Co je nového
+          - **iPhone a Android:** sjednocené rozhraní, pět záložek (Domů, Obrazovka, Konzole, Nastavení, O aplikaci), úvodní průvodce a sdílená paleta.
+          - **Android mobil:** přepracovaná nativní navigace se skutečnými stránkami místo modálních oken; správa více Xboxů, PlayStationů a TV.
+          - **OCR a překlad:** nastavení režimu OCR, filtrování menu, rozšířeného hledání a ruční oblasti, propojené se čtečkou na Androidu.
+          - **Titulky:** oddělená velikost, barva a pozadí pro Android telefon; TV velikost, šířka, zámek a ukázka.
+          - **Google TV párování:** na Android mobilu šest číslic, zabezpečené uložení klíče a možnost ověřit odpověď televizoru.
+          - **Google TV APK:** samostatný televizní přijímač se stávajícím přehráváním/překryvem titulků.
+          - Opraveno zobrazování falešného „připojeno“ jen podle uložené konzole.
 
-          **Jde o testovací verzi.** Připojení konzolí a zobrazení titulků na TV ještě ověřujeme.
+          ### Soubory
+          - `GameLingo-iOS-v0.5.0-dev-unsigned.ipa` — **nepodepsaná** IPA, před instalací se musí podepsat vlastním Apple účtem.
+          - `GameLingo-Android-v0.5.0-dev-TEST.apk` — testovací sestavení pro mobilní Android.
+          - `GameLingo-GoogleTV-v0.5.0-dev-TEST.apk` — testovací sestavení pro Google TV/Android TV.
+          - `SHA256SUMS.txt` — ověření integrity všech tří souborů.
 
-          *Na iPhonu je před instalací potřeba aplikaci podepsat.*
+          ### Známá omezení
+          - Jde o **beta test**, ne o potvrzeně stabilní vydání: PS4/PS5, Xbox, OCR a příjem titulků na konkrétních zařízeních ještě vyžadují fyzické testy.
+          - iOS a Android mají dosud rozdílnou nabídku jazyků rozhraní; nebyla bez výslovného souhlasu změněna.
+          - TV podporuje jen jedno aktuálně autorizované párování telefonu; při změně iPhone/Android může být nutné nové párování.
+          - Android a iOS používají pro odesílání titulků do TV rozdílné transportní postupy; samotný úspěch PIN párování nezaručuje zobrazení titulků ve hře.
+          - Soubor APK může při aktualizaci vyžadovat odinstalaci předchozí testovací verze kvůli podpisu.
+
+          Zdrojové kódy a licence: [GameLingo](https://github.com/CaseyCZ/GameLingo), založeno na [PlayCaption](https://github.com/AdamRuzick4/PlayCaption-app), AGPL-3.0.
           EOF
 
           if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
-            gh release edit "$TAG" -R "$REPO" \
-              --title "GameLingo 0.5.0 Beta" \
-              --notes-file release-notes.md --prerelease
+            current_sha="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')"
+            test "$current_sha" = "$SOURCE" || {
+              echo "::error::Release tag $TAG points to another source; refusing overwrite."
+              exit 1
+            }
+            echo "Release exists at the correct source. Verifying assets below."
           else
             gh release create "$TAG" \
               release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
@@ -77,31 +131,32 @@ jobs:
               release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
               release/SHA256SUMS.txt \
               -R "$REPO" --target "$SOURCE" \
-              --title "GameLingo 0.5.0 Beta" \
-              --prerelease --notes-file release-notes.md
+              --title "GameLingo 0.5.0 Beta 2" \
+              --prerelease --latest --notes-file release-notes.md
           fi
 
-          # Remove only the old release listings, never their git tags.
-          # Do not clean them up until the newest release has all installers.
+          # Only after every new installer is present can old release
+          # listings be deleted. Keep git tags/commits to preserve history.
           gh release view "$TAG" -R "$REPO" --json assets \
-            --jq '.assets[].name' > asset-names.txt
+            --jq '.assets[].name' > published-assets.txt
           for filename in \
               GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
               GameLingo-Android-v0.5.0-dev-TEST.apk \
               GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
               SHA256SUMS.txt; do
-            grep -Fxq "$filename" asset-names.txt
+            grep -Fxq "$filename" published-assets.txt || {
+              echo "::error::New release lacks $filename. Old releases are preserved."
+              exit 1
+            }
           done
 
-          for old in \
-              v0.1.0-beta.1 \
-              v0.2.0-beta.1 \
-              v0.3.0-beta.1 \
-              v0.4.0-beta.1; do
-            if gh release view "$old" -R "$REPO" >/dev/null 2>&1; then
-              gh release delete "$old" -R "$REPO" --yes
-            fi
-          done
-          gh release view "$TAG" -R "$REPO" \
-            --json url,tagName,name,isPrerelease,assets \
+          echo "New release has all four artifacts. Remove old listings now."
+          while IFS= read -r old; do
+            [ -n "$old" ] || continue
+            [ "$old" != "$TAG" ] || continue
+            gh release delete "$old" -R "$REPO" --yes
+          done < <(gh release list -R "$REPO" --limit 100 --json tagName --jq '.[].tagName')
+
+          test "$(gh release list -R "$REPO" --limit 100 --json tagName --jq 'length')" = "1"
+          gh release view "$TAG" -R "$REPO" --json url,tagName,name,isPrerelease,assets \
             --jq '{url:.url,tag:.tagName,name:.name,beta:.isPrerelease,files:[.assets[].name]}'
