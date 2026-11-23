@@ -24,9 +24,15 @@ struct GLCard<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(GLStyle.surface, in: RoundedRectangle(cornerRadius: 19))
-        .overlay(RoundedRectangle(cornerRadius: 19)
-            .strokeBorder(GLStyle.border, lineWidth: 1))
+        .background {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [GLNeon.panel, GLNeon.ink.opacity(0.93)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .strokeBorder(GLNeon.edge.opacity(0.55), lineWidth: 0.9))
+        .shadow(color: GLNeon.blue.opacity(0.07), radius: 10, y: 5)
     }
 }
 
@@ -79,7 +85,8 @@ struct GLHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(title).font(.headline).foregroundStyle(.white)
+            Text(title).font(.system(size: 17, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
             Spacer(minLength: 0)
             if let help { GLHelpButton(title: title, explanation: help) }
         }
@@ -96,17 +103,27 @@ struct GLPrimaryButton: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: systemImage)
-                Text(title)
-                Spacer(minLength: 0)
-                Image(systemName: "arrow.right")
+                .font(.system(size: 19, weight: .bold))
+                .frame(width: 30)
+            Text(title)
+                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Spacer(minLength: 0)
+            Image(systemName: "arrow.right")
+                .font(.system(size: 13, weight: .bold))
             }
             .font(.headline)
             .foregroundStyle(.white)
             .padding(.horizontal, 17)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(GLStyle.gradient, in: RoundedRectangle(cornerRadius: 14))
-            .opacity(disabled ? 0.38 : 1)
+            .frame(height: 56)
+            .background(GLNeon.accent, in: RoundedRectangle(cornerRadius: 17))
+            .overlay(RoundedRectangle(cornerRadius: 17)
+                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1))
+            .shadow(color: disabled ? .clear : GLNeon.purple.opacity(0.22),
+                    radius: 13, y: 5)
+            .opacity(disabled ? 0.35 : 1)
         }
         .buttonStyle(.plain)
         .disabled(disabled)
@@ -120,9 +137,14 @@ struct GLSettingsLink: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.title3)
-                .frame(width: 27)
-                .foregroundStyle(GLStyle.blue)
+                .font(.system(size: 20, weight: .medium))
+                .frame(width: 42, height: 42)
+                .foregroundStyle(.white)
+                .background(LinearGradient(
+                    colors: [GLNeon.cyan.opacity(0.65),
+                             GLNeon.purple.opacity(0.55)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: RoundedRectangle(cornerRadius: 12))
             Text(title)
                 .font(.body.weight(.medium))
                 .foregroundStyle(.white)
@@ -131,7 +153,7 @@ struct GLSettingsLink: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(GLStyle.muted)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 7)
         .contentShape(Rectangle())
     }
 }
@@ -178,7 +200,7 @@ struct GLScreen<Content: View>: View {
             .padding(.top, 20)
             .padding(.bottom, 35)
         }
-        .background(GLStyle.background.ignoresSafeArea())
+        .background(GLNeonBackground())
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
