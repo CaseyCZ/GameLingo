@@ -417,4 +417,7 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var subtitleDuration: Double
     var skipOldTranslations: Bool
     var maxTranslationAge: Double
+    /// Backwards compatible: older saved profiles did not contain languages.
+    var gameLanguage: String?
+    var targetLanguage: String?
 }
