@@ -21,6 +21,14 @@
 
 **Další úkol po přerušení:** otevři tento run, zkontroluj výsledky každého jobu a tři instalační balíčky. Pokud se sestavení nepovede, oprav konkrétní chybový log, neodhaduj úspěch. Pak pokračuj podle [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md) — samotná kompilace nenahrazuje připojení ke konzolím, OCR a obraz na HDMI.
 
+### Nejnovější technický checkpoint – 23. 11. 2026
+
+- **Úplné sestavení aktualizovaného UI:** [Actions 45214572851](https://github.com/CaseyCZ/GameLingo/actions/runs/45214572851) na `0d7eff9` **PASS** – iPhone IPA, Android APK, Google TV APK a balík kontrolních součtů. Další plná matice [45214580730](https://github.com/CaseyCZ/GameLingo/actions/runs/45214580730) na `658b9b2` byla spuštěna; zkontrolovat její konečný stav.
+- **Ochrana výstupu po výpadku TV:** `30ab93f` – oba OCR překladové kanály odesílají data jen vybrané TV s uloženým párováním a aktivní odpovědí přijímače. `8b18014` přidává regresní testy.
+- **Ověřená rychlá CI:** [Actions 45215318900](https://github.com/CaseyCZ/GameLingo/actions/runs/45215318900) pro `8b18014` **PASS**. Tento nový zdroj je ještě novější než výše uvedené plné buildy a vyžaduje finální nativní sestavení před vydáním.
+- **Neuzavřené body:** UX vizuální kontrola všech obrazovek na reálných zařízeních; Xbox a PS4/PS5 přihlášení a Remote Play; čtyři OCR oblasti v živé hře; Orange V5 HDMI overlay a opakované přepínání TV; kompletní společný finální build na posledním zdrojovém SHA.
+- **Vydání:** PR #5 zůstává **draft**, Master a veřejná 0.4 beze změny. Žádný test na reálné konzoli nebo TCL C835 se nevydává za PASS bez výsledku uživatelského testu.
+
 ## Úkoly podle původního auditu
 
 | # | Priorita | Úkol | Kritérium dokončení | Stav |
@@ -94,9 +102,10 @@
 |---|---|---|
 | P0/1: Sjednotit iOS Xbox a odstranit staré iOS UI | `1411dca`, `4f85eb0`, `d8f0f71`, `78432b3` | Změny uloženy, rychlé kontroly prošly |
 | P0/3: Neumožnit přepnout aktivní konzoli za běhu | `9d8dc93`, `85cc0fd` | Změny uloženy, rychlé kontroly prošly |
-| Další: zkontrolovat a dokončit P0/1 až P0/4 také na Androidu/TV, včetně nastavení prvního spuštění | — | DALŠÍ |
-| Poté: P1/5 samostatné TV UI a P1/6 zachování protokolů | — | ČEKÁ |
-| Poté: P1/7 CI build + fyzický test PS5/Xbox/TCL C835 | — | ČEKÁ |
-| Poté: P2/8 vyčistit duplicity, P2/9 synchronizovat README a zvážit merge | — | ČEKÁ |
+| P0/1–4: nový Android průvodce, pět stejných záložek, správa Xbox/PS/TV | `54f694d`, `4acba8c`, `65ae20a` | Implementováno, HW/UI test zbývá |
+| P0/3 a P1/6: vymazání původní TV a blokace neověřeného výstupu | `8d5d68e`, `60ce243`, `30ab93f`, `8b18014` | Rychlá CI PASS, fyzický TV test zbývá |
+| P1/5: samostatná TV UI a ovládání dálkovým ovladačem | `9c92325` | Zdroj/QA APK prošel, fyzické D-pad/HDMI testy zbývají |
+| P1/7: kompletní kandidát ze společného SHA a reálné konzole | [45214572851](https://github.com/CaseyCZ/GameLingo/actions/runs/45214572851) | Build starší revize PASS; nový zdroj a fyzické testy zbývají |
+| P2/8–9: zbytek odstranění textových upstream patchů + ověřená dokumentace | `d6697e2`, `ed04ad1` | Rozpracováno; merge do Master blokován |
 
 **Bezpečnost a vydání:** Nepřepínat Master; nesdělovat privátní Xbox/PSN tokeny ani klíče; nepublikovat tajné přihlašovací údaje, debug APK označovat TEST, iOS IPA unsigned; zachovat AGPL-3.0 a plné atribuce. Build nebo statická CI kontrola nikdy není důkaz funkčního HDMI overlaye, OAuth, připojení k PS5 či OCR.
