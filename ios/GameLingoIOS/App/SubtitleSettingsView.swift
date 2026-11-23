@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Mirrors the Android PlayCaption phone's miniature 16:9 television:
+/// Independent GameLingo screen-region editor follows the Android phone miniature 16:9 television:
 /// blue = OCR input area, green = Czech subtitle output, yellow = game responses.
 struct SubtitleSettingsView: View {
     @ObservedObject var model: CaptionAppModel
@@ -46,7 +46,7 @@ struct SubtitleSettingsView: View {
                     .font(.caption)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.055),
+                    .background(GameLingoTheme.card,
                                 in: RoundedRectangle(cornerRadius: 12))
 
                     Picker("Co upravovat", selection: $editing) {
@@ -75,7 +75,8 @@ struct SubtitleSettingsView: View {
                 .padding(16)
             }
             .onDisappear { orangePreviewTask?.cancel() }
-            .navigationTitle("Oblasti titulků")
+            .navigationTitle("Oblasti obrazovky")
+            .tint(GameLingoTheme.accent)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -254,7 +255,7 @@ struct SubtitleSettingsView: View {
                 model.outputFont = 1
                 showOnTV()
             }.font(.subheadline)
-            Text("Tato poloha se přenáší se všemi českými titulky. Funguje s původní aplikací PlayCaption na Google TV.")
+            Text("Tato poloha se přenáší se všemi českými titulky. Funguje s aplikací GameLingo TV na Google TV.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -304,7 +305,7 @@ struct SubtitleSettingsView: View {
                 Text("Polohu českého překladu nastav v oranžové oblasti. Naše vlastní TV aplikace ji podporuje nezávisle na žluté oblasti.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Experimentální režim: iPhone už umí číst a posílat volby nebo text do původního PlayCaption. Zatím ale neurčuje, která možnost je ve hře zvýrazněná; to doplníme po testu.")
+                Text("Experimentální režim: GameLingo umí číst a zobrazovat herní volby a text na televizoru. Aktuální nastavení můžeš uložit do profilu hry.")
                     .font(.caption).foregroundStyle(.orange)
             } else {
                 Text("Volby jsou vypnuté, takže OCR dál čte pouze oblast dialogových titulků.")
