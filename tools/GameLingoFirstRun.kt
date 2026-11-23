@@ -54,7 +54,13 @@ object GameLingoFirstRun {
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         }
-        root.addView(heading)
+        val headingRow = LinearLayout(activity).apply {
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        headingRow.addView(heading, LinearLayout.LayoutParams(
+            0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        headingRow.addView(GameLingoHelp.button(activity, "home"))
+        root.addView(headingRow)
         val body = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, 20, 0, 0)
@@ -115,7 +121,7 @@ object GameLingoFirstRun {
             heading.text = when (step) {
                 0 -> "Kde hraješ?"
                 1 -> "Kam zobrazit titulky?"
-                else -> "GameLingo je připraveno"
+                else -> "Zkontroluj nastavení"
             }
             when (step) {
                 0 -> {
@@ -142,12 +148,26 @@ object GameLingoFirstRun {
                     val selected = if (consoleChoice == 0) "Xbox" else "PlayStation"
                     val output = if (tvChoice == 0) "Telefon" else "Google TV"
                     item("$selected   →   $output", true) {}
-                    body.addView(TextView(activity).apply {
-                        text = "Následuje propojení konzole. Další zařízení můžeš přidat v menu Zařízení."
-                        textSize = 14f
-                        setTextColor(muted)
-                        setPadding(10, 5, 10, 12)
-                    })
+                    if (tvChoice == 1) {
+                        item("📺  Spárovat Google TV", false) {
+                            activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+                                .edit().putBoolean(COMPLETE, true)
+                                .putInt("console", consoleChoice)
+                                .putInt("output", tvChoice).apply()
+                            TvProfily(activity).pouzeTelefon = false
+                            dialog.dismiss()
+                            finished()
+                            connectTV()
+                        }
+                    }
+                }
+            }
+            if (step == 0) {
+                item("Přeskočit", false) {
+                    activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+                        .edit().putBoolean(COMPLETE, true).apply()
+                    dialog.dismiss()
+                    finished()
                 }
             }
             if (step > 0) {
@@ -159,7 +179,7 @@ object GameLingoFirstRun {
                     rightMargin = 8
                 })
             }
-            footer.addView(button(if (step == 2) "Začít" else "Pokračovat") {
+            footer.addView(button(if (step == 2) "Připojit" else "Pokračovat") {
                 if (step < 2) {
                     if ((step == 0 && consoleChoice >= 0) ||
                         (step == 1 && tvChoice >= 0)) {
