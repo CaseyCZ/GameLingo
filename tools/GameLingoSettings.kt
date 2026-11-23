@@ -43,7 +43,7 @@ object GameLingoSettings {
         })
     }
 
-    fun show(activity: Activity, settings: Nastaveni,
+    private fun showTranslation(activity: Activity, settings: Nastaveni,
              onAreas: () -> Unit, onLanguage: () -> Unit) {
         Volby.nacti(activity)
         OblastTitulku.nacti(activity)
@@ -145,4 +145,143 @@ object GameLingoSettings {
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
     }
+    /**
+     * Exactly the same menu hierarchy as iOS:
+     * Jazyky, OCR, Překlad, Oblasti, Titulky, Profily, Zařízení, O aplikaci.
+     * Every destination invokes an existing functional screen.
+     */
+    fun show(activity: Activity, settings: Nastaveni,
+             onAreas: () -> Unit, onLanguage: () -> Unit,
+             onDevices: () -> Unit = {}) {
+        if (activity.isFinishing) return
+        val d = GameLingoVisualKit.dp(activity, 1)
+        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val page = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20 * d, 15 * d, 20 * d, 24 * d)
+            background = GameLingoVisualKit.pageBackground(activity)
+        }
+
+        val heading = LinearLayout(activity).apply {
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        heading.addView(TextView(activity).apply {
+            text = "Nastavení"
+            textSize = 29f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(Color.WHITE)
+        }, LinearLayout.LayoutParams(0,
+            ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        heading.addView(TextView(activity).apply {
+            text = "✕"
+            textSize = 23f
+            gravity = Gravity.CENTER
+            contentDescription = "Zavřít nastavení"
+            setTextColor(Color.WHITE)
+            background = GameLingoVisualKit.card(activity)
+            isFocusable = true
+            setOnClickListener { dialog.dismiss() }
+        }, LinearLayout.LayoutParams(48 * d, 48 * d))
+        page.addView(heading)
+
+        fun section(title: String) {
+            page.addView(TextView(activity).apply {
+                text = title
+                textSize = 12f
+                letterSpacing = 0.10f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(Color.parseColor("#02D6FF"))
+                setPadding(3 * d, 23 * d, 0, 12 * d)
+            })
+        }
+        fun menu(symbol: String, title: String, sub: String, open: () -> Unit) {
+            val row = LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = GameLingoVisualKit.card(activity)
+                setPadding(14 * d, 11 * d, 14 * d, 11 * d)
+                isFocusable = true
+                isClickable = true
+                setOnClickListener { dialog.dismiss(); open() }
+            }
+            row.addView(TextView(activity).apply {
+                text = symbol
+                textSize = 23f
+                gravity = Gravity.CENTER
+                setTextColor(Color.parseColor("#02D6FF"))
+                background = GameLingoVisualKit.primary(activity)
+            }, LinearLayout.LayoutParams(45 * d, 45 * d).apply {
+                rightMargin = 13 * d
+            })
+            row.addView(LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(TextView(activity).apply {
+                    text = title
+                    textSize = 16.5f
+                    setTypeface(null, Typeface.BOLD)
+                    setTextColor(Color.WHITE)
+                })
+                addView(TextView(activity).apply {
+                    text = sub
+                    textSize = 12f
+                    setTextColor(Color.parseColor("#92A4C7"))
+                    setPadding(0, 4 * d, 0, 0)
+                })
+            }, LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            row.addView(TextView(activity).apply {
+                text = "›"
+                textSize = 24f
+                setTextColor(Color.parseColor("#92A4C7"))
+            })
+            page.addView(row, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = 9 * d
+            })
+        }
+        section("JAZYKY")
+        menu("◎", "Jazyk hry a překladu",
+            GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
+                GameLingoLanguages.game(activity)) + " → " +
+            GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
+                GameLingoLanguages.target(activity))) {
+            GameLingoLanguages.show(activity)
+        }
+
+        section("ROZPOZNÁVÁNÍ A PŘEKLAD")
+        menu("▣", "OCR a rozpoznávání",
+             "Čtyři oblasti a přesnost snímání") { onAreas() }
+        menu("文", "Překlad", "Režimy, dialogy a časování") {
+            showTranslation(activity, settings, onAreas, onLanguage)
+        }
+        menu("⌗", "Oblasti obrazovky",
+             "Dialogy, překlad a herní texty") { onAreas() }
+
+        section("ZOBRAZENÍ A DALŠÍ VOLBY")
+        menu("Aa", "Vzhled titulků",
+             "Velikost, poloha a výstupní oblasti") { onAreas() }
+        menu("♧", "Profily her",
+             "Vlastní nastavení pro každou hru") {
+            GameLingoProfiles.show(activity, settings) {}
+        }
+        menu("▭", "Zařízení",
+             "Xbox, PlayStation a TV") { onDevices() }
+        menu("ⓘ", "O aplikaci / Licence",
+             "GameLingo, zdroje a AGPLv3") {
+            GameLingoAbout.show(activity)
+        }
+        val scroll = ScrollView(activity).apply {
+            isFillViewport = true
+            addView(page)
+        }
+        dialog.setContentView(scroll)
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+    }
+
 }
