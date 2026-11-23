@@ -23,7 +23,7 @@ struct GLCard<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(13)
         .background {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(LinearGradient(
@@ -117,7 +117,7 @@ struct GLPrimaryButton: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 17)
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(height: 52)
             .background(GLNeon.accent, in: RoundedRectangle(cornerRadius: 17))
             .overlay(RoundedRectangle(cornerRadius: 17)
                 .strokeBorder(Color.white.opacity(0.25), lineWidth: 1))
@@ -196,9 +196,9 @@ struct GLScreen<Content: View>: View {
             VStack(alignment: .leading, spacing: 13) {
                 content
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 20)
-            .padding(.bottom, 35)
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 25)
         }
         .background(GLNeonBackground())
         // The main GameLingo dashboard intentionally hides its bar; pushed
