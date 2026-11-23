@@ -1,0 +1,107 @@
+name: Publish current GameLingo Beta only
+
+on:
+  push:
+    branches:
+      - feature/gamelingo-v05-platform-rebuild
+    paths:
+      - ".github/workflows/publish-gamelingo-current.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: gamelingo-current-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify current build and publish short release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TAG="v0.5.0-beta.1"
+          SOURCE="b9455b88ec78ae00a12be0642e08aac0e88f4d83"
+          BUILD_RUN="45216376426"
+
+          # Never publish a different revision or a partial installer set.
+          test "$(gh api "repos/$REPO/actions/runs/$BUILD_RUN" --jq '.conclusion')" = "success"
+          test "$(gh api "repos/$REPO/actions/runs/$BUILD_RUN" --jq '.head_sha')" = "$SOURCE"
+          mkdir -p release
+          gh run download "$BUILD_RUN" -R "$REPO" \
+            -n "GameLingo-v0.5.0-dev-all-installers" -D release
+
+          for filename in \
+              GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
+              GameLingo-Android-v0.5.0-dev-TEST.apk \
+              GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
+              SHA256SUMS.txt; do
+            test -s "release/$filename"
+          done
+          (cd release && sha256sum -c SHA256SUMS.txt)
+          unzip -t release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa >/dev/null
+          unzip -t release/GameLingo-Android-v0.5.0-dev-TEST.apk >/dev/null
+          unzip -t release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk >/dev/null
+
+          cat > release-notes.md <<'EOF'
+          🎮 **GameLingo 0.5.0 Beta**
+
+          Nová testovací verze pro **iPhone, Android a Google TV**.
+
+          - Nové rozhraní a úvodní nastavení.
+          - Výběr více Xboxů, PlayStationů a televizorů.
+          - České titulky a překlad textů ve hrách.
+          - Jednodušší párování a správa zařízení.
+
+          **Jde o testovací verzi.** Připojení konzolí a zobrazení titulků na TV ještě ověřujeme.
+
+          *Na iPhonu je před instalací potřeba aplikaci podepsat.*
+          EOF
+
+          if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
+            gh release edit "$TAG" -R "$REPO" \
+              --title "GameLingo 0.5.0 Beta" \
+              --notes-file release-notes.md --prerelease
+          else
+            gh release create "$TAG" \
+              release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
+              release/GameLingo-Android-v0.5.0-dev-TEST.apk \
+              release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
+              release/SHA256SUMS.txt \
+              -R "$REPO" --target "$SOURCE" \
+              --title "GameLingo 0.5.0 Beta" \
+              --prerelease --notes-file release-notes.md
+          fi
+
+          # Remove only the old release listings, never their git tags.
+          # Do not clean them up until the newest release has all installers.
+          gh release view "$TAG" -R "$REPO" --json assets \
+            --jq '.assets[].name' > asset-names.txt
+          for filename in \
+              GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
+              GameLingo-Android-v0.5.0-dev-TEST.apk \
+              GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
+              SHA256SUMS.txt; do
+            grep -Fxq "$filename" asset-names.txt
+          done
+
+          for old in \
+              v0.1.0-beta.1 \
+              v0.2.0-beta.1 \
+              v0.3.0-beta.1 \
+              v0.4.0-beta.1; do
+            if gh release view "$old" -R "$REPO" >/dev/null 2>&1; then
+              gh release delete "$old" -R "$REPO" --yes
+            fi
+          done
+          gh release view "$TAG" -R "$REPO" \
+            --json url,tagName,name,isPrerelease,assets \
+            --jq '{url:.url,tag:.tagName,name:.name,beta:.isPrerelease,files:[.assets[].name]}'
