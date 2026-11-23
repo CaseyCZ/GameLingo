@@ -48,6 +48,7 @@ struct GLTelevisionRecord: Identifiable, Codable, Hashable {
 final class GameLingoDevices: ObservableObject {
     @Published private(set) var consoles: [GLConsoleRecord] = []
     @Published private(set) var televisions: [GLTelevisionRecord] = []
+    @Published private(set) var hiddenConsoleIDs: Set<String> = []
 
     @Published var preferredConsoleID: String? {
         didSet { persist(); syncLegacyXboxID() }
@@ -73,6 +74,7 @@ final class GameLingoDevices: ObservableObject {
         var preferredTelevisionID: String?
         var subtitleOutput: GLSubtitleOutput
         var completedSetup: Bool
+        var hiddenConsoleIDs: Set<String>?
     }
 
     var chosenConsole: GLConsoleRecord? {
@@ -93,6 +95,7 @@ final class GameLingoDevices: ObservableObject {
             preferredTelevisionID = stored.preferredTelevisionID
             subtitleOutput = stored.subtitleOutput
             completedSetup = stored.completedSetup
+            hiddenConsoleIDs = stored.hiddenConsoleIDs ?? []
             isRestoring = false
         }
         // Existing iOS GameLingo/PlayCaption users do not lose their Xbox
@@ -119,6 +122,7 @@ final class GameLingoDevices: ObservableObject {
         // update all Xbox entries instead of picking the first console found.
         for xbox in discovered {
             let id = "xbox:" + xbox.id
+            guard !hiddenConsoleIDs.contains(id) else { continue }
             if let index = consoles.firstIndex(where: { $0.id == id }) {
                 consoles[index].name = xbox.name
                 consoles[index].lastSeen = Date()
@@ -127,6 +131,20 @@ final class GameLingoDevices: ObservableObject {
                     id: id, family: .xbox, name: xbox.name, lastSeen: Date()))
             }
         }
+        persist()
+    }
+
+    func addXbox(_ console: XboxConsole) {
+        let id = "xbox:" + console.id
+        hiddenConsoleIDs.remove(id)
+        if let index = consoles.firstIndex(where: { $0.id == id }) {
+            consoles[index].name = console.name
+            consoles[index].lastSeen = Date()
+        } else {
+            consoles.append(GLConsoleRecord(id: id, family: .xbox,
+                                            name: console.name, lastSeen: Date()))
+        }
+        selectConsole(id)
         persist()
     }
 
@@ -197,6 +215,7 @@ final class GameLingoDevices: ObservableObject {
     }
 
     func removeConsole(_ id: String) {
+        hiddenConsoleIDs.insert(id)
         consoles.removeAll(where: { $0.id == id })
         if preferredConsoleID == id { preferredConsoleID = nil }
         persist()
@@ -237,7 +256,8 @@ final class GameLingoDevices: ObservableObject {
                           preferredConsoleID: preferredConsoleID,
                           preferredTelevisionID: preferredTelevisionID,
                           subtitleOutput: subtitleOutput,
-                          completedSetup: completedSetup)
+                          completedSetup: completedSetup,
+                          hiddenConsoleIDs: hiddenConsoleIDs)
         if let encoded = try? JSONEncoder().encode(data) {
             defaults.set(encoded, forKey: storageKey)
         }
