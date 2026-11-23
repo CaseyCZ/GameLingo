@@ -73,12 +73,8 @@ def main():
             code,
             '''            obsah.addView(volby, odsazeni(bottom = 9))''',
             '''            obsah.addView(volby, odsazeni(bottom = 9))
-            obsah.addView(tlacitko("▭  Zařízení", 18f) {
+            obsah.addView(GameLingoTVUi.action(this, "▭  Spravovat zařízení") {
                 '''+manager()+'''
-            }.apply {
-                gravity = Gravity.CENTER
-                background = zaobleni(Color.parseColor("#172033"), 15f)
-                setPadding(dp(16), dp(12), dp(16), dp(12))
             }, odsazeni(bottom = 9))''',
             "Google TV device center action"
         )
