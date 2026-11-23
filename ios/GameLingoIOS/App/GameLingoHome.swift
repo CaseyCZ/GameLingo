@@ -68,18 +68,7 @@ struct GameLingoHome: View {
                 }
                 bottomTabs
             }
-            .background {
-                ZStack {
-                    GLVisual.navy
-                    RadialGradient(
-                        colors: [GLVisual.violet.opacity(0.18), .clear],
-                        center: .topTrailing, startRadius: 10, endRadius: 490)
-                    RadialGradient(
-                        colors: [GLVisual.cyan.opacity(0.09), .clear],
-                        center: .topLeading, startRadius: 10, endRadius: 360)
-                }
-                .ignoresSafeArea()
-            }
+            .background(GLNeonBackground())
             .toolbar(.hidden, for: .navigationBar)
         }
         .tint(GLVisual.cyan)
@@ -153,39 +142,71 @@ struct GameLingoHome: View {
     }
 
     private var brandHeader: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(GLVisual.card)
-                    .frame(width: 53, height: 53)
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(GLVisual.accent, lineWidth: 1.4)
-                    .frame(width: 53, height: 53)
-                Image(systemName: "gamecontroller.fill")
-                    .font(.system(size: 27, weight: .semibold))
-                    .foregroundStyle(GLVisual.accent)
-            }
-            VStack(alignment: .leading, spacing: 1) {
-                (Text("Game").foregroundColor(.white)
-                 + Text("Lingo").foregroundColor(GLVisual.violet))
-                    .font(.system(size: 27, weight: .bold, design: .rounded))
-                Text("Hraj. Rozuměj.")
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                GLBrandWordmark(compact: true)
+                Text("České titulky a překlady pro hry")
                     .font(.caption)
-                    .foregroundStyle(GLVisual.muted)
+                    .foregroundStyle(GLNeon.mist)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            Spacer()
-            GLHelpButton(title: "GameLingo", explanation: "Vyber Xbox nebo PlayStation a potom místo zobrazení českých titulků: telefon či Google TV. Nastav oblasti snímání a překladu. Profily uloží nastavení pro každou hru.")
+            Spacer(minLength: 0)
+            GLHelpButton(title: "GameLingo", explanation:
+                "Vyber Xbox nebo PlayStation, nastav výstup titulků na telefon či Google TV, uprav čtyři oblasti OCR a spusť překlad.")
             Button { settingsSheet = true } label: {
                 Image(systemName: "gearshape.fill")
-                    .font(.title3)
+                    .font(.system(size: 19, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 45, height: 45)
-                    .background(GLVisual.card, in: Circle())
-                    .overlay(Circle().strokeBorder(GLVisual.border, lineWidth: 1))
+                    .frame(width: 43, height: 43)
+                    .background(GLNeon.panel,
+                                in: RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13)
+                        .strokeBorder(GLNeon.edge, lineWidth: 1))
             }
             .accessibilityLabel("Nastavení")
         }
-        .padding(.bottom, 6)
+        .padding(.bottom, 10)
+    }
+
+    private var heroBanner: some View {
+        GLNeonPanel(emphasized: true, radius: 23) {
+            VStack(alignment: .leading, spacing: 15) {
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("HRAJ. ROZUMĚJ.")
+                            .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            .tracking(2)
+                            .foregroundStyle(GLNeon.cyan)
+                        Text("Překlad přímo při hraní")
+                            .font(.system(size: 19, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "waveform")
+                        .font(.title2)
+                        .foregroundStyle(GLNeon.accent)
+                        .shadow(color: GLNeon.purple.opacity(0.55), radius: 10)
+                }
+                HStack(spacing: 12) {
+                    GLPlatformBadge(family: .xbox, size: 52)
+                    Text("Xbox")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                    Spacer(minLength: 8)
+                    Rectangle()
+                        .fill(GLNeon.edge)
+                        .frame(width: 1, height: 42)
+                    Spacer(minLength: 8)
+                    GLPlatformBadge(family: .playStation, size: 52)
+                    Text("PlayStation")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(17)
+        }
     }
 
     private var activeConsoleName: String {
@@ -257,16 +278,19 @@ struct GameLingoHome: View {
     }
 
     private var homePage: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 14) {
+            heroBanner
             HStack {
-                Text("Moje hra").font(.headline)
+                Text("Moje zařízení")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
                 Spacer()
-                Button {
-                    tab = .devices
-                } label: {
-                    Label("Přidat", systemImage: "plus.circle.fill")
+                Button { tab = .devices } label: {
+                    Label("Přidat", systemImage: "plus")
                         .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(GLNeon.cyan)
                 }
+                .accessibilityLabel("Přidat zařízení")
             }
             Button { openSelectedConsole() } label: {
                 GameLingoDeviceRow(
@@ -274,7 +298,8 @@ struct GameLingoHome: View {
                     name: activeConsoleName,
                     subtitle: devices.chosenConsole?.family.rawValue ?? "Konzole",
                     connected: model.isRunning && model.frameCount > 0,
-                    status: activeConsoleStatus
+                    status: activeConsoleStatus,
+                    family: devices.chosenConsole?.family
                 )
             }
             .buttonStyle(.plain)
@@ -288,7 +313,8 @@ struct GameLingoHome: View {
                     subtitle: "",
                     connected: outputActuallyReady,
                     status: devices.subtitleOutput == .phone ? "Na telefonu" :
-                        (outputActuallyReady ? "TV připojena" : "Spárovat")
+                        (outputActuallyReady ? "TV připojena" : "Spárovat"),
+                    isTelevision: devices.subtitleOutput == .googleTV
                 )
             }
             .buttonStyle(.plain)
