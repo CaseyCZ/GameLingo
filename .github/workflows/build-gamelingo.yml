@@ -8,6 +8,9 @@ on:
       - ".github/workflows/build-gamelingo.yml"
   workflow_dispatch:
 
+# Run full integration matrix only when this workflow is explicitly revised.
+# This prevents expensive native Chiaki builds for every draft source change.
+# QA v0.5.0: tests + PS4/PS5 core + iPhone + Android + Google TV.
 permissions:
   contents: read
 
