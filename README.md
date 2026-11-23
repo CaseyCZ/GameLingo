@@ -72,23 +72,6 @@ Tyto čtyři oblasti umožňují například ponechat dialogy dole a překlady v
 
 Telefon musí mít přístup k obrazu hry a při překladu zůstávat aktivní; podle použité metody a překladače může být nutné internetové připojení. Přesnost a zpoždění OCR závisí na kvalitě přenosu, textu a hře.
 
-## Vlastní design CaseyCZ
-
-GameLingo má vlastní rozhraní pro **iPhone, Android telefon i Google TV**, vizuálně sjednocené s ostatními projekty CaseyCZ.
-
-| Prvek | Barva |
-| --- | --- |
-| Pozadí | `#070B14` |
-| Karty | `#111827` |
-| Druhá úroveň karet | `#172033` |
-| Text | `#F8FAFC` |
-| Vedlejší text | `#94A3B8` |
-| Hlavní akcent | `#38BDF8` |
-| Aktivní tlačítka | `#0284C7` |
-| Ověřené připojení | `#86EFAC` |
-
-**Rozhraní:** Domů · Zařízení · Oblasti · Profily her · Překlad · Nastavení. Nezávislé funkční barvy OCR oblastí zůstávají zachované.
-
 ## Stažení a vydání
 
 **[➡️ Otevřít GameLingo Releases](https://github.com/CaseyCZ/GameLingo/releases)** · [Jak připravujeme vydání](docs/RELEASES.md)
