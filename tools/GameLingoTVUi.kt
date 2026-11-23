@@ -147,6 +147,78 @@ object GameLingoTVUi {
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
 
+    /**
+     * First launch is a real GameLingo welcome, not PlayCaption's beta or
+     * legacy language list. Source and target are saved independently from UI.
+     */
+    fun showWelcome(a: Activity, onFinish: (String) -> Unit) {
+        if (a.isFinishing) return
+        val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val root = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(a, 48), dp(a, 28), dp(a, 48), dp(a, 28))
+            background = GameLingoVisualKit.pageBackground(a)
+        }
+        root.addView(brand(a), LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = dp(a, 27)
+        })
+        root.addView(title(a, "Vítej v GameLingo TV", 30f),
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = dp(a, 10)
+            })
+        root.addView(title(a,
+            "Vyber jazyky. Potom můžeš překládat z telefonu nebo přímo na televizi.",
+            17f, muted = true), LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = dp(a, 20)
+        })
+        fun select(name: String, choices: List<GameLingoLanguages.Language>,
+                   current: () -> String, kind: GameLingoLanguages.Kind) {
+            val button = action(a,
+                name + "  ·  " + GameLingoLanguages.name(choices, current())) {
+                GameLingoLanguages.choose(a, kind) {
+                    dialog.dismiss()
+                    showWelcome(a, onFinish)
+                }
+            }
+            root.addView(button, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = dp(a, 13)
+            })
+        }
+        select("Jazyk aplikace", GameLingoLanguages.appLanguages,
+            { GameLingoLanguages.app(a) }, GameLingoLanguages.Kind.APP)
+        select("Jazyk hry", GameLingoLanguages.gameLanguages,
+            { GameLingoLanguages.game(a) }, GameLingoLanguages.Kind.GAME)
+        select("Jazyk překladu", GameLingoLanguages.targetLanguages,
+            { GameLingoLanguages.target(a) }, GameLingoLanguages.Kind.TARGET)
+
+        val begin = action(a, "Pokračovat na TV", primary = true) {
+            dialog.dismiss()
+            onFinish(GameLingoLanguages.app(a))
+        }
+        root.addView(begin, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(a, 15)
+        })
+        val scroll = ScrollView(a).apply {
+            isFillViewport = true
+            addView(root)
+        }
+        dialog.setContentView(scroll)
+        dialog.show()
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT)
+        begin.requestFocus()
+    }
+
     fun showSettings(a: Activity, onUpdate: () -> Unit) {
         if (a.isFinishing) return
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
