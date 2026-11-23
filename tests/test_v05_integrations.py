@@ -113,13 +113,55 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         first_run=code(TOOLS/"GameLingoFirstRun.kt")
         self.assertIn('GameLingoFirstRun.show',patches)
         for step in ('Kde hraješ?', 'Kam zobrazit titulky?',
-                     'Přeskočit', 'connectPlayStation()', 'connectTV()'):
+                     'Nastavit později', 'connectPlayStation()', 'connectTV()'):
             self.assertIn(step,first_run)
         self.assertIn('AES/GCM/NoPadding',psstore)
         self.assertIn('setSingleChoiceItems',multi)
         self.assertIn('tv_dashboard',patches)
         self.assertIn('Překlad z telefonu',tv)
         self.assertIn('IPhoneTVPairing',receiver)
+
+    def test_onboarding_completion_and_removed_device_regressions(self):
+        setup=code(IOS/"GameLingoSetupView.swift")
+        devices=code(IOS/"GameLingoDevices.swift")
+        ps_setup=code(IOS/"PlayStation/GameLingoPlayStationSetup.swift")
+        android=code(TOOLS/"GameLingoFirstRun.kt")
+        for name in ("televisionPaired", "canFinish", "finishSetup()",
+                     "Nastavit později", "model.playStation.registrations.$consoles"):
+            self.assertIn(name,setup)
+        self.assertIn("guard !hiddenConsoleIDs.contains(id)",devices)
+        self.assertIn("hiddenConsoleIDs.remove(id)",devices)
+        self.assertIn("placeholderID",devices)
+        self.assertIn('defaults.removeObject(forKey: "tvIP")',devices)
+        self.assertIn("addRegisteredPlayStation(console)",ps_setup)
+        self.assertIn("Nastavit později",android)
+        self.assertIn("Výběr není potvrzení spojení",android)
+
+    def test_five_destinations_native_android_navigation(self):
+        nav=code(TOOLS/"GameLingoNavigation.kt")
+        mobile=code(TOOLS/"redesign_gamelingo.py")
+        wiring=code(TOOLS/"wire_android_devices.py")
+        about=code(TOOLS/"GameLingoAbout.kt")
+        for title in ("Domů", "Oblasti", "Profily", "Zařízení", "O aplikaci"):
+            self.assertIn(title,nav)
+        self.assertIn("GameLingoNavigation.create(",mobile)
+        self.assertIn('onDevices = { vyberVystupTv() }',mobile)
+        self.assertIn('onAbout = { GameLingoAbout.show(this) }',mobile)
+        self.assertIn('GameLingoNavigation.kt',wiring)
+        self.assertIn('GameLingoAbout.kt',wiring)
+        self.assertIn('onDevices = { '+ "manager()" + ' },',wiring)
+        self.assertIn("AGPL-3.0",about)
+
+    def test_tv_remote_control_and_receiver_modes(self):
+        tv=code(TOOLS/"polish_all_screens.py")
+        for marker in ("dlazdiceTel.isFocusable", "nastavDpad(",
+                       "nextFocusRightId", "nextFocusLeftId",
+                       "Překlad z telefonu", "Přímo na TV",
+                       "volby.post"):
+            if marker == "dlazdiceTel.isFocusable":
+                self.assertIn("v.isFocusable = true",tv)
+            else:
+                self.assertIn(marker,tv)
 
     def test_pinned_native_source_and_build(self):
         workflow=code(ROOT/".github/workflows/build-gamelingo.yml")
