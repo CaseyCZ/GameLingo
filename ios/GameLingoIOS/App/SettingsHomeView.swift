@@ -48,7 +48,7 @@ struct PlayCaptionSettingsView: View {
                     }
 
                     NavigationLink {
-                        PlayCaptionProfilesView(model: model)
+                        GameLingoProfilesScreen(model: model)
                     } label: {
                         SettingsRow(symbol: "gamecontroller", tint: .blue,
                                     title: "Profily her",
@@ -67,7 +67,7 @@ struct PlayCaptionSettingsView: View {
                                     detail: "Stav přenosu, testovací titulek a log")
                     }
                 } footer: {
-                    Text("GameLingo iOS 0.2.0 · Český překlad her pro Xbox a Google TV.")
+                    Text("GameLingo iOS 0.3.0 · Český překlad her pro Xbox a Google TV.")
                 }
             }
             .scrollContentBackground(.hidden)
@@ -282,7 +282,7 @@ private struct PlayCaptionAppearanceSettingsView: View {
     }
 }
 
-private struct PlayCaptionProfilesView: View {
+struct GameLingoProfilesScreen: View {
     @ObservedObject var model: CaptionAppModel
     @State private var profileName = ""
 
