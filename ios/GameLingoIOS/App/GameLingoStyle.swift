@@ -52,7 +52,7 @@ struct GLHelpButton: View {
             NavigationStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 15) {
-                        Label(title, systemImage: "questionmark.circle.fill")
+                        Label(LocalizedStringKey(title), systemImage: "questionmark.circle.fill")
                             .font(.title2.bold())
                             .foregroundStyle(GLStyle.blue)
                         Text(explanation)
@@ -85,7 +85,7 @@ struct GLHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(title).font(.system(size: 17, weight: .bold, design: .rounded))
+            Text(LocalizedStringKey(title)).font(.system(size: 17, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
             Spacer(minLength: 0)
             if let help { GLHelpButton(title: title, explanation: help) }
@@ -105,7 +105,7 @@ struct GLPrimaryButton: View {
                 Image(systemName: systemImage)
                 .font(.system(size: 19, weight: .bold))
                 .frame(width: 30)
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 17, weight: .bold, design: .rounded))
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -145,7 +145,7 @@ struct GLSettingsLink: View {
                              GLNeon.purple.opacity(0.55)],
                     startPoint: .topLeading, endPoint: .bottomTrailing),
                     in: RoundedRectangle(cornerRadius: 12))
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.body.weight(.medium))
                 .foregroundStyle(.white)
             Spacer()
@@ -170,7 +170,7 @@ struct GLValueSlider: View {
     var body: some View {
         VStack(spacing: 7) {
             HStack {
-                Text(title).font(.subheadline)
+                Text(LocalizedStringKey(title)).font(.subheadline)
                 Spacer()
                 Text(value).font(.subheadline.monospacedDigit())
                     .foregroundStyle(GLStyle.muted)
@@ -201,7 +201,7 @@ struct GLScreen<Content: View>: View {
             .padding(.bottom, 35)
         }
         .background(GLNeonBackground())
-        .navigationTitle(title)
+        .navigationTitle(LocalizedStringKey(title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
