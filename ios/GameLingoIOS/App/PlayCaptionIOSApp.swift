@@ -436,11 +436,16 @@ final class CaptionAppModel: ObservableObject {
     /// input, starting another translation or placing a sample over the game.
     @discardableResult
     func relocateActiveChoices() -> Bool {
-        guard isRunning, choicesEnabled,
+        // Moving the TV overlay must never transmit text while phone output
+        // is selected, even if a previous TV session is still paired.
+        guard devices.subtitleOutput == .googleTV,
+              devices.chosenTelevision != nil,
+              isRunning, choicesEnabled,
               !lastTranslatedChoiceItems.isEmpty,
               let sentAt = lastChoicesSentAt,
               Date().timeIntervalSince(sentAt) <= (lastTranslatedChoiceIsText ? 300 : 45)
         else { return false }
+        devices.prepareTV(tv)
         tv.sendChoices(lastTranslatedChoiceItems, area: choicesArea,
                        asText: lastTranslatedChoiceIsText,
                        outputArea: choicesOutputArea,
@@ -468,7 +473,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func shareLogs() -> String {
-        (["GameLingo iOS 0.3.0", "Stav: \(status)"] + logLines).joined(separator: "\n")
+        (["GameLingo iOS 0.5.0", "Stav: \(status)"] + logLines).joined(separator: "\n")
     }
 }
 
