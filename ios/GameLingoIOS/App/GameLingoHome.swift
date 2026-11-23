@@ -352,10 +352,17 @@ struct GameLingoHome: View {
             }
             if devices.subtitleOutput == .phone && !model.lastChoices.isEmpty {
                 GLCard {
-                    GLHeader(title: "Herní texty")
+                    GLHeader(title: "Přeložené herní texty")
                     Text(model.lastChoices)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(.yellow)
+                        .font(.system(size: 21 * model.phoneFontScale,
+                                      weight: .semibold))
+                        .foregroundStyle(model.phoneTextColor.color)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .padding(.horizontal, 9)
+                        .background(model.phoneBackground.fill,
+                                    in: RoundedRectangle(cornerRadius: 12))
                 }
             }
             if devices.subtitleOutput == .googleTV && !model.lastCzech.isEmpty {
