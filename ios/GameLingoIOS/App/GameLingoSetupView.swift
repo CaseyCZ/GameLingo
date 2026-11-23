@@ -283,28 +283,8 @@ struct GameLingoSetupView: View {
     }
 
     private var tvSetup: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 15) {
-                    TVSelectionView(tv: model.tv)
-                    if !model.tv.ip.isEmpty {
-                        GLPrimaryButton(title: "Použít tuto TV", systemImage: "checkmark") {
-                            devices.addTelevision(name: "Google TV", ipAddress: model.tv.ip)
-                            devices.selectTelevision("tv:" + model.tv.ip.lowercased())
-                            showTV = false
-                        }
-                    }
-                }
-                .padding(17)
-            }
-            .background(GLStyle.background.ignoresSafeArea())
-            .navigationTitle("Google TV")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Hotovo") { showTV = false }
-                }
-            }
+        GameLingoTVSetupScreen(devices: devices, tv: model.tv) {
+            showTV = false
         }
     }
 }
