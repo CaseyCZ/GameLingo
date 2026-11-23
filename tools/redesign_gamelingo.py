@@ -109,9 +109,10 @@ def redesign_mobile(s: str) -> str:
                 Triple("♧\nProfily", 2, {
                     GameLingoProfiles.show(this, nast) { ukazHlavni() }
                 }),
-                Triple("▭\nTV", 3, { vyberVystupTv() })
+                Triple("▭\nZařízení", 3, { vyberVystupTv() }),
+                Triple("ⓘ\nO aplikaci", 4, { GameLingoAbout.show(this) })
             ).forEach { (label, _, action) ->
-                navigace.addView(tlacitko(label, 15f, action).apply {
+                navigace.addView(tlacitko(label, 13f, action).apply {
                     gravity = Gravity.CENTER
                     background = zaobleni(Color.parseColor("#172033"), 10f)
                     setPadding(dp(5), dp(11), dp(5), dp(11))
