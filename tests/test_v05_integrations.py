@@ -55,7 +55,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('guard !model.isRunning else { pendingRemove = nil; return }', panel)
         self.assertIn('.disabled(model.isRunning)', panel)
         self.assertIn('"Nastaveno"', home)
-        self.assertIn('"Probíhá překlad"', home)
+        self.assertIn('"Snímání aktivní"', home)
 
     def test_actual_playstation_not_placeholder(self):
         ps=code(IOS/"PlayStation/GameLingoPlayStation.swift")
@@ -71,6 +71,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('onEnded:',model)
         self.assertIn('needsLoginPIN',ps)
         self.assertIn('submitLoginPIN(',ps)
+
+    def test_live_connection_state_is_backed_by_real_frames(self):
+        model=code(IOS/"PlayCaptionIOSApp.swift")
+        home=code(IOS/"GameLingoHome.swift")
+        self.assertIn("model.isRunning && model.frameCount > 0",home)
+        self.assertIn('model.frameCount > 0 ? "Snímání aktivní" : "Připojuji…"',home)
+        xbox=model.split("func start(_ console: XboxConsole)",1)[1]
+        xbox=xbox.split("private func processFrame",1)[0]
+        self.assertIn("frameCount = 0",xbox)
+        self.assertIn("guard self.sessionRevision == currentSession else { return }",xbox)
+        self.assertIn("stop()\n                self.status = failure",xbox)
+        ps=model.split("func start(_ console: RegisteredConsole)",1)[1]
+        self.assertIn("frameCount = 0",ps)
 
     def test_four_regions_and_output_selection(self):
         model=code(IOS/"PlayCaptionIOSApp.swift")
