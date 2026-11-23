@@ -113,12 +113,14 @@ jobs:
       - name: Brand independent Android mobile app
         run: |
           python -m pip install pillow
-          python -m py_compile kit/tools/polish_gamelingo.py kit/tools/redesign_gamelingo.py kit/tools/polish_all_screens.py
+          python -m py_compile kit/tools/polish_gamelingo.py kit/tools/redesign_gamelingo.py kit/tools/polish_all_screens.py kit/tools/android_multi_xbox.py kit/tools/wire_android_devices.py
           python kit/tools/brand_android.py mobile upstream
           python kit/tools/create_brand_assets.py android upstream
           python kit/tools/polish_gamelingo.py upstream
           python kit/tools/redesign_gamelingo.py mobile upstream
           python kit/tools/polish_all_screens.py mobile upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
           sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
       - name: Build Android phone APK
         working-directory: upstream
@@ -171,6 +173,8 @@ jobs:
           python kit/tools/polish_gamelingo.py upstream
           python kit/tools/redesign_gamelingo.py tv upstream
           python kit/tools/polish_all_screens.py tv upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
           grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
           grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
           grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
