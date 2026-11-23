@@ -161,31 +161,30 @@ struct SubtitleSettingsView: View {
                 RoundedRectangle(cornerRadius: 13)
                     .strokeBorder(GLNeon.edge, lineWidth: 1.6)
 
-                // These rectangles are live normalized OCR/output coordinates.
+                // All four regions stay visible like the approved preview.
+                // Disabled OCR/text lanes are dimmed, never falsely activated.
                 rectangle(outputRect, color: .green,
-                          name: "České titulky", selected: editing == .output,
+                          name: "Titulky", selected: editing == .output,
                           size: geo.size)
-                if model.manualOCR {
-                    rectangle(model.manualOCRBox, color: .blue,
-                              name: "Čtení titulků", selected: editing == .reading,
-                              size: geo.size)
-                } else {
+                rectangle(model.manualOCRBox, color: .blue,
+                          name: "Čtení dialogů", selected: editing == .reading,
+                          size: geo.size, active: model.manualOCR)
+                rectangle(model.choicesArea, color: .yellow,
+                          name: model.choicesTextMode ? "Herní texty" : "Volby",
+                          selected: editing == .choices,
+                          size: geo.size, active: model.choicesEnabled)
+                rectangle(model.choicesOutputArea, color: .orange,
+                          name: "Překlad textů",
+                          selected: editing == .outputChoices,
+                          size: geo.size, active: model.choicesEnabled)
+                if !model.manualOCR {
                     Text("OCR: automaticky")
                         .font(.caption2)
-                        .foregroundStyle(.blue)
-                        .padding(8)
+                        .foregroundStyle(GLNeon.mist)
+                        .padding(6)
+                        .background(GLNeon.ink.opacity(0.86),
+                                    in: RoundedRectangle(cornerRadius: 6))
                 }
-                if model.choicesEnabled {
-                    rectangle(model.choicesArea, color: .yellow,
-                              name: model.choicesTextMode ? "Text" : "Volby",
-                              selected: editing == .choices,
-                              size: geo.size)
-                    rectangle(model.choicesOutputArea, color: .orange,
-                              name: "Český překlad",
-                              selected: editing == .outputChoices,
-                              size: geo.size)
-                }
-
                 Color.clear
                     .contentShape(Rectangle())
                     .gesture(DragGesture(minimumDistance: 0)
@@ -204,7 +203,8 @@ struct SubtitleSettingsView: View {
     }
 
     private func rectangle(_ rect: CGRect, color: Color, name: String,
-                           selected: Bool, size: CGSize) -> some View {
+                           selected: Bool, size: CGSize,
+                           active: Bool = true) -> some View {
         Text(name)
             .font(.caption2.bold())
             .lineLimit(1)
@@ -220,6 +220,7 @@ struct SubtitleSettingsView: View {
                         dash: selected ? [] : [7, 4]))
             )
             .position(x: rect.midX * size.width, y: rect.midY * size.height)
+            .opacity(active ? 1 : 0.46)
             .allowsHitTesting(false)
     }
 
