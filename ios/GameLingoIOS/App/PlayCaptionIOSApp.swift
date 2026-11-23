@@ -343,9 +343,12 @@ final class CaptionAppModel: ObservableObject {
                         self.lastTranslatedChoiceItems = translated
                         self.lastTranslatedChoiceIsText = asText
                         self.lastChoicesSentAt = Date()
-                        self.tv.sendChoices(translated, area: area, asText: asText,
-                                            outputArea: self.choicesOutputArea,
-                                            outputFont: self.choicesOutputFont)
+                        if self.devices.subtitleOutput == .googleTV {
+                            self.devices.prepareTV(self.tv)
+                            self.tv.sendChoices(translated, area: area, asText: asText,
+                                                outputArea: self.choicesOutputArea,
+                                                outputFont: self.choicesOutputFont)
+                        }
                         self.write("Volby: \(translated.count) rozpoznaných položek")
                     }
                 }
