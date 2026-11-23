@@ -152,6 +152,12 @@ object GameLingoDeviceCenter {
                                         onUpdated()
                                     }
                                 } else {
+                                    if (RemotePlayService.aktivni) {
+                                        AlertDialog.Builder(c)
+                                            .setMessage("Nejdřív zastav probíhající překlad.")
+                                            .setPositiveButton("OK", null).show()
+                                        return@setItems
+                                    }
                                     AlertDialog.Builder(c)
                                         .setMessage("Odebrat " + ps.name + "?")
                                         .setPositiveButton("Odebrat") { _, _ ->
@@ -187,6 +193,12 @@ object GameLingoDeviceCenter {
                             AlertDialog.Builder(c)
                                 .setTitle(xbox.jmeno)
                                 .setItems(arrayOf("Použít", "Připojit")) { _, option ->
+                                    if (RemotePlayService.aktivni) {
+                                        AlertDialog.Builder(c)
+                                            .setMessage("Nejdřív zastav probíhající překlad.")
+                                            .setPositiveButton("OK", null).show()
+                                        return@setItems
+                                    }
                                     c.getSharedPreferences("gamelingo_devices",
                                         Activity.MODE_PRIVATE).edit()
                                         .putString("selectedXboxId", xbox.id).apply()
@@ -220,14 +232,23 @@ object GameLingoDeviceCenter {
                 AlertDialog.Builder(c)
                     .setTitle(tv.jmeno)
                     .setItems(arrayOf("Použít", "Odebrat")) { _, option ->
-                        if (option == 0) {
+                        if (RemotePlayService.aktivni) {
+                            AlertDialog.Builder(c)
+                                .setMessage("Nejdřív zastav probíhající překlad.")
+                                .setPositiveButton("OK", null).show()
+                        } else if (option == 0) {
                             tvStore.vyber(tv.id)
                             dialog.dismiss()
                             onUpdated()
                         } else {
-                            tvStore.odeber(tv.id)
-                            dialog.dismiss()
-                            show(c, onXbox, onPlayStation, onTV, onUpdated)
+                            AlertDialog.Builder(c)
+                                .setMessage("Odebrat " + tv.jmeno + "?")
+                                .setPositiveButton("Odebrat") { _, _ ->
+                                    tvStore.odeber(tv.id)
+                                    dialog.dismiss()
+                                    show(c, onXbox, onPlayStation, onTV, onUpdated)
+                                }
+                                .setNegativeButton("Zrušit", null).show()
                         }
                     }
                     .show()
