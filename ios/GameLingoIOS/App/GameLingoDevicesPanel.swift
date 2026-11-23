@@ -25,6 +25,11 @@ struct GameLingoDevicesPanel: View {
             GLPrimaryButton(title: "Přidat zařízení", systemImage: "plus.circle") {
                 showAdd = true
             }
+            if model.isRunning {
+                Text("Překlad právě běží. Pro změnu nebo odebrání konzole ho nejprve zastav.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             Text("Konzole").font(.headline).padding(.top, 4)
             if devices.consoles.isEmpty {
                 emptyRow("Žádná konzole", icon: "gamecontroller")
@@ -48,15 +53,17 @@ struct GameLingoDevicesPanel: View {
                         }
                         Menu {
                             Button("Použít", systemImage: "checkmark.circle") {
-                                devices.selectConsole(console.id)
+                                if !model.isRunning { devices.selectConsole(console.id) }
                             }
+                            .disabled(model.isRunning)
                             Button("Přejmenovat", systemImage: "pencil") {
                                 newName = console.name
                                 renaming = console
                             }
                             Button("Odebrat", systemImage: "trash", role: .destructive) {
-                                pendingRemove = console
+                                if !model.isRunning { pendingRemove = console }
                             }
+                            .disabled(model.isRunning)
                         } label: {
                             Image(systemName: "ellipsis.circle")
                                 .font(.title2)
@@ -65,7 +72,9 @@ struct GameLingoDevicesPanel: View {
                         .accessibilityLabel("Spravovat " + console.name)
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture { devices.selectConsole(console.id) }
+                    .onTapGesture {
+                        if !model.isRunning { devices.selectConsole(console.id) }
+                    }
                 }
             }
 
@@ -96,11 +105,13 @@ struct GameLingoDevicesPanel: View {
                                 devices.prepareTV(model.tv)
                             }
                             Button("Odebrat", role: .destructive) {
+                                guard !model.isRunning else { return }
                                 if devices.preferredTelevisionID == television.id {
                                     model.tv.forgetReceiver()
                                 }
                                 devices.removeTelevision(television.id)
                             }
+                            .disabled(model.isRunning)
                         } label: {
                             Image(systemName: "ellipsis.circle")
                                 .font(.title2)
@@ -151,6 +162,7 @@ struct GameLingoDevicesPanel: View {
             set: { if !$0 { pendingRemove = nil } }
         )) {
             Button("Odebrat", role: .destructive) {
+                guard !model.isRunning else { pendingRemove = nil; return }
                 if let record = pendingRemove {
                     if record.family == .playStation,
                        let paired = model.playStation.findSavedConsole(id: record.id) {
