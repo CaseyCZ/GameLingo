@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Recheck generated five-tab contract and compile native mobile dialogs, settings and OCR regions.
+# Audit checkpoint: compile Android after correcting false readiness and invalid first-run completion.
 
 on:
   push:
