@@ -180,13 +180,17 @@ struct GameLingoSetupView: View {
     private var languageStep: some View {
         VStack(alignment: .leading, spacing: 14) {
             GLNeonPanel(emphasized: true) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     Label("Jazyk aplikace", systemImage: "globe")
                         .font(.headline)
-                    Text("Čeština")
-                        .font(.title3.bold())
-                        .foregroundStyle(GLNeon.cyan)
-                    Text("Rozhraní GameLingo je zatím kompletně dostupné v češtině.")
+                    Picker("Jazyk aplikace", selection: $model.appLanguage) {
+                        ForEach(GLAppLanguage.allCases) { language in
+                            Text(language.title).tag(language)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(GLNeon.cyan)
+                    Text("Jazyk prostředí GameLingo. Překlad her se nastavuje samostatně.")
                         .font(.caption)
                         .foregroundStyle(GLNeon.mist)
                 }
