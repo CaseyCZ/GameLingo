@@ -20,7 +20,7 @@ def main():
         raise SystemExit("Usage: wire_android_devices.py <upstream>")
     upstream=Path(sys.argv[1])
     folder=upstream/SRC
-    for name in ("GameLingoDeviceCenter.kt","GameLingoPlayStationConsoles.kt","GameLingoFirstRun.kt","GameLingoAbout.kt"):
+    for name in ("GameLingoDeviceCenter.kt","GameLingoPlayStationConsoles.kt","GameLingoFirstRun.kt","GameLingoAbout.kt","GameLingoNavigation.kt"):
         original=Path(__file__).with_name(name)
         (folder/name).write_text(original.read_text(encoding="utf-8"),encoding="utf-8")
 
@@ -69,13 +69,12 @@ def main():
         if count!=1:
             raise RuntimeError("MainActivity device tile did not connect to device center")
 
-        code, count=re.subn(
-            r'Triple\("▭\\nZařízení",\s*3,\s*\{\s*vyberVystupTv\(\)\s*\}\)',
-            lambda m: 'Triple("▭\\nZařízení", 3, { '+manager()+' })',
-            code, count=1
+        code=one(
+            code,
+            'onDevices = { vyberVystupTv() },',
+            'onDevices = { '+manager()+' },',
+            "GameLingoNavigation device destination"
         )
-        if count!=1:
-            raise RuntimeError("MainActivity bottom device navigation is missing")
         if code==source: raise RuntimeError("Device center wasn't attached")
 
     elif tv_dashboard:
