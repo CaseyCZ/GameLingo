@@ -13,6 +13,32 @@ struct SubtitleSettingsView: View {
         case output = "Zobrazení"
         case choices = "Volby odpovědí"
         case outputChoices = "Překlad herních textů"
+
+        var label: String {
+            switch self {
+            case .reading: return "Modrá"
+            case .output: return "Zelená"
+            case .choices: return "Žlutá"
+            case .outputChoices: return "Oranžová"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .reading: return .blue
+            case .output: return .green
+            case .choices: return .yellow
+            case .outputChoices: return .orange
+            }
+        }
+        var icon: String {
+            switch self {
+            case .reading: return "viewfinder"
+            case .output: return "captions.bubble.fill"
+            case .choices: return "text.viewfinder"
+            case .outputChoices: return "character.bubble.fill"
+            }
+        }
     }
 
     /// Green rectangle represents where the TV places Czech captions.
@@ -27,17 +53,61 @@ struct SubtitleSettingsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    Picker("Oblast", selection: $editing) {
-                        Text("Modrá").tag(Area.reading)
-                        Text("Zelená").tag(Area.output)
-                        Text("Žlutá").tag(Area.choices)
-                        Text("Oranžová").tag(Area.outputChoices)
+                VStack(alignment: .leading, spacing: 17) {
+                    GLNeonTitle(
+                        title: "OCR / Oblasti",
+                        subtitle: "Čtyři nezávislé oblasti pro každou hru",
+                        icon: "viewfinder"
+                    )
+                    Text("Vyber oblast, potom uprav její polohu a velikost v náhledu.")
+                        .font(.subheadline)
+                        .foregroundStyle(GLNeon.mist)
+                    HStack(spacing: 8) {
+                        ForEach(Area.allCases, id: \.self) { area in
+                            Button {
+                                editing = area
+                            } label: {
+                                VStack(spacing: 7) {
+                                    Image(systemName: area.icon)
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundStyle(area.color)
+                                    Text(area.label)
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.75)
+                                        .foregroundStyle(.white)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 65)
+                                .background(editing == area
+                                            ? area.color.opacity(0.19)
+                                            : GLNeon.panel,
+                                            in: RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14)
+                                    .strokeBorder(area.color.opacity(
+                                        editing == area ? 0.95 : 0.35),
+                                        lineWidth: editing == area ? 1.8 : 0.8))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(area.label + " – " + area.rawValue)
+                        }
                     }
-                    .pickerStyle(.segmented)
-
-                    GLCard {
-                        television
+                    GLNeonPanel(emphasized: true) {
+                        VStack(alignment: .leading, spacing: 11) {
+                            HStack {
+                                Label("Náhled obrazovky", systemImage: "tv")
+                                    .font(.subheadline.bold())
+                                Spacer()
+                                Text(editing.label)
+                                    .font(.caption.bold())
+                                    .foregroundStyle(editing.color)
+                            }
+                            television
+                            Text("Přetáhni vybraný rámeček. Ostatní oblasti zůstanou na svém místě.")
+                                .font(.caption)
+                                .foregroundStyle(GLNeon.mist)
+                        }
+                        .padding(15)
                     }
                     GLCard {
                         if editing == .reading {
@@ -53,7 +123,7 @@ struct SubtitleSettingsView: View {
                 }
                 .padding(16)
             }
-            .background(GLStyle.background.ignoresSafeArea())
+            .background(GLNeonBackground())
             .onDisappear { orangePreviewTask?.cancel() }
             .navigationTitle("Oblasti")
             .navigationBarTitleDisplayMode(.inline)
@@ -74,12 +144,24 @@ struct SubtitleSettingsView: View {
     private var television: some View {
         GeometryReader { geo in
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(red: 0.09, green: 0.11, blue: 0.17))
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.gray.opacity(0.65), lineWidth: 2)
+                RoundedRectangle(cornerRadius: 13)
+                    .fill(LinearGradient(
+                        colors: [Color(red: 0.07, green: 0.17, blue: 0.29),
+                                 Color(red: 0.17, green: 0.11, blue: 0.30),
+                                 GLNeon.ink],
+                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                Image(systemName: "mountain.2.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(GLNeon.cyan.opacity(0.18))
+                    .frame(width: geo.size.width * 0.85,
+                           height: geo.size.height * 0.68)
+                    .position(x: geo.size.width * 0.57,
+                              y: geo.size.height * 0.46)
+                RoundedRectangle(cornerRadius: 13)
+                    .strokeBorder(GLNeon.edge, lineWidth: 1.6)
 
-                // A simplified TV layout like the Android preview.
+                // These rectangles are live normalized OCR/output coordinates.
                 rectangle(outputRect, color: .green,
                           name: "České titulky", selected: editing == .output,
                           size: geo.size)
@@ -116,7 +198,7 @@ struct SubtitleSettingsView: View {
                             showOnTV()
                         })
             }
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .clipShape(RoundedRectangle(cornerRadius: 13))
         }
         .aspectRatio(16.0 / 9.0, contentMode: .fit)
     }
