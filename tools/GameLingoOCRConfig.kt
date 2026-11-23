@@ -23,13 +23,6 @@ object GameLingoOCRConfig {
             ?.takeIf { it in modes } ?: "classic"
         filterMenuText = store.getBoolean("filterMenuText", true)
         expandSearch = store.getBoolean("expandSearch", false)
-        sync()
-    }
-
-    private fun sync() {
-        VyberTitulku.shortMode = mode == "street"
-        VyberTitulku.filterMenuText = filterMenuText
-        VyberTitulku.expandSearch = expandSearch && mode != "classic"
     }
 
     /** At most one OCR sampling opportunity at this interval; the existing
@@ -46,21 +39,18 @@ object GameLingoOCRConfig {
         mode = selected
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString("mode", selected).apply()
-        sync()
     }
 
     fun setFilterMenu(context: Context, selected: Boolean) {
         filterMenuText = selected
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putBoolean("filterMenuText", selected).apply()
-        sync()
     }
 
     fun setExpandSearch(context: Context, selected: Boolean) {
         expandSearch = selected
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putBoolean("expandSearch", selected).apply()
-        sync()
     }
 
     fun reset(context: Context) {
@@ -69,6 +59,5 @@ object GameLingoOCRConfig {
         mode = "classic"
         filterMenuText = true
         expandSearch = false
-        sync()
     }
 }
