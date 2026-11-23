@@ -21,30 +21,49 @@ def font(size):
     return ImageFont.load_default()
 
 def make_icon(n=1024):
+    """Vector-style gamepad in a subtitle speech bubble, cyan-to-violet."""
+    scale = n / 1024
     img = Image.new("RGB", (n, n), NAVY)
-    px = img.load()
-    for y in range(n):
-        for x in range(n):
-            d = min(1, ((x-n*.20)**2 + (y-n*.15)**2)**.5/(n*.9))
-            px[x,y] = (
-                int(NAVY[0]*(1-d)+13*d),
-                int(NAVY[1]*(1-d)+26*d),
-                int(NAVY[2]*(1-d)+49*d)
-            )
     d = ImageDraw.Draw(img)
-    a = n/1024
-    def box(v): return tuple(round(c*a) for c in v)
-    # Chat frame (subtitles) combined with an original gamepad pictogram.
-    d.rounded_rectangle(box((150,185,874,810)),radius=round(170*a),fill=(15,43,69),
-                        outline=CYAN,width=round(28*a))
-    d.polygon([box((265,758))[0:2],box((258,905))[0:2],box((445,793))[0:2]],fill=(15,43,69))
-    d.line([box((275,778))[0:2],box((268,867))[0:2],box((373,807))[0:2]],fill=CYAN,width=round(21*a),joint="curve")
-    # White gamepad body
-    d.rounded_rectangle(box((278,365,749,639)),radius=round(124*a),fill=WHITE)
-    d.rounded_rectangle(box((363,430,413,565)),radius=round(14*a),fill=BLUE)
-    d.rounded_rectangle(box((320,470,455,523)),radius=round(14*a),fill=BLUE)
-    d.ellipse(box((562,442,622,502)),fill=BLUE)
-    d.ellipse(box((636,500,695,560)),fill=BLUE)
+    def p(v):
+        return tuple(round(x * scale) for x in v)
+
+    # Subtle CaseyCZ glow on a navy surface. Crisp icon is not a copy of
+    # GlossaSub branding; it uses GameLingo's own bubble + controller geometry.
+    for y in range(n):
+        mix = y / max(1, n-1)
+        col = (int(11 + mix * 3), int(22 - mix * 7), int(44 + mix * 9))
+        d.line([(0, y), (n, y)], fill=col)
+
+    mask = Image.new("L", (n, n), 0)
+    md = ImageDraw.Draw(mask)
+    width = round(38*scale)
+    md.rounded_rectangle(p((140, 180, 882, 800)),
+                         radius=round(180 * scale), outline=255, width=width)
+    # Bubble tail: continuing the left/lower contour.
+    md.line([p((274, 783)), p((229, 906)), p((394, 788))],
+            fill=255, width=width, joint="curve")
+
+    gradient = Image.new("RGB", (n,n), CYAN)
+    gd = ImageDraw.Draw(gradient)
+    a,b=(0,194,249),(177,73,254)
+    for x in range(n):
+        t=x / max(1,n-1)
+        color=tuple(int(a[i]*(1-t)+b[i]*t) for i in range(3))
+        gd.line([(x,0),(x,n)], fill=color)
+    img.paste(gradient,(0,0),mask)
+
+    d = ImageDraw.Draw(img)
+    # Compact, readable controller at launcher icon sizes.
+    d.rounded_rectangle(p((265, 405, 755, 650)),
+                        radius=round(115*scale),
+                        outline=WHITE, width=round(33*scale))
+    d.rounded_rectangle(p((354, 451, 387, 566)),
+                        radius=round(8*scale),fill=CYAN)
+    d.rounded_rectangle(p((313, 492, 428, 525)),
+                        radius=round(8*scale),fill=CYAN)
+    d.ellipse(p((567,458,626,517)),fill=(159,89,246))
+    d.ellipse(p((646,516,705,575)),fill=(159,89,246))
     return img
 
 def main():
@@ -62,8 +81,9 @@ def main():
     banner=Image.new("RGB",(640,360),NAVY)
     d=ImageDraw.Draw(banner)
     banner.paste(make_icon(280),(18,40))
-    d.text((310,123),"GameLingo",font=font(50),fill=WHITE)
-    d.text((313,194),"Hraj. Rozumej.",font=font(24),fill=CYAN)
+    d.text((310,123),"Game",font=font(49),fill=WHITE)
+    d.text((463,123),"Lingo",font=font(49),fill=(163,96,250))
+    d.text((313,194),"Hraj. Rozuměj.",font=font(24),fill=CYAN)
     banner.save(images/"gamelingo_banner.png",optimize=True)
     print("Wrote GameLingo Android app icons and TV banner")
 if __name__=="__main__":
