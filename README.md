@@ -11,7 +11,7 @@
 [![Google TV](https://img.shields.io/badge/Google%20TV-Android%20TV-38BDF8?style=flat-square&logo=googletv&logoColor=white)](#podporované-platformy)
 [![Open Source](https://img.shields.io/badge/licence-AGPL--3.0-0F2B45?style=flat-square)](LICENSE)
 
-**[📦 Vydání / Releases](https://github.com/CaseyCZ/GameLingo/releases)** · **[🎯 Funkce](#co-gamelingo-umí)** · **[🛠️ Stav vývoje](#stav-projektu)** · **[📖 Jak začít](#jak-to-funguje)**
+**[📦 Vydání / Releases](https://github.com/CaseyCZ/GameLingo/releases)** · **[🎯 Funkce](#co-gamelingo-umí)** · **[🛠️ Stav vývoje](#stav-projektu)** · **[📖 Jak začít](#jak-to-funguje)** · **[🎨 Design](docs/DESIGN.md)**
 
 </div>
 
@@ -91,7 +91,7 @@ GameLingo má vlastní rozhraní pro **iPhone, Android telefon i Google TV**, vi
 
 ## Stažení a vydání
 
-**[➡️ Otevřít GameLingo Releases](https://github.com/CaseyCZ/GameLingo/releases)**
+**[➡️ Otevřít GameLingo Releases](https://github.com/CaseyCZ/GameLingo/releases)** · [Jak připravujeme vydání](docs/RELEASES.md)
 
 Do budoucích vydání chceme přikládat tyto **skutečně sestavené a otestované** soubory:
 
@@ -117,7 +117,7 @@ Do budoucích vydání chceme přikládat tyto **skutečně sestavené a otestov
 
 Projekt vychází z open-source [PlayCaption](https://github.com/AdamRuzick4/PlayCaption-app), který je zveřejněn pod **GNU Affero General Public License v3.0 (AGPL-3.0)**. Nová značka, vlastní UI a pozdější změny na tom nic nemění: při distribuci odvozeného kódu zachováme copyright, licenci a dostupnost odpovídajících zdrojů.
 
-Ověřený vývojový základ iPhonu a samostatného TV přijímače pochází z [CaseyCZ/Test](https://github.com/CaseyCZ/Test). Původní a testovací projekty neměníme.
+Ověřený vývojový základ iPhonu a samostatného TV přijímače pochází z [CaseyCZ/Test](https://github.com/CaseyCZ/Test). Původní a testovací projekty neměníme. Podrobnosti: [původ zdrojů a licence](ATTRIBUTION.md).
 
 **GameLingo je nezávislý komunitní projekt a není oficiálně spojený se Sony, Microsoftem, Googlem ani původním vývojářem PlayCaptionu.**
 
