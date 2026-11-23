@@ -68,7 +68,7 @@ object GameLingoSubtitleAppearance {
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = dp(20) })
 
-        val preview = text("Tady se zobrazí přeložený dialog", 18f, bold = true).apply {
+        val preview = text(GameLingoPhoneSubtitleStyle.sample(activity), 18f, bold = true).apply {
             gravity = Gravity.CENTER
             setPadding(dp(14), dp(16), dp(14), dp(16))
             background = GameLingoVisualKit.card(activity, true)
@@ -233,6 +233,33 @@ object GameLingoSubtitleAppearance {
         addCard(lockCard)
         sliders.forEach { it.isEnabled = !locked }
         scalePreview()
+
+        // TV preview is available only for the actively selected target,
+        // not merely for a saved/discovered receiver. Sending does not assert
+        // that the TV actually received or displayed the subtitle.
+        val tvStore = TvProfily(activity)
+        val selectedTv = tvStore.posledniId?.let { tvStore.najdi(it) }
+        val senderIp = Propojeni.Vysilac.cilIp
+        val tvSelected = !tvStore.pouzeTelefon && selectedTv != null &&
+            senderIp != null && senderIp == selectedTv.ip
+        layout.addView(TextView(activity).apply {
+            text = "Náhled na TV"
+            contentDescription = "Odeslat ukázkový překlad do vybrané TV"
+            textSize = 17f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            background = GameLingoVisualKit.primary(activity)
+            minHeight = dp(54)
+            isEnabled = tvSelected
+            alpha = if (tvSelected) 1f else 0.45f
+            setOnClickListener {
+                if (tvSelected && Propojeni.Vysilac.cilIp == selectedTv?.ip)
+                    Propojeni.Vysilac.ukazka(GameLingoPhoneSubtitleStyle.sample(activity))
+            }
+        }, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(54)
+        ).apply { topMargin = dp(8); bottomMargin = dp(12) })
 
         layout.addView(text(
             "Změny se ukládají pro aktuálně vybranou televizi nebo telefon. " +
