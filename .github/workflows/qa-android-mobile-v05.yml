@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Compile reviewed iOS-parity Android with selected native tabs, OCR reader settings and rounded local subtitles.
+# Checkpoint after Kotlin OCR native-card minimumHeight correction and target-language subtitle preview.
 
 on:
   push:
