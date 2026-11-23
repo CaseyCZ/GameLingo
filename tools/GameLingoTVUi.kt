@@ -82,11 +82,11 @@ object GameLingoTVUi {
         val box = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(a, 23), dp(a, 21), dp(a, 23), dp(a, 21))
+            setPadding(dp(a, 16), dp(a, 12), dp(a, 16), dp(a, 12))
             background = panel(a)
             isFocusable = true
             isClickable = true
-            minimumHeight = dp(a, 136)
+            minimumHeight = dp(a, 105)
             setOnClickListener { onActivate() }
             setOnFocusChangeListener { view, focused ->
                 view.background = panel(a, focused)
@@ -105,11 +105,11 @@ object GameLingoTVUi {
                 contentDescription = if (symbol == "PS") "PlayStation" else "Xbox"
             }, LinearLayout.LayoutParams(dp(a, 34), dp(a, 34)))
         } else {
-            box.addView(title(a, symbol, 29f).apply {
+            box.addView(title(a, symbol, 25f).apply {
                 setTextColor(cyan)
             })
         }
-        box.addView(title(a, heading, 22f), LinearLayout.LayoutParams(
+        box.addView(title(a, heading, 20f), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(a, 7)
@@ -237,13 +237,13 @@ object GameLingoTVUi {
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val page = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(a, 40), dp(a, 26), dp(a, 40), dp(a, 30))
+            setPadding(dp(a, 26), dp(a, 17), dp(a, 26), dp(a, 18))
             background = GameLingoVisualKit.pageBackground(a)
         }
         val header = LinearLayout(a).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            addView(title(a, "Nastavení GameLingo TV", 30f), LinearLayout.LayoutParams(
+            addView(title(a, "Nastavení GameLingo TV", 25f), LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
         val close = action(a, "Zpět") { dialog.dismiss(); onUpdate() }
@@ -253,8 +253,8 @@ object GameLingoTVUi {
             setTextColor(cyan)
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(a, 28)
-            bottomMargin = dp(a, 13)
+            topMargin = dp(a, 16)
+            bottomMargin = dp(a, 9)
         })
 
         fun languageRow(name: String, choices: List<GameLingoLanguages.Language>,
@@ -270,7 +270,7 @@ object GameLingoTVUi {
             page.addView(row, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = dp(a, 11)
+                bottomMargin = dp(a, 7)
             })
             if (kind == GameLingoLanguages.Kind.APP) row.requestFocus()
         }
@@ -285,8 +285,8 @@ object GameLingoTVUi {
             setTextColor(cyan)
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(a, 23)
-            bottomMargin = dp(a, 12)
+            topMargin = dp(a, 14)
+            bottomMargin = dp(a, 8)
         })
 
         val userSettings = Nastaveni(a)
@@ -302,7 +302,7 @@ object GameLingoTVUi {
             page.addView(choice, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = dp(a, 11)
+                bottomMargin = dp(a, 7)
             })
         }
         toggle("Dialogy", "Překlad mluvených dialogů",
