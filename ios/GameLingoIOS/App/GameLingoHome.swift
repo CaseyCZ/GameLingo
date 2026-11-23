@@ -27,6 +27,8 @@ struct GameLingoHome: View {
     @State private var regionsSheet = false
     @State private var profilesSheet = false
     @State private var settingsSheet = false
+    @State private var showPSLoginPIN = false
+    @State private var psLoginPIN = ""
 
     private enum Page: String, CaseIterable, Identifiable {
         case home = "Domů"
@@ -102,6 +104,25 @@ struct GameLingoHome: View {
         }
         .onReceive(model.playStation.registrations.$consoles) { consoles in
             devices.refreshPlayStation(consoles)
+        }
+        .onReceive(model.playStation.$needsLoginPIN) { required in
+            guard required else { return }
+            psLoginPIN = ""
+            showPSLoginPIN = true
+        }
+        .alert("Přihlašovací PIN PlayStation", isPresented: $showPSLoginPIN) {
+            SecureField("PIN", text: $psLoginPIN)
+                .keyboardType(.numberPad)
+            Button("Potvrdit") {
+                model.playStation.submitLoginPIN(psLoginPIN)
+                psLoginPIN = ""
+            }
+            Button("Zrušit", role: .cancel) {
+                model.stop()
+                psLoginPIN = ""
+            }
+        } message: {
+            Text("Zadej PIN uživatele konzole, ne osmimístný párovací kód.")
         }
         .sheet(isPresented: $regionsSheet) { SubtitleSettingsView(model: model) }
         .sheet(isPresented: $profilesSheet) {
