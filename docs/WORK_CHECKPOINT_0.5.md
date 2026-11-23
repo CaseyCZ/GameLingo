@@ -4,6 +4,21 @@
 
 **Jak navázat po přerušení:** Otevři tento soubor a PR #5, přečti poslední commit větve, pokračuj od prvního řádku se stavem **ROZPRACOVÁNO** nebo **NEOVĚŘENO**. Po dokončení každého bodu vytvoř samostatný commit, doplň odkaz na commit a důkaz o testu. Nikdy neoznač funkci za ověřenou pouze díky statickému testu.
 
+## Obnovení 23. 11. 2026 — nejnovější stav
+
+**Předchozí úplná build matice:** [Actions 45211607965](https://github.com/CaseyCZ/GameLingo/actions/runs/45211607965) pro `12e0bcb` = iPhone IPA + Android APK + Google TV APK + SHA-256 **PASS**. Instalační soubory z tohoto běhu jsou vývojové, nikoli finálně ověřené na reálných konzolích.
+
+**Nejnovější změny od úspěšné build matice:**
+- P0/1, P0/2: sjednocené nastavení GameLingo i celostránkový průvodce Androidu (commity `47b27f2`, `54f694d`).
+- P0/3: ukládání a odebírání více Xboxů (`a53aa92`, `4acba8c`), společná správa TV iPhone pro první spuštění a domovskou obrazovku (`1e30445`, `29b0a0d`, `65ae20a`, `7595ba6`).
+- P0/3, P1/6: staré TV se před změnou IP vymažou zvlášť – dialogové i herní titulky (`8d5d68e`, `3c4b665`, `c6ed723`). Opakované odesílání starých titulků se ukončuje (`60ce243`, `5cb3c01`).
+- P0/1: jediný editor přihlašovacího PIN PlayStation (commity `6176cf1`, `1a1e15d`).
+- Rychlé testy pro `5cb3c01`: [Actions 45214264959](https://github.com/CaseyCZ/GameLingo/actions/runs/45214264959) **PASS**.
+
+**Důležité:** nové iOS/Android/TV soubory po `12e0bcb` ještě potřebují kompletní sestavení z jednoho společného SHA. Bez fyzického testu na konzoli PS4/PS5, Xboxu, Android telefonu a Google TV nemůže být žádný výrobní Release ani merge.
+
+**Další úkol po přerušení:** ověřit novou kompletní build matici (její číslo doplnit níže), případnou chybu v macOS/Xcode nebo Gradle opravit a spustit znovu. Poté pokračovat podle [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md) — úspěšná kompilace nestačí.
+
 ## Úkoly podle původního auditu
 
 | # | Priorita | Úkol | Kritérium dokončení | Stav |
@@ -11,10 +26,10 @@
 | 1 | P0 | Vlastní struktura GameLingo | Žádné původní nabídky PlayCaptionu v uživatelském rozhraní iOS/Android/TV | iOS staré menu odstraněno; finální UI Android/TV čeká fyzický audit |
 | 2 | P0 | Úvodní průvodce | První spuštění: výběr Xbox/PlayStation, výstupu a párování; po dokončení se neopakuje | Kód obou telefonů upraven; přihlášení a párování čeká fyzický test |
 | 3 | P0 | Správa zařízení | Více Xboxů, PlayStationů a TV; přidávání, výběr, přejmenování/odebrání; bezpečné během relace | Opravy iOS/Android uloženy, regresní kontroly prošly; HW test chybí |
-| 4 | P0 | Sjednotit Android a iOS UI | Stejné názvy, navigace, ikonografie a způsob ovládání; ne jen barvy | Pět společných záložek v nativní Kotlin navigaci; Android APK QA probíhá |
-| 5 | P1 | Samostatné nové TV UI | Přehledné ovládání ovladačem na velké obrazovce; dvě volby režimu a přístup k párování | Režimy mají D-pad focus a viditelné zvýraznění; APK QA probíhá, HW test chybí |
+| 4 | P0 | Sjednotit Android a iOS UI | Stejné názvy, navigace, ikonografie a způsob ovládání; ne jen barvy | Společná pětizáložková navigace, nový průvodce; fyzický UI audit zbývá |
+| 5 | P1 | Samostatné nové TV UI | Přehledné ovládání ovladačem na velké obrazovce; dvě volby režimu a přístup k párování | D-pad focus a dva režimy implementovány; Android/TV QA dříve PASS, HW test chybí |
 | 6 | P1 | Zachovat skutečné funkce | Xbox, PS4/PS5 Android, iOS PS4/PS5 port, OCR, 4 oblasti, Orange V5; žádné fake indikátory | OCR relace izolovány, status snímků pravdivější; hardware NEOVĚŘEN |
-| 7 | P1 | Testy | Skutečné přihlášení, více konzolí, párování, titulky v reálné hře; kompletní build všech balíčků | Android/Google TV QA APK PASS; iOS full matrix čeká, fyzické testy NEOTESTOVÁNY |
+| 7 | P1 | Testy | Skutečné přihlášení, více konzolí, párování, titulky v reálné hře; kompletní build všech balíčků | Předchozí kompletní sestavení 12e0bcb PASS; novější zdroj čeká, HW NEOTESTOVÁNO |
 | 8 | P2 | Úklid kódu | Odstranit duplicitní UI a křehké textové záplaty; zachovat upstream autorství/licenci | Odstraněna stará iOS obrazovka a Android textová navigace; další upstream patche zatím zůstávají |
 | 9 | P2 | README a Master | Dokumentace odpovídá ověřené verzi; Master až po přijetí PR a všech ověřeních | DESIGN a README aktuální: 0.4 veřejná, 0.5 vývojová; Master neměněn |
 
