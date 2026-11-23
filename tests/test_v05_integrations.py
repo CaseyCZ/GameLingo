@@ -357,6 +357,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(call, sender)
         self.assertIn("fun portFor(ip: String): Int", android)
         self.assertIn("checkedPortAt", android)
+        self.assertIn('sender_marker = "    object Vysilac {"', sender)
+        self.assertIn("sender = one(sender, old, new, label)", sender)
+        self.assertIn("transport.write_text(prefix + sender_marker + sender", sender)
 
     def test_tv_style_control_and_live_game_profile_save(self):
         """TV style is authenticated and persisted; running games may be saved."""
