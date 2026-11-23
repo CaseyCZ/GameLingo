@@ -139,10 +139,8 @@ def redesign_mobile(s: str) -> str:
                 this,
                 onHome = { ukazHlavni() },
                 onAreas = { openAreas() },
-                onProfiles = {
-                    GameLingoProfiles.show(this, nast) { ukazHlavni() }
-                },
                 onDevices = { openDevices() },
+                onSettings = { openSettings() },
                 onAbout = { GameLingoAbout.show(this) }
             )
             obsah.addView(navigace, odsazeni(top = 7))
