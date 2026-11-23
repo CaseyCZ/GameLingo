@@ -1,6 +1,6 @@
 name: GameLingo iOS · Native UI candidate
 # iPhone release-candidate compile: redesigned TV discovery/pairing, no legacy PlayCaption screens, 3 languages and 4 OCR zones.
-# iOS ONLY — compile final GameLingo screens, language packs, console icons, subtitle appearance and working settings navigation; keep release unchanged.
+# iOS ONLY — verify the shared iPhone/Android navigation and palette compile; leave Android TV and release unchanged.
 
 on:
   push:
