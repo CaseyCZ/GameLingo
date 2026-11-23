@@ -21,6 +21,8 @@ enum GLGameLanguage: String, CaseIterable, Identifiable, Codable {
         case .portuguese: return "Portugalština"
         }
     }
+    var localizedTitle: String { GLInterfaceText.localized(title) }
+
     var visionIdentifier: String {
         switch self {
         case .english: return "en-US"
@@ -45,6 +47,7 @@ enum GLTargetLanguage: String, CaseIterable, Identifiable, Codable {
     case portuguese = "pt"
 
     var id: String { rawValue }
+    var localizedTitle: String { GLInterfaceText.localized(title) }
 
     var title: String {
         switch self {
