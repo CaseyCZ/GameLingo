@@ -31,11 +31,9 @@ object GameLingoFirstRun {
         finished: () -> Unit
     ) {
         if (activity.isFinishing) return
-        val colors = arrayOf("#070B19", "#111A33", "#02D6FF", "#9FB1D4")
-        val navy = Color.parseColor(colors[0])
-        val card = Color.parseColor(colors[1])
-        val cyan = Color.parseColor(colors[2])
-        val muted = Color.parseColor(colors[3])
+        val cyan = Color.parseColor("#02D6FF")
+        val muted = Color.parseColor("#92A4C7")
+        val px: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         var step = 0
         var consoleChoice = -1
         var tvChoice = -1
@@ -45,19 +43,9 @@ object GameLingoFirstRun {
 
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(22, 24, 22, 22)
-            background = GradientDrawable().apply {
-                setColor(navy)
-                cornerRadius = 25f
-            }
+            setPadding(px(20), px(18), px(20), px(24))
+            background = GameLingoVisualKit.pageBackground(activity)
         }
-        root.addView(GameLingoVisualKit.hero(activity))
-        root.addView(TextView(activity).apply {
-            text = "Hraj. Rozuměj."
-            textSize = 14f
-            setTextColor(muted)
-            setPadding(0, 0, 0, 24)
-        })
         val heading = TextView(activity).apply {
             textSize = 26f
             typeface = Typeface.DEFAULT_BOLD
@@ -93,8 +81,9 @@ object GameLingoFirstRun {
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(19, 20, 19, 20)
-            background = if (text == "Pokračovat" || text == "Připojit")
+            setPadding(px(19), px(17), px(19), px(17))
+            background = if (text == "Pokračovat" || text == "Dokončit nastavení" ||
+                text == "Připojit konzoli" || text == "Spárovat TV")
                 GameLingoVisualKit.primary(activity)
                 else GameLingoVisualKit.card(activity, selected = checked)
             isFocusable = true
@@ -105,33 +94,50 @@ object GameLingoFirstRun {
                 LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { bottomMargin = 10 })
+                ).apply { bottomMargin = px(10) })
         }
 
-        fun finish() {
-            if (consoleChoice < 0 || tvChoice < 0) return
-            TvProfily(activity).pouzeTelefon = tvChoice == 0
-            activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE).edit()
-                .putBoolean(COMPLETE, true)
-                .putInt("console", consoleChoice)
-                .putInt("output", tvChoice).apply()
+        fun consoleRegistered(): Boolean = if (consoleChoice == 0) {
+            XboxUcet.prihlasen(activity) &&
+                !activity.getSharedPreferences("gamelingo_devices", Activity.MODE_PRIVATE)
+                    .getString("selectedXboxId", null).isNullOrBlank()
+        } else {
+            consoleChoice == 1 && GameLingoPlayStationConsoles.list(activity)
+                .any { it.selected }
+        }
+
+        fun televisionSaved(): Boolean {
+            if (tvChoice == 0) return true
+            val store = TvProfily(activity)
+            return tvChoice == 1 && store.posledniId?.let { store.najdi(it) } != null
+        }
+
+        // The welcome flow is not evidence of a live console/receiver connection.
+        // It closes before launching one provider modal, never both on top.
+        fun finish(open: Int = 0) {
+            val prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+            val edit = prefs.edit().putBoolean(COMPLETE, true)
+            if (consoleChoice >= 0) edit.putInt("console", consoleChoice)
+            if (tvChoice >= 0) {
+                edit.putInt("output", tvChoice)
+                TvProfily(activity).pouzeTelefon = tvChoice == 0
+            }
+            edit.apply()
             dialog.dismiss()
             finished()
-            when (consoleChoice) {
-                0 -> connectXbox()
-                1 -> connectPlayStation()
-            }
-            if (tvChoice == 1) {
-                // TV selection remains available in the central device menu.
-                // Do not try to open a second modal over Sony/Microsoft login.
+            when (open) {
+                1 -> connectXbox()
+                2 -> connectPlayStation()
+                3 -> connectTV()
             }
         }
+
         lateinit var redraw: () -> Unit
         redraw = {
             body.removeAllViews()
             footer.removeAllViews()
             progress.removeAllViews()
-            for (index in 0 until 4) {
+            for (index in GameLingoUIContract.setupSteps.indices) {
                 progress.addView(android.view.View(activity).apply {
                     background = GradientDrawable().apply {
                         setColor(if (index <= step) cyan else Color.parseColor("#23304C"))
@@ -142,22 +148,19 @@ object GameLingoFirstRun {
                     rightMargin = GameLingoVisualKit.dp(activity, 8)
                 })
             }
-            heading.text = when (step) {
-                0 -> "Vyber konzoli"
-                1 -> "Jazyky"
-                2 -> "Kam zobrazit titulky?"
-                else -> "Zkontroluj nastavení"
-            }
+            heading.text = GameLingoUIContract.setupSteps[step]
             when (step) {
                 0 -> {
-                    item("🟢  Xbox", consoleChoice == 0) {
-                        consoleChoice = 0
-                        redraw()
-                    }
-                    item("PS   PlayStation 5 / 4", consoleChoice == 1) {
-                        consoleChoice = 1
-                        redraw()
-                    }
+                    body.addView(GameLingoVisualKit.hero(activity))
+                    body.addView(TextView(activity).apply {
+                        text = "Překládej dialogy a herní texty přímo během hraní."
+                        textSize = 15f
+                        setTextColor(muted)
+                        setPadding(0, px(16), 0, px(14))
+                    })
+                    item("⚡  Překlad v reálném čase", false) { step = 1; redraw() }
+                    item("🎮  Xbox a PlayStation", false) { step = 2; redraw() }
+                    item("📺  Telefon a Google TV", false) { step = 3; redraw() }
                 }
                 1 -> {
                     item("🌐  Jazyk aplikace  •  " +
@@ -174,15 +177,39 @@ object GameLingoFirstRun {
                             redraw()
                         }
                     }
-                    item("文  Jazyk překladu  •  " +
+                    item("文  Překládat do  •  " +
                          GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
                              GameLingoLanguages.target(activity)), true) {
                         GameLingoLanguages.choose(activity, GameLingoLanguages.Kind.TARGET) {
                             redraw()
                         }
                     }
+                    body.addView(TextView(activity).apply {
+                        text = "Tyto jazyky platí pro dialogy i herní texty. " +
+                            "Změnit je můžeš později v Nastavení."
+                        textSize = 14f
+                        setTextColor(muted)
+                        setPadding(px(4), px(8), px(4), px(12))
+                    })
                 }
                 2 -> {
+                    item("🎮  Xbox Remote Play", consoleChoice == 0) {
+                        consoleChoice = 0
+                        redraw()
+                    }
+                    item("🎮  PlayStation 5 / 4", consoleChoice == 1) {
+                        consoleChoice = 1
+                        redraw()
+                    }
+                    body.addView(TextView(activity).apply {
+                        text = if (consoleRegistered())
+                            "Vybraná konzole je uložená. Spojení ověříme při spuštění."
+                        else "Po výběru můžeš konzoli připojit v posledním kroku."
+                        textSize = 14f
+                        setTextColor(muted)
+                    })
+                }
+                3 -> {
                     item("📱  Na telefonu", tvChoice == 0) {
                         tvChoice = 0
                         redraw()
@@ -191,32 +218,45 @@ object GameLingoFirstRun {
                         tvChoice = 1
                         redraw()
                     }
+                    if (tvChoice == 1) {
+                        item("🔗  Spárovat TV", false) {
+                            finish(open = 3)
+                        }
+                    }
                 }
                 else -> {
-                    val selected = if (consoleChoice == 0) "Xbox" else "PlayStation"
-                    val output = if (tvChoice == 0) "Telefon" else "Google TV"
-                    item("$selected   →   $output", true) {}
-                    item(GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
-                             GameLingoLanguages.game(activity)) + "  →  " +
-                         GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
-                             GameLingoLanguages.target(activity)), true) {}
+                    item("🎮  Konzole: " + when (consoleChoice) {
+                        0 -> "Xbox"
+                        1 -> "PlayStation"
+                        else -> "Nevybráno"
+                    }, consoleRegistered()) { step = 2; redraw() }
+                    item("📺  Titulky: " + when (tvChoice) {
+                        0 -> "Telefon"
+                        1 -> "Google TV"
+                        else -> "Nevybráno"
+                    }, televisionSaved()) { step = 3; redraw() }
+                    item("🌐  " + GameLingoLanguages.name(
+                        GameLingoLanguages.gameLanguages, GameLingoLanguages.game(activity)
+                    ) + "  →  " + GameLingoLanguages.name(
+                        GameLingoLanguages.targetLanguages,
+                        GameLingoLanguages.target(activity)), true) {
+                        step = 1
+                        redraw()
+                    }
                     body.addView(TextView(activity).apply {
-                        text = "Výběr není potvrzení spojení. Přihlášení a párování se ověří zvlášť."
+                        text = "Uložené zařízení neznamená aktivní Remote Play. " +
+                            "Živé spojení a překlad se ověří až při spuštění."
                         textSize = 14f
                         setTextColor(muted)
-                        setPadding(6, 7, 6, 14)
+                        setPadding(px(6), px(7), px(6), px(14))
                     })
-                    if (tvChoice == 1) {
-                        item("📺  Spárovat Google TV", false) {
-                            activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
-                                .edit().putBoolean(COMPLETE, true)
-                                .putInt("console", consoleChoice)
-                                .putInt("output", tvChoice).apply()
-                            TvProfily(activity).pouzeTelefon = false
-                            dialog.dismiss()
-                            finished()
-                            connectTV()
+                    if (!consoleRegistered() && consoleChoice >= 0) {
+                        item("🎮  Připojit konzoli", false) {
+                            finish(open = if (consoleChoice == 0) 1 else 2)
                         }
+                    }
+                    if (tvChoice == 1 && !televisionSaved()) {
+                        item("📺  Spárovat TV", false) { finish(open = 3) }
                     }
                 }
             }
@@ -237,15 +277,22 @@ object GameLingoFirstRun {
                     rightMargin = 8
                 })
             }
-            footer.addView(button(if (step == 3) "Připojit" else "Pokračovat") {
-                if (step < 3) {
-                    if ((step == 0 && consoleChoice >= 0) ||
-                        step == 1 ||
-                        (step == 2 && tvChoice >= 0)) {
+            footer.addView(button(if (step == 4) "Dokončit nastavení" else "Pokračovat") {
+                if (step < 4) {
+                    // The console is required only before the output step,
+                    // exactly as in the iPhone welcome flow.
+                    if (step != 2 || consoleChoice >= 0) {
                         step++
                         redraw()
                     }
-                } else finish()
+                } else {
+                    val valid = consoleRegistered() && televisionSaved()
+                    if (valid) finish()
+                    else if (!consoleRegistered() && consoleChoice >= 0)
+                        finish(open = if (consoleChoice == 0) 1 else 2)
+                    else if (tvChoice == 1 && !televisionSaved())
+                        finish(open = 3)
+                }
             }, LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
