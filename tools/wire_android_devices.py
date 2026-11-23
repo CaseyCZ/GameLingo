@@ -37,7 +37,7 @@ def main():
     # Mobile and TV share the PSN source, but the TV has a different
     # dashboard and no phone-only 'druhy' tiles. Never require a mobile
     # anchor inside the Google TV branch.
-    mobile_dashboard = 'druhy.addView(akce("▭", "Zařízení")' in code
+    mobile_dashboard = 'GameLingoVisualKit.brandHeader(this)' in code
     tv_dashboard = '"Překlad z telefonu"' in code and '"Přímo na TV"' in code
     if mobile_dashboard:
         code=one(
@@ -46,8 +46,7 @@ def main():
         ukazUvod()''',
             '''        prevezmiAccountId(intent)
         if (telefon && !GameLingoFirstRun.completed(this) && nast.jazyk == null) {
-            // GameLingo's own welcome wizard now handles language choice.
-            // Avoid rendering the old PlayCaption language setup underneath it.
+            // First-run language choices are owned by GameLingo, not upstream.
             nast.jazyk = "cs"
         }
         ukazUvod()
@@ -62,25 +61,12 @@ def main():
         }''',
             "mobile first-run wizard"
         )
-        # The main screen is produced by a separate UI generator. Allow harmless
-        # indentation/layout adjustments without silently skipping the action.
-        import re
-        source=code
-        code, count=re.subn(
-            r'(druhy\.addView\(akce\("▭",\s*"Zařízení"\)\s*\{\s*)vyberVystupTv\(\)(\s*\})',
-            lambda m: m.group(1)+manager()+m.group(2),
-            code, count=1
-        )
-        if count!=1:
-            raise RuntimeError("MainActivity device tile did not connect to device center")
-
-        code=one(
-            code,
-            'onDevices = { vyberVystupTv() },',
-            'onDevices = { '+manager()+' },',
-            "GameLingoNavigation device destination"
-        )
-        if code==source: raise RuntimeError("Device center wasn't attached")
+        # The native dashboard supplies the same central device action to both
+        # the fourth home tile and fifth-row navigation, without string patches.
+        if 'fun openDevices() {' not in code or 'GameLingoDeviceCenter.show(this,' not in code:
+            raise RuntimeError("Mobile GameLingo device screen missing")
+        if 'onDevices = { openDevices() }' not in code:
+            raise RuntimeError("Mobile bottom navigation is not wired to devices")
 
     elif tv_dashboard:
         code=one(
