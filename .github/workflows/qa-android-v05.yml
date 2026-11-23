@@ -1,0 +1,78 @@
+name: GameLingo 0.5 Android / TV UI regression
+
+on:
+  push:
+    branches: [feature/gamelingo-v05-platform-rebuild]
+    paths: [".github/workflows/qa-android-v05.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Recheck ${{ matrix.mode }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [mobile, tv]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kit
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: AdamRuzick4/PlayCaption-app
+          ref: 633a847400b6c4bac1e7f034463e7847a53a9590
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate source and apply GameLingo UI
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          set -euo pipefail
+          python -m pip install pillow
+          python -m unittest discover -s kit/tests -p 'test_v05_integrations.py' -v
+          if [ "$MODE" = "tv" ]; then
+            python kit/tools/patch_tv_iphone.py upstream
+          fi
+          python kit/tools/brand_android.py "$MODE" upstream
+          python kit/tools/create_brand_assets.py android upstream
+          python kit/tools/polish_gamelingo.py upstream
+          python kit/tools/redesign_gamelingo.py "$MODE" upstream
+          python kit/tools/polish_all_screens.py "$MODE" upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode "$MODE"
+          sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
+      - name: Compile and verify APK
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          APK=$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo."
+      - name: Preserve candidate APK for physical QA only
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
+          cp "$APK" "GameLingo-$MODE-v0.5.0-dev-TEST.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-v05-${{ matrix.mode }}-UI-candidate
+          path: GameLingo-*.apk
+          if-no-files-found: error
+          retention-days: 14
