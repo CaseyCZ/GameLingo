@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Compile mobile UI after fixing palette order for translation-mode buttons.
+# Cross-platform shared UI contract, native five-step onboarding, settings, regions and diagnostics compilation gate.
 
 on:
   push:
