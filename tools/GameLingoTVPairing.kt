@@ -18,6 +18,9 @@ import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.UUID
+import android.os.SystemClock
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -36,8 +39,9 @@ object GameLingoTVPairing {
     private const val PREFS = "gamelingo_tv_receiver"
     private const val KEY_ALIAS = "cz.caseycz.gamelingo.receiver.v1"
     private const val PORT = 41989
-    private val random = SecureRandom()
     private val main = Handler(Looper.getMainLooper())
+    @Volatile private var lastVerifiedIp = ""
+    @Volatile private var lastVerifiedAt = 0L
 
     private fun prefs(c: Context) =
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -99,8 +103,62 @@ object GameLingoTVPairing {
     fun paired(c: Context, ip: String): Boolean =
         ip.isNotBlank() && token(c, ip) != null
 
+    /** Only a fresh authenticated PING/PONG is a live receiver connection. */
+    fun connected(ip: String): Boolean =
+        ip == lastVerifiedIp && lastVerifiedAt > 0L &&
+            SystemClock.elapsedRealtime() - lastVerifiedAt < 10_000L
+
     fun forget(c: Context, ip: String) {
         prefs(c).edit().remove("tv_" + hashIp(ip)).apply()
+        if (lastVerifiedIp == ip) {
+            lastVerifiedIp = ""
+            lastVerifiedAt = 0L
+        }
+    }
+
+    private fun sign(secret: String, value: String): String {
+        val bytes = ByteArray(32) { i -> secret.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
+        return Mac.getInstance("HmacSHA256").run {
+            init(SecretKeySpec(bytes, "HmacSHA256"))
+            doFinal(value.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
+        }
+    }
+
+    /** Verifies a TV receiver using the same signed PCPAIR1 PING as iPhone. */
+    fun verify(activity: Activity, tv: TvProfil, onResult: (Boolean) -> Unit) {
+        val secret = token(activity, tv.ip)
+        if (secret == null) {
+            onResult(false)
+            return
+        }
+        val clientId = pairingId(activity)
+        Thread {
+            val result = runCatching {
+                val nonce = UUID.randomUUID().toString()
+                val message = "PING\t$clientId\t$nonce"
+                val packetText = "PCPAIR1\t$message\t" + sign(secret, message)
+                DatagramSocket().use { socket ->
+                    socket.soTimeout = 3_000
+                    val address = InetAddress.getByName(tv.ip)
+                    val data = packetText.toByteArray(Charsets.UTF_8)
+                    socket.send(DatagramPacket(data, data.size, address, PORT))
+                    val buf = ByteArray(2048)
+                    val reply = DatagramPacket(buf, buf.size)
+                    socket.receive(reply)
+                    reply.address == address && String(reply.data, 0, reply.length,
+                        Charsets.UTF_8) == "PCPAIR1\tPONG\t$nonce"
+                }
+            }.getOrDefault(false)
+            if (result) {
+                lastVerifiedIp = tv.ip
+                lastVerifiedAt = SystemClock.elapsedRealtime()
+            } else if (lastVerifiedIp == tv.ip) {
+                lastVerifiedIp = ""
+                lastVerifiedAt = 0L
+            }
+            main.post { if (!activity.isFinishing) onResult(result) }
+        }.apply { name = "gamelingo-tv-ping"; isDaemon = true }.start()
     }
 
     private fun handshake(ip: String, pin: String, clientId: String): String {
@@ -166,8 +224,14 @@ object GameLingoTVPairing {
                                 dialog.dismiss()
                                 onPaired()
                                 Toast.makeText(activity,
-                                    "TV je spárovaná. Spojení se ověří při přenosu.",
-                                    Toast.LENGTH_LONG).show()
+                                    "TV přijala kód. Ověřuji spojení…",
+                                    Toast.LENGTH_SHORT).show()
+                                verify(activity, tv) { connected ->
+                                    Toast.makeText(activity,
+                                        if (connected) "GameLingo TV je připojená."
+                                        else "Kód uložen, ale TV zatím neodpovídá.",
+                                        Toast.LENGTH_LONG).show()
+                                }
                             }.onFailure { err ->
                                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
                                 AlertDialog.Builder(activity)
