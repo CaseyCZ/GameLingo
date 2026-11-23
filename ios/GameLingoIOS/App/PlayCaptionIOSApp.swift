@@ -277,6 +277,11 @@ final class CaptionAppModel: ObservableObject {
 
     func start(_ console: XboxConsole) {
         guard !isRunning else { return }
+        frameCount = 0
+        lastEnglish = ""
+        lastCzech = ""
+        lastChoices = ""
+        phoneSubtitle = ""
         isRunning = true
         sessionRevision += 1
         let currentSession = sessionRevision
@@ -305,9 +310,11 @@ final class CaptionAppModel: ObservableObject {
         Task {
             do { try await play.connect(console: console) }
             catch {
-                self.status = "Remote Play: \(error.localizedDescription)"
-                write("CHYBA Remote Play: \(error.localizedDescription)")
+                guard self.sessionRevision == currentSession else { return }
+                let failure = "Xbox Remote Play: \(error.localizedDescription)"
                 stop()
+                self.status = failure
+                write("CHYBA: " + failure)
             }
         }
     }
@@ -398,6 +405,10 @@ final class CaptionAppModel: ObservableObject {
     /// Actual native PlayStation Remote Play, not just a console entry.
     func start(_ console: RegisteredConsole) {
         guard !isRunning else { return }
+        frameCount = 0
+        lastEnglish = ""
+        lastCzech = ""
+        lastChoices = ""
         isRunning = true
         sessionRevision += 1
         let currentSession = sessionRevision
