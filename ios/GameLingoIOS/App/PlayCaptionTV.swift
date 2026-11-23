@@ -86,6 +86,7 @@ final class PlayCaptionTV: ObservableObject {
     private var liveReceiverReady = false
     private var liveReceiverTarget = ""
     private var lastPong: Date?
+    private var portCheckAt: Date?
 
     var receiverPaired: Bool {
         ReceiverSecretStore.load(ip.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
@@ -101,6 +102,67 @@ final class PlayCaptionTV: ObservableObject {
     var onPairingData: (([String]) -> Void)?
     @Published var message = "Na Google TV otevři GameLingo TV a zvol „Překlad z telefonu“."
     private let queue = DispatchQueue(label: "cz.caseycz.playcaption.udp")
+
+    // GameLingo TV may pick UDP 41990–41993 when the original PlayCaption
+    // receiver already owns 41989. Probe candidates rather than assuming the
+    // legacy port is free. GLPORT1 exchanges contain no pairing secrets.
+    private final class PortLookup {
+        var connections: [NWConnection] = []
+        var completed = false
+    }
+
+    private func cachedReceiverPort(_ target: String) -> Int {
+        let value = UserDefaults.standard.integer(
+            forKey: "gamelingo.tvReceiverPort." + target)
+        return (41989...41993).contains(value) ? value : 41989
+    }
+
+    private func discoverReceiverPort(_ target: String,
+                                      completion: @escaping (Int) -> Void) {
+        let lookup = PortLookup()
+        let complete: (Int) -> Void = { [weak self, lookup] port in
+            guard !lookup.completed else { return }
+            lookup.completed = true
+            lookup.connections.forEach { $0.cancel() }
+            guard (41989...41993).contains(port) else { return }
+            UserDefaults.standard.set(port, forKey: "gamelingo.tvReceiverPort." + target)
+            self?.receiverStatus = "Přijímač TV: UDP \(port)"
+            completion(port)
+        }
+
+        for candidate in 41989...41993 {
+            let connection = NWConnection(
+                host: NWEndpoint.Host(target),
+                port: NWEndpoint.Port(rawValue: UInt16(candidate))!,
+                using: .udp)
+            lookup.connections.append(connection)
+            connection.stateUpdateHandler = { [weak connection] state in
+                guard let connection else { return }
+                if case .ready = state {
+                    connection.receiveMessage { data, _, _, _ in
+                        Task { @MainActor in
+                            guard let data, let reply = String(data: data, encoding: .utf8)
+                            else { return }
+                            let fields = reply.components(separatedBy: "\t")
+                            guard fields.count == 3, fields[0] == "GLPORT1",
+                                  fields[1] == "PORT", Int(fields[2]) == candidate
+                            else { return }
+                            complete(candidate)
+                        }
+                    }
+                    connection.send(content: Data("GLPORT1\tQUERY".utf8),
+                                    completion: .contentProcessed { _ in })
+                }
+            }
+            connection.start(queue: queue)
+        }
+        // Old GameLingo/PlayCaption receivers do not implement GLPORT1.
+        // Preserve their default port, or the last successfully discovered one.
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1500))
+            if !Task.isCancelled { complete(cachedReceiverPort(target)) }
+        }
+    }
 
     init() {
         startReceiverHeartbeat()
@@ -180,7 +242,7 @@ final class PlayCaptionTV: ObservableObject {
         }
         pairingConnection?.cancel()
         let connection = NWConnection(host: .init(target),
-                                      port: NWEndpoint.Port(rawValue: 41989)!,
+                                      port: NWEndpoint.Port(rawValue: UInt16(cachedReceiverPort(target)))!,
                                       using: .udp)
         pairingConnection = connection
         connection.stateUpdateHandler = { [weak self, weak connection] state in
@@ -255,9 +317,23 @@ final class PlayCaptionTV: ObservableObject {
         pairingRequest?.cancel()
         pairingTimeoutTask?.cancel()
         pairingRetryTask?.cancel()
-        receiverStatus = "Ověřuji kód na televizi…"
+        receiverStatus = "Hledám dostupný přijímací port televize…"
+        discoverReceiverPort(target) { [weak self] port in
+            guard let self, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target
+            else { return }
+            self.beginReceiverPairing(target: target, code: code, port: port)
+        }
+    }
+
+    private func beginReceiverPairing(target: String, code: String, port: Int) {
+        pairingRequest?.cancel()
+        pairingTimeoutTask?.cancel()
+        pairingRetryTask?.cancel()
+        receiverStatus = "Ověřuji kód na TV (UDP \(port))…"
         let pairingClientID = receiverID
-        let conn = NWConnection(host: .init(target), port: .init(integerLiteral: 41989), using: .udp)
+        let conn = NWConnection(host: .init(target),
+                                port: NWEndpoint.Port(rawValue: UInt16(port))!,
+                                using: .udp)
         pairingRequest = conn
         // UDP does not report a missing reply as a connection failure.
         // Always end a stalled request with actionable feedback.
@@ -387,8 +463,25 @@ final class PlayCaptionTV: ObservableObject {
                 "TV je vybraná. Pro ověřené spojení ji spáruj šestímístným kódem."
             return
         }
-        receiverStatus = "Připojuji se ke spárované TV…"
-        let conn = NWConnection(host: .init(target), port: .init(integerLiteral: 41989), using: .udp)
+        receiverStatus = "Vyhledávám přijímač na TV…"
+        discoverReceiverPort(target) { [weak self] port in
+            guard let self, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target,
+                  ReceiverSecretStore.load(target) != nil
+            else { return }
+            self.connectLiveReceiver(target: target, port: port)
+        }
+    }
+
+    private func connectLiveReceiver(target: String, port: Int) {
+        liveReceiver?.cancel()
+        receiverHeartbeatTask?.cancel()
+        receiverConnected = false
+        lastPong = nil
+        portCheckAt = Date()
+        receiverStatus = "Připojuji se k TV na UDP \(port)…"
+        let conn = NWConnection(host: .init(target),
+                                port: NWEndpoint.Port(rawValue: UInt16(port))!,
+                                using: .udp)
         liveReceiver = conn
         liveReceiverTarget = target
         conn.stateUpdateHandler = { [weak self, weak conn] state in
@@ -422,6 +515,17 @@ final class PlayCaptionTV: ObservableObject {
                             } else {
                                 self.receiverConnected = false
                                 self.receiverStatus = "TV spárovaná · čekám na odpověď"
+                                // On TV restart the previous UDP port may become
+                                // unavailable. Discover a new port without
+                                // invalidating the existing authenticated token.
+                                if let checked = self.portCheckAt,
+                                   Date().timeIntervalSince(checked) > 12 {
+                                    self.portCheckAt = Date()
+                                    self.discoverReceiverPort(target) { [weak self] found in
+                                        guard let self, self.liveReceiver === conn else { return }
+                                        if found != port { self.startReceiverHeartbeat() }
+                                    }
+                                }
                             }
                         }
                     }
@@ -641,7 +745,7 @@ final class PlayCaptionTV: ObservableObject {
 
     private func sendDatagram(_ payload: Data, to target: String, reportStatus: Bool) {
         let connection = NWConnection(host: NWEndpoint.Host(target),
-                                      port: NWEndpoint.Port(rawValue: 41989)!,
+                                      port: NWEndpoint.Port(rawValue: UInt16(cachedReceiverPort(target)))!,
                                       using: .udp)
         connection.stateUpdateHandler = { [weak self, weak connection] state in
             guard let connection else { return }
