@@ -28,7 +28,8 @@ jobs:
           set -euo pipefail
           REPO="$GITHUB_REPOSITORY"
           TAG="v0.5.0-beta.2"
-          SOURCE="89c78ef8f1d339d1b29c28d3f1406422dd313418"
+          BUILD_SOURCE="89c78ef8f1d339d1b29c28d3f1406422dd313418"
+          SOURCE="$GITHUB_SHA"
           IOS_SOURCE="0d14217afa19c90a7db551eec6d8e711eaad6d7b"
           IOS_RUN="45250577982"
           MATRIX_RUN="45261196428"
@@ -38,11 +39,21 @@ jobs:
           # change between IOS_SOURCE and SOURCE.
           test "$(gh api "repos/$REPO/actions/runs/$IOS_RUN" --jq '.conclusion')" = "success"
           test "$(gh api "repos/$REPO/actions/runs/$IOS_RUN" --jq '.head_sha')" = "$IOS_SOURCE"
-          test "$(gh api "repos/$REPO/actions/runs/$MATRIX_RUN" --jq '.head_sha')" = "$SOURCE"
+          test "$(gh api "repos/$REPO/actions/runs/$MATRIX_RUN" --jq '.head_sha')" = "$BUILD_SOURCE"
 
-          changed="$(gh api "repos/$REPO/compare/$IOS_SOURCE...$SOURCE" --jq '.files[].filename')"
+          changed="$(gh api "repos/$REPO/compare/$IOS_SOURCE...$BUILD_SOURCE" --jq '.files[].filename')"
           if grep -Eq '^(ios/|shared/mobile-ui\\.json$|tools/create_brand_assets\\.py$|\\.github/workflows/build-ios-gamelingo\\.yml$)' <<< "$changed"; then
             echo "::error::iOS source/build recipe changed since the last successful IPA. Do not publish mixed sources."
+            exit 1
+          fi
+
+          # The GITHUB_TOKEN can be denied when tagging an older commit
+          # containing GitHub Actions changes. The release tag instead
+          # points to this workflow's HEAD, whose app source is identical
+          # to the validated installer-source commit.
+          since_build="$(gh api "repos/$REPO/compare/$BUILD_SOURCE...$SOURCE" --jq '.files[].filename')"
+          if grep -Ev '^\.github/workflows/' <<< "$since_build" | grep -q .; then
+            echo "::error::Non-workflow source changed since validated installer build."
             exit 1
           fi
 
