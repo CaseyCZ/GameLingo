@@ -498,7 +498,7 @@ def redesign_tv(s: str) -> str:
                 sitLabel.setTextColor(if (networkReady) zelena else Color.parseColor("#94A3B8"))
                 prijimacLabel.text = when {
                     receiverError -> "Port UDP obsazen"
-                    receiverReady -> "Aktivní"
+                    receiverReady -> "Aktivní · UDP ${PrijemService.prijimaciPort()}"
                     else -> "Zastaven"
                 }
                 prijimacLabel.setTextColor(if (receiverReady) zelena else Color.parseColor("#94A3B8"))
@@ -510,7 +510,7 @@ def redesign_tv(s: str) -> str:
                 stavTitulku.setTextColor(if (spojeno && receiverReady && overlayReady)
                     zelena else Color.parseColor("#94A3B8"))
                 stavParovani.text = when {
-                    receiverError -> "Nelze přijímat: port UDP 41989 používá jiná aplikace"
+                    receiverError -> "Nelze přijímat: všechny UDP porty 41989–41993 jsou obsazené"
                     spojeno && receiverReady -> "✓ Telefon je spárovaný a připojený"
                     code != null -> "Kód platí ještě $zbyva s"
                     IPhoneTVPairing.paired(this@MainActivity) ->
