@@ -183,6 +183,15 @@ struct GameLingoLanguageSettingsView: View {
         GLScreen(title: "Jazyky", help:
             "Jazyk aplikace určuje rozhraní. Jazyk hry vybírá OCR rozpoznávání. Jazyk překladu určuje výstup pro dialogy i herní texty. Zdroj a cíl přepínej před spuštěním hry.") {
             GLCard {
+                GLHeader(title: "Jazyk aplikace", help:
+                    "Jazyk tlačítek a nabídky GameLingo. Nemění jazyk hry ani překladu.")
+                Picker("Jazyk aplikace", selection: $model.appLanguage) {
+                    ForEach(GLAppLanguage.allCases) { language in
+                        Text(LocalizedStringKey(language.title)).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+            }            GLCard {
                 GLHeader(title: "Jazyk hry", help:
                     "Vyber jazyk, ve kterém hra zobrazuje původní dialogy.")
                 Picker("Rozpoznávat jazyk", selection: $model.gameLanguage) {
@@ -204,16 +213,7 @@ struct GameLingoLanguageSettingsView: View {
                 .pickerStyle(.menu)
                 .disabled(model.isRunning)
             }
-            GLCard {
-                GLHeader(title: "Jazyk aplikace", help:
-                    "Jazyk tlačítek a nabídky GameLingo. Nemění jazyk hry ani překladu.")
-                Picker("Jazyk aplikace", selection: $model.appLanguage) {
-                    ForEach(GLAppLanguage.allCases) { language in
-                        Text(LocalizedStringKey(language.title)).tag(language)
-                    }
-                }
-                .pickerStyle(.menu)
-            }
+
         }
     }
 }
