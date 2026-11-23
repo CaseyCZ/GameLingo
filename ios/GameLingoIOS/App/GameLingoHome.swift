@@ -116,6 +116,7 @@ struct GameLingoHome: View {
                     .foregroundStyle(GLVisual.muted)
             }
             Spacer()
+            GLHelpButton(title: "GameLingo", explanation: "Zvol Xbox a Google TV. Pak spusť překlad. Oblasti určí, odkud číst dialogy a kde zobrazovat překlad. Profily uloží nastavení pro jednotlivé hry.")
             Button { settingsSheet = true } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.title3)
@@ -208,12 +209,10 @@ struct GameLingoHome: View {
                 .font(.title2)
                 .foregroundStyle(GLVisual.green)
             VStack(alignment: .leading, spacing: 5) {
-                Text(model.isRunning ? "Překlad probíhá" : "Připraveno ke hraní")
+                Text(model.isRunning ? "Překlad probíhá" : (model.xbox.signedIn ? (model.tv.receiverConnected ? "Připraveno" : "Připoj Google TV") : "Připoj Xbox"))
                     .font(.subheadline.bold())
                     .foregroundStyle(GLVisual.green)
-                Text(model.isRunning
-                     ? model.status
-                     : "Po připojení Xboxu GameLingo rozpoznává dialogy i herní texty. Překlad lze odesílat na Google TV.")
+                Text(model.isRunning ? model.status : (model.xbox.signedIn ? "Spáruj TV nebo přejdi k překladu." : "Zvol svoji konzoli."))
                     .font(.caption)
                     .foregroundStyle(GLVisual.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -404,11 +403,7 @@ struct GameLingoHome: View {
     private var xboxScreen: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    GameLingoDeviceRow(icon: "gamecontroller.fill", name: "Xbox",
-                        subtitle: "Microsoft účet a výběr Remote Play",
-                        connected: model.xbox.signedIn,
-                        status: model.xbox.signedIn ? "Účet připojen" : "Přihlášení")
+                VStack(alignment: .leading, spacing: 14) {
                     XboxAccountView(auth: model.xbox)
                     XboxRemotePlayView(auth: model.xbox)
                 }
@@ -429,11 +424,7 @@ struct GameLingoHome: View {
     private var tvScreen: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 17) {
-                    GameLingoDeviceRow(icon: "tv.fill", name: "Google TV",
-                        subtitle: "Spárování a zobrazení českých titulků",
-                        connected: model.tv.receiverConnected,
-                        status: model.tv.receiverConnected ? "Spárováno" : "Nespojeno")
+                VStack(alignment: .leading, spacing: 13) {
                     TVSelectionView(tv: model.tv)
                 }
                 .padding(18)
@@ -467,7 +458,6 @@ private struct GameLingoDeviceRow: View {
                 .background(GLVisual.navy, in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 4) {
                 Text(name).font(.headline).foregroundStyle(.white)
-                Text(subtitle).font(.caption).foregroundStyle(GLVisual.muted)
                 HStack(spacing: 5) {
                     Circle()
                         .fill(connected ? GLVisual.green : GLVisual.muted)
