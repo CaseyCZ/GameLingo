@@ -83,8 +83,8 @@ def main():
             "TV native welcome instead of PlayCaption beta")
         code=one(
             code,
-            '''            obsah.addView(volby, odsazeni(bottom = 9))''',
-            '''            obsah.addView(volby, odsazeni(bottom = 9))
+            '''            obsah.addView(volby, odsazeni(bottom = 5))''',
+            '''            obsah.addView(volby, odsazeni(bottom = 5))
             obsah.addView(GameLingoTVUi.action(this, "▭  Spravovat zařízení") {
                 '''+manager()+'''
             }, odsazeni(bottom = 9))''',
