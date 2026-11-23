@@ -37,10 +37,21 @@ object GameLingoDeviceCenter {
         LinearLayout(c).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(18, 17, 18, 17)
+            val tenFoot = (c.resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_TYPE_MASK) ==
+                android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
+            val h = GameLingoVisualKit.dp(c, if (tenFoot) 17 else 13)
+            val v = GameLingoVisualKit.dp(c, if (tenFoot) 17 else 12)
+            setPadding(h, v, h, v)
+            minimumHeight = GameLingoVisualKit.dp(c, if (tenFoot) 75 else 62)
             background = GameLingoVisualKit.card(c, checked)
             isClickable = true
             isFocusable = true
+            setOnFocusChangeListener { view, focused ->
+                view.background = if (tenFoot && focused)
+                    GameLingoTVUi.panel(c, focus = true)
+                else GameLingoVisualKit.card(c, checked)
+            }
             setOnClickListener { onClick() }
             val family = when {
                 sub.contains("PlayStation", ignoreCase = true) ||
@@ -61,14 +72,14 @@ object GameLingoDeviceCenter {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(c).apply {
                     text = title
-                    textSize = 17f
+                    textSize = if (tenFoot) 20f else 17f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
                 })
                 if (sub.isNotEmpty()) {
                     addView(TextView(c).apply {
                         text = sub
-                        textSize = 13f
+                        textSize = if (tenFoot) 15f else 13f
                         setTextColor(muted)
                         setPadding(0, 6, 0, 0)
                     })
@@ -130,7 +141,7 @@ object GameLingoDeviceCenter {
         header.addView(GameLingoHelp.button(c, "console"))
         root.addView(header)
 
-        add(root, line(c, "＋  Přidat zařízení") {
+        val addDeviceButton = line(c, "＋  Přidat zařízení") {
             AlertDialog.Builder(c)
                 .setTitle("Přidat zařízení")
                 .setItems(arrayOf("Xbox", "PlayStation 5 / 4",
@@ -143,7 +154,8 @@ object GameLingoDeviceCenter {
                     }
                 }
                 .show()
-        })
+        }
+        add(root, addDeviceButton)
 
         root.addView(label(c, "Konzole", 19f))
         val consoles = LinearLayout(c).apply {
@@ -323,5 +335,6 @@ object GameLingoDeviceCenter {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
+        scroll.post { addDeviceButton.requestFocus() }
     }
 }
