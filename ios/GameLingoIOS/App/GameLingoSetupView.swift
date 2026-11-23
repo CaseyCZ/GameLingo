@@ -104,8 +104,8 @@ struct GameLingoSetupView: View {
                 }
             }
             .padding(.bottom, 8)
-            Text(["Vyber konzoli", "Jazyky a překlad",
-                  "Kam zobrazit titulky?", "Kontrola nastavení"][step])
+            Text(LocalizedStringKey(["Vyber konzoli", "Jazyky a překlad",
+                  "Kam zobrazit titulky?", "Kontrola nastavení"][step]))
                 .font(.title2.bold())
         }
     }
@@ -185,7 +185,7 @@ struct GameLingoSetupView: View {
                         .font(.headline)
                     Picker("Jazyk aplikace", selection: $model.appLanguage) {
                         ForEach(GLAppLanguage.allCases) { language in
-                            Text(language.title).tag(language)
+                            Text(LocalizedStringKey(language.title)).tag(language)
                         }
                     }
                     .pickerStyle(.menu)
@@ -233,7 +233,7 @@ struct GameLingoSetupView: View {
                         Image(systemName: output == .phone ? "smartphone" : "tv.fill")
                             .font(.title2)
                             .foregroundStyle(GLStyle.blue)
-                        Text(output.rawValue)
+                        Text(LocalizedStringKey(output.rawValue))
                             .font(.headline).foregroundStyle(.white)
                         Spacer()
                         if devices.subtitleOutput == output {
@@ -277,7 +277,8 @@ struct GameLingoSetupView: View {
             }
             GLCard {
                 GLHeader(title: "Jazyky")
-                Text(model.gameLanguage.title + " → " + model.targetLanguage.title)
+                Text(LocalizedStringKey(model.gameLanguage.title)) +
+                Text(" → ") + Text(LocalizedStringKey(model.targetLanguage.title))
                     .foregroundStyle(.white)
             }
             if devices.chosenConsole == nil {
