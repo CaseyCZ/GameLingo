@@ -1,4 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
+# Android OCR visual pipeline corrected to use themed source anchors.
 
 on:
   push:
