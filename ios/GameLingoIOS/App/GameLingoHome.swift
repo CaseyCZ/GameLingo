@@ -427,7 +427,9 @@ struct GameLingoHome: View {
 
     private var regionsPage: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionTitle("Oblasti obrazovky", detail: "Čtyři nezávislé oblasti pro rozpoznávání a překlad")
+            GLNeonTitle(title: "Oblasti obrazovky",
+                        subtitle: "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
+                        icon: "viewfinder")
             Button { regionsSheet = true } label: {
                 HStack {
                     Image(systemName: "rectangle.dashed")
@@ -437,7 +439,7 @@ struct GameLingoHome: View {
                     Image(systemName: "arrow.up.right")
                 }
                 .padding(18)
-                .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 16))
+                .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 16))
             }
             .buttonStyle(.plain)
             areaLine("Modrá", "Čtení dialogů", .blue)
@@ -457,12 +459,16 @@ struct GameLingoHome: View {
             Spacer()
         }
         .padding(14)
-        .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 15))
+        .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 15))
+        .overlay(RoundedRectangle(cornerRadius: 15)
+            .strokeBorder(GLNeon.edge.opacity(0.65), lineWidth: 1))
     }
 
     private var profilesPage: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionTitle("Profily her", detail: "Pro každou hru vlastní oblasti, rychlost OCR a titulky")
+            GLNeonTitle(title: "Profily her",
+                        subtitle: "Pro každou hru vlastní oblasti, rychlost OCR a titulky",
+                        icon: "gamecontroller")
             Button { profilesSheet = true } label: {
                 Label("Spravovat profily her", systemImage: "gamecontroller.fill")
                     .font(.headline)
@@ -503,15 +509,42 @@ struct GameLingoHome: View {
 
     private var aboutPage: some View {
         VStack(alignment: .leading, spacing: 15) {
-            sectionTitle("O aplikaci", detail: "GameLingo – hraj a rozuměj svým hrám")
-            infoRow("GameLingo", "Překlad herních dialogů a textů na telefonu i TV")
-            infoRow("iPhone", "Xbox / PlayStation 5 / PlayStation 4")
-            infoRow("Google TV", "Přenos českých titulků přes domácí síť")
-            infoRow("Autor", "CaseyCZ")
-            Text("GameLingo je nezávislý open-source projekt navazující na PlayCaption. Xbox, PlayStation a Google TV jsou ochranné známky svých vlastníků.")
-                .font(.caption)
-                .foregroundStyle(GLVisual.muted)
-                .padding(15)
+            GLNeonTitle(title: "O aplikaci",
+                        subtitle: "GameLingo – hraj a rozuměj svým hrám",
+                        icon: "info.circle")
+            GLNeonPanel(emphasized: true) {
+                VStack(spacing: 11) {
+                    GLBrandWordmark()
+                    Text("Překlad herních dialogů a textů")
+                        .font(.subheadline)
+                        .foregroundStyle(GLNeon.mist)
+                    Text("Verze 0.5 Beta")
+                        .font(.caption.bold())
+                        .foregroundStyle(GLNeon.cyan)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(23)
+            }
+            Button {
+                licenseSheet = true
+            } label: {
+                GLDetailRow(icon: "doc.text",
+                            title: "Licence (AGPLv3)",
+                            detail: "Otevřený kód a původní autoři")
+            }
+            .buttonStyle(.plain)
+            Link(destination: URL(string: "https://github.com/CaseyCZ/GameLingo")!) {
+                GLDetailRow(icon: "chevron.left.forwardslash.chevron.right",
+                            title: "Zdrojový kód (GitHub)",
+                            detail: "GameLingo – veřejný repozitář")
+            }
+            .buttonStyle(.plain)
+            GLNeonPanel {
+                Text("GameLingo je nezávislý projekt a není oficiální aplikací Sony ani Microsoftu.")
+                    .font(.caption)
+                    .foregroundStyle(GLNeon.mist)
+                    .padding(16)
+            }
         }
     }
 
