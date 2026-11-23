@@ -27,8 +27,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: GameLingo
-        CFBundleShortVersionString: "0.2.0"
-        CFBundleVersion: "2"
+        CFBundleShortVersionString: "0.3.0"
+        CFBundleVersion: "3"
         LSRequiresIPhoneOS: true
         NSLocalNetworkUsageDescription: "Najde GameLingo TV v domácí síti a posílá do ní české titulky."
         UIRequiresPersistentWiFi: true
