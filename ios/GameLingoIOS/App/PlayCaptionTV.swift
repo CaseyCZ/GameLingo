@@ -399,6 +399,11 @@ final class PlayCaptionTV: ObservableObject {
                     guard let self, self.liveReceiver === conn, self.ip == target else { return }
                     self.liveReceiverReady = true
                     self.readReceiverReply(on: conn, target: target)
+                    // Reapply this phone's TV style after reconnect or pairing;
+                    // style is authenticated by the saved per-phone HMAC token.
+                    self.updateCaptionStyle(
+                        color: UserDefaults.standard.string(forKey: "gamelingo.tvTextColor") ?? "white",
+                        background: UserDefaults.standard.string(forKey: "gamelingo.tvBackground") ?? "dark")
                     self.receiverHeartbeatTask = Task { [weak self] in
                         while !Task.isCancelled {
                             guard let self, let token = ReceiverSecretStore.load(target),
@@ -485,6 +490,27 @@ final class PlayCaptionTV: ObservableObject {
             sendDatagram(packet, to: target, reportStatus: reportStatus)
         }
         return true
+    }
+
+    /// Updates the GameLingo TV receiver's own subtitle color/background.
+    /// This is NOT a change to the local iPhone overlay style. Uses the same
+    /// authenticated UDP connection and token as PING/PONG and live captions.
+    /// Old TV receivers safely ignore the unknown STYLE packet.
+    func updateCaptionStyle(color: String, background: String) {
+        let allowedColors = ["white", "yellow", "cyan", "green", "purple"]
+        let allowedBackgrounds = ["dark", "translucent", "none"]
+        guard allowedColors.contains(color), allowedBackgrounds.contains(background) else { return }
+        let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !target.isEmpty, let token = ReceiverSecretStore.load(target) else { return }
+        let body = "STYLE\t\(receiverID)\t\(color)\t\(background)"
+        guard let mac = signature(body, tokenHex: token) else { return }
+        let packet = Data("PCPAIR1\t\(body)\t\(mac)".utf8)
+        if liveReceiverReady, liveReceiverTarget == target,
+           let conn = liveReceiver {
+            conn.send(content: packet, completion: .contentProcessed { _ in })
+        } else {
+            sendDatagram(packet, to: target, reportStatus: false)
+        }
     }
 
     /// Clear captions on a previously selected receiver without changing the
