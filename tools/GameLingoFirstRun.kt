@@ -251,7 +251,7 @@ object GameLingoFirstRun {
         }
         redraw()
         val scroll = ScrollView(activity).apply {
-            fillViewport = true
+            isFillViewport = true
         }
         scroll.addView(root)
         dialog.setContentView(scroll)
