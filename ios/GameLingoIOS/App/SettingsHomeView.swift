@@ -432,7 +432,7 @@ struct GameLingoProfilesScreen: View {
 
     var body: some View {
         GLScreen(title: "Profily her", help:
-            "Ulož si pro každou hru vlastní OCR režim, všechny čtyři oblasti, filtry a nastavení titulků. Stejný název profil aktualizuje. Neobsahuje hesla ani přihlašovací údaje. Profil měň před spuštěním překladu.") {
+            "Ulož si pro každou hru vlastní OCR režim, všechny čtyři oblasti, filtry a nastavení titulků. Profil jde uložit i během hraní; načtení a mazání jsou dostupné po zastavení překladu. Neobsahuje hesla ani přihlašovací údaje.") {
             GLCard {
                 TextField("Název hry", text: $profileName)
                     .textInputAutocapitalization(.words)
@@ -440,8 +440,7 @@ struct GameLingoProfilesScreen: View {
                     .padding(10)
                     .background(GLStyle.surfaceAlt, in: RoundedRectangle(cornerRadius: 11))
                 GLPrimaryButton(title: "Uložit profil", systemImage: "square.and.arrow.down",
-                    disabled: profileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        || model.isRunning) {
+                    disabled: profileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
                     model.saveGameProfile(named: profileName)
                     profileName = ""
                 }
