@@ -39,7 +39,7 @@
 
 **Výsledek Android/TV QA:** [run 45209393131](https://github.com/CaseyCZ/GameLingo/actions/runs/45209393131) — Android mobile **PASS**, Google TV **PASS** včetně skutečného Gradle sestavení. Zdrojové UI zůstalo od tohoto runu nezměněné; následné zdrojové opravy se týkají iOS.
 
-**Plná matice:** [run 45210197810](https://github.com/CaseyCZ/GameLingo/actions/runs/45210197810) běží na SHA `88336fed`: Android a Google TV **PASS**, iOS macOS runner v době kontroly **ve frontě**. **Tato revize je starší než současná větev a nesmí být použita jako konečný release!** Spusť nový plný build z nejnovějšího SHA.
+**Plná matice:** [run 45211607965](https://github.com/CaseyCZ/GameLingo/actions/runs/45211607965) na SHA `12e0bcb` = všechny tři platformy a checksum **PASS**. Další upravené kódy po tomto buildu zůstávají mimo jeho důkaz; konečné sestavení musí použít aktuální společné SHA.
 
 **Nejbližší přerušitelný krok:** ověřit nejnovější rychlou CI a výsledky iOS buildu; na finální revizi spustit plnou iOS/Android/TV matici, podle logu opravit případné chybné sestavení a uložit testovací balíčky. Poté provést konkrétní testy v [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md). Bez těchto fyzických testů jsou P1/6–7 nadále **NEOVĚŘENÉ**.
 
@@ -51,6 +51,14 @@
 - **P1/7 fyzické testovací scénáře:** `3664aba` – [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md), všechny fyzické scénáře mají pravdivý stav NEOTESTOVÁNO.
 - **P2/9 README:** `ed04ad1` – poslední veřejná verze 0.4.0 a nedokončená 0.5.0 výslovně odlišeny.
 - **P1/7 Android/TV QA:** [run 45209393131](https://github.com/CaseyCZ/GameLingo/actions/runs/45209393131) = obě APK úspěšně sestaveny.
+
+### Další checkpoint po úspěšné kompletní sestavovací matici
+
+- **Úplný build tří platforem na SHA `12e0bcb`:** [GitHub Actions 45211607965](https://github.com/CaseyCZ/GameLingo/actions/runs/45211607965) **PASS** — nativní iPhone unsigned IPA, Android telefon APK, Google TV APK a kontrolní SHA-256. **Pozor: po tomto SHA následovaly další UI změny, takže pro finální kandidát je nutný nový build.**
+- **P0/3 Android multi-Xbox:** `a53aa92`, `ca2ff34` — při nalezení více konzolí se použije již zvolený Xbox ze správy zařízení; dialog až při prvním výběru.
+- **P0/1 P2/8 iOS Nastavení:** `732799f`, `47b27f2`, `48afd13` — obrazovky Nastavení, OCR, Překlad, Vzhled a Diagnostika už nepoužívají interní staré názvy PlayCaption.
+- **P0/1 P0/2 Android průvodce:** `54f694d`, `64fe409` — vlastní celostránkový branded průvodce namísto plovoucího okna přes původní úvodní stránku.
+- **Nový cílový stav:** po poslední úpravě zdroje vytvořit jediný finální build iOS + Android + TV z jednoho SHA, ověřit artefakty a ponechat PR jako draft do dokončení [fyzických testů](PHYSICAL_QA_0.5.md).
 
 ## Evidence práce a další jednotlivé kroky
 
