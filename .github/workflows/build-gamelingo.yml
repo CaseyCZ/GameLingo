@@ -16,7 +16,7 @@ concurrency:
 
 # UI-parity candidate: same welcome flow, settings, Xbox/PS/TV cards and translation languages on Android and iOS.
 # Single compilation gate for the updated four-step Android wizard, neon device manager and native iPhone UI.
-# Pairing regression build: compile repaired compact TV dashboard injection plus iOS/TV loss-tolerant six-digit PIN handshake.
+# Final pairing QA: compile iPhone and TV with idempotent PIN retry and authenticated-heartbeat-only connection status.
 # Run full integration matrix only when this workflow is explicitly revised.
 # This prevents expensive native Chiaki builds for every draft source change.
 # QA v0.5.0: tests + PS4/PS5 core + iPhone + Android + Google TV.
