@@ -153,7 +153,7 @@ struct GameLingoHome: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
                 GLBrandWordmark(compact: true)
-                Text("České titulky a překlady pro hry")
+                Text("Titulky a překlady her v reálném čase")
                     .font(.caption)
                     .foregroundStyle(GLNeon.mist)
                     .lineLimit(1)
@@ -444,7 +444,7 @@ struct GameLingoHome: View {
             }
             .buttonStyle(.plain)
             areaLine("Modrá", "Čtení dialogů", .blue)
-            areaLine("Zelená", "Výstup českých titulků", .green)
+            areaLine("Zelená", "Výstup přeložených titulků", .green)
             areaLine("Žlutá", "Čtení herních textů a voleb", .yellow)
             areaLine("Oranžová", "Překlad herních textů", .orange)
         }
