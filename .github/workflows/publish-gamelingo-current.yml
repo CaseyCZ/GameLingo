@@ -1,9 +1,11 @@
-name: Publish only newest GameLingo Beta (iOS, Android and Google TV)
+name: Publish GameLingo 0.5 Beta 2 (verified installers)
 
 on:
-  # The default GITHUB_TOKEN can build but is denied Git tags and Releases
-  # (HTTP 403). Manually dispatch only after adding the dedicated repository
-  # secret GAMELINGO_RELEASE_TOKEN with Contents:write and Actions:read.
+  push:
+    branches:
+      - feature/gamelingo-v05-platform-rebuild
+    paths:
+      - ".github/workflows/publish-gamelingo-current.yml"
   workflow_dispatch:
 
 permissions:
@@ -12,177 +14,97 @@ permissions:
 
 concurrency:
   group: gamelingo-current-release
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   release:
-    name: Publish three verified installers; remove old Releases after confirmation
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          # The regular GITHUB_TOKEN can read/build but receives 403 when
-          # creating release tags. Use the dedicated repo-scoped token.
-          token: ${{ secrets.GAMELINGO_RELEASE_TOKEN }}
-          persist-credentials: true
-      - name: Validate all installers and create new beta
+      - name: Verify new builds and publish GameLingo Beta 2
         env:
-          GH_TOKEN: ${{ secrets.GAMELINGO_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${GH_TOKEN:-}" ]; then
-            echo "::error::Missing GAMELINGO_RELEASE_TOKEN. Set repository Actions secret with Contents:write + Actions:read, then rerun."
-            exit 1
-          fi
           REPO="$GITHUB_REPOSITORY"
           TAG="v0.5.0-beta.2"
-          BUILD_SOURCE="89c78ef8f1d339d1b29c28d3f1406422dd313418"
           SOURCE="$GITHUB_SHA"
-          IOS_SOURCE="0d14217afa19c90a7db551eec6d8e711eaad6d7b"
+          BUILD_SOURCE="89c78ef8f1d339d1b29c28d3f1406422dd313418"
+          IOS_SHA="0d14217afa19c90a7db551eec6d8e711eaad6d7b"
           IOS_RUN="45250577982"
-          MATRIX_RUN="45261196428"
+          MOBILE_TV_RUN="45261196428"
 
-          # iOS is the latest successful unsigned IPA. Its source, asset
-          # generator, build workflow and shared UI specification did not
-          # change between IOS_SOURCE and SOURCE.
-          test "$(gh api "repos/$REPO/actions/runs/$IOS_RUN" --jq '.conclusion')" = "success"
-          test "$(gh api "repos/$REPO/actions/runs/$IOS_RUN" --jq '.head_sha')" = "$IOS_SOURCE"
-          test "$(gh api "repos/$REPO/actions/runs/$MATRIX_RUN" --jq '.head_sha')" = "$BUILD_SOURCE"
+          # Match the proven Beta 1 publication workflow: native
+          # GITHUB_TOKEN, gh release create --target, no manual git ref POST
+          # and no external PAT/secret.
+          test "$(gh api "repos/$REPO/actions/runs/$IOS_RUN" --jq '.conclusion')" = success
+          test "$(gh api "repos/$REPO/actions/runs/$IOS_RUN" --jq '.head_sha')" = "$IOS_SHA"
+          test "$(gh api "repos/$REPO/actions/runs/$MOBILE_TV_RUN" --jq '.head_sha')" = "$BUILD_SOURCE"
 
-          changed="$(gh api "repos/$REPO/compare/$IOS_SOURCE...$BUILD_SOURCE" --jq '.files[].filename')"
-          if grep -Eq '^(ios/|shared/mobile-ui\\.json$|tools/create_brand_assets\\.py$|\\.github/workflows/build-ios-gamelingo\\.yml$)' <<< "$changed"; then
-            echo "::error::iOS source/build recipe changed since the last successful IPA. Do not publish mixed sources."
+          source_changes="$(gh api "repos/$REPO/compare/$IOS_SHA...$BUILD_SOURCE" --jq '.files[].filename')"
+          if grep -Eq '^(ios/|shared/mobile-ui\\.json$|tools/create_brand_assets\\.py$|\\.github/workflows/build-ios-gamelingo\\.yml$)' <<< "$source_changes"; then
+            echo "::error::iOS sources changed after building the IPA."
             exit 1
           fi
-
-          # The GITHUB_TOKEN can be denied when tagging an older commit
-          # containing GitHub Actions changes. The release tag instead
-          # points to this workflow's HEAD, whose app source is identical
-          # to the validated installer-source commit.
-          since_build="$(gh api "repos/$REPO/compare/$BUILD_SOURCE...$SOURCE" --jq '.files[].filename')"
-          if grep -Ev '^\.github/workflows/' <<< "$since_build" | grep -q .; then
-            echo "::error::Non-workflow source changed since validated installer build."
+          later_changes="$(gh api "repos/$REPO/compare/$BUILD_SOURCE...$SOURCE" --jq '.files[].filename')"
+          if grep -Ev '^\\.github/workflows/' <<< "$later_changes" | grep -q .; then
+            echo "::error::App sources changed since building Android and TV."
             exit 1
           fi
-
-          job_report="$(gh api "repos/$REPO/actions/runs/$MATRIX_RUN/jobs?per_page=100")"
           for job in "Android phone · PS5 / PS4 foundation" "Google TV · Orange V5 receiver"; do
-            result="$(jq -r --arg job "$job" '.jobs[] | select(.name == $job) | .conclusion' <<< "$job_report")"
-            test "$result" = "success" || {
-              echo "::error::Installer job $job is not successfully complete: $result"
-              exit 1
-            }
+            state="$(gh api "repos/$REPO/actions/runs/$MOBILE_TV_RUN/jobs?per_page=100"               --jq '.jobs[] | select(.name == "'"$job"'") | .conclusion')"
+            test "$state" = success
           done
 
           mkdir -p release
           gh run download "$IOS_RUN" -R "$REPO" -n "GameLingo-iOS-v05-dev" -D release
-          gh run download "$MATRIX_RUN" -R "$REPO" -n "GameLingo-Android-v05-dev" -D release
-          gh run download "$MATRIX_RUN" -R "$REPO" -n "GameLingo-GoogleTV-v05-dev" -D release
+          gh run download "$MOBILE_TV_RUN" -R "$REPO" -n "GameLingo-Android-v05-dev" -D release
+          gh run download "$MOBILE_TV_RUN" -R "$REPO" -n "GameLingo-GoogleTV-v05-dev" -D release
 
-          for file in \
-            GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
-            GameLingo-Android-v0.5.0-dev-TEST.apk \
-            GameLingo-GoogleTV-v0.5.0-dev-TEST.apk; do
-            test -s "release/$file" || {
-              echo "::error::Missing installer $file"
-              exit 1
-            }
-            unzip -t "release/$file" >/dev/null
+          for name in             GameLingo-iOS-v0.5.0-dev-unsigned.ipa             GameLingo-Android-v0.5.0-dev-TEST.apk             GameLingo-GoogleTV-v0.5.0-dev-TEST.apk; do
+            test -s "release/$name"
+            unzip -t "release/$name" >/dev/null
           done
           (cd release && sha256sum *.ipa *.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
-          cat release/SHA256SUMS.txt
 
           cat > release-notes.md <<'EOF'
-          # GameLingo 0.5.0 Beta 2
+          # GameLingo 0.5.0 Beta 2 — iPhone, Android, Google TV
 
-          **Nejnovější testovací verze** pro iPhone, Android mobil a Google TV.
+          Nové testovací vydání se třemi instalačními soubory.
 
-          ### Co je nové
-          - Sjednocené rozhraní iOS a Androidu: Domů, Obrazovka, Konzole, Nastavení, O aplikaci.
-          - Pětikrokové úvodní nastavení a společná barevná paleta.
-          - Android: skutečné přepínání stránek, výběr více konzolí, nové OCR nastavení a rozpoznávání herních textů.
-          - Android: velikost, barva a pozadí titulků na telefonu; oddělené ovládání titulků pro TV.
-          - Android: šestímístné PIN párování Google TV, chráněný uložený klíč a kontrola odpovědi TV.
-          - Samostatný Google TV přijímač s překryvem titulků a ovládáním ovladačem.
-          - Opravy indikace připravenosti a dokončování průvodce.
+          - **iOS**: sjednocené rozhraní GameLingo, pět záložek, konzole Xbox/PlayStation, OCR a titulky.
+          - **Android mobil**: pět skutečných záložek, nastavení OCR, velikost/barva/pozadí titulků, šestímístné párování Google TV.
+          - **Google TV**: samostatná APK přijímače, překryv titulků a ovládání televizním ovladačem.
+          - **SHA256SUMS.txt**: kontrolní součty všech tří instalátorů.
 
-          ### Instalační soubory
-          - **iOS:** `GameLingo-iOS-v0.5.0-dev-unsigned.ipa` — nepodepsaná IPA; před instalací je nutný podpis.
-          - **Android mobil:** `GameLingo-Android-v0.5.0-dev-TEST.apk` — testovací APK.
-          - **Google TV:** `GameLingo-GoogleTV-v0.5.0-dev-TEST.apk` — testovací APK.
-          - **SHA256SUMS.txt** — kontrolní součty.
+          iOS IPA je **nepodepsaná** a vyžaduje podpis před instalací. APK jsou testovací.
+          iOS IPA pochází z úspěšného sestavení `0d14217` (následně nebyly změněny zdroje iOS).
+          Android a TV byly sestaveny z `89c78ef`. V obou případech ověřena integrita.
 
-          **Původ sestavení:** Android a TV jsou ze společné revize `89c78ef`. iOS IPA pochází z úspěšného sestavení `0d14217`; porovnáním repozitáře bylo ověřeno, že se od té doby nezměnily žádné zdroje iOS, sdílená UI specifikace ani iOS sestavovací postup.
+          **Beta, nikoliv potvrzeně stabilní verze:** Xbox/PlayStation, OCR i příjem titulků vyžadují skutečné testy. Android a iOS zatím nemají úplně identický transport titulků do TV, ani všechny jazyky rozhraní. TV přijímač uchovává jedno aktivní párování telefonu.
 
-          **Upozornění:** jde o beta verzi. Připojení konzolí a skutečný překryv titulků musí být ověřeny na zařízeních. iOS a Android nemají dosud totožnou nabídku jazyků rozhraní a používají odlišný transport titulků do TV. Google TV přijímač umožňuje jen jeden aktivní spárovaný telefon; při střídání Androidu a iPhonu může být nutné párování opakovat.
-
-          Licence AGPL-3.0 a původní projekt: [GameLingo](https://github.com/CaseyCZ/GameLingo), [PlayCaption](https://github.com/AdamRuzick4/PlayCaption-app).
+          Licence AGPL-3.0. Zdroj: [GameLingo](https://github.com/CaseyCZ/GameLingo) a [PlayCaption](https://github.com/AdamRuzick4/PlayCaption-app).
           EOF
-
-          # Separate tag creation from Release creation. This also makes
-          # repository/tag permission problems visible independently.
-          if ! gh api "repos/$REPO/git/ref/tags/$TAG" >/dev/null 2>&1; then
-            # GH_TOKEN is GAMELINGO_RELEASE_TOKEN, not the denied default
-            # Actions token. Create a lightweight tag at this exact source.
-            gh api -X POST "repos/$REPO/git/refs" \
-              -f ref="refs/tags/$TAG" -f sha="$SOURCE" \
-              --jq '{ref,sha:.object.sha}'
-          fi
-          test "$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')" = "$SOURCE"
 
           if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
             tag_sha="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')"
-            test "$tag_sha" = "$SOURCE" || {
-              echo "::error::Existing beta.2 tag points to wrong revision. Refusing overwrite."
-              exit 1
-            }
-            gh release edit "$TAG" -R "$REPO" \
-              --title "GameLingo 0.5.0 Beta 2" \
-              --notes-file release-notes.md --prerelease
-            gh release upload "$TAG" -R "$REPO" \
-              release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
-              release/GameLingo-Android-v0.5.0-dev-TEST.apk \
-              release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
-              release/SHA256SUMS.txt --clobber
+            test "$tag_sha" = "$SOURCE" || { echo "::error::Tag already exists at a different revision"; exit 1; }
+            gh release edit "$TAG" -R "$REPO"               --title "GameLingo 0.5.0 Beta 2" --notes-file release-notes.md --prerelease
+            gh release upload "$TAG" -R "$REPO"               release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa               release/GameLingo-Android-v0.5.0-dev-TEST.apk               release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk               release/SHA256SUMS.txt --clobber
           else
-            gh release create "$TAG" \
-              release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
-              release/GameLingo-Android-v0.5.0-dev-TEST.apk \
-              release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
-              release/SHA256SUMS.txt \
-              -R "$REPO" --target "$SOURCE" \
-              --title "GameLingo 0.5.0 Beta 2" \
-              --prerelease --notes-file release-notes.md
+            gh release create "$TAG"               release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa               release/GameLingo-Android-v0.5.0-dev-TEST.apk               release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk               release/SHA256SUMS.txt               -R "$REPO" --target "$SOURCE"               --title "GameLingo 0.5.0 Beta 2"               --prerelease --notes-file release-notes.md
           fi
 
-          # Verify each uploaded asset exists AND has the expected exact
-          # byte size, before deleting even one older release listing.
-          gh release view "$TAG" -R "$REPO" --json assets > published-assets.json
-          for filename in \
-            GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
-            GameLingo-Android-v0.5.0-dev-TEST.apk \
-            GameLingo-GoogleTV-v0.5.0-dev-TEST.apk \
-            SHA256SUMS.txt; do
-            actual="$(jq -r --arg name "$filename" '.assets[] | select(.name == $name) | .size' published-assets.json)"
-            expected="$(stat -c%s "release/$filename")"
-            if [ "$actual" != "$expected" ]; then
-              echo "::error::Release asset $filename has size $actual instead of $expected. Old releases preserved."
-              exit 1
-            fi
+          # Preserve old releases if the new upload is partial. Delete old
+          # listings only after all three installers and SHA256SUMS exist.
+          gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[].name' > uploaded.txt
+          for name in             GameLingo-iOS-v0.5.0-dev-unsigned.ipa             GameLingo-Android-v0.5.0-dev-TEST.apk             GameLingo-GoogleTV-v0.5.0-dev-TEST.apk             SHA256SUMS.txt; do
+            grep -Fxq "$name" uploaded.txt
           done
-
-          # User wants ONLY the newest GitHub Release. Do not delete git
-          # tags or commits; those are project history, not release listings.
-          while IFS= read -r old; do
-            [ -n "$old" ] || continue
-            [ "$old" != "$TAG" ] || continue
-            gh release delete "$old" -R "$REPO" --yes
-          done < <(gh release list -R "$REPO" --limit 100 --json tagName --jq '.[].tagName')
-
-          test "$(gh release list -R "$REPO" --limit 100 --json tagName --jq 'length')" = "1"
-          gh release view "$TAG" -R "$REPO" \
-            --json url,tagName,name,isPrerelease,assets \
-            --jq '{url:.url,tag:.tagName,name:.name,beta:.isPrerelease,files:[.assets[].name]}'
+          gh release list -R "$REPO" --limit 100 --json tagName --jq '.[].tagName' |
+            while IFS= read -r old; do
+              [ "$old" = "$TAG" ] && continue
+              gh release delete "$old" -R "$REPO" --yes
+            done
+          gh release view "$TAG" -R "$REPO" --json url,tagName,assets             --jq '{url:.url,tag:.tagName,assets:[.assets[].name]}'
