@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Native five-tab parity checkpoint: verify embedded real devices, settings, regions and about pages.
+# Compile parity candidate with working in-page navigation, OCR reader controls, and phone subtitle colors/background.
 
 on:
   push:
