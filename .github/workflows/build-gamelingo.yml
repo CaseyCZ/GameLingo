@@ -16,7 +16,7 @@ concurrency:
 
 # UI-parity candidate: same welcome flow, settings, Xbox/PS/TV cards and translation languages on Android and iOS.
 # Single compilation gate for the updated four-step Android wizard, neon device manager and native iPhone UI.
-# UDP fallback complete QA: verify iOS, TV and Android subtitle sender follow the same dynamically resolved port 41989–41993. Build only; no Release.
+# UDP fallback Android sender checkpoint: scope Vysilac rewrites to mobile sender only, avoid receiver code collisions; full compile. No GitHub Release.
 # Run full integration matrix only when this workflow is explicitly revised.
 # This prevents expensive native Chiaki builds for every draft source change.
 # QA v0.5.0: tests + PS4/PS5 core + iPhone + Android + Google TV.
