@@ -43,7 +43,7 @@ struct GameLingoHome: View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 15) {
+                    VStack(alignment: .leading, spacing: 11) {
                         if tab == .home { brandHeader }
                         switch tab {
                         case .home: homePage
@@ -56,9 +56,9 @@ struct GameLingoHome: View {
                         case .about: aboutPage
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 18)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
                 }
                 bottomTabs
             }
@@ -158,7 +158,7 @@ struct GameLingoHome: View {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 19, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 43, height: 43)
+                    .frame(width: 44, height: 44)
                     .background(GLNeon.panel,
                                 in: RoundedRectangle(cornerRadius: 13))
                     .overlay(RoundedRectangle(cornerRadius: 13)
@@ -166,12 +166,12 @@ struct GameLingoHome: View {
             }
             .accessibilityLabel("Nastavení")
         }
-        .padding(.bottom, 10)
+        .padding(.bottom, 5)
     }
 
     private var heroBanner: some View {
         GLNeonPanel(emphasized: true, radius: 23) {
-            VStack(alignment: .leading, spacing: 15) {
+            VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("HRAJ. ROZUMĚJ.")
@@ -179,7 +179,7 @@ struct GameLingoHome: View {
                             .tracking(2)
                             .foregroundStyle(GLNeon.cyan)
                         Text("Překlad přímo při hraní")
-                            .font(.system(size: 19, weight: .heavy, design: .rounded))
+                            .font(.system(size: 17, weight: .heavy, design: .rounded))
                             .foregroundStyle(.white)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -189,23 +189,23 @@ struct GameLingoHome: View {
                         .foregroundStyle(GLNeon.accent)
                         .shadow(color: GLNeon.purple.opacity(0.55), radius: 10)
                 }
-                HStack(spacing: 12) {
-                    GLPlatformBadge(family: .xbox, size: 52)
+                HStack(spacing: 9) {
+                    GLPlatformBadge(family: .xbox, size: 42)
                     Text("Xbox")
                         .font(.subheadline.bold())
                         .foregroundStyle(.white)
                     Spacer(minLength: 8)
                     Rectangle()
                         .fill(GLNeon.edge)
-                        .frame(width: 1, height: 42)
+                        .frame(width: 1, height: 34)
                     Spacer(minLength: 8)
-                    GLPlatformBadge(family: .playStation, size: 52)
+                    GLPlatformBadge(family: .playStation, size: 42)
                     Text("PlayStation")
                         .font(.subheadline.bold())
                         .foregroundStyle(.white)
                 }
             }
-            .padding(17)
+            .padding(12)
         }
     }
 
@@ -278,11 +278,11 @@ struct GameLingoHome: View {
     }
 
     private var homePage: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 10) {
             heroBanner
             HStack {
                 Text("Moje zařízení")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Spacer()
                 Button { tab = .devices } label: {
@@ -320,7 +320,7 @@ struct GameLingoHome: View {
             .buttonStyle(.plain)
             actionButton
             LazyVGrid(columns: [GridItem(.flexible()),
-                                GridItem(.flexible())], spacing: 11) {
+                                GridItem(.flexible())], spacing: 9) {
                 tile("Oblasti", icon: "rectangle.dashed") { regionsSheet = true }
                 tile("Profily her", icon: "gamecontroller") { profilesSheet = true }
                 tile("Nastavení překladu", icon: "slider.horizontal.3") { tab = .settings }
@@ -373,10 +373,10 @@ struct GameLingoHome: View {
                 Image(systemName: model.isRunning ? "stop.fill" : "play.fill")
                     .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
+                    .frame(width: 34, height: 34)
                     .background(.white.opacity(0.18), in: Circle())
                 Text(model.isRunning ? "Zastavit překlad" : "Spustit překlad")
-                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                    .font(.system(size: 18, weight: .heavy, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.84)
                 Spacer(minLength: 0)
@@ -384,8 +384,8 @@ struct GameLingoHome: View {
                     .font(.system(size: 17, weight: .semibold))
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 18)
-            .frame(height: 66)
+            .padding(.horizontal, 15)
+            .frame(height: 54)
             .background(GLNeon.accent,
                         in: RoundedRectangle(cornerRadius: 20))
             .overlay(RoundedRectangle(cornerRadius: 20)
@@ -577,9 +577,9 @@ struct GameLingoHome: View {
                       action: @escaping () -> Void) -> some View {
         Button(action: action) {
             GLNeonPanel(radius: 19) {
-                VStack(spacing: 10) {
+                VStack(spacing: 6) {
                     Image(systemName: icon)
-                        .font(.system(size: 27, weight: .medium))
+                        .font(.system(size: 24, weight: .medium))
                         .foregroundStyle(GLNeon.accent)
                     Text(LocalizedStringKey(title))
                         .font(.system(size: 14, weight: .bold,
@@ -591,7 +591,7 @@ struct GameLingoHome: View {
                         .frame(maxWidth: .infinity)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 96)
+                .frame(height: 74)
                 .padding(.horizontal, 5)
             }
         }
@@ -611,7 +611,8 @@ struct GameLingoHome: View {
                     }
                     .foregroundStyle(tab == option ? .white : GLNeon.mist)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
+                    .frame(minHeight: 44)
+                    .padding(.vertical, 5)
                     .background(
                         tab == option
                         ? GLNeon.purple.opacity(0.32) : Color.clear,
@@ -626,8 +627,8 @@ struct GameLingoHome: View {
             }
         }
         .padding(.horizontal, 9)
-        .padding(.top, 8)
-        .padding(.bottom, 5)
+        .padding(.top, 5)
+        .padding(.bottom, 3)
         .background(GLNeon.ink.opacity(0.98))
         .overlay(alignment: .top) {
             Rectangle().fill(GLNeon.edge).frame(height: 1)
@@ -657,15 +658,15 @@ private struct GameLingoDeviceRow: View {
 
     var body: some View {
         GLNeonPanel(emphasized: connected) {
-            HStack(spacing: 13) {
+            HStack(spacing: 10) {
                 if family != nil || isTelevision {
                     GLPlatformBadge(family: family, isTelevision: isTelevision,
-                                    size: 54)
+                                    size: 44)
                 } else {
                     Image(systemName: icon)
                         .font(.system(size: 23))
                         .foregroundStyle(GLNeon.accent)
-                        .frame(width: 54, height: 54)
+                        .frame(width: 44, height: 44)
                         .background(GLNeon.panel,
                                     in: RoundedRectangle(cornerRadius: 15))
                 }
@@ -691,7 +692,7 @@ private struct GameLingoDeviceRow: View {
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(GLNeon.mist)
             }
-            .padding(14)
+            .padding(11)
         }
         .accessibilityElement(children: .combine)
         .accessibilityHint("Otevřít a spravovat zařízení")
