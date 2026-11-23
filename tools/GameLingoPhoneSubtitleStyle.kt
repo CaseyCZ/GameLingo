@@ -2,6 +2,7 @@ package cz.titulky.tv
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.widget.TextView
 
 /**
@@ -46,6 +47,9 @@ object GameLingoPhoneSubtitleStyle {
     }
     fun apply(context: Context, view: TextView) {
         view.setTextColor(textColor(color(context)))
-        view.setBackgroundColor(backgroundColor(background(context)))
+        view.background = GradientDrawable().apply {
+            setColor(backgroundColor(background(context)))
+            cornerRadius = 12f * context.resources.displayMetrics.density
+        }
     }
 }
