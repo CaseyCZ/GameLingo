@@ -46,6 +46,21 @@ enum GLTargetLanguage: String, CaseIterable, Identifiable, Codable {
     case italian = "it"
     case portuguese = "pt"
 
+    /// Preview only; actual live subtitles always use the translation engine.
+    var sampleSubtitle: String {
+        switch self {
+        case .czech: return "To je skvělý plán!"
+        case .english: return "That's a great plan!"
+        case .slovak: return "To je skvelý plán!"
+        case .german: return "Das ist ein toller Plan!"
+        case .polish: return "To świetny plan!"
+        case .french: return "C'est un excellent plan !"
+        case .spanish: return "¡Es un gran plan!"
+        case .italian: return "È un ottimo piano!"
+        case .portuguese: return "É um ótimo plano!"
+        }
+    }
+
     var id: String { rawValue }
     var localizedTitle: String { GLInterfaceText.localized(title) }
 
