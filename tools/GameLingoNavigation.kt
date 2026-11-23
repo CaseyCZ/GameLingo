@@ -42,6 +42,7 @@ object GameLingoNavigation {
         )
 
         return LinearLayout(activity).apply {
+            tag = "gamelingo-bottom-nav"
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(4), dp(6), dp(4), dp(6))
