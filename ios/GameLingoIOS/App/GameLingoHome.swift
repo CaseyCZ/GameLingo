@@ -180,7 +180,7 @@ struct GameLingoHome: View {
                     .foregroundStyle(GLVisual.muted)
             }
             Spacer()
-            GLHelpButton(title: "GameLingo", explanation: "Zvol Xbox a Google TV. Pak spusť překlad. Oblasti určí, odkud číst dialogy a kde zobrazovat překlad. Profily uloží nastavení pro jednotlivé hry.")
+            GLHelpButton(title: "GameLingo", explanation: "Vyber Xbox nebo PlayStation a potom místo zobrazení českých titulků: telefon či Google TV. Nastav oblasti snímání a překladu. Profily uloží nastavení pro každou hru.")
             Button { settingsSheet = true } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.title3)
@@ -543,24 +543,8 @@ struct GameLingoHome: View {
     }
 
     private var xboxScreen: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    XboxAccountView(auth: model.xbox)
-                    XboxRemotePlayView(auth: model.xbox)
-                }
-                .padding(18)
-            }
-            .background(GLVisual.navy.ignoresSafeArea())
-            .navigationTitle("Xbox")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Hotovo") { xboxSheet = false }
-                }
-            }
-        }
-        .tint(GLVisual.cyan)
+        GameLingoXboxScreen(devices: devices, auth: model.xbox)
+            .environmentObject(model)
     }
 
     private var tvScreen: some View {
