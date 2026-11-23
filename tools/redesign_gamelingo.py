@@ -38,7 +38,7 @@ def redesign_mobile(s: str) -> str:
                     .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
                     .setNegativeButton(android.R.string.cancel, null).show()
             }
-            fun openAreas() { editAreas() }
+            fun openAreas() { openTab(1) }
 
             obsah.addView(GameLingoVisualKit.brandHeader(this) { openSettings() },
                 odsazeni(bottom = 14))
