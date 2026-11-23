@@ -1,0 +1,76 @@
+name: GameLingo 0.5 Beta 2 | Bundle NEW iOS Android TV installers
+
+on:
+  push:
+    branches: [feature/gamelingo-v05-platform-rebuild]
+    paths: [".github/workflows/package-gamelingo-beta2.yml"]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  bundle:
+    name: Create complete verified GameLingo Beta 2 download
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Collect all three verified platform artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          SOURCE="89c78ef8f1d339d1b29c28d3f1406422dd313418"
+          IOS_SHA="0d14217afa19c90a7db551eec6d8e711eaad6d7b"
+          IOS_RUN="45250577982"
+          ANDROID_TV_RUN="45261196428"
+
+          test "$(gh api "repos/$REPO/actions/runs/$IOS_RUN" --jq '.conclusion')" = "success"
+          test "$(gh api "repos/$REPO/actions/runs/$IOS_RUN" --jq '.head_sha')" = "$IOS_SHA"
+          test "$(gh api "repos/$REPO/actions/runs/$ANDROID_TV_RUN" --jq '.head_sha')" = "$SOURCE"
+
+          changed="$(gh api "repos/$REPO/compare/$IOS_SHA...$SOURCE" --jq '.files[].filename')"
+          if grep -Eq '^(ios/|shared/mobile-ui\\.json$|tools/create_brand_assets\\.py$|\\.github/workflows/build-ios-gamelingo\\.yml$)' <<< "$changed"; then
+            echo "::error::iOS source changed since unsigned IPA build; must rebuild iOS first."
+            exit 1
+          fi
+
+          for job in "Android phone · PS5 / PS4 foundation" "Google TV · Orange V5 receiver"; do
+            status="$(gh api "repos/$REPO/actions/runs/$ANDROID_TV_RUN/jobs?per_page=100" \
+              --jq '.jobs[] | select(.name == "'"$job"'") | .conclusion')"
+            test "$status" = "success"
+          done
+
+          mkdir -p installers
+          gh run download "$IOS_RUN" -R "$REPO" -n "GameLingo-iOS-v05-dev" -D installers
+          gh run download "$ANDROID_TV_RUN" -R "$REPO" -n "GameLingo-Android-v05-dev" -D installers
+          gh run download "$ANDROID_TV_RUN" -R "$REPO" -n "GameLingo-GoogleTV-v05-dev" -D installers
+
+          for file in \
+              GameLingo-iOS-v0.5.0-dev-unsigned.ipa \
+              GameLingo-Android-v0.5.0-dev-TEST.apk \
+              GameLingo-GoogleTV-v0.5.0-dev-TEST.apk; do
+            test -s "installers/$file"
+            unzip -t "installers/$file" >/dev/null
+          done
+          (cd installers && sha256sum *.ipa *.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          cat > installers/README-beta2.txt <<'EOF'
+          GameLingo v0.5.0-beta.2 — nové instalátory (testovací)
+          iOS: unsigned IPA, před instalací je nutný vlastní podpis.
+          Android mobil a Google TV: testovací APK.
+          Ověření: sha256sum -c SHA256SUMS.txt
+          Android a TV byly sestaveny ze shodného zdroje 89c78ef.
+          iOS byl sestaven z 0d14217; zdrojové soubory iOS a sdílený
+          UI kontrakt se od té doby nezměnily.
+          Nejde o potvrzeně stabilní vydání. Reálné Xbox, PS a TV spojení
+          je potřeba vyzkoušet přímo na zařízeních.
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-v0.5.0-beta.2-ONLY-NEW-installers
+          path: installers/
+          if-no-files-found: error
+          retention-days: 90
