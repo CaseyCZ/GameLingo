@@ -32,8 +32,8 @@ def main():
                     'versionNameSuffix = "-tv"')
         exactly_one(strings,">PlayCaption iPhone TV TEST</string>",">GameLingo TV</string>")
     exactly_one(gradle,'versionName = "0.22"',
-                'versionName = "0.3.0-beta.1"')
-    exactly_one(gradle, "versionCode = 35", "versionCode = 303")
+                'versionName = "0.4.0-beta.1"')
+    exactly_one(gradle, "versionCode = 35", "versionCode = 404")
     original=main.read_text(encoding="utf8")
     branded=original.replace('"PlayCaption"', '"GameLingo"')
     branded=branded.replace("PlayCaption – hlavní obrazovka", "GameLingo – hlavní obrazovka")
