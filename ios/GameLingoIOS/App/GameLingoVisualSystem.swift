@@ -112,10 +112,10 @@ struct GLBrandWordmark: View {
 
     var body: some View {
         HStack(spacing: compact ? 8 : 12) {
-            GLBrandMark(size: compact ? 44 : 55)
+            GLBrandMark(size: compact ? 39 : 50)
             (Text("Game").foregroundColor(.white)
              + Text("Lingo").foregroundColor(GLNeon.purple))
-                .font(.system(size: compact ? 27 : 34,
+                .font(.system(size: compact ? 25 : 31,
                               weight: .heavy, design: .rounded))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -173,16 +173,16 @@ struct GLNeonTitle: View {
     var icon: String = "sparkles"
 
     var body: some View {
-        HStack(alignment: .center, spacing: 13) {
+        HStack(alignment: .center, spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 24, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(GLNeon.accent)
-                .frame(width: 47, height: 47)
+                .frame(width: 41, height: 41)
                 .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14)
                     .strokeBorder(GLNeon.cyan.opacity(0.30)))
             VStack(alignment: .leading, spacing: 3) {
-                Text(LocalizedStringKey(title)).font(.title2.bold()).foregroundStyle(.white)
+                Text(LocalizedStringKey(title)).font(.system(size: 19, weight: .bold)).foregroundStyle(.white)
                 Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(GLNeon.mist)
             }
             Spacer(minLength: 0)
@@ -196,12 +196,12 @@ struct GLDetailRow: View {
     let detail: String
 
     var body: some View {
-        GLNeonPanel(radius: 19) {
-            HStack(spacing: 13) {
+        GLNeonPanel(radius: 17) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
                     .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(.white)
-                    .frame(width: 46, height: 46)
+                    .frame(width: 42, height: 42)
                     .background(LinearGradient(
                         colors: [GLNeon.cyan.opacity(0.72),
                                  GLNeon.purple.opacity(0.78)],
@@ -223,7 +223,7 @@ struct GLDetailRow: View {
                     .font(.subheadline.bold())
                     .foregroundStyle(GLNeon.mist)
             }
-            .padding(14)
+             .padding(11)
         }
     }
 }
