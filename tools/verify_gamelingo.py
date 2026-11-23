@@ -49,8 +49,11 @@ def ios():
 def android(root: Path, mode: str):
     base = root / "app/src/main/java/cz/titulky/tv"
     contains(base / "MainActivity.kt",
-        "GameLingoDeviceCenter.show", "GameLingoPlayStationConsoles.capture",
-        "Vyber konzoli")
+        "GameLingoPlayStationConsoles.capture", "Vyber konzoli")
+    if mode == "mobile":
+        contains(base / "MainActivity.kt", "GameLingoDeviceCenter.content(this,")
+    else:
+        contains(base / "MainActivity.kt", "GameLingoDeviceCenter.show(this,")
     if mode == "mobile":
         contains(base / "MainActivity.kt",
             "GameLingoFirstRun.show", "GameLingoNavigation.create",
