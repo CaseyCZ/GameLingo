@@ -30,8 +30,11 @@ object GameLingoTVUi {
     private val purple = Color.parseColor("#A329FA")
     private val dim = Color.parseColor("#9FB1D4")
 
+    // Android TV already has an enlarged interface density. Match the
+    // original compact 10-foot UI and preserve readable D-pad focus targets.
+    private const val TV_SCALE = 0.72f
     fun dp(a: Activity, v: Int): Int =
-        (a.resources.displayMetrics.density * v + .5f).toInt()
+        (a.resources.displayMetrics.density * v * TV_SCALE + .5f).toInt()
 
     fun panel(a: Activity, focus: Boolean = false): GradientDrawable =
         GradientDrawable(GradientDrawable.Orientation.TL_BR,
@@ -48,7 +51,7 @@ object GameLingoTVUi {
     fun title(a: Activity, text: String, size: Float = 24f,
               muted: Boolean = false): TextView = TextView(a).apply {
         this.text = text
-        textSize = size
+        textSize = size * TV_SCALE
         setTextColor(if (muted) dim else Color.WHITE)
         setTypeface(null, if (muted) Typeface.NORMAL else Typeface.BOLD)
     }
@@ -88,8 +91,8 @@ object GameLingoTVUi {
             setOnFocusChangeListener { view, focused ->
                 view.background = panel(a, focused)
                 view.elevation = dp(a, if (focused) 12 else 2).toFloat()
-                view.scaleX = if (focused) 1.025f else 1f
-                view.scaleY = if (focused) 1.025f else 1f
+                view.scaleX = if (focused) 1.015f else 1f
+                view.scaleY = if (focused) 1.015f else 1f
             }
             contentDescription = heading + ". " + detail
         }
@@ -123,7 +126,7 @@ object GameLingoTVUi {
     fun action(a: Activity, label: String, primary: Boolean = false,
                onActivate: () -> Unit): TextView = TextView(a).apply {
         text = label
-        textSize = 18f
+        textSize = 18f * TV_SCALE
         setTextColor(Color.WHITE)
         setTypeface(null, Typeface.BOLD)
         gravity = Gravity.CENTER
