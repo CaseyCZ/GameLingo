@@ -20,7 +20,8 @@ Aktuální implementace vývojové větve `feature/gamelingo-v05-platform-rebuil
 ## Výjimky, které nejsou vyřešené pouhým UI refaktorem
 
 - **Jazyky rozhraní:** iOS aktuálně nabízí `cs/en/sk`, Android `cs/sk`. Seznamy jazyků nebyly změněny, protože uživatel výslovně požaduje neměnit je bez souhlasu. Jazyky hry a překladové cíle zůstaly také beze změn.
-- **Protokol Google TV:** iOS používá šest číslic a potvrzenou odpověď příjemce. Android má dosavadní vyhledávání/uložení cílové TV a odesílání přes UDP bez stejného ověřeného příjmu. Neslibujeme, že pouhý uložený profil je úspěšně spárovaná TV.
+- **Protokol Google TV:** Android mobil nově používá stejný šestimístný PIN `PCPAIR1` jako iOS a umí ověřit živou odpověď `PONG` na podepsaný `PING`. Klíč ukládá zašifrovaný v Android Keystore. Původní Android odesílání titulků však nadále používá `PCT1` UDP; podepsané iOS odesílání `PCPAIR1 TEXT` ještě není na obou platformách sjednocené. Uložený klíč není potvrzený živý přenos titulků.
+- **Důležité pro více telefonů:** současný TV přijímač uchovává jeden aktivní párovací klíč/identitu telefonu. Spárování Androidu tak může nahradit dřívější párování iPhonu (a obráceně), dokud televizní přijímač nebude podporovat více autorizovaných telefonů.
 - **Další nastavení překladu:** Android i iOS mají odlišnou implementaci časování/starých překladů. Uvádět 1:1 bez ověřeného napojení by bylo nesprávné.
 - **Pixelová / funkční shoda:** společné tokeny a struktura nestačí k prokázání shody na všech rozměrech obrazovky. Vyžadují se odpovídající screenshoty a fyzické testy připojení Xbox/PlayStation a ověření OCR.
 
