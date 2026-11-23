@@ -94,30 +94,21 @@ def redesign_mobile(s: str) -> str:
                 13f, Color.parseColor("#94A3B8")).apply {
                 gravity = Gravity.CENTER
             }, odsazeni(bottom = 12))
-            // Bottom navigation uses the same actions as the iPhone dashboard.
-            val navigace = vodorovne().apply {
-                gravity = Gravity.CENTER
-                background = zaobleni(Color.parseColor("#111827"), 17f)
-                setPadding(dp(7), dp(5), dp(7), dp(5))
-            }
-            listOf(
-                Triple("⌂\nDomů", 0, { ukazHlavni() }),
-                Triple("▣\nOblasti", 1, {
+            // Native Kotlin component owns the same five destinations as iOS.
+            // Keep the underlying actions from the original phone app.
+            val navigace = GameLingoNavigation.create(
+                this,
+                onHome = { ukazHlavni() },
+                onAreas = {
                     if (nejakaKonzole) startActivity(Intent(this, TelefonActivity::class.java))
                     else ukazPripojeni()
-                }),
-                Triple("♧\nProfily", 2, {
+                },
+                onProfiles = {
                     GameLingoProfiles.show(this, nast) { ukazHlavni() }
-                }),
-                Triple("▭\nZařízení", 3, { vyberVystupTv() }),
-                Triple("ⓘ\nO aplikaci", 4, { GameLingoAbout.show(this) })
-            ).forEach { (label, _, action) ->
-                navigace.addView(tlacitko(label, 13f, action).apply {
-                    gravity = Gravity.CENTER
-                    background = zaobleni(Color.parseColor("#172033"), 10f)
-                    setPadding(dp(5), dp(11), dp(5), dp(11))
-                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            }
+                },
+                onDevices = { vyberVystupTv() },
+                onAbout = { GameLingoAbout.show(this) }
+            )
             obsah.addView(navigace, odsazeni(top = 12))
 '''
     s = splice_once(s,start,end,replacement)
