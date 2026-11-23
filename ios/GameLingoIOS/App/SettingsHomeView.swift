@@ -269,24 +269,105 @@ private struct GameLingoTranslationSettingsView: View {
 private struct GameLingoAppearanceSettingsView: View {
     @ObservedObject var model: CaptionAppModel
 
+    private var tvPreviewAllowed: Bool {
+        guard let selected = model.devices.chosenTelevision else { return false }
+        return model.tv.receiverPaired && model.tv.receiverConnected &&
+            model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines) == selected.ipAddress
+    }
+
     var body: some View {
-        GLScreen(title: "Titulky na TV", help:
-            "Poloha klasických českých titulků se upravuje v zelené oblasti. Barvu a pozadí vykresluje TV přijímač. Velikost písma a šířka bloku se přenesou při dalším titulku.") {
+        GLScreen(title: "Titulky – vzhled", help:
+            "Barva a pozadí mění titulky zobrazované na iPhonu. Televizní přijímač má vlastní barvy a pozadí; na TV lze z iPhonu nastavit skutečnou velikost písma, šířku a polohu zeleného výstupu.") {
+            GLNeonTitle(title: "Vzhled titulků",
+                        subtitle: "Vlastní nastavení pro iPhone a TV",
+                        icon: "captions.bubble.fill")
+            GLNeonPanel(emphasized: true) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(LinearGradient(
+                            colors: [Color(red: 0.08, green: 0.21, blue: 0.40),
+                                     Color(red: 0.16, green: 0.11, blue: 0.35),
+                                     GLNeon.ink],
+                            startPoint: .topLeading, endPoint: .bottomTrailing))
+                    Image(systemName: "mountain.2.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(GLNeon.cyan.opacity(0.22))
+                        .frame(maxWidth: 205)
+                    Text(model.targetLanguage.sampleSubtitle)
+                        .font(.system(size: 19 * model.phoneFontScale, weight: .bold))
+                        .foregroundStyle(model.phoneTextColor.color)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(model.phoneBackground.fill,
+                                    in: RoundedRectangle(cornerRadius: 9))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,
+                               alignment: .bottom)
+                        .padding(.bottom, 13)
+                }
+                .frame(height: 176)
+                .padding(14)
+            }
+
             GLCard {
-                Toggle("Zamknout polohu", isOn: $model.outputLocked)
+                GLHeader(title: "Titulky na iPhonu")
                 GLValueSlider(title: "Velikost písma",
+                    value: "\(Int(model.phoneFontScale * 100)) %",
+                    selection: $model.phoneFontScale,
+                    range: 0.70...1.80)
+                Text("Barva textu")
+                    .font(.subheadline.bold())
+                HStack(spacing: 9) {
+                    ForEach(GLPhoneSubtitleColor.allCases) { choice in
+                        Button {
+                            model.phoneTextColor = choice
+                        } label: {
+                            Circle().fill(choice.color)
+                                .frame(width: 36, height: 36)
+                                .overlay(Circle().strokeBorder(
+                                    model.phoneTextColor == choice ? GLNeon.cyan : .white.opacity(0.4),
+                                    lineWidth: model.phoneTextColor == choice ? 3 : 1))
+                                .overlay {
+                                    if model.phoneTextColor == choice {
+                                        Image(systemName: "checkmark")
+                                            .font(.caption.bold())
+                                            .foregroundStyle(.black)
+                                    }
+                                }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(choice.title)
+                        .accessibilityAddTraits(model.phoneTextColor == choice
+                                                ? [.isSelected] : [])
+                    }
+                }
+                Picker("Pozadí", selection: $model.phoneBackground) {
+                    ForEach(GLPhoneSubtitleBackground.allCases) { choice in
+                        Text(LocalizedStringKey(choice.title)).tag(choice)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            GLCard {
+                GLHeader(title: "Titulky na TV",
+                         help: "Zelený výstup titulků na Google TV. Barva a pozadí se mění přímo v televizním přijímači.")
+                Toggle("Zamknout polohu", isOn: $model.outputLocked)
+                GLValueSlider(title: "Velikost písma TV",
                     value: "\(Int(model.outputFont * 100)) %",
-                    selection: $model.outputFont, range: 0.70...1.80,
+                    selection: $model.outputFont,
+                    range: 0.70...1.80,
                     disabled: model.outputLocked)
                 GLValueSlider(title: "Šířka titulků",
                     value: "\(Int(model.outputWidth * 100)) %",
-                    selection: $model.outputWidth, range: 0.30...0.95,
+                    selection: $model.outputWidth,
+                    range: 0.30...0.95,
                     disabled: model.outputLocked)
-            }
-            GLCard {
-                GLPrimaryButton(title: "Náhled na TV", systemImage: "tv",
-                    disabled: model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
-                    model.tv.sendSubtitle("Ukázka českých titulků", duration: 6_000, preview: true)
+                GLPrimaryButton(title: "Náhled na TV",
+                                systemImage: "tv",
+                                disabled: !tvPreviewAllowed) {
+                    model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle,
+                                          duration: 6_000, preview: true)
                 }
             }
         }
