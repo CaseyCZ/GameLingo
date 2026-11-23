@@ -24,6 +24,13 @@ def redesign_mobile(s: str) -> str:
             obsah.background = GameLingoVisualKit.pageBackground(this)
             obsah.setPadding(dp(14), dp(10), dp(14), dp(20))
 
+            fun openDevices() {
+                GameLingoDeviceCenter.show(this,
+                    onXbox = { ukazPripojeniXbox() },
+                    onPlayStation = { ukazPripojeni() },
+                    onTV = { vyberVystupTv() },
+                    onUpdated = { ukazHlavni() })
+            }
             fun openSettings() {
                 GameLingoSettings.show(this, nast,
                     onAreas = {
@@ -31,14 +38,8 @@ def redesign_mobile(s: str) -> str:
                             startActivity(Intent(this, TelefonActivity::class.java))
                         else ukazPripojeni()
                     },
-                    onLanguage = { GameLingoLanguages.show(this) { ukazHlavni() } })
-            }
-            fun openDevices() {
-                GameLingoDeviceCenter.show(this,
-                    onXbox = { ukazPripojeniXbox() },
-                    onPlayStation = { ukazPripojeni() },
-                    onTV = { vyberVystupTv() },
-                    onUpdated = { ukazHlavni() })
+                    onLanguage = { GameLingoLanguages.show(this) { ukazHlavni() } },
+                    onDevices = { openDevices() })
             }
             fun openAreas() {
                 if (nejakaKonzole)
