@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Mobile OCR toolbar identified by its exact layout, not a duplicate color.
+# Compile mobile UI after fixing palette order for translation-mode buttons.
 
 on:
   push:
