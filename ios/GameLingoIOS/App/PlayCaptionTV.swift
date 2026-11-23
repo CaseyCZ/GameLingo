@@ -263,7 +263,7 @@ final class PlayCaptionTV: ObservableObject {
             try? await Task.sleep(for: .seconds(10))
             guard !Task.isCancelled, let self, let conn,
                   self.pairingRequest === conn else { return }
-            self.receiverStatus = "TV neodpověděla do 10 s. Zkontroluj IP TV, povolení Místní síť a příjem UDP 41989 na TV."
+            self.receiverStatus = "TV neodpověděla do 10 s. Na TV nejprve zvol Překlad z telefonu (ne Přímo na TV), zobraz nový šestimístný kód a ověř IP a síť UDP 41989."
             self.pairingRequest = nil
             conn.cancel()
         }
