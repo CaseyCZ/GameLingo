@@ -60,6 +60,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('"Nastaveno"', home)
         self.assertIn('"Snímání aktivní"', home)
 
+    def test_one_tv_setup_persists_selected_receiver_for_translation(self):
+        home=code(IOS/"GameLingoHome.swift")
+        setup=code(IOS/"GameLingoSetupView.swift")
+        shared=code(IOS/"GameLingoTVSetupScreen.swift")
+        for entry in (home, setup):
+            self.assertIn("GameLingoTVSetupScreen(devices: devices, tv: model.tv)",entry)
+        self.assertIn("TVSelectionView(tv: tv)",shared)
+        self.assertIn("devices.addTelevision(",shared)
+        self.assertIn('devices.selectTelevision("tv:" + address.lowercased())',shared)
+        self.assertIn("devices.subtitleOutput = .googleTV",shared)
+        self.assertIn("devices.prepareTV(tv)",shared)
+        self.assertIn("tv.receiverPaired",shared)
+        self.assertIn("tv.receiverConnected",shared)
+        self.assertIn("Uložení televizoru neznamená úspěšné spárování",shared)
+        self.assertNotIn('TVSelectionView(tv: model.tv)',home)
+        self.assertNotIn('TVSelectionView(tv: model.tv)',setup)
+
     def test_actual_playstation_not_placeholder(self):
         ps=code(IOS/"PlayStation/GameLingoPlayStation.swift")
         core=code(IOS/"PlayStation/RemotePlaySession.swift")
