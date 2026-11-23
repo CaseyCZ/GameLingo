@@ -192,6 +192,8 @@ def main() -> None:
     service = root / "app/src/main/java/cz/titulky/tv/PrijemService.kt"
     before = '        /** Běží režim "titulky z telefonu"? */\n'
     after = '''        /** TV-only diagnostics: first packet, source and live port errors. */
+        fun prijimaciPort(): Int = instance?.prijimac?.prijimaciPort ?: 0
+
         fun statistikaPrijmu(): String {
             val sluzba = this.instance ?: return "Příjem TV: služba ještě neběží."
             val p = sluzba.prijimac ?: return "Příjem TV: čekám na spuštění UDP."
@@ -259,7 +261,7 @@ def main() -> None:
          '            .apply { gravity = Gravity.CENTER }, odsazeni(top = 16))\n')
     once(activity,
          '        val zpet = tlacitko(t("prijemZpetKratce"), 20f)',
-         '''        val prijemDiag = text("UDP 41989: čekám na první zprávu", 18f, Color.WHITE)
+         '''        val prijemDiag = text("UDP: čekám na první zprávu", 18f, Color.WHITE)
             .apply { gravity = Gravity.CENTER }
         sloupec.addView(prijemDiag, odsazeni(top = 14, bottom = 10))
 
@@ -320,7 +322,7 @@ def main() -> None:
 
     # Pairing controls on the TV (no Microsoft, Xbox, PS5 credentials).
     once(activity,
-         '        val prijemDiag = text("UDP 41989: čekám na první zprávu", 18f, Color.WHITE)\n',
+         '        val prijemDiag = text("UDP: čekám na první zprávu", 18f, Color.WHITE)\n',
          '''        val pairingStatus = text("iPhone není spárovaný", 22f, Color.WHITE)
             .apply { gravity = Gravity.CENTER }
         sloupec.addView(pairingStatus, odsazeni(top = 14, bottom = 8))
@@ -334,7 +336,7 @@ def main() -> None:
             shownCode = null
             pairingStatus.text = "iPhone není spárovaný"
         }, odsazeni(top = 4, bottom = 8))
-        val prijemDiag = text("UDP 41989: čekám na první zprávu", 18f, Color.WHITE)
+        val prijemDiag = text("UDP: čekám na první zprávu", 18f, Color.WHITE)
 ''')
     once(activity,
          '                prijemDiag.text = PrijemService.statistikaPrijmu()\n',
