@@ -93,7 +93,7 @@ final class PlayCaptionTV: ObservableObject {
 
     /// Received PCS1 DATA is sensitive: handle on device, never put the packet into diagnostics.
     var onPairingData: (([String]) -> Void)?
-    @Published var message = "Vyber „S telefonem“ v PlayCaption na televizi."
+    @Published var message = "Na Google TV otevři GameLingo TV a zvol „Překlad z telefonu“."
     private let queue = DispatchQueue(label: "cz.caseycz.playcaption.udp")
 
     init() {
@@ -123,7 +123,7 @@ final class PlayCaptionTV: ObservableObject {
             }
             listener = listening
             listening.start(queue: queue)
-            message = "Hledám PlayCaption… Pokud TV nenajdu, zadej IP z její obrazovky."
+            message = "Hledám GameLingo TV… Pokud ji nenajdu, zadej IP adresu z televize."
         } catch {
             message = "Hledání není dostupné: \(error.localizedDescription). Zadej IP ručně."
         }
