@@ -339,8 +339,15 @@ struct GameLingoHome: View {
                 GLCard {
                     GLHeader(title: "Dialog")
                     Text(model.phoneSubtitle)
-                        .font(.system(size: 23, weight: .bold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 23 * model.phoneFontScale,
+                                      weight: .bold))
+                        .foregroundStyle(model.phoneTextColor.color)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .padding(.horizontal, 9)
+                        .background(model.phoneBackground.fill,
+                                    in: RoundedRectangle(cornerRadius: 12))
                 }
             }
             if devices.subtitleOutput == .phone && !model.lastChoices.isEmpty {
