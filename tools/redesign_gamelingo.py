@@ -18,98 +18,134 @@ def redesign_mobile(s: str) -> str:
     start = '        if (telefon) {\n            obsah.addView(logoRadek, odsazeni(bottom = 14))'
     end = '        } else {\n            // televize:'
     replacement = r'''        if (telefon) {
-            // Own GameLingo phone dashboard, preserving actual PlayStation
-            // pairing, Xbox authentication, translation & profile operations.
-            obsah.addView(logoRadek, odsazeni(bottom = 20))
-            obsah.addView(sekce("Herní konzole"))
-            obsah.addView(konzole, odsazeni(bottom = 13))
-            obsah.addView(sekce("Kam zobrazit titulky"))
-            obsah.addView(kartaVystupuTv(), odsazeni(bottom = 14))
+            // Native GameLingo layout matches iPhone: header -> hero -> saved
+            // console/TV -> single CTA -> four shortcuts -> readiness -> tabs.
+            // Console authentication, OCR and Remote Play are untouched.
+            obsah.background = GameLingoVisualKit.pageBackground(this)
+            obsah.setPadding(dp(14), dp(10), dp(14), dp(20))
 
-            val spustit = tlacitko("▶   Spustit překlad", 24f) {
-                if (nejakaKonzole) prepniPreklad()
-                else android.app.AlertDialog.Builder(this)
-                    .setTitle("Kterou konzoli používáš?")
-                    .setItems(arrayOf("PlayStation 5 / 4", "Xbox Series / One")) { _, vyber ->
-                        if (vyber == 0) ukazPripojeni() else ukazPripojeniXbox()
-                    }.show()
-            }.apply {
-                typeface = Typeface.DEFAULT_BOLD
-                gravity = Gravity.CENTER
-                minHeight = dp(72)
-                setPadding(dp(20), dp(17), dp(20), dp(17))
-                background = android.graphics.drawable.GradientDrawable(
-                    android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(Color.parseColor("#7848E8"),
-                        Color.parseColor("#465DFF"), Color.parseColor("#03BFF6"))
-                ).apply { cornerRadius = dp(18).toFloat() }
-            }
-            obsah.addView(spustit, odsazeni(top = 8, bottom = 19))
-
-            fun akce(ikona: String, nazev: String, dej: () -> Unit): TextView =
-                tlacitko("$ikona\n$nazev", 18f, dej).apply {
-                    gravity = Gravity.CENTER
-                    typeface = Typeface.DEFAULT_BOLD
-                    minHeight = dp(108)
-                    setPadding(dp(10), dp(15), dp(10), dp(15))
-                    background = vyber(Color.parseColor("#111827"),
-                        Color.parseColor("#2A3850"), radius = 19f)
-                }
-            val prvni = vodorovne()
-            prvni.addView(akce("▣", "Oblasti na obrazovce") {
-                if (nejakaKonzole)
-                    startActivity(Intent(this, TelefonActivity::class.java))
-                else android.app.AlertDialog.Builder(this)
-                    .setMessage("Pro nastavení oblastí nejdřív připoj Xbox nebo PlayStation.")
-                    .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
-                    .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
-                    .setNegativeButton(android.R.string.cancel, null).show()
-            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                rightMargin = dp(10)
-            })
-            prvni.addView(akce("♧", "Profily her") {
-                GameLingoProfiles.show(this, nast) { ukazHlavni() }
-            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            obsah.addView(prvni, odsazeni(bottom = 10))
-
-            val druhy = vodorovne()
-            druhy.addView(akce("☷", "Nastavení překladu") {
+            fun openSettings() {
                 GameLingoSettings.show(this, nast,
                     onAreas = {
                         if (nejakaKonzole)
                             startActivity(Intent(this, TelefonActivity::class.java))
                         else ukazPripojeni()
                     },
-                    onLanguage = { ukazJazyk() })
-            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                rightMargin = dp(10)
-            })
-            druhy.addView(akce("▭", "Zařízení") {
-                vyberVystupTv()
-            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            obsah.addView(druhy, odsazeni(bottom = 13))
+                    onLanguage = { GameLingoLanguages.show(this) { ukazHlavni() } })
+            }
+            fun openDevices() {
+                GameLingoDeviceCenter.show(this,
+                    onXbox = { ukazPripojeniXbox() },
+                    onPlayStation = { ukazPripojeni() },
+                    onTV = { vyberVystupTv() },
+                    onUpdated = { ukazHlavni() })
+            }
+            fun openAreas() {
+                if (nejakaKonzole)
+                    startActivity(Intent(this, TelefonActivity::class.java))
+                else android.app.AlertDialog.Builder(this)
+                    .setMessage("Nejprve vyber a připoj konzoli.")
+                    .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
+                    .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
+                    .setNegativeButton(android.R.string.cancel, null).show()
+            }
 
-            obsah.addView(stavRadek, odsazeni(bottom = 15))
-            obsah.addView(text("GameLingo · CaseyCZ · Android",
-                13f, Color.parseColor("#94A3B8")).apply {
-                gravity = Gravity.CENTER
-            }, odsazeni(bottom = 12))
-            // Native Kotlin component owns the same five destinations as iOS.
-            // Keep the underlying actions from the original phone app.
+            obsah.addView(GameLingoVisualKit.brandHeader(this) { openSettings() },
+                odsazeni(bottom = 14))
+            obsah.addView(GameLingoVisualKit.hero(this), odsazeni(bottom = 18))
+            obsah.addView(GameLingoVisualKit.section(this, "Moje zařízení"))
+
+            val psSelected = GameLingoPlayStationConsoles.list(this)
+                .firstOrNull { it.selected }
+            val selectedXbox = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
+                .getString("selectedXboxId", null)
+            val primaryFamily = when {
+                selectedXbox != null -> "Xbox"
+                psSelected != null -> "PlayStation"
+                xbox != null -> "Xbox"
+                udaje.sparovano -> "PlayStation"
+                else -> "GameLingo"
+            }
+            val primaryName = when (primaryFamily) {
+                "Xbox" -> "Xbox"
+                "PlayStation" -> psSelected?.name ?: "PlayStation"
+                else -> "Vybrat konzoli"
+            }
+            obsah.addView(GameLingoVisualKit.deviceCard(
+                this, primaryFamily, primaryName,
+                if (nejakaKonzole) "Nastaveno · spojení ověřím při spuštění"
+                else "Přidat Xbox nebo PlayStation",
+                false
+            ) { openDevices() }, odsazeni(bottom = 10))
+
+            val tvStore = TvProfily(this)
+            val savedTv = tvStore.posledniId?.let { tvStore.najdi(it) }
+            obsah.addView(GameLingoVisualKit.deviceCard(
+                this, "TV",
+                if (tvStore.pouzeTelefon) "Telefon"
+                else savedTv?.jmeno ?: "Google TV / Android TV",
+                if (tvStore.pouzeTelefon) "Titulky na telefonu"
+                else if (savedTv == null) "Vyber nebo spáruj televizi"
+                else "Televize uložena · spojení se ověří",
+                false
+            ) { openDevices() }, odsazeni(bottom = 18))
+
+            obsah.addView(GameLingoVisualKit.cta(
+                this,
+                if (RemotePlayService.aktivni) "Zastavit překlad" else "Spustit překlad"
+            ) {
+                if (nejakaKonzole) prepniPreklad()
+                else android.app.AlertDialog.Builder(this)
+                    .setTitle("Kterou konzoli používáš?")
+                    .setItems(arrayOf("PlayStation 5 / 4", "Xbox Series / One")) { _, vyber ->
+                        if (vyber == 0) ukazPripojeni() else ukazPripojeniXbox()
+                    }.show()
+            }, odsazeni(bottom = 17))
+
+            val prvni = vodorovne()
+            prvni.addView(GameLingoVisualKit.navigationTile(this,
+                "▣", "Oblasti na obrazovce") { openAreas() },
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply { rightMargin = dp(10) })
+            prvni.addView(GameLingoVisualKit.navigationTile(this,
+                "♧", "Profily her") {
+                GameLingoProfiles.show(this, nast) { ukazHlavni() }
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            obsah.addView(prvni, odsazeni(bottom = 10))
+
+            val druhy = vodorovne()
+            druhy.addView(GameLingoVisualKit.navigationTile(this,
+                "☷", "Nastavení překladu") { openSettings() },
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply { rightMargin = dp(10) })
+            druhy.addView(GameLingoVisualKit.navigationTile(this,
+                "▭", "Zařízení") { openDevices() },
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            obsah.addView(druhy, odsazeni(bottom = 15))
+
+            // Show genuine connection state, not fabricated green indicators.
+            obsah.addView(GameLingoVisualKit.status(this,
+                if (RemotePlayService.aktivni) "Probíhá připojení / překlad"
+                else if (nejakaKonzole) "Připraveno ke spuštění"
+                else "Připoj konzoli",
+                if (nejakaKonzole) "Aktuální stav připojení je zobrazen níže."
+                else "Připojení Xbox / PlayStation otevři v Zařízeních.",
+                nejakaKonzole
+            ), odsazeni(bottom = 9))
+            obsah.addView(stavRadek, odsazeni(bottom = 12))
+
             val navigace = GameLingoNavigation.create(
                 this,
                 onHome = { ukazHlavni() },
-                onAreas = {
-                    if (nejakaKonzole) startActivity(Intent(this, TelefonActivity::class.java))
-                    else ukazPripojeni()
-                },
+                onAreas = { openAreas() },
                 onProfiles = {
                     GameLingoProfiles.show(this, nast) { ukazHlavni() }
                 },
-                onDevices = { vyberVystupTv() },
+                onDevices = { openDevices() },
                 onAbout = { GameLingoAbout.show(this) }
             )
-            obsah.addView(navigace, odsazeni(top = 12))
+            obsah.addView(navigace, odsazeni(top = 7))
+
 '''
     s = splice_once(s,start,end,replacement)
     # The shared title replaces PlayCaption's logo on PSN, Xbox, language and
