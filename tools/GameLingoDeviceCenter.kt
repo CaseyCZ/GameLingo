@@ -17,11 +17,11 @@ import android.widget.TextView
  * Xbox and PS5 registration are delegated to the existing working engine.
  */
 object GameLingoDeviceCenter {
-    private val navy = Color.parseColor("#070B14")
-    private val surface = Color.parseColor("#111827")
-    private val border = Color.parseColor("#2A3850")
-    private val cyan = Color.parseColor("#38BDF8")
-    private val muted = Color.parseColor("#94A3B8")
+    private val navy = Color.parseColor("#070B19")
+    private val surface = Color.parseColor("#111A33")
+    private val border = Color.parseColor("#554078")
+    private val cyan = Color.parseColor("#02D6FF")
+    private val muted = Color.parseColor("#92A4C7")
     private val success = Color.parseColor("#35E57D")
 
     private fun background(fill: Int = surface, stroke: Int = border): GradientDrawable =
@@ -38,10 +38,25 @@ object GameLingoDeviceCenter {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(18, 17, 18, 17)
-            background = background()
+            background = GameLingoVisualKit.card(c, checked)
             isClickable = true
             isFocusable = true
             setOnClickListener { onClick() }
+            val family = when {
+                sub.contains("PlayStation", ignoreCase = true) ||
+                    title.contains("PlayStation", ignoreCase = true) -> "PlayStation"
+                sub.contains("Xbox", ignoreCase = true) ||
+                    title.contains("Xbox", ignoreCase = true) -> "Xbox"
+                title.contains("TV", ignoreCase = true) ||
+                    sub.contains("TV", ignoreCase = true) ||
+                    title.contains("televize", ignoreCase = true) -> "TV"
+                else -> null
+            }
+            if (family != null) addView(GameLingoVisualKit.platformEmblem(c, family),
+                LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, 46),
+                    GameLingoVisualKit.dp(c, 46)).apply {
+                    rightMargin = GameLingoVisualKit.dp(c, 12)
+                })
             addView(LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(c).apply {
@@ -92,16 +107,24 @@ object GameLingoDeviceCenter {
              onTV: () -> Unit,
              onUpdated: () -> Unit = {}) {
         if (c.isFinishing) return
-        val dialog = Dialog(c)
+        val dialog = Dialog(c, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val root = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
-            background = background(navy, navy)
-            setPadding(24, 16, 24, 24)
+            background = GameLingoVisualKit.pageBackground(c)
+            setPadding(GameLingoVisualKit.dp(c, 20),
+                       GameLingoVisualKit.dp(c, 20),
+                       GameLingoVisualKit.dp(c, 20),
+                       GameLingoVisualKit.dp(c, 26))
         }
         val header = LinearLayout(c).apply {
             gravity = Gravity.CENTER_VERTICAL
         }
-        header.addView(label(c, "Moje zařízení", 26f),
+        header.addView(GameLingoVisualKit.platformEmblem(c, "TV"),
+            LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, 48),
+                GameLingoVisualKit.dp(c, 48)).apply {
+                rightMargin = GameLingoVisualKit.dp(c, 12)
+            })
+        header.addView(label(c, "Konzole a zařízení", 25f),
             LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(GameLingoHelp.button(c, "console"))
@@ -297,8 +320,8 @@ object GameLingoDeviceCenter {
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(
-            (c.resources.displayMetrics.widthPixels * 0.93).toInt(),
-            ViewGroup.LayoutParams.WRAP_CONTENT
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
         )
     }
 }
