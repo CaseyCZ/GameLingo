@@ -38,7 +38,7 @@ final class ConsoleDiscoveryStore: ObservableObject {
         discovery = nil
         errorMessage = nil
         consoles = []
-        if !registeredConsoles.isEmpty { start() }
+        if !registeredConsoles.isEmpty && !includeUnregistered { start() }
     }
 
     /// GameLingo initial setup must display unpaired PlayStation 5/4 devices.
