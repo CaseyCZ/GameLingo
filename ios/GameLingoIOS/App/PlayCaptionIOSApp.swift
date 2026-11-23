@@ -286,6 +286,7 @@ final class CaptionAppModel: ObservableObject {
         sessionRevision += 1
         let currentSession = sessionRevision
         processingOCR = false
+        processingChoices = false
         lastTranslatedChoiceItems = []
         lastChoicesSentAt = nil
         Task { await pipeline.resetDialogue() }
@@ -333,17 +334,27 @@ final class CaptionAppModel: ObservableObject {
                     let asText = self.choicesTextMode
                     Task { @MainActor [weak self] in
                         guard let self else { return }
-                        defer { self.processingChoices = false }
+                        defer {
+                            if self.sessionRevision == currentSession {
+                                self.processingChoices = false
+                            }
+                        }
                         guard let englishChoices = await self.pipeline.recognizeOptions(
                             buffer, area: area, asText: asText
-                        ) else { return }
+                        ), self.isRunning,
+                           self.sessionRevision == currentSession,
+                           self.choicesEnabled else { return }
                         var translated = [String]()
                         for option in englishChoices {
                             let item = await self.pipeline.translate(option)
-                            guard self.isRunning, self.choicesEnabled else { return }
+                            guard self.isRunning,
+                                  self.sessionRevision == currentSession,
+                                  self.choicesEnabled else { return }
                             translated.append(item)
                         }
-                        guard self.isRunning, self.choicesEnabled,
+                        guard self.isRunning,
+                              self.sessionRevision == currentSession,
+                              self.choicesEnabled,
                               self.choicesArea == area,
                               self.choicesTextMode == asText else { return }
                         self.lastChoices = translated.joined(separator: " · ")
@@ -371,7 +382,9 @@ final class CaptionAppModel: ObservableObject {
                         mode: self.ocrMode,
                         expandOnEmpty: self.expandOnEmpty
                     )
-                    self.processingOCR = false
+                    if self.sessionRevision == currentSession {
+                        self.processingOCR = false
+                    }
                     if let reading, self.isRunning,
                        self.sessionRevision == currentSession {
                         self.lastEnglish = reading.english
@@ -467,6 +480,7 @@ final class CaptionAppModel: ObservableObject {
     func stop() {
         sessionRevision += 1
         processingOCR = false
+        processingChoices = false
         remotePlay?.stop()
         remotePlay = nil
         playStation.stop()
