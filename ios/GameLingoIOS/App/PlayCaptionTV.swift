@@ -463,6 +463,10 @@ final class PlayCaptionTV: ObservableObject {
     /// Uses a dedicated UDP datagram: the former live connection is cancelled
     /// immediately after the IP changes.
     func clearOverlays(at address: String) {
+        // Stop periodic retransmits for the former TV, otherwise a previous
+        // subtitle can reappear one second after the explicit clear.
+        repeatTask?.cancel()
+        repeatTask = nil
         let target = address.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !target.isEmpty else { return }
 
