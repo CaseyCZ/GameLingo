@@ -278,8 +278,10 @@ def polish_phone_activity(s):
         '                setImageResource(R.drawable.gamelingo_ikona)\n                adjustViewBounds = true',
         "GameLingo live OCR header emblem")
     s=one(s,
-        '            setBackgroundColor(Color.parseColor("#070B14"))',
-        '            background = GameLingoVisualKit.pageBackground(this@TelefonActivity)',
+        '            setBackgroundColor(Color.parseColor("#070B14"))\n'
+        '            addView(lista, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))',
+        '            background = GameLingoVisualKit.pageBackground(this@TelefonActivity)\n'
+        '            addView(lista, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))',
         "GameLingo native OCR toolbar")
     s=one(s,
         '            text = "⚙ " + t("tvNastaveni") + " · " + Propojeni.Vysilac.cilJmeno',
