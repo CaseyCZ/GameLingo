@@ -258,7 +258,9 @@ final class CaptionAppModel: ObservableObject {
             choicesOutputFont: choicesOutputFont,
             subtitleDuration: subtitleDuration,
             skipOldTranslations: skipOldTranslations,
-            maxTranslationAge: maxTranslationAge
+            maxTranslationAge: maxTranslationAge,
+            gameLanguage: gameLanguage.rawValue,
+            targetLanguage: targetLanguage.rawValue
         )
         if let existingIndex {
             gameProfiles[existingIndex] = profile
@@ -292,6 +294,14 @@ final class CaptionAppModel: ObservableObject {
         subtitleDuration = profile.subtitleDuration
         skipOldTranslations = profile.skipOldTranslations
         maxTranslationAge = profile.maxTranslationAge
+        if let savedSource = profile.gameLanguage,
+           let language = GLGameLanguage(rawValue: savedSource) {
+            gameLanguage = language
+        }
+        if let savedTarget = profile.targetLanguage,
+           let language = GLTargetLanguage(rawValue: savedTarget) {
+            targetLanguage = language
+        }
         write("Načten profil: \(profile.name)")
     }
 
