@@ -12,7 +12,17 @@ permissions:
   contents: read
 
 jobs:
+  contracts:
+    name: GameLingo · integration contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify platforms and device selection are wired
+        run: python3 -m unittest discover -s tests -p 'test_v05_integrations.py' -v
+
   ios:
+    needs: contracts
     name: iPhone · unsigned IPA
     runs-on: macos-15
     timeout-minutes: 120
@@ -96,6 +106,7 @@ jobs:
           if-no-files-found: ignore
 
   android_mobile:
+    needs: contracts
     name: Android phone · PS5 / PS4 foundation
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -150,6 +161,7 @@ jobs:
           retention-days: 30
 
   google_tv:
+    needs: contracts
     name: Google TV · Orange V5 receiver
     runs-on: ubuntu-latest
     timeout-minutes: 50
