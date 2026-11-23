@@ -90,7 +90,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         options=model.split("guard let englishChoices = await",1)[1]
         options=options.split("self.lastTranslatedChoiceItems = translated",1)[0]
         self.assertIn("self.sessionRevision == currentSession",options)
-        self.assertIn("self.processingChoices = false",options)
+        self.assertIn("defer {\n                            if self.sessionRevision == currentSession",model)
+        self.assertIn("self.processingChoices = false",model)
         self.assertIn("if self.sessionRevision == currentSession",model)
         stopped=model.split("func stop() {",1)[1]
         self.assertIn("processingChoices = false",stopped)
