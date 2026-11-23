@@ -40,18 +40,26 @@ def main():
     mobile_dashboard = 'druhy.addView(akce("▭", "Zařízení")' in code
     tv_dashboard = '"Překlad z telefonu"' in code and '"Přímo na TV"' in code
     if mobile_dashboard:
-        code=one(code,
-            '''druhy.addView(akce("▭", "Zařízení") {
-                vyberVystupTv()
-            }''',
-            '''druhy.addView(akce("▭", "Zařízení") {
-                '''+manager()+'''
-            }''',"MainActivity devices tile")
+        # The main screen is produced by a separate UI generator. Allow harmless
+        # indentation/layout adjustments without silently skipping the action.
+        import re
+        source=code
+        code, count=re.subn(
+            r'(druhy\.addView\(akce\("▭",\s*"Zařízení"\)\s*\{\s*)vyberVystupTv\(\)(\s*\})',
+            lambda m: m.group(1)+manager()+m.group(2),
+            code, count=1
+        )
+        if count!=1:
+            raise RuntimeError("MainActivity device tile did not connect to device center")
 
-        code=one(code,
-            '''Triple("▭\\nTV", 3, { vyberVystupTv() })''',
-            '''Triple("▭\\nZařízení", 3, { '''+manager()+''' })''',
-            "MainActivity bottom navigation")
+        code, count=re.subn(
+            r'Triple\("▭\\nTV",\s*3,\s*\{\s*vyberVystupTv\(\)\s*\}\)',
+            lambda m: 'Triple("▭\\nZařízení", 3, { '+manager()+' })',
+            code, count=1
+        )
+        if count!=1:
+            raise RuntimeError("MainActivity bottom device navigation is missing")
+        if code==source: raise RuntimeError("Device center wasn't attached")
 
     elif tv_dashboard:
         print("Google TV landing screen uses its own GameLingo device actions")
