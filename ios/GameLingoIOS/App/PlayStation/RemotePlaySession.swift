@@ -57,7 +57,6 @@ final class RemotePlaySession: ObservableObject {
     init(
         console: RegisteredConsole,
         configuration: StreamConfiguration = .highQuality,
-        remote: RemoteConsoleConnection? = nil,
         startupBufferMilliseconds: Int = 0,
         onConnected: (() -> Void)? = nil,
         onDecodedFrame: (@Sendable (CVPixelBuffer) -> Void)? = nil
@@ -85,40 +84,7 @@ final class RemotePlaySession: ObservableObject {
         }
 
         Self.diagnosticSession = self
-        if let remote {
-            preparationTask = Task { [weak self] in
-                let prepared = await Task.detached(priority: .userInitiated) {
-                    var errorCode: Int32 = 0
-                    let handle = remote.accessToken.withCString { token in
-                        remote.consoleDUID.withUnsafeBytes { duid in
-                            tp_play_holepunch_prepare(
-                                token,
-                                duid.bindMemory(to: UInt8.self).baseAddress,
-                                remote.consoleDUID.count,
-                                remote.isPS5,
-                                &errorCode
-                            )
-                        }
-                    }
-                    return PreparedHolepunch(pointer: handle, errorCode: errorCode)
-                }.value
-                guard let self else {
-                    tp_play_holepunch_destroy(prepared.pointer)
-                    return
-                }
-                guard !Task.isCancelled, !isStopped else {
-                    tp_play_holepunch_destroy(prepared.pointer)
-                    return
-                }
-                guard let handle = prepared.pointer else {
-                    state = .ended("Internet connection setup failed (core error \(prepared.errorCode)).")
-                    return
-                }
-                createRemoteSession(handle: handle, remote: remote, configuration: configuration)
-            }
-        } else {
-            createLocalSession(console: console, configuration: configuration)
-        }
+        createLocalSession(console: console, configuration: configuration)
     }
 
     private func createLocalSession(
@@ -160,41 +126,6 @@ final class RemotePlaySession: ObservableObject {
         let startError = tp_play_session_start(session)
         if startError != 0 {
             state = .ended("Session start failed (core error \(startError)).")
-        }
-    }
-
-    private func createRemoteSession(
-        handle: OpaquePointer,
-        remote: RemoteConsoleConnection,
-        configuration: StreamConfiguration
-    ) {
-        var errorCode: Int32 = 0
-        session = remote.accountID.withUnsafeBytes { accountID in
-            tp_play_session_create_remote(
-                remote.isPS5,
-                handle,
-                accountID.bindMemory(to: UInt8.self).baseAddress,
-                remote.accountID.count,
-                configuration.width,
-                configuration.height,
-                configuration.fps,
-                configuration.bitrate,
-                remote.isPS5 ? 1 : 0,
-                tpPlaySessionEventCallback,
-                tpPlayVideoCallback,
-                tpPlayAudioSettingsCallback,
-                tpPlayAudioFrameCallback,
-                Unmanaged.passUnretained(self).toOpaque(),
-                &errorCode
-            )
-        }
-        guard let session else {
-            state = .ended("Internet session setup failed (core error \(errorCode)).")
-            return
-        }
-        let startError = tp_play_session_start(session)
-        if startError != 0 {
-            state = .ended("Internet session start failed (core error \(startError)).")
         }
     }
 
@@ -595,11 +526,6 @@ final class RemotePlaySession: ObservableObject {
         default: break
         }
     }
-}
-
-private struct PreparedHolepunch: @unchecked Sendable {
-    let pointer: OpaquePointer?
-    let errorCode: Int32
 }
 
 private struct SessionHandle: @unchecked Sendable {
