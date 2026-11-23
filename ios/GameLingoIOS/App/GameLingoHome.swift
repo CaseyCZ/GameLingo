@@ -101,21 +101,16 @@ struct GameLingoHome: View {
             if !devices.completedSetup { setupSheet = true }
         }
         .onChange(of: devices.preferredTelevisionID) { previous, selected in
-            if previous != selected && model.isRunning &&
-                devices.subtitleOutput == .googleTV {
-                // Remove the previous receiver's overlay before changing its IP.
-                model.tv.sendSubtitle("", duration: 0)
-                model.tv.sendChoices([], area: model.choicesArea,
-                                     outputArea: model.choicesOutputArea)
-            }
-            devices.prepareTV(model.tv)
+            // prepareTV updates the IP; PlayCaptionTV clears both overlays on
+            // the former receiver before replacing its authenticated session.
+            if previous != selected { devices.prepareTV(model.tv) }
         }
         .onChange(of: devices.subtitleOutput) { previous, output in
             if previous == .googleTV && output == .phone {
-                // Switching to phone output should clear stale TV captions.
-                model.tv.sendSubtitle("", duration: 0)
-                model.tv.sendChoices([], area: model.choicesArea,
-                                     outputArea: model.choicesOutputArea)
+                // The saved TV may differ from an IP manually typed in setup.
+                // Always clear the selected receiver rather than a new target.
+                let previousIP = devices.chosenTelevision?.ipAddress ?? model.tv.ip
+                model.tv.clearOverlays(at: previousIP)
             } else if output == .googleTV {
                 devices.prepareTV(model.tv)
             }
