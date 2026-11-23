@@ -225,15 +225,24 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("AGPL-3.0",about)
 
     def test_tv_remote_control_and_receiver_modes(self):
-        tv=code(TOOLS/"polish_all_screens.py")
-        for marker in ("dlazdiceTel.isFocusable", "nastavDpad(",
-                       "nextFocusRightId", "nextFocusLeftId",
+        screen=code(TOOLS/"polish_all_screens.py")
+        receiver=code(TOOLS/"redesign_gamelingo.py")
+        tv=code(TOOLS/"GameLingoTVUi.kt")
+        wiring=code(TOOLS/"wire_android_devices.py")
+        for marker in ("nextFocusRightId", "nextFocusLeftId",
                        "Překlad z telefonu", "Přímo na TV",
-                       "volby.post"):
-            if marker == "dlazdiceTel.isFocusable":
-                self.assertIn("v.isFocusable = true",tv)
-            else:
-                self.assertIn(marker,tv)
+                       "volby.post", "GameLingoTVUi.tile(",
+                       "GameLingoTVUi.showSettings(this)"):
+            self.assertIn(marker,screen)
+        for marker in ("isFocusable = true", "setOnFocusChangeListener",
+                       "showWelcome(", "Jazyk hry", "Jazyk překladu",
+                       "showSettings(", "R.drawable.gamelingo_xbox",
+                       "R.drawable.gamelingo_playstation"):
+            self.assertIn(marker,tv)
+        for marker in ("IPhoneTVPairing.startCode()", "PrijemService.statistikaPrijmu()",
+                       "zpetNaVyber()", "GameLingoTVUi.action("):
+            self.assertIn(marker,receiver)
+        self.assertIn("GameLingoTVUi.showWelcome(this@MainActivity)",wiring)
 
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
