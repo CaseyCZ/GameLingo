@@ -42,11 +42,11 @@ def main():
     if mobile_dashboard:
         code=one(code,
             '''druhy.addView(akce("▭", "Zařízení") {
-                    vyberVystupTv()
-                }''',
+                vyberVystupTv()
+            }''',
             '''druhy.addView(akce("▭", "Zařízení") {
-                    '''+manager()+'''
-                }''',"MainActivity devices tile")
+                '''+manager()+'''
+            }''',"MainActivity devices tile")
 
         code=one(code,
             '''Triple("▭\\nTV", 3, { vyberVystupTv() })''',
