@@ -179,6 +179,23 @@ def main() -> None:
          '        val vstup = true // iPhone-only TV receiver; show choices on HDMI\n')
 
     activity = root / "app/src/main/java/cz/titulky/tv/MainActivity.kt"
+    # Replace upstream PlayCaption's oversized legacy overlay help with a
+    # concise TV-specific guide and the actual installed GameLingo package ID.
+    # Overlay permission does not diagnose a UDP pairing timeout when already
+    # granted; it is only necessary to draw translated subtitles over HDMI.
+    once(activity,
+         '.setMessage(t("povoleniNavod").replace("%IP%", ip))',
+         '.setMessage(if (GameLingoLanguages.app(this) == "cs") ' +
+         '"Titulky přes hru potřebují povolení\\n\\n" + ' +
+         '"Nastavení TV → Aplikace → Zvláštní přístup → " + ' +
+         '"Zobrazovat přes jiné aplikace → GameLingo → Povolit.\\n\\n" + ' +
+         '"Pokud TV tuto volbu skrývá, použij ADB z počítače:\\n" + ' +
+         '"adb connect $ip:5555\\n" + ' +
+         '"adb shell appops set $packageName SYSTEM_ALERT_WINDOW allow\\n\\n" + ' +
+         '"Po změně aplikaci vynuceně ukonči a spusť znovu." ' +
+         'else t("povoleniNavod").replace("%IP%", ip)' +
+         '.replace("cz.titulky.tv", packageName)' +
+         '.replace("PlayCaption", "GameLingo"))')
     text = activity.read_text(encoding="utf-8")
     begin = text.index('        // tři kroky s obrázky\n', text.index('    private fun ukazPrijem() {'))
     end = text.index('        val stav = text("", 24f', begin)
