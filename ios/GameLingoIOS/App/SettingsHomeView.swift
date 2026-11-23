@@ -1,7 +1,7 @@
 import SwiftUI
 
 // Compact GameLingo pages: titles and actions first, details in (?) Help.
-struct PlayCaptionSettingsView: View {
+struct GameLingoSettingsView: View {
     @ObservedObject var model: CaptionAppModel
     @Environment(\.dismiss) private var dismiss
     @State private var showRegions = false
@@ -11,11 +11,11 @@ struct PlayCaptionSettingsView: View {
             GLScreen(title: "Nastavení", help:
                 "Uprav tu čtení textu, překlad, vzhled titulků nebo profily. Jednotlivé volby mají vlastní nápovědu.") {
                 GLCard {
-                    NavigationLink { PlayCaptionOCRSettingsView(model: model) } label: {
+                    NavigationLink { GameLingoOCRSettingsView(model: model) } label: {
                         GLSettingsLink(icon: "text.viewfinder", title: "Rozpoznávání")
                     }
                     Divider().overlay(GLStyle.border)
-                    NavigationLink { PlayCaptionTranslationSettingsView(model: model) } label: {
+                    NavigationLink { GameLingoTranslationSettingsView(model: model) } label: {
                         GLSettingsLink(icon: "character.bubble", title: "Překlad")
                     }
                     Divider().overlay(GLStyle.border)
@@ -25,7 +25,7 @@ struct PlayCaptionSettingsView: View {
                     .buttonStyle(.plain)
                 }
                 GLCard {
-                    NavigationLink { PlayCaptionAppearanceSettingsView(model: model) } label: {
+                    NavigationLink { GameLingoAppearanceSettingsView(model: model) } label: {
                         GLSettingsLink(icon: "captions.bubble", title: "Titulky na TV")
                     }
                     Divider().overlay(GLStyle.border)
@@ -33,7 +33,7 @@ struct PlayCaptionSettingsView: View {
                         GLSettingsLink(icon: "gamecontroller", title: "Profily her")
                     }
                     Divider().overlay(GLStyle.border)
-                    NavigationLink { PlayCaptionDiagnosticsView(model: model) } label: {
+                    NavigationLink { GameLingoDiagnosticsView(model: model) } label: {
                         GLSettingsLink(icon: "waveform.path.ecg", title: "Diagnostika")
                     }
                 }
@@ -50,7 +50,7 @@ struct PlayCaptionSettingsView: View {
     }
 }
 
-private struct PlayCaptionOCRSettingsView: View {
+private struct GameLingoOCRSettingsView: View {
     @ObservedObject var model: CaptionAppModel
 
     var body: some View {
@@ -88,7 +88,7 @@ private struct PlayCaptionOCRSettingsView: View {
     }
 }
 
-private struct PlayCaptionTranslationSettingsView: View {
+private struct GameLingoTranslationSettingsView: View {
     @ObservedObject var model: CaptionAppModel
 
     var body: some View {
@@ -111,7 +111,7 @@ private struct PlayCaptionTranslationSettingsView: View {
     }
 }
 
-private struct PlayCaptionAppearanceSettingsView: View {
+private struct GameLingoAppearanceSettingsView: View {
     @ObservedObject var model: CaptionAppModel
 
     var body: some View {
@@ -192,7 +192,7 @@ struct GameLingoProfilesScreen: View {
     }
 }
 
-private struct PlayCaptionDiagnosticsView: View {
+private struct GameLingoDiagnosticsView: View {
     @ObservedObject var model: CaptionAppModel
     @State private var showLog = false
 
