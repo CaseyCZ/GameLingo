@@ -35,8 +35,9 @@ object GameLingoFirstRun {
         val muted = Color.parseColor("#92A4C7")
         val px: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         var step = 0
-        var consoleChoice = -1
-        var tvChoice = 0
+        val savedChoices = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+        var consoleChoice = savedChoices.getInt("console", -1)
+        var tvChoice = savedChoices.getInt("output", 0)
         // Full-screen onboarding belongs to GameLingo, not to an upstream
         // PlayCaption popup floating above the old landing page.
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
@@ -106,17 +107,36 @@ object GameLingoFirstRun {
                 .any { it.selected }
         }
 
-        fun televisionSaved(): Boolean {
+        fun televisionPaired(): Boolean {
             if (tvChoice == 0) return true
             val store = TvProfily(activity)
-            return tvChoice == 1 && store.posledniId?.let { store.najdi(it) } != null
+            val selected = store.posledniId?.let { store.najdi(it) } ?: return false
+            return tvChoice == 1 && GameLingoTVPairing.paired(activity, selected.ip)
         }
 
-        // The welcome flow is not evidence of a live console/receiver connection.
-        // It closes before launching one provider modal, never both on top.
+        lateinit var redraw: () -> Unit
+
+        fun pairOrChooseTV() {
+            val store = TvProfily(activity)
+            val selected = store.posledniId?.let { store.najdi(it) }
+            if (selected != null) {
+                GameLingoTVPairing.show(activity, selected) { redraw() }
+            } else {
+                // Device discovery is a separate existing native flow. The
+                // welcome wizard remains incomplete until the PIN succeeds.
+                savedChoices.edit()
+                    .putInt("console", consoleChoice)
+                    .putInt("output", tvChoice).apply()
+                dialog.dismiss()
+                finished()
+                connectTV()
+            }
+        }
+
+        // Never treat opening Xbox/PlayStation setup as proof that a
+        // console was registered, nor mark onboarding complete prematurely.
         fun finish(open: Int = 0) {
-            val prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
-            val edit = prefs.edit().putBoolean(COMPLETE, true)
+            val edit = savedChoices.edit().putBoolean(COMPLETE, open == 0)
             if (consoleChoice >= 0) edit.putInt("console", consoleChoice)
             if (tvChoice >= 0) {
                 edit.putInt("output", tvChoice)
@@ -128,11 +148,8 @@ object GameLingoFirstRun {
             when (open) {
                 1 -> connectXbox()
                 2 -> connectPlayStation()
-                3 -> connectTV()
             }
         }
-
-        lateinit var redraw: () -> Unit
         redraw = {
             body.removeAllViews()
             footer.removeAllViews()
@@ -220,7 +237,7 @@ object GameLingoFirstRun {
                     }
                     if (tvChoice == 1) {
                         item("🔗  Spárovat TV", false) {
-                            finish(open = 3)
+                            pairOrChooseTV()
                         }
                     }
                 }
@@ -234,7 +251,7 @@ object GameLingoFirstRun {
                         0 -> "Telefon"
                         1 -> "Google TV"
                         else -> "Nevybráno"
-                    }, televisionSaved()) { step = 3; redraw() }
+                    }, televisionPaired()) { step = 3; redraw() }
                     item("🌐  " + GameLingoLanguages.name(
                         GameLingoLanguages.gameLanguages, GameLingoLanguages.game(activity)
                     ) + "  →  " + GameLingoLanguages.name(
@@ -255,8 +272,8 @@ object GameLingoFirstRun {
                             finish(open = if (consoleChoice == 0) 1 else 2)
                         }
                     }
-                    if (tvChoice == 1 && !televisionSaved()) {
-                        item("📺  Spárovat TV", false) { finish(open = 3) }
+                    if (tvChoice == 1 && !televisionPaired()) {
+                        item("📺  Spárovat TV", false) { pairOrChooseTV() }
                     }
                 }
             }
@@ -280,7 +297,7 @@ object GameLingoFirstRun {
             val finalStep = step == 4
             val canContinue = when (step) {
                 2 -> consoleChoice >= 0
-                4 -> consoleRegistered() && televisionSaved()
+                4 -> consoleRegistered() && televisionPaired()
                 else -> true
             }
             footer.addView(button(if (finalStep) "Dokončit nastavení" else "Pokračovat") {
