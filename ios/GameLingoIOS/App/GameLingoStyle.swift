@@ -3,13 +3,13 @@ import SwiftUI
 // Shared, minimal GameLingo design system used on every iPhone screen.
 // Functional region colours (blue/green/yellow/orange) are deliberately separate.
 enum GLStyle {
-    static let background = Color(red: 7/255, green: 11/255, blue: 20/255)
-    static let surface = Color(red: 17/255, green: 24/255, blue: 39/255)
+    static let background = GameLingoUIContract.Palette.background
+    static let surface = GameLingoUIContract.Palette.panel
     static let surfaceAlt = Color(red: 23/255, green: 32/255, blue: 51/255)
     static let border = Color(red: 43/255, green: 54/255, blue: 83/255)
-    static let blue = Color(red: 17/255, green: 190/255, blue: 244/255)
-    static let violet = Color(red: 136/255, green: 75/255, blue: 248/255)
-    static let muted = Color(red: 148/255, green: 163/255, blue: 184/255)
+    static let blue = GameLingoUIContract.Palette.cyan
+    static let violet = GameLingoUIContract.Palette.purple
+    static let muted = GameLingoUIContract.Palette.muted
     static let green = Color(red: 53/255, green: 229/255, blue: 125/255)
     static let gradient = LinearGradient(colors: [violet,
         Color(red: 60/255, green: 105/255, blue: 255/255), blue],
