@@ -24,34 +24,21 @@ def redesign_mobile(s: str) -> str:
             obsah.background = GameLingoVisualKit.pageBackground(this)
             obsah.setPadding(dp(14), dp(10), dp(14), dp(20))
 
-            fun openDevices() {
-                GameLingoDeviceCenter.show(this,
-                    onXbox = { ukazPripojeniXbox() },
-                    onPlayStation = { ukazPripojeni() },
-                    onTV = { vyberVystupTv() },
-                    onUpdated = { ukazHlavni() })
+            // The five tabs share one persistent page host, just like SwiftUI.
+            // Source setup/pairing remains an explicit native action in each tab.
+            lateinit var openTab: (Int) -> Unit
+            fun openDevices() { openTab(2) }
+            fun openSettings() { openTab(3) }
+            fun editAreas() {
+                if (nejakaKonzole)
+                    startActivity(Intent(this, TelefonActivity::class.java))
+                else android.app.AlertDialog.Builder(this)
+                    .setMessage("Nejprve vyber a připoj konzoli.")
+                    .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
+                    .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
+                    .setNegativeButton(android.R.string.cancel, null).show()
             }
-            fun openSettings() {
-                GameLingoSettings.show(this, nast,
-                    onAreas = {
-                        if (nejakaKonzole)
-                            startActivity(Intent(this, TelefonActivity::class.java))
-                        else ukazPripojeni()
-                    },
-                    onLanguage = { GameLingoLanguages.show(this) { ukazHlavni() } },
-                    onDevices = { openDevices() })
-            }
-            fun openAreas() {
-                GameLingoRegions.show(this) {
-                    if (nejakaKonzole)
-                        startActivity(Intent(this, TelefonActivity::class.java))
-                    else android.app.AlertDialog.Builder(this)
-                        .setMessage("Nejprve vyber a připoj konzoli.")
-                        .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
-                        .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
-                        .setNegativeButton(android.R.string.cancel, null).show()
-                }
-            }
+            fun openAreas() { editAreas() }
 
             obsah.addView(GameLingoVisualKit.brandHeader(this) { openSettings() },
                 odsazeni(bottom = 14))
@@ -144,18 +131,58 @@ def redesign_mobile(s: str) -> str:
             ), odsazeni(bottom = 9))
             obsah.addView(stavRadek, odsazeni(bottom = 12))
 
+            // Preserve all native, working home widgets; only swap the page
+            // inside the same scroll container when the bottom tab is tapped.
+            val homePage = svisle()
+            while (obsah.childCount > 0) {
+                val view = obsah.getChildAt(0)
+                obsah.removeViewAt(0)
+                homePage.addView(view)
+            }
+            val pageHost = svisle()
+            obsah.addView(pageHost, odsazeni(bottom = 12))
+            openTab = { index ->
+                selectedMobileTab = index.coerceIn(0, 4)
+                pageHost.removeAllViews()
+                val page = when (selectedMobileTab) {
+                    1 -> GameLingoRegions.content(this, onEdit = { editAreas() })
+                    2 -> GameLingoDeviceCenter.content(this,
+                        onXbox = { ukazPripojeniXbox() },
+                        onPlayStation = { ukazPripojeni() },
+                        onTV = { vyberVystupTv() },
+                        onUpdated = { ukazHlavni() })
+                    3 -> GameLingoSettings.content(this, nast,
+                        onAreas = { editAreas() },
+                        onLanguage = { GameLingoLanguages.show(this) { ukazHlavni() } },
+                        onDevices = { openDevices() })
+                    4 -> GameLingoAbout.content(this)
+                    else -> homePage
+                }
+                pageHost.addView(page, LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
             val navigace = GameLingoNavigation.create(
                 this,
-                onHome = { ukazHlavni() },
-                onAreas = { openAreas() },
-                onDevices = { openDevices() },
-                onSettings = { openSettings() },
-                onAbout = { GameLingoAbout.show(this) }
+                onHome = { openTab(0) },
+                onAreas = { openTab(1) },
+                onDevices = { openTab(2) },
+                onSettings = { openTab(3) },
+                onAbout = { openTab(4) },
+                initialIndex = selectedMobileTab
             )
             obsah.addView(navigace, odsazeni(top = 7))
+            openTab(selectedMobileTab)
 
 '''
     s = splice_once(s,start,end,replacement)
+    # Remember the tab through live status refreshes, pairing screens and
+    # returns from native editors. The initial app launch remains on Home.
+    marker = "    private fun ukazHlavni() {"
+    if s.count(marker) != 1:
+        raise RuntimeError("MainActivity native dashboard method missing")
+    s = s.replace(marker,
+        "    private var selectedMobileTab = 0\\n" + marker, 1)
     # The shared title replaces PlayCaption's logo on PSN, Xbox, language and
     # setup screens. Do not touch the brand's transport strings.
     old = '''    private fun nadpisLogo() = ImageView(this).apply {
