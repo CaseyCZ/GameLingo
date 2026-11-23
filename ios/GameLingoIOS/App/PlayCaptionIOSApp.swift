@@ -115,6 +115,21 @@ final class CaptionAppModel: ObservableObject {
     @Published var outputFont: Double = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1.0 {
         didSet { UserDefaults.standard.set(outputFont, forKey: "outputFont") }
     }
+    @Published var phoneFontScale: Double =
+        (UserDefaults.standard.object(forKey: "gamelingo.phoneFontScale") as? Double) ?? 1.0 {
+        didSet { UserDefaults.standard.set(phoneFontScale, forKey: "gamelingo.phoneFontScale") }
+    }
+    @Published var phoneTextColor: GLPhoneSubtitleColor = GLPhoneSubtitleColor(
+        rawValue: UserDefaults.standard.string(forKey: "gamelingo.phoneTextColor") ?? ""
+    ) ?? .yellow {
+        didSet { UserDefaults.standard.set(phoneTextColor.rawValue, forKey: "gamelingo.phoneTextColor") }
+    }
+    @Published var phoneBackground: GLPhoneSubtitleBackground = GLPhoneSubtitleBackground(
+        rawValue: UserDefaults.standard.string(forKey: "gamelingo.phoneBackground") ?? ""
+    ) ?? .dark {
+        didSet { UserDefaults.standard.set(phoneBackground.rawValue, forKey: "gamelingo.phoneBackground") }
+    }
+
     @Published var outputLocked = UserDefaults.standard.bool(forKey: "outputLocked") {
         didSet { UserDefaults.standard.set(outputLocked, forKey: "outputLocked") }
     }
@@ -268,7 +283,10 @@ final class CaptionAppModel: ObservableObject {
             skipOldTranslations: skipOldTranslations,
             maxTranslationAge: maxTranslationAge,
             gameLanguage: gameLanguage.rawValue,
-            targetLanguage: targetLanguage.rawValue
+            targetLanguage: targetLanguage.rawValue,
+            phoneFontScale: phoneFontScale,
+            phoneTextColor: phoneTextColor.rawValue,
+            phoneBackground: phoneBackground.rawValue
         )
         if let existingIndex {
             gameProfiles[existingIndex] = profile
@@ -309,6 +327,16 @@ final class CaptionAppModel: ObservableObject {
         if let savedTarget = profile.targetLanguage,
            let language = GLTargetLanguage(rawValue: savedTarget) {
             targetLanguage = language
+        }
+        if let value = profile.phoneFontScale, value >= 0.7 && value <= 1.8 {
+            phoneFontScale = value
+        }
+        if let name = profile.phoneTextColor, let value = GLPhoneSubtitleColor(rawValue: name) {
+            phoneTextColor = value
+        }
+        if let name = profile.phoneBackground,
+           let value = GLPhoneSubtitleBackground(rawValue: name) {
+            phoneBackground = value
         }
         write("Načten profil: \(profile.name)")
     }
