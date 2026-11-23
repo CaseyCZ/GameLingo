@@ -154,7 +154,7 @@ struct GameLingoHome: View {
             .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $settingsSheet) {
-            PlayCaptionSettingsView(model: model)
+            GameLingoSettingsView(model: model)
         }
     }
 
