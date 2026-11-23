@@ -36,7 +36,7 @@ object GameLingoFirstRun {
         val px: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         var step = 0
         var consoleChoice = -1
-        var tvChoice = -1
+        var tvChoice = 0
         // Full-screen onboarding belongs to GameLingo, not to an upstream
         // PlayCaption popup floating above the old landing page.
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
