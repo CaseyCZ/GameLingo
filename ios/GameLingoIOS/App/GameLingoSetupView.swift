@@ -14,9 +14,12 @@ struct GameLingoSetupView: View {
 
     let onFinished: () -> Void
 
-    private var xboxSelected: Bool {
-        devices.chosenConsole?.family == .xbox &&
-        devices.activeXbox(from: model.xbox) != nil
+    private var consoleRegistered: Bool {
+        guard let selected = devices.chosenConsole else { return false }
+        if selected.family == .xbox {
+            return devices.activeXbox(from: model.xbox) != nil
+        }
+        return model.playStation.findSavedConsole(id: selected.id) != nil
     }
 
     var body: some View {
@@ -227,8 +230,7 @@ struct GameLingoSetupView: View {
                 GLPrimaryButton(title: "Dokončit nastavení",
                                 systemImage: "checkmark",
                                 disabled: devices.chosenConsole == nil ||
-                                    (devices.chosenConsole?.family == .playStation &&
-                                      !GameLingoPlayStationStatus.isReady)) {
+                                    !consoleRegistered) {
                     devices.completedSetup = true
                     onFinished()
                     dismiss()
@@ -250,8 +252,7 @@ struct GameLingoSetupView: View {
                             GLHeader(title: "Použít Xbox")
                             ForEach(model.xbox.consoles) { console in
                                 Button {
-                                    devices.refreshXbox(model.xbox.consoles)
-                                    devices.selectConsole("xbox:" + console.id)
+                                    devices.addXbox(console)
                                     showXbox = false
                                 } label: {
                                     HStack {
@@ -306,8 +307,3 @@ struct GameLingoSetupView: View {
     }
 }
 
-// The PS5-ready gate must come from the actual compiled Remote Play adapter,
-// never from whether a text field contains a PlayStation address.
-enum GameLingoPlayStationStatus {
-    static let isReady = false
-}
