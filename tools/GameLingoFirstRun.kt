@@ -148,6 +148,12 @@ object GameLingoFirstRun {
                     val selected = if (consoleChoice == 0) "Xbox" else "PlayStation"
                     val output = if (tvChoice == 0) "Telefon" else "Google TV"
                     item("$selected   →   $output", true) {}
+                    body.addView(TextView(activity).apply {
+                        text = "Výběr není potvrzení spojení. Přihlášení a párování se ověří zvlášť."
+                        textSize = 14f
+                        setTextColor(muted)
+                        setPadding(6, 7, 6, 14)
+                    })
                     if (tvChoice == 1) {
                         item("📺  Spárovat Google TV", false) {
                             activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
@@ -162,13 +168,13 @@ object GameLingoFirstRun {
                     }
                 }
             }
-            if (step == 0) {
-                item("Přeskočit", false) {
-                    activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
-                        .edit().putBoolean(COMPLETE, true).apply()
-                    dialog.dismiss()
-                    finished()
-                }
+            // Skipping is offered on every step. The completed flag only
+            // means the welcome flow was dismissed, never "console paired".
+            item("Nastavit později", false) {
+                activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+                    .edit().putBoolean(COMPLETE, true).apply()
+                dialog.dismiss()
+                finished()
             }
             if (step > 0) {
                 footer.addView(button("Zpět") {
