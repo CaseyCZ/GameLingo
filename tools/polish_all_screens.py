@@ -91,22 +91,22 @@ def tv(s):
                 rightMargin = dp(14)
             })
             hlava.addView(GameLingoHelp.button(this, "tv"),
-                LinearLayout.LayoutParams(dp(63), dp(63)))
-            obsah.addView(hlava, odsazeni(bottom = 20))
+                LinearLayout.LayoutParams(dp(48), dp(48)))
+            obsah.addView(hlava, odsazeni(bottom = 12))
             povoleni?.let { obsah.addView(it, odsazeni(bottom = 13)) }
 
             obsah.addView(GameLingoTVUi.title(this,
-                "Hraj. Rozuměj.", 33f), odsazeni(bottom = 5))
+                "Hraj. Rozuměj.", 28f), odsazeni(bottom = 4))
             obsah.addView(GameLingoTVUi.title(this,
-                "Vyber, odkud bude GameLingo získávat a překládat text hry.",
-                16f, muted = true), odsazeni(bottom = 20))
+                "Vyber zdroj překladu. Pro iPhone zvol Překlad z telefonu.",
+                16f, muted = true), odsazeni(bottom = 12))
 
             obsah.addView(GameLingoTVUi.title(this, "ZPŮSOB PŘEKLADU", 16f).apply {
                 setTextColor(Color.parseColor("#02D6FF"))
             }, odsazeni(bottom = 10))
             dlazdiceTel = GameLingoTVUi.tile(
                 this, "▣", "Překlad z telefonu",
-                "iPhone nebo Android překládá hru, TV zobrazuje české titulky."
+                "Nejdřív otevři tento režim. TV ukáže šest číslic pro spárování."
             ) {
                 if (!android.provider.Settings.canDrawOverlays(this)) pozadejOPovoleni()
                 else hratSTelefonem()
@@ -128,17 +128,17 @@ def tv(s):
                 setPadding(dp(8), dp(7), dp(8), dp(8))
             }
             volby.addView(dlazdiceTel,
-                LinearLayout.LayoutParams(0, dp(168), 1f).apply {
+                LinearLayout.LayoutParams(0, dp(130), 1f).apply {
                 rightMargin = dp(20)
             })
             volby.addView(dlazdiceTv,
-                LinearLayout.LayoutParams(0, dp(168), 1f))
-            obsah.addView(volby, odsazeni(bottom = 9))
+                LinearLayout.LayoutParams(0, dp(130), 1f))
+            obsah.addView(volby, odsazeni(bottom = 5))
             // The device centre is inserted here by wire_android_devices.py.
 
             obsah.addView(GameLingoTVUi.title(this, "MOJE KONZOLE", 16f).apply {
                 setTextColor(Color.parseColor("#02D6FF"))
-            }, odsazeni(top = 16, bottom = 9))
+            }, odsazeni(top = 10, bottom = 7))
             val ulozenaPS = udaje.sparovano
             val ulozenyXbox = XboxUcet.konzole(this) != null
             val volbyKonzoli = vodorovne().apply {
@@ -163,11 +163,11 @@ def tv(s):
             dlazdiceTel.nextFocusDownId = psDostupna.id
             dlazdiceTv.nextFocusDownId = xboxDostupny.id
             volbyKonzoli.addView(psDostupna,
-                LinearLayout.LayoutParams(0, dp(155), 1f).apply {
+                LinearLayout.LayoutParams(0, dp(123), 1f).apply {
                 rightMargin = dp(20)
             })
             volbyKonzoli.addView(xboxDostupny,
-                LinearLayout.LayoutParams(0, dp(155), 1f))
+                LinearLayout.LayoutParams(0, dp(123), 1f))
             obsah.addView(volbyKonzoli, odsazeni(bottom = 13))
 
             // Genuine state, never imply that a saved device is connected.
