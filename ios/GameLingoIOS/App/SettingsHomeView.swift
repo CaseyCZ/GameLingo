@@ -436,4 +436,7 @@ struct GameSubtitleProfile: Codable, Identifiable {
     /// Backwards compatible: older saved profiles did not contain languages.
     var gameLanguage: String?
     var targetLanguage: String?
+    var phoneFontScale: Double?
+    var phoneTextColor: String?
+    var phoneBackground: String?
 }
