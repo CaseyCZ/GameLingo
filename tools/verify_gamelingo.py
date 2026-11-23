@@ -54,10 +54,14 @@ def android(root: Path, mode: str):
     if mode == "mobile":
         contains(base / "MainActivity.kt",
             "GameLingoFirstRun.show", "GameLingoNavigation.create",
-            "GameLingoAbout.show(this)", "onDevices = { GameLingoDeviceCenter.show")
+            "GameLingoVisualKit.brandHeader(this)",
+            "GameLingoAbout.show(this)", "onDevices = { openDevices() }")
         contains(base / "GameLingoNavigation.kt",
             '"Domů"', '"Oblasti"', '"Profily"', '"Zařízení"', '"O aplikaci"')
         contains(base / "GameLingoAbout.kt", "AGPL-3.0")
+        contains(base / "GameLingoVisualKit.kt", "fun deviceCard(", "fun navigationTile(", "fun hero(")
+        contains(base / "GameLingoLanguages.kt", "fun game(", "fun target(", "fun choose(")
+        contains(base / "Prekladac.kt", "zdrojovyJazyk", "nastavZdroj(")
     else:
         contains(base / "MainActivity.kt",
             "Překlad z telefonu", "Přímo na TV",
