@@ -429,6 +429,7 @@ private struct GameLingoAppearanceSettingsView: View {
 struct GameLingoProfilesScreen: View {
     @ObservedObject var model: CaptionAppModel
     @State private var profileName = ""
+    @State private var savedProfileMessage = ""
 
     var body: some View {
         GLScreen(title: "Profily her", help:
@@ -441,8 +442,16 @@ struct GameLingoProfilesScreen: View {
                     .background(GLStyle.surfaceAlt, in: RoundedRectangle(cornerRadius: 11))
                 GLPrimaryButton(title: "Uložit profil", systemImage: "square.and.arrow.down",
                     disabled: profileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
-                    model.saveGameProfile(named: profileName)
+                    let name = profileName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    model.saveGameProfile(named: name)
+                    savedProfileMessage = "✓ Profil „\(name)“ uložen"
                     profileName = ""
+                }
+                if !savedProfileMessage.isEmpty {
+                    Text(savedProfileMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(GLStyle.green)
+                        .accessibilityAddTraits(.updatesFrequently)
                 }
             }
             if model.gameProfiles.isEmpty {
@@ -571,4 +580,7 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var phoneFontScale: Double?
     var phoneTextColor: String?
     var phoneBackground: String?
+    /// New in Beta 4 development; optional to decode older saved profiles.
+    var tvTextColor: String?
+    var tvBackground: String?
 }
