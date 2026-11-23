@@ -271,7 +271,8 @@ struct GameLingoHome: View {
                     name: activeConsoleName,
                     subtitle: devices.chosenConsole?.family.rawValue ?? "Konzole",
                     connected: consoleActuallyReady,
-                    status: consoleActuallyReady ? "Připraveno" : "Připojit"
+                    status: model.isRunning ? "Probíhá překlad" :
+                        (consoleActuallyReady ? "Nastaveno" : "Připojit")
                 )
             }
             .buttonStyle(.plain)
@@ -284,7 +285,8 @@ struct GameLingoHome: View {
                     name: devices.subtitleOutput.rawValue,
                     subtitle: "",
                     connected: outputActuallyReady,
-                    status: outputActuallyReady ? "Připraveno" : "Spárovat"
+                    status: devices.subtitleOutput == .phone ? "Na telefonu" :
+                        (outputActuallyReady ? "TV připojena" : "Spárovat")
                 )
             }
             .buttonStyle(.plain)
@@ -372,7 +374,7 @@ struct GameLingoHome: View {
                  ? model.status
                  : (!consoleActuallyReady
                     ? "Připoj konzoli" :
-                       (!outputActuallyReady ? "Spáruj TV" : "Připraveno")))
+                       (!outputActuallyReady ? "Spáruj TV" : "Připraveno ke spuštění")))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.white)
             Spacer()
