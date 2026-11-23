@@ -43,12 +43,12 @@ jobs:
           test "$(gh api "repos/$REPO/actions/runs/$MOBILE_TV_RUN" --jq '.head_sha')" = "$BUILD_SOURCE"
 
           source_changes="$(gh api "repos/$REPO/compare/$IOS_SHA...$BUILD_SOURCE" --jq '.files[].filename')"
-          if grep -Eq '^(ios/|shared/mobile-ui\\.json$|tools/create_brand_assets\\.py$|\\.github/workflows/build-ios-gamelingo\\.yml$)' <<< "$source_changes"; then
+          if grep -Eq '^(ios/|shared/mobile-ui[.]json$|tools/create_brand_assets[.]py$|[.]github/workflows/build-ios-gamelingo[.]yml$)' <<< "$source_changes"; then
             echo "::error::iOS sources changed after building the IPA."
             exit 1
           fi
           later_changes="$(gh api "repos/$REPO/compare/$BUILD_SOURCE...$SOURCE" --jq '.files[].filename')"
-          if grep -Ev '^\\.github/workflows/' <<< "$later_changes" | grep -q .; then
+          if grep -Ev '^[.]github/workflows/' <<< "$later_changes" | grep -q .; then
             echo "::error::App sources changed since building Android and TV."
             exit 1
           fi
