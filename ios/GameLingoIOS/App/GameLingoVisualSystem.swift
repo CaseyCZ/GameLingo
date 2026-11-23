@@ -83,19 +83,39 @@ struct GLNeonPanel<Content: View>: View {
     }
 }
 
+/// Brand mark drawn natively; a chat bubble plus controller, not the
+/// generic system gamepad used in the original PlayCaption UI.
+struct GLBrandMark: View {
+    var size: CGFloat = 43
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "bubble.left.fill")
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(GLNeon.accent)
+                .shadow(color: GLNeon.purple.opacity(0.36), radius: 9)
+            Image(systemName: "gamecontroller.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size * 0.60, height: size * 0.42)
+                .foregroundStyle(GLNeon.ink)
+                .offset(x: -size * 0.025, y: -size * 0.10)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
 struct GLBrandWordmark: View {
     var compact = false
 
     var body: some View {
-        HStack(spacing: compact ? 9 : 12) {
-            Image(systemName: "gamecontroller.fill")
-                .font(.system(size: compact ? 27 : 35, weight: .semibold))
-                .foregroundStyle(GLNeon.accent)
-                .shadow(color: GLNeon.cyan.opacity(0.45), radius: 11)
-                .accessibilityHidden(true)
+        HStack(spacing: compact ? 8 : 12) {
+            GLBrandMark(size: compact ? 44 : 55)
             (Text("Game").foregroundColor(.white)
              + Text("Lingo").foregroundColor(GLNeon.purple))
-                .font(.system(size: compact ? 28 : 34,
+                .font(.system(size: compact ? 27 : 34,
                               weight: .heavy, design: .rounded))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
