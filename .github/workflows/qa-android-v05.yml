@@ -1,5 +1,8 @@
 name: GameLingo 0.5 Android / TV UI regression
 
+# QA checkpoint: P0 multi-device and unified native navigation; P1 TV D-pad focus.
+# This workflow intentionally runs only when explicitly revised or dispatched.
+
 on:
   push:
     branches: [feature/gamelingo-v05-platform-rebuild]
