@@ -271,7 +271,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(marker,home)
         for marker in ("GLBrandWordmark()", "GLPlatformBadge(family: family",
                        "case 1: languageStep", "case 2: consoleStep", "case 3: outputStep",
-                       "ForEach(0..<4)", "GLNeonBackground()"):
+                       "ForEach(0..<5)", "GLNeonBackground()"):
             self.assertIn(marker,setup)
         for marker in ("GLNeonTitle(", "GLNeonPanel(emphasized: true)",
                        "ForEach(Area.allCases", "model.choicesOutputArea"):
