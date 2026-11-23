@@ -10,6 +10,7 @@ final class GameLingoPlayStation: ObservableObject {
     @Published private(set) var status = "PlayStation nepřipojen"
     @Published private(set) var isRunning = false
     @Published private(set) var streamingConsoleID: String?
+    @Published private(set) var needsLoginPIN = false
 
     let registrations = RegisteredConsoleStore()
     let registration = ConsoleRegistration()
@@ -71,6 +72,7 @@ final class GameLingoPlayStation: ObservableObject {
         let name = console.nickname.isEmpty ? "PlayStation" : console.nickname
         status = "Připojuji \(name)…"
         isRunning = true
+        needsLoginPIN = false
         streamingConsoleID = "ps:" + console.id
 
         // 720p/30 is sufficient for OCR and reduces work on the iPhone.
@@ -99,10 +101,12 @@ final class GameLingoPlayStation: ObservableObject {
                 case .connected:
                     self.status = "PlayStation připojen"
                 case .loginPINRequired:
-                    self.status = "Na PlayStation je vyžadován přihlašovací PIN"
+                    self.needsLoginPIN = true
+                    self.status = "Zadej přihlašovací PIN PlayStation"
                 case .ended(let message):
                     self.status = "PlayStation: " + message
                     self.isRunning = false
+                    self.needsLoginPIN = false
                 }
             }
             .store(in: &subscriptions)
@@ -111,6 +115,7 @@ final class GameLingoPlayStation: ObservableObject {
     func submitLoginPIN(_ pin: String) {
         guard pin.allSatisfy(\.isNumber), !pin.isEmpty else { return }
         session?.submitLoginPIN(pin)
+        needsLoginPIN = false
     }
 
     func stop() {
@@ -119,6 +124,7 @@ final class GameLingoPlayStation: ObservableObject {
         let old = session
         session = nil
         isRunning = false
+        needsLoginPIN = false
         streamingConsoleID = nil
         old?.stop()
         status = "PlayStation odpojen"
