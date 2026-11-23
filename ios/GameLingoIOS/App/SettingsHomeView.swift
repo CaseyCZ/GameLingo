@@ -19,8 +19,9 @@ struct GameLingoSettingsView: View {
                         GameLingoLanguageSettingsView(model: model)
                     } label: {
                         GLDetailRow(icon: "globe",
-                                    title: "Jazyk hry a překladu",
-                                    detail: model.gameLanguage.title + " → " +
+                                    title: "Jazyky",
+                                    detail: model.appLanguage.title + " · " +
+                                        model.gameLanguage.title + " → " +
                                         model.targetLanguage.title)
                     }
                     .buttonStyle(.plain)
@@ -116,7 +117,7 @@ struct GameLingoLanguageSettingsView: View {
 
     var body: some View {
         GLScreen(title: "Jazyky", help:
-            "Jazyk hry určuje rozpoznávání textu na obrazovce. Jazyk překladu určuje, do jaké řeči se překládají dialogy a herní texty. Změnu proveď před spuštěním hry.") {
+            "Jazyk aplikace určuje rozhraní. Jazyk hry vybírá OCR rozpoznávání. Jazyk překladu určuje výstup pro dialogy i herní texty. Zdroj a cíl přepínej před spuštěním hry.") {
             GLCard {
                 GLHeader(title: "Jazyk hry", help:
                     "Vyber jazyk, ve kterém hra zobrazuje původní dialogy.")
@@ -140,12 +141,14 @@ struct GameLingoLanguageSettingsView: View {
                 .disabled(model.isRunning)
             }
             GLCard {
-                GLHeader(title: "Jazyk aplikace")
-                Label("Čeština", systemImage: "globe.europe.africa")
-                    .font(.subheadline.weight(.semibold))
-                Text("Ovládací rozhraní je zatím v češtině. Další jazyky rozhraní se musí nejprve kompletně přeložit; jejich výběr zatím nenabízíme.")
-                    .font(.caption)
-                    .foregroundStyle(GLNeon.mist)
+                GLHeader(title: "Jazyk aplikace", help:
+                    "Jazyk tlačítek a nabídky GameLingo. Nemění jazyk hry ani překladu.")
+                Picker("Jazyk aplikace", selection: $model.appLanguage) {
+                    ForEach(GLAppLanguage.allCases) { language in
+                        Text(language.title).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
             }
         }
     }
