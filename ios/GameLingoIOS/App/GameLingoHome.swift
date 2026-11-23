@@ -60,7 +60,10 @@ struct GameLingoHome: View {
                         case .home: homePage
                         case .regions: regionsPage
                         case .devices: devicesPage
-                        case .settings: GameLingoSettingsOverview(model: model)
+                        case .settings:
+                            GameLingoSettingsOverview(model: model) {
+                                tab = .devices
+                            }
                         case .about: aboutPage
                         }
                     }
