@@ -1,5 +1,7 @@
 # GameLingo 0.5 — audit shody iOS a Android mobil
 
+> **Historický vstupní audit:** zjištění níže zachycují stav před následným refaktorem. Opravená navigace, OCR, titulky a nové Android TV párování jsou popsané v [aktuálním přehledu implementace](MOBILE_PARITY_IMPLEMENTATION.md). Nepoužívejte tuto tabulku jako aktuální seznam neopravených chyb.
+
 **Provedeno:** 23. 11. 2026. **Větev:** `feature/gamelingo-v05-platform-rebuild`. **Rozsah:** statický audit skutečných SwiftUI/Kotlin obrazovek, zdrojů nastavení a jejich návazností + kontroly sestavení. Nejde o vizuální test na telefonech ani test fyzických konzolí.
 
 ## Ověřená shoda
