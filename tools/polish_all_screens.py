@@ -125,7 +125,50 @@ def tv(s):
         '"Zadejte kód do telefonu"')
     # Remove a technical-sounding banner subtitle while retaining receiver states.
     s=s.replace('"Překlady přímo přes obraz hry"', '"České titulky"')
-    # Shorter explanations on older connection options.
+    # Console, PSN and Xbox setup screens share the new GameLingo title +
+    # optional Help, instead of the old giant PlayCaption image.
+    old = '''    private fun nadpisLogo() = ImageView(this).apply {
+        setImageResource(R.drawable.logo)
+        adjustViewBounds = true
+        layoutParams = LinearLayout.LayoutParams(dp(260), ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(14) }
+    }
+'''
+    replacement = '''    private fun nadpisLogo(): View = vodorovne().apply {
+        gravity = Gravity.CENTER_VERTICAL
+        addView(ImageView(this@MainActivity).apply {
+            setImageResource(R.drawable.gamelingo_ikona)
+            adjustViewBounds = true
+        }, LinearLayout.LayoutParams(dp(73), dp(73)))
+        addView(text("GameLingo", 30f, Color.WHITE, tucne = true),
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                .apply { leftMargin = dp(12) })
+        addView(GameLingoHelp.button(this@MainActivity, "console"),
+            LinearLayout.LayoutParams(dp(56), dp(56)))
+        setPadding(dp(4), dp(8), dp(4), dp(10))
+    }
+'''
+    s=one(s,old,replacement,"Google TV console screen header")
+    # Keep Sony/Microsoft account, console discovery and PIN steps visible.
+    # Hide only duplicated prerequisite paragraphs, available in Help.
+    prerequisite='sloupec.addView(k0, odsazeni(bottom = 12))'
+    if s.count(prerequisite)!=2:
+        raise RuntimeError("Expected both TV console setup introductions")
+    s=s.replace(prerequisite, '// See ? for setup prerequisites')
+    for before,after in (
+        ('k1.addView(text(t(if (telefon) "krok1Telefon" else "krok1"), 18f, Color.WHITE))',
+         'k1.addView(text("Účet PlayStation", 19f, Color.WHITE, tucne = true))'),
+        ('k2.addView(text(t("krok2"), 18f, Color.WHITE))',
+         'k2.addView(text("Najít PlayStation", 19f, Color.WHITE, tucne = true))'),
+        ('k3.addView(text(t(if (telefon) "krok3Telefon" else "krok3"), 18f, Color.WHITE))',
+         'k3.addView(text("Párovací PIN", 19f, Color.WHITE, tucne = true))'),
+        ('k1.addView(text(t("xboxKrok1"), 18f, Color.WHITE))',
+         'k1.addView(text("Účet Microsoft", 19f, Color.WHITE, tucne = true))'),
+        ('k2.addView(text(t("xboxKrok2"), 18f, Color.WHITE))',
+         'k2.addView(text("Najít Xbox", 19f, Color.WHITE, tucne = true))'),
+        ('k3.addView(text(t("xboxKrok3"), 18f, Color.WHITE))',
+         'k3.addView(text("Připojit Xbox", 19f, Color.WHITE, tucne = true))')
+    ):
+        s=one(s,before,after,"Google TV console step")
     return s
 
 def polish_phone_activity(s):
