@@ -105,9 +105,7 @@ struct GameLingoSetupView: View {
                 }
             }
             .padding(.bottom, 8)
-            Text(LocalizedStringKey(["Vítej v GameLingo", "Jazyky a překlad",
-                  "Vyber konzoli", "Kam zobrazit titulky?",
-                  "Kontrola nastavení"][step]))
+            Text(LocalizedStringKey(GameLingoUIContract.setupSteps[step]))
                 .font(.title2.bold())
         }
     }
