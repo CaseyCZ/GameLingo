@@ -239,8 +239,8 @@ def redesign_tv(s: str) -> str:
             ?.address?.hostAddress ?: "Adresa se zjišťuje"
 
         fun modraKarta(): LinearLayout = svisle().apply {
-            background = zaobleni(karta, 24f, obrys)
-            setPadding(dp(24), dp(19), dp(24), dp(19))
+            background = GameLingoTVUi.panel(this@MainActivity)
+            setPadding(dp(23), dp(21), dp(23), dp(21))
         }
 
         val vrsek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
@@ -256,21 +256,36 @@ def redesign_tv(s: str) -> str:
         vrsek.addView(text("Google TV / Android TV", 17f,
             Color.parseColor("#94A3B8")))
 
-        val levá = modraKarta().apply { gravity = Gravity.CENTER }
-        levá.addView(ImageView(this).apply {
-            setImageResource(R.drawable.gamelingo_ikona)
-            adjustViewBounds = true
-        }, LinearLayout.LayoutParams(dp(200), dp(200)).apply {
-            gravity = Gravity.CENTER_HORIZONTAL
-        })
-        levá.addView(text("Překlady přímo přes obraz hry", 23f,
-            Color.WHITE, tucne = true).apply {
-            gravity = Gravity.CENTER
-        }, odsazeni(top = 14))
-        levá.addView(text("Xbox · PlayStation · Google TV", 16f,
-            Color.parseColor("#94A3B8")).apply {
-            gravity = Gravity.CENTER
-        }, odsazeni(top = 10))
+        val levá = modraKarta()
+        levá.addView(GameLingoTVUi.title(this,
+            "Překlad z telefonu", 26f), odsazeni(bottom = 13))
+        levá.addView(GameLingoTVUi.title(this,
+            "Získej titulky z iPhonu nebo Androidu.", 17f, muted = true),
+            odsazeni(bottom = 18))
+        listOf(
+            "1" to "Otevři GameLingo na telefonu",
+            "2" to "Spáruj TV šestimístným kódem",
+            "3" to "Spusť překlad a vrať se ke hře"
+        ).forEach { (index, title) ->
+            val krok = vodorovne().apply {
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(10), 0, dp(10))
+            }
+            krok.addView(GameLingoTVUi.title(this, index, 25f).apply {
+                gravity = Gravity.CENTER
+                setTextColor(akcent)
+                background = GameLingoTVUi.panel(this@MainActivity)
+            }, LinearLayout.LayoutParams(dp(49), dp(49)).apply {
+                rightMargin = dp(13)
+            })
+            krok.addView(GameLingoTVUi.title(this, title, 17f),
+                LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            levá.addView(krok)
+        }
+        levá.addView(GameLingoTVUi.title(this,
+            "Titulky se zobrazí nad hrou, bez přepínání vstupu.",
+            15f, muted = true), odsazeni(top = 17))
 
         val pravá = modraKarta()
         pravá.addView(text("Připojte svůj telefon", 32f,
@@ -300,24 +315,22 @@ def redesign_tv(s: str) -> str:
         pravá.addView(text("IP televizoru: $ipTv", 17f,
             akcent), odsazeni(top = 9))
         val akce = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
-        akce.addView(tlacitko("Nový párovací kód", 19f) {
+        akce.addView(GameLingoTVUi.action(
+            this, "Nový párovací kód", primary = true) {
             shownCode = IPhoneTVPairing.startCode()
-        }.apply {
-            gravity = Gravity.CENTER
-            background = android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.parseColor("#A329FA"), Color.parseColor("#02D6FF"))
-            ).apply { cornerRadius = dp(13).toFloat() }
-            setPadding(dp(17), dp(13), dp(17), dp(13))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            .apply { rightMargin = dp(8) })
-        akce.addView(tlacitko("Zrušit spárování", 16f) {
-            IPhoneTVPairing.clear(this)
-            shownCode = IPhoneTVPairing.startCode()
-        }.apply {
-            gravity = Gravity.CENTER
-            background = zaobleni(Color.parseColor("#172033"), 13f)
-            setPadding(dp(14), dp(14), dp(14), dp(14))
+            .apply { rightMargin = dp(9) })
+        akce.addView(GameLingoTVUi.action(
+            this, "Zrušit spárování") {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Zrušit párování?")
+                .setMessage("Telefon bude nutné spárovat znovu.")
+                .setPositiveButton("Zrušit párování") { _, _ ->
+                    IPhoneTVPairing.clear(this)
+                    shownCode = IPhoneTVPairing.startCode()
+                }
+                .setNegativeButton("Zpět", null)
+                .show()
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         pravá.addView(akce, odsazeni(top = 17))
 
@@ -332,9 +345,10 @@ def redesign_tv(s: str) -> str:
         hlavni.addView(pravá, LinearLayout.LayoutParams(0,
             ViewGroup.LayoutParams.WRAP_CONTENT, 1.45f))
 
-        val prijemDiag = text("", 14f, Color.parseColor("#94A3B8")).apply {
+        val prijemDiag = text("", 15f, Color.parseColor("#94A3B8")).apply {
             gravity = Gravity.CENTER
-            maxLines = 2
+            maxLines = 5
+            visibility = View.GONE
         }
         fun stavItem(ikonka: String, popisek: String, vysledek: String): LinearLayout =
             svisle().apply {
@@ -377,30 +391,28 @@ def redesign_tv(s: str) -> str:
             addView(stavTitulku, odsazeni(top = 3))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
 
-        val test = tlacitko("▶  Vyzkoušet titulky", 17f) {
-            OverlayService.posli(this, Intent(this, OverlayService::class.java)
+        val test = GameLingoTVUi.action(this, "▶  Vyzkoušet titulky") {
+            if (!android.provider.Settings.canDrawOverlays(this))
+                pozadejOPovoleni()
+            else OverlayService.posli(this, Intent(this, OverlayService::class.java)
                 .setAction(OverlayService.ACTION_SET_TEXT)
-                .putExtra(OverlayService.EXTRA_TEXT, "GameLingo · České titulky fungují")
+                .putExtra(OverlayService.EXTRA_TEXT, "GameLingo · Ukázka titulků")
                 .putExtra(OverlayService.EXTRA_DOBA, 8000L)
                 .putExtra(OverlayService.EXTRA_VLASTNI,
                     floatArrayOf(0.5f, 0.84f, 0.78f, 1.10f, 1f)))
-        }.apply {
-            gravity = Gravity.CENTER
-            background = vyber(Color.parseColor("#172033"), obrys, radius = 13f)
-            setPadding(dp(17), dp(12), dp(17), dp(12))
         }
-        val zastav = tlacitko("Zastavit přijímač", 17f) {
-            PrijemService.zastav(this)
-            finish()
-        }.apply {
-            gravity = Gravity.CENTER
-            background = vyber(Color.parseColor("#172033"), obrys, radius = 13f)
-            setPadding(dp(17), dp(12), dp(17), dp(12))
+        val zastav = GameLingoTVUi.action(this, "←  Zpět do nabídky") {
+            zpetNaVyber()
         }
         val paticka = vodorovne().apply {
             gravity = Gravity.CENTER_VERTICAL
         }
         paticka.addView(test)
+        paticka.addView(View(this), LinearLayout.LayoutParams(dp(14), 1))
+        paticka.addView(GameLingoTVUi.action(this, "Podrobnosti") {
+            prijemDiag.visibility =
+                if (prijemDiag.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        })
         paticka.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         paticka.addView(zastav)
 
@@ -412,13 +424,19 @@ def redesign_tv(s: str) -> str:
             )
             setPadding(dp(36), dp(18), dp(36), dp(23))
             addView(vrsek, odsazeni(bottom = 22))
+            if (!android.provider.Settings.canDrawOverlays(this@MainActivity)) {
+                addView(GameLingoTVUi.action(this@MainActivity,
+                    "⚠  Povolit titulky přes obraz hry", primary = true) {
+                    pozadejOPovoleni()
+                }, odsazeni(bottom = 12))
+            }
             addView(hlavni, odsazeni(bottom = 22))
             addView(statusy, odsazeni(bottom = 12))
             addView(paticka, odsazeni(bottom = 8))
             addView(prijemDiag)
         }
         nastavObsah(obsah, sirka = ViewGroup.LayoutParams.MATCH_PARENT)
-        test.requestFocus()
+        akce.getChildAt(0)?.requestFocus()
 
         val obnovaPrijmu = object : Runnable {
             override fun run() {
