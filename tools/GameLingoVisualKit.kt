@@ -199,7 +199,7 @@ object GameLingoVisualKit {
             background = card(activity, selected)
             setPadding(dp(activity, 13), dp(activity, 13),
                 dp(activity, 13), dp(activity, 13))
-            minHeight = dp(activity, 77)
+            minimumHeight = dp(activity, 77)
             isFocusable = true
             isClickable = true
             setOnClickListener { onClick() }
@@ -281,7 +281,7 @@ object GameLingoVisualKit {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             background = card(activity)
-            minHeight = dp(activity, 99)
+            minimumHeight = dp(activity, 99)
             isFocusable = true
             isClickable = true
             setPadding(dp(activity, 7), dp(activity, 11),
