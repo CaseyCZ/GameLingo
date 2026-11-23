@@ -1,6 +1,6 @@
 import SwiftUI
 
-// GameLingo 0.3 — reference-inspired identity, native SwiftUI controls.
+// GameLingo 0.5 — original navigation, native SwiftUI controls.
 // Remote Play, OCR, pairing and translation remain in CaptionAppModel.
 private enum GLVisual {
     static let navy = Color(red: 7/255, green: 11/255, blue: 20/255)
@@ -98,7 +98,14 @@ struct GameLingoHome: View {
         .onAppear {
             devices.refreshXbox(model.xbox.consoles)
             devices.refreshPlayStation(model.playStation.registered)
+            devices.prepareTV(model.tv)
             if !devices.completedSetup { setupSheet = true }
+        }
+        .onReceive(devices.$preferredTelevisionID) { _ in
+            devices.prepareTV(model.tv)
+        }
+        .onReceive(devices.$subtitleOutput) { output in
+            if output == .googleTV { devices.prepareTV(model.tv) }
         }
         .onReceive(model.xbox.$consoles) { consoles in
             devices.refreshXbox(consoles)
@@ -187,7 +194,10 @@ struct GameLingoHome: View {
 
     private var outputActuallyReady: Bool {
         if devices.subtitleOutput == .phone { return true }
-        return model.tv.receiverConnected && devices.chosenTelevision != nil
+        guard let selectedTV = devices.chosenTelevision else { return false }
+        return model.tv.receiverConnected &&
+            model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines) ==
+            selectedTV.ipAddress
     }
 
     private func openSelectedConsole() {
@@ -207,6 +217,9 @@ struct GameLingoHome: View {
             setupSheet = true
             return
         }
+        // Align the receiver before checking readiness, not after the
+        // stream has started. This matters when switching between TVs.
+        devices.prepareTV(model.tv)
         guard outputActuallyReady else {
             if devices.subtitleOutput == .googleTV { tvSheet = true }
             return
