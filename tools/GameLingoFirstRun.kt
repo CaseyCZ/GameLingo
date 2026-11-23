@@ -111,7 +111,8 @@ object GameLingoFirstRun {
             if (tvChoice == 0) return true
             val store = TvProfily(activity)
             val selected = store.posledniId?.let { store.najdi(it) } ?: return false
-            return tvChoice == 1 && GameLingoTVPairing.paired(activity, selected.ip)
+            return tvChoice == 1 && !selected.platforma.jenZobrazovac &&
+                GameLingoTVPairing.paired(activity, selected.ip)
         }
 
         lateinit var redraw: () -> Unit
@@ -119,7 +120,12 @@ object GameLingoFirstRun {
         fun pairOrChooseTV() {
             val store = TvProfily(activity)
             val selected = store.posledniId?.let { store.najdi(it) }
-            if (selected != null) {
+            if (selected != null && selected.platforma.jenZobrazovac) {
+                android.app.AlertDialog.Builder(activity)
+                    .setMessage("Vybraná televize nepodporuje šestimístné párování " +
+                        "GameLingo TV. Pro tento výstup vyber Android TV nebo telefon.")
+                    .setPositiveButton("OK", null).show()
+            } else if (selected != null) {
                 GameLingoTVPairing.show(activity, selected) { redraw() }
             } else {
                 // Device discovery is a separate existing native flow. The
