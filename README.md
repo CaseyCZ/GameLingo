@@ -40,12 +40,12 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 
 | Platforma | GameLingo |
 | :--- | :--- |
-| **Xbox Series X/S a Xbox One** | Základ překladu s iPhonem už máme vyzkoušený. |
-| **PlayStation 5 a PlayStation 4** | Podpora vychází z původní aplikace pro Android; převádíme ji do GameLingo. |
-| **iPhone** | Připravujeme samostatnou aplikaci s novým vzhledem. |
-| **Android telefon** | Připravujeme vlastní aplikaci. |
-| **Google TV / Android TV** | Zobrazení titulků na TV máme vyzkoušené; připravujeme novou TV aplikaci. |
-| **PC** | V plánu do budoucna. |
+| **Xbox Series X/S a Xbox One** | Překlad přes iPhone a Android. |
+| **PlayStation 5 a PlayStation 4** | Překlad přes Android; podpora na iPhonu je ve vývoji a testování. |
+| **iPhone** | Testovací GameLingo pro Xbox a Google TV je ke stažení. |
+| **Android telefon** | Testovací GameLingo pro Xbox a PlayStation je ke stažení. |
+| **Google TV / Android TV** | Samostatná testovací aplikace pro české titulky. |
+| **PC** | Možné rozšíření do budoucna. |
 
 ## 🚀 Jak to funguje?
 
@@ -57,7 +57,7 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 
 GameLingo je nový projekt s vlastním vzhledem v **modrobílém stylu CaseyCZ**. Navazujeme na funkční základ, který jsme již vyzkoušeli při skutečném hraní, a postupně připravujeme nové aplikace pro telefon i televizi.
 
-První samostatné verze GameLingo jsou **ve vývoji**. Jakmile budou připravené k vyzkoušení, najdeš je na jednom místě:
+**Testovací verze GameLingo 0.4.0** už je ke stažení pro iPhone, Android a Google TV. Nyní připravujeme zcela novou navigaci, správu více zařízení a nativní PlayStation Remote Play pro iPhone. Dokud neprojdou reálnými testy, nebudeme tyto nové funkce vydávat za hotové. Všechny veřejné testovací verze najdeš zde:
 
 <p align="center">
   <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>⬇️ ZOBRAZIT VYDÁNÍ GAMELINGO</strong></a>
