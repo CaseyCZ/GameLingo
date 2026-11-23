@@ -24,4 +24,12 @@ object GameLingoUIContract {
         "ZOBRAZENÍ A PROFILY",
         "OBECNÉ",
     )
+    object Palette {
+        const val background = "#070B19"
+        const val panel = "#111A33"
+        const val cyan = "#02D6FF"
+        const val purple = "#A329FA"
+        const val muted = "#92A4C7"
+        const val blue = "#3557FF"
+    }
 }
