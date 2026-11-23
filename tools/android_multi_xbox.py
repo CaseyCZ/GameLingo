@@ -40,15 +40,21 @@ def main():
                                 .getString("selectedXboxId", null)
                             val jmena = nalezene.map { it.jmeno }.toTypedArray()
                             val predvybrany = nalezene.indexOfFirst { it.id == savedId }
-                            hledaniStav.text = "Vyber Xbox (" + nalezene.size + ")"
-                            android.app.AlertDialog.Builder(this)
-                                .setTitle("Vyber konzoli")
-                                .setSingleChoiceItems(jmena, predvybrany) { dialog, index ->
-                                    zvolXbox(nalezene[index])
-                                    dialog.dismiss()
-                                }
-                                .setNegativeButton("Zrušit", null)
-                                .show()
+                            if (predvybrany >= 0) {
+                                // The user already chose this device in the central
+                                // library. Respect it instead of asking every time.
+                                zvolXbox(nalezene[predvybrany])
+                            } else {
+                                hledaniStav.text = "Vyber Xbox (" + nalezene.size + ")"
+                                android.app.AlertDialog.Builder(this)
+                                    .setTitle("Vyber konzoli")
+                                    .setSingleChoiceItems(jmena, -1) { dialog, index ->
+                                        zvolXbox(nalezene[index])
+                                        dialog.dismiss()
+                                    }
+                                    .setNegativeButton("Zrušit", null)
+                                    .show()
+                            }
                         }
                     }'''
     path.write_text(source[:start]+replacement+source[end:],encoding="utf-8")
