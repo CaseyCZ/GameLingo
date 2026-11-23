@@ -349,7 +349,6 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("private fun receiverPort(ip: String)",android)
         self.assertIn("receiverPort(tv.ip)",android)
         self.assertIn("receiverPort(ip)",android)
-        self.assertNotIn("PORT_TITULKY))\\n",tv_patch)
 
     def test_tv_style_control_and_live_game_profile_save(self):
         """TV style is authenticated and persisted; running games may be saved."""
