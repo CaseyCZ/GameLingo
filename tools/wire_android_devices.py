@@ -110,6 +110,10 @@ def main():
         # the asynchronously refreshed GameLingoTVPairing port cache.
         transport = folder/"Propojeni.kt"
         src = transport.read_text(encoding="utf-8")
+        sender_marker = "    object Vysilac {"
+        if src.count(sender_marker) != 1:
+            raise RuntimeError("Android TV subtitle sender anchor changed")
+        prefix, sender = src.split(sender_marker, 1)
         for old, new, label in (
             (
                 'data.forEach { s.send(DatagramPacket(it, it.size, kam, PORT_TITULKY)) }',
@@ -132,8 +136,8 @@ def main():
                 "Android game text/choices repeat",
             ),
         ):
-            src = one(src, old, new, label)
-        transport.write_text(src, encoding="utf-8")
+            sender = one(sender, old, new, label)
+        transport.write_text(prefix + sender_marker + sender, encoding="utf-8")
 
     mainFile.write_text(code,encoding="utf-8")
 
