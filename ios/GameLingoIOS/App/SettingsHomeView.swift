@@ -30,7 +30,12 @@ struct GameLingoSettingsView: View {
 
 struct GameLingoSettingsOverview: View {
     @ObservedObject var model: CaptionAppModel
+    var onDevices: (() -> Void)? = nil
     @State private var showRegions = false
+    @State private var showDevices = false
+    @State private var showXbox = false
+    @State private var showPlayStation = false
+    @State private var showTV = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
@@ -94,6 +99,15 @@ struct GameLingoSettingsOverview: View {
             .buttonStyle(.plain)
 
             sectionLabel("OBECNÉ")
+            Button {
+                if let onDevices { onDevices() }
+                else { showDevices = true }
+            } label: {
+                GLDetailRow(icon: "display.2",
+                            title: "Zařízení",
+                            detail: "Xbox, PlayStation a Google TV")
+            }
+            .buttonStyle(.plain)
             NavigationLink {
                 GameLingoDiagnosticsView(model: model)
             } label: {
@@ -113,6 +127,41 @@ struct GameLingoSettingsOverview: View {
         }
         .sheet(isPresented: $showRegions) {
             SubtitleSettingsView(model: model)
+        }
+        .sheet(isPresented: $showDevices) {
+            NavigationStack {
+                ScrollView {
+                    GameLingoDevicesPanel(
+                        devices: model.devices,
+                        addXbox: { showXbox = true },
+                        addPlayStation: { showPlayStation = true },
+                        addTV: { showTV = true }
+                    )
+                    .padding(18)
+                }
+                .background(GLNeonBackground())
+                .navigationTitle("Zařízení")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Hotovo") { showDevices = false }
+                    }
+                }
+            }
+            .tint(GLNeon.cyan)
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showXbox) {
+            GameLingoXboxScreen(devices: model.devices, auth: model.xbox)
+                .environmentObject(model)
+        }
+        .sheet(isPresented: $showPlayStation) {
+            GameLingoPlayStationSetup(devices: model.devices)
+                .environmentObject(model)
+        }
+        .sheet(isPresented: $showTV) {
+            GameLingoTVSetupScreen(devices: model.devices, tv: model.tv) {
+                showTV = false
+            }
         }
     }
 
