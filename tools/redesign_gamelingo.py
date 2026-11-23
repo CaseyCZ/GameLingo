@@ -334,8 +334,9 @@ def redesign_tv(s: str) -> str:
             "Otevřete GameLingo na telefonu a zadejte tento šestimístný kód.",
             19f, Color.parseColor("#CBD5E1")), odsazeni(top = 9, bottom = 13))
 
-        var shownCode: String? = if (!IPhoneTVPairing.paired(this))
-            IPhoneTVPairing.startCode() else null
+        // Always show a fresh six-digit code when opening the receiver.
+        // Existing pairing remains valid until a new phone confirms this code.
+        var shownCode: String? = IPhoneTVPairing.startCode()
         val kodRadek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
         val policka = (0 until 6).map {
             text("•", 44f, Color.WHITE, tucne = true).apply {
@@ -489,11 +490,17 @@ def redesign_tv(s: str) -> str:
                 }
                 val spojeno = IPhoneTVPairing.connectedRecently()
                 val networkReady = ipTv != "Adresa se zjišťuje"
-                val receiverReady = PrijemService.bezi
+                val receiverInfo = PrijemService.statistikaPrijmu()
+                val receiverError = receiverInfo.startsWith("Chyba UDP")
+                val receiverReady = PrijemService.bezi && !receiverError
                 val overlayReady = android.provider.Settings.canDrawOverlays(this@MainActivity)
                 sitLabel.text = if (networkReady) "IP: $ipTv" else "Nepřipojeno"
                 sitLabel.setTextColor(if (networkReady) zelena else Color.parseColor("#94A3B8"))
-                prijimacLabel.text = if (receiverReady) "Aktivní" else "Zastaven"
+                prijimacLabel.text = when {
+                    receiverError -> "Port UDP obsazen"
+                    receiverReady -> "Aktivní"
+                    else -> "Zastaven"
+                }
                 prijimacLabel.setTextColor(if (receiverReady) zelena else Color.parseColor("#94A3B8"))
                 stavTitulku.text = when {
                     !overlayReady -> "Povol překryv"
@@ -503,13 +510,17 @@ def redesign_tv(s: str) -> str:
                 stavTitulku.setTextColor(if (spojeno && receiverReady && overlayReady)
                     zelena else Color.parseColor("#94A3B8"))
                 stavParovani.text = when {
+                    receiverError -> "Nelze přijímat: port UDP 41989 používá jiná aplikace"
                     spojeno && receiverReady -> "✓ Telefon je spárovaný a připojený"
                     code != null -> "Kód platí ještě $zbyva s"
                     IPhoneTVPairing.paired(this@MainActivity) ->
                         "Telefon je spárovaný · čekám na spojení"
                     else -> "Zvol Nový párovací kód"
                 }
-                prijemDiag.text = PrijemService.statistikaPrijmu()
+                // Show bind failures immediately: the user should not have to
+                // find a hidden developer panel to diagnose an iPhone timeout.
+                if (receiverError) prijemDiag.visibility = View.VISIBLE
+                prijemDiag.text = receiverInfo
                 ui.postDelayed(this, 1000)
             }
         }
