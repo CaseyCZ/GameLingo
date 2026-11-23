@@ -57,7 +57,7 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 
 GameLingo je nový projekt s vlastním vzhledem v **modrobílém stylu CaseyCZ**. Navazujeme na funkční základ, který jsme již vyzkoušeli při skutečném hraní, a postupně připravujeme nové aplikace pro telefon i televizi.
 
-**Testovací verze GameLingo 0.4.0** už je ke stažení pro iPhone, Android a Google TV. Nyní připravujeme zcela novou navigaci, správu více zařízení a nativní PlayStation Remote Play pro iPhone. Dokud neprojdou reálnými testy, nebudeme tyto nové funkce vydávat za hotové. Všechny veřejné testovací verze najdeš zde:
+**Poslední veřejně vydaná testovací verze je GameLingo 0.4.0 Beta** pro iPhone, Android a Google TV. Nové ovládání, správa více konzolí a nativní PlayStation Remote Play pro iPhone se připravují ve vývojové verzi 0.5.0. Nejde zatím o nové veřejné vydání: plné sestavení i připojení ke skutečným konzolím a televizím musí projít ověřením. Všechny již zveřejněné testovací verze najdeš zde:
 
 <p align="center">
   <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>⬇️ ZOBRAZIT VYDÁNÍ GAMELINGO</strong></a>
