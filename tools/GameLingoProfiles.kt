@@ -23,10 +23,10 @@ import org.json.JSONObject
  * No accounts, passwords, PSN or Xbox credentials are stored in game profiles.
  */
 object GameLingoProfiles {
-    private val navy = Color.parseColor("#070B14")
-    private val card = Color.parseColor("#111827")
-    private val cyan = Color.parseColor("#38BDF8")
-    private val muted = Color.parseColor("#94A3B8")
+    private val navy = Color.parseColor("#070B19")
+    private val card = Color.parseColor("#111A33")
+    private val cyan = Color.parseColor("#02D6FF")
+    private val muted = Color.parseColor("#92A4C7")
 
     private fun prefs(c: Context) =
         c.getSharedPreferences("gamelingo_game_profiles", Context.MODE_PRIVATE)
@@ -51,7 +51,7 @@ object GameLingoProfiles {
     private fun button(c: Context, label: String, action: () -> Unit): TextView =
         text(c, label, 15f, Color.WHITE, true).apply {
             gravity = Gravity.CENTER
-            background = box(Color.parseColor("#172033"), cyan, 14f)
+            background = GameLingoVisualKit.card(c, selected = true)
             setOnClickListener { action() }
             isClickable = true
             isFocusable = true
@@ -133,8 +133,11 @@ object GameLingoProfiles {
         val outer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(22, 22, 22, 22)
-            background = box(navy, cyan, 24f)
+            background = GameLingoVisualKit.pageBackground(activity)
         }
+        outer.addView(GameLingoVisualKit.hero(activity), LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 14 })
         val heading = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         heading.addView(text(activity, "Profily her", 24f, Color.WHITE, true),
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -142,7 +145,8 @@ object GameLingoProfiles {
             LinearLayout.LayoutParams(54, 54))
         outer.addView(heading)
 
-        val dialog = android.app.Dialog(activity)
+        val dialog = android.app.Dialog(activity,
+            android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val scroll = ScrollView(activity)
         scroll.addView(outer)
         val names = saved.all.keys.sorted()
@@ -150,7 +154,7 @@ object GameLingoProfiles {
             val row = LinearLayout(activity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                background = box(card, Color.parseColor("#2A3850"))
+                background = GameLingoVisualKit.card(activity)
                 setPadding(12, 10, 12, 10)
             }
             row.addView(text(activity, name, 16f, Color.WHITE, true),
@@ -220,8 +224,8 @@ object GameLingoProfiles {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.show()
         dialog.window?.setLayout(
-            (activity.resources.displayMetrics.widthPixels * 0.92f).toInt(),
-            ViewGroup.LayoutParams.WRAP_CONTENT
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
         )
     }
 }
