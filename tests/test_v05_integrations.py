@@ -5,6 +5,9 @@ These are static contract checks and DO NOT substitute physical PS4/PS5, Xbox,
 iPhone, Android or Google TV integration tests.
 """
 from pathlib import Path
+import json
+import subprocess
+import sys
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -23,9 +26,12 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for label in ('GameLingoSetupView', 'GameLingoDevicesPanel',
                       'openSelectedConsole', 'startCurrentSource'):
             self.assertIn(label,home)
-        for label in ('Vyber konzoli', 'Kam zobrazit titulky?',
-                      'PlayStation', 'Xbox', 'Spárovat TV'):
+        contract=code(ROOT/"shared/mobile-ui.json")
+        for label in ('Vyber konzoli', 'Kam zobrazit titulky?'):
+            self.assertIn(label,contract)
+        for label in ('PlayStation', 'Xbox', 'Spárovat TV'):
             self.assertIn(label,setup)
+        self.assertIn("GameLingoUIContract.setupSteps[step]", setup)
         for label in ('addXbox', 'refreshPlayStation', 'removeConsole',
                       'removeTelevision', 'preferredConsoleID',
                       'preferredTelevisionID'):
@@ -178,9 +184,10 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('onTV',manager)
         first_run=code(TOOLS/"GameLingoFirstRun.kt")
         self.assertIn('GameLingoFirstRun.show',patches)
-        for step in ('Vyber konzoli', 'Jazyky', 'Kam zobrazit titulky?',
-                     'Nastavit později', 'connectPlayStation()', 'connectTV()'):
+        for step in ('Nastavit později', 'connectPlayStation()', 'connectTV()',
+                     'GameLingoUIContract.setupSteps[step]'):
             self.assertIn(step,first_run)
+        self.assertIn('Vyber konzoli',code(ROOT/"shared/mobile-ui.json"))
         self.assertIn('AES/GCM/NoPadding',psstore)
         self.assertIn('setSingleChoiceItems',multi)
         self.assertIn('if (predvybrany >= 0)',multi)
@@ -203,7 +210,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('defaults.removeObject(forKey: "tvIP")',devices)
         self.assertIn("addRegisteredPlayStation(console)",ps_setup)
         self.assertIn("Nastavit později",android)
-        self.assertIn("Výběr není potvrzení spojení",android)
+        self.assertIn("Uložené zařízení neznamená aktivní Remote Play",android)
         self.assertIn("Theme_Material_NoActionBar_Fullscreen",android)
         self.assertIn("ViewGroup.LayoutParams.MATCH_PARENT",android)
 
@@ -212,10 +219,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         mobile=code(TOOLS/"redesign_gamelingo.py")
         wiring=code(TOOLS/"wire_android_devices.py")
         about=code(TOOLS/"GameLingoAbout.kt")
-        for title in ("Domů", "Oblasti", "Profily", "Zařízení", "O aplikaci"):
-            self.assertIn(title,nav)
+        contract=json.loads(code(ROOT/"shared/mobile-ui.json"))
+        self.assertEqual([t["title"] for t in contract["tabs"]],
+            ["Domů", "Obrazovka", "Konzole", "Nastavení", "O aplikaci"])
+        self.assertIn("GameLingoUIContract.tabs",nav)
+        self.assertIn("GameLingoUIContract.tabs[rawValue]",code(IOS/"GameLingoHome.swift"))
+        self.assertIn("onSettings: () -> Unit",nav)
         self.assertIn("GameLingoNavigation.create(",mobile)
         self.assertIn('onDevices = { openDevices() }',mobile)
+        self.assertIn('onSettings = { openSettings() }',mobile)
         self.assertIn('fun openDevices() {',mobile)
         self.assertIn('GameLingoVisualKit.brandHeader(this)',mobile)
         self.assertIn('onAbout = { GameLingoAbout.show(this) }',mobile)
@@ -223,6 +235,28 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('GameLingoAbout.kt',wiring)
         self.assertIn("'onDevices = { openDevices() }'",wiring)
         self.assertIn("AGPL-3.0",about)
+
+    def test_shared_mobile_contract_and_real_screens(self):
+        spec=json.loads(code(ROOT/"shared/mobile-ui.json"))
+        self.assertEqual(len(spec["setupSteps"]), 5)
+        self.assertEqual(len(spec["settingsSections"]), 4)
+        self.assertEqual(spec["settingsSections"][-1], "OBECNÉ")
+        self.assertIn("GameLingoUIContract.setupSteps[step]",
+                      code(TOOLS/"GameLingoFirstRun.kt"))
+        self.assertIn("GameLingoUIContract.settingsSections[3]",
+                      code(TOOLS/"GameLingoSettings.kt"))
+        self.assertIn("GameLingoUIContract.settingsSections[3]",
+                      code(IOS/"SettingsHomeView.swift"))
+        self.assertIn("GameLingoUIContract.kt",code(TOOLS/"wire_android_devices.py"))
+        self.assertIn("GameLingoDiagnostics.kt",code(TOOLS/"redesign_gamelingo.py"))
+        appearance=code(TOOLS/"GameLingoSubtitleAppearance.kt")
+        self.assertIn("tvPismo",appearance)
+        self.assertIn("tvSirka",appearance)
+        self.assertIn("Propojeni.Vysilac.nastavRozvrh",appearance)
+        self.assertIn("GameLingoSubtitleAppearance.show(activity)",
+                      code(TOOLS/"GameLingoSettings.kt"))
+        subprocess.run([sys.executable, str(TOOLS/"sync_mobile_ui.py"),
+                        "--check"], cwd=ROOT, check=True, capture_output=True)
 
     def test_tv_remote_control_and_receiver_modes(self):
         screen=code(TOOLS/"polish_all_screens.py")
