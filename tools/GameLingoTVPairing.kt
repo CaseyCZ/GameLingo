@@ -40,6 +40,31 @@ object GameLingoTVPairing {
     private const val KEY_ALIAS = "cz.caseycz.gamelingo.receiver.v1"
     private const val PORT = 41989
     private val availablePorts = 41989..41993
+    private val portLock = Any()
+    @Volatile private var lastPortIp = ""
+    @Volatile private var lastPort = PORT
+    @Volatile private var checkedPortAt = 0L
+    @Volatile private var queryingPort = false
+
+    /** Fast nonblocking port lookup used by the actual Android subtitle
+     * sender (not only by the pairing screen). Refreshes in the background
+     * on target change and every 30 seconds to handle TV service restarts.
+     */
+    fun portFor(ip: String): Int {
+        val now = SystemClock.elapsedRealtime()
+        synchronized(portLock) {
+            if (!queryingPort &&
+                (lastPortIp != ip || now - checkedPortAt > 30_000L)) {
+                queryingPort = true
+                checkedPortAt = now
+                Thread {
+                    try { receiverPort(ip) }
+                    finally { synchronized(portLock) { queryingPort = false } }
+                }.apply { name = "gamelingo-tv-port"; isDaemon = true }.start()
+            }
+        }
+        return if (lastPortIp == ip) lastPort else PORT
+    }
 
     /**
      * The GameLingo TV receiver moves to a free UDP port if PlayCaption
@@ -48,7 +73,8 @@ object GameLingoTVPairing {
      * Legacy receivers without GLPORT1 keep their original port.
      */
     private fun receiverPort(ip: String): Int {
-        return runCatching {
+        val cached = if (lastPortIp == ip) lastPort else PORT
+        val discovered = runCatching {
             DatagramSocket().use { socket ->
                 socket.soTimeout = 1_500
                 val address = InetAddress.getByName(ip)
@@ -73,7 +99,11 @@ object GameLingoTVPairing {
                 @Suppress("UNREACHABLE_CODE")
                 PORT
             }
-        }.getOrDefault(PORT)
+        }.getOrDefault(cached)
+        lastPortIp = ip
+        lastPort = discovered
+        checkedPortAt = SystemClock.elapsedRealtime()
+        return discovered
     }
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var lastVerifiedIp = ""
