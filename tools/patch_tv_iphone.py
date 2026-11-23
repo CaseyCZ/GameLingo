@@ -44,6 +44,10 @@ def main() -> None:
     (root / "app/src/main/java/cz/titulky/tv/IPhoneTVPairing.kt").write_text(
         pairing_source.read_text(encoding="utf-8"), encoding="utf-8")
 
+    style_source = pathlib.Path(__file__).with_name("GameLingoTVCaptionStyle.kt")
+    (root / "app/src/main/java/cz/titulky/tv/GameLingoTVCaptionStyle.kt").write_text(
+        style_source.read_text(encoding="utf-8"), encoding="utf-8")
+
     networking = root / "app/src/main/java/cz/titulky/tv/Propojeni.kt"
     once(networking,
          '        @Volatile var posledniZprava = 0L\n            private set',
@@ -89,6 +93,17 @@ def main() -> None:
          '                                    if (secret != null)\n'
          '                                        odpovez(s, p, "PCPAIR1\\tOK\\t$id\\t$secret")\n'
          '                                    else odpovez(s, p, "PCPAIR1\\tERROR\\tKód je nesprávný nebo vypršel")\n'
+         '                                }\n'
+         '                                "STYLE" -> {\n'
+         '                                    val id = casti.getOrNull(2).orEmpty()\n'
+         '                                    val textColor = casti.getOrNull(3).orEmpty()\n'
+         '                                    val background = casti.getOrNull(4).orEmpty()\n'
+         '                                    val signature = casti.getOrNull(5).orEmpty()\n'
+         '                                    if (IPhoneTVPairing.verify(c, id,\n'
+         '                                        "STYLE\\t$id\\t$textColor\\t$background", signature) &&\n'
+         '                                        GameLingoTVCaptionStyle.save(c, textColor, background)) {\n'
+         '                                        odpovez(s, p, "PCPAIR1\\tSTYLE_OK")\n'
+         '                                    }\n'
          '                                }\n'
          '                                "PING" -> {\n'
          '                                    val id = casti.getOrNull(2).orEmpty()\n'
