@@ -29,6 +29,22 @@ final class CaptionAppModel: ObservableObject {
     @Published var lastCzech = ""
     @Published var frameCount = 0
     @Published var isRunning = false
+    @Published var gameLanguage: GLGameLanguage = GLGameLanguage(
+        rawValue: UserDefaults.standard.string(forKey: "gamelingo.gameLanguage") ?? ""
+    ) ?? .english {
+        didSet {
+            UserDefaults.standard.set(gameLanguage.rawValue, forKey: "gamelingo.gameLanguage")
+            Task { await pipeline.resetDialogue(); await pipeline.resetOptions() }
+        }
+    }
+    @Published var targetLanguage: GLTargetLanguage = GLTargetLanguage(
+        rawValue: UserDefaults.standard.string(forKey: "gamelingo.targetLanguage") ?? ""
+    ) ?? .czech {
+        didSet {
+            UserDefaults.standard.set(targetLanguage.rawValue, forKey: "gamelingo.targetLanguage")
+            Task { await pipeline.resetDialogue(); await pipeline.resetOptions() }
+        }
+    }
     @Published var ocrMode: OCRMode = OCRMode(
         rawValue: UserDefaults.standard.string(forKey: "ocrMode") ?? ""
     ) ?? .classic {
@@ -334,6 +350,8 @@ final class CaptionAppModel: ObservableObject {
     private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int) async {
         guard isRunning, sessionRevision == currentSession else { return }
         self.frameCount += 1
+        let activeGameLanguage = self.gameLanguage
+        let activeTargetLanguage = self.targetLanguage
 
                 // Choices use an independent region and may be translated while
                 // standard captions continue; don't block dialogue reading.
@@ -349,13 +367,16 @@ final class CaptionAppModel: ObservableObject {
                             }
                         }
                         guard let englishChoices = await self.pipeline.recognizeOptions(
-                            buffer, area: area, asText: asText
+                            buffer, area: area, asText: asText,
+                            gameLanguage: activeGameLanguage
                         ), self.isRunning,
                            self.sessionRevision == currentSession,
                            self.choicesEnabled else { return }
                         var translated = [String]()
                         for option in englishChoices {
-                            let item = await self.pipeline.translate(option)
+                            let item = await self.pipeline.translate(
+                                option, from: activeGameLanguage,
+                                to: activeTargetLanguage)
                             guard self.isRunning,
                                   self.sessionRevision == currentSession,
                                   self.choicesEnabled else { return }
@@ -391,7 +412,8 @@ final class CaptionAppModel: ObservableObject {
                         manualArea: self.manualOCR ? self.manualOCRBox : nil,
                         filterMenus: self.filterMenuText,
                         mode: self.ocrMode,
-                        expandOnEmpty: self.expandOnEmpty
+                        expandOnEmpty: self.expandOnEmpty,
+                        gameLanguage: activeGameLanguage
                     )
                     if self.sessionRevision == currentSession {
                         self.processingOCR = false
@@ -402,7 +424,9 @@ final class CaptionAppModel: ObservableObject {
                         self.write("OCR: \(reading.english)")
                         Task { @MainActor [weak self] in
                             guard let self else { return }
-                            let czech = await self.pipeline.translate(reading.english)
+                            let czech = await self.pipeline.translate(
+                                reading.english, from: activeGameLanguage,
+                                to: activeTargetLanguage)
                             let isLatest = await self.pipeline.isCurrent(revision: reading.revision)
                             guard self.isRunning,
                                   self.sessionRevision == currentSession,
@@ -422,7 +446,7 @@ final class CaptionAppModel: ObservableObject {
                                                          duration: Int(self.subtitleDuration * 1000))
                                 }
                             }
-                            self.write("CZ: \(czech)")
+                            self.write("Překlad (\(activeTargetLanguage.rawValue)): \(czech)")
                         }
                     }
                 }
