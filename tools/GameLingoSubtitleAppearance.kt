@@ -149,8 +149,9 @@ object GameLingoSubtitleAppearance {
             background = GameLingoVisualKit.card(activity)
             setPadding(dp(10), dp(12), dp(10), dp(12))
         }
+        val colorButtons = mutableListOf<Pair<String, TextView>>()
         GameLingoPhoneSubtitleStyle.colors.forEach { choice ->
-            phoneColors.addView(TextView(activity).apply {
+            val swatch = TextView(activity).apply {
                 text = "●"
                 textSize = 29f
                 gravity = Gravity.CENTER
@@ -162,11 +163,21 @@ object GameLingoSubtitleAppearance {
                     else -> "Bílá"
                 }
                 setTextColor(GameLingoPhoneSubtitleStyle.textColor(choice))
+                background = GameLingoVisualKit.card(activity,
+                    GameLingoPhoneSubtitleStyle.color(activity) == choice)
                 setOnClickListener {
                     GameLingoPhoneSubtitleStyle.setColor(activity, choice)
+                    colorButtons.forEach { (key, button) ->
+                        button.background = GameLingoVisualKit.card(activity, key == choice)
+                        button.isSelected = key == choice
+                    }
                     scalePreview()
                 }
-            }, LinearLayout.LayoutParams(0, dp(55), 1f))
+            }
+            colorButtons.add(choice to swatch)
+            phoneColors.addView(swatch, LinearLayout.LayoutParams(
+                0, dp(55), 1f
+            ).apply { leftMargin = dp(2); rightMargin = dp(2) })
         }
         layout.addView(text("Barva textu", 16f, bold = true))
         addCard(phoneColors)
@@ -176,8 +187,9 @@ object GameLingoSubtitleAppearance {
             background = GameLingoVisualKit.card(activity)
             setPadding(dp(6), dp(12), dp(6), dp(12))
         }
+        val backgroundButtons = mutableListOf<Pair<String, TextView>>()
         GameLingoPhoneSubtitleStyle.backgrounds.forEach { choice ->
-            backgrounds.addView(TextView(activity).apply {
+            val button = TextView(activity).apply {
                 text = when (choice) {
                     "dark" -> "Tmavé"
                     "translucent" -> "Průhledné"
@@ -187,15 +199,21 @@ object GameLingoSubtitleAppearance {
                 textSize = 13f
                 setTextColor(Color.WHITE)
                 contentDescription = "Pozadí: " + text
-                background = GameLingoVisualKit.card(activity,
-                    GameLingoPhoneSubtitleStyle.background(activity) == choice)
+                isSelected = GameLingoPhoneSubtitleStyle.background(activity) == choice
+                background = GameLingoVisualKit.card(activity, isSelected)
                 setOnClickListener {
                     GameLingoPhoneSubtitleStyle.setBackground(activity, choice)
+                    backgroundButtons.forEach { (key, chip) ->
+                        chip.isSelected = key == choice
+                        chip.background = GameLingoVisualKit.card(activity, chip.isSelected)
+                    }
                     scalePreview()
                 }
-            }, LinearLayout.LayoutParams(0, dp(54), 1f).apply {
-                leftMargin = dp(3); rightMargin = dp(3)
-            })
+            }
+            backgroundButtons.add(choice to button)
+            backgrounds.addView(button, LinearLayout.LayoutParams(
+                0, dp(54), 1f
+            ).apply { leftMargin = dp(3); rightMargin = dp(3) })
         }
         layout.addView(text("Pozadí", 16f, bold = true))
         addCard(backgrounds)
