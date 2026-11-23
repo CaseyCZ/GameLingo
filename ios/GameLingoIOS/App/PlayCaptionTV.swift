@@ -58,7 +58,12 @@ final class PlayCaptionTV: ObservableObject {
     @Published var ip: String = UserDefaults.standard.string(forKey: "tvIP") ?? "" {
         didSet {
             UserDefaults.standard.set(ip, forKey: "tvIP")
-            if oldValue != ip { startReceiverHeartbeat() }
+            if oldValue != ip {
+                // A new IP must never leave old dialogue or game-text overlays
+                // behind. Send an explicit clear to the former receiver first.
+                clearOverlays(at: oldValue)
+                startReceiverHeartbeat()
+            }
         }
     }
     @Published var receiverCode = ""
@@ -429,13 +434,15 @@ final class PlayCaptionTV: ObservableObject {
     /// Authenticated subtitle sent through the verified receiver session.
     /// Original PlayCaption 0.22 still receives regular PCT1 when not paired.
     private func sendSignedSubtitle(_ canonicalPayload: Data, to target: String,
-                                    reportStatus: Bool) -> Bool {
+                                    reportStatus: Bool,
+                                    forceDatagram: Bool = false) -> Bool {
         guard let token = ReceiverSecretStore.load(target) else { return false }
         let encoded = canonicalPayload.base64EncodedString()
         let body = "TEXT\t\(receiverID)\t\(encoded)"
         guard let mac = signature(body, tokenHex: token) else { return false }
         let packet = Data("PCPAIR1\t\(body)\t\(mac)".utf8)
-        if liveReceiverReady, liveReceiverTarget == target, let conn = liveReceiver {
+        if !forceDatagram, liveReceiverReady,
+           liveReceiverTarget == target, let conn = liveReceiver {
             conn.send(content: packet, completion: .contentProcessed { [weak self] error in
                 if reportStatus {
                     Task { @MainActor in
@@ -449,6 +456,31 @@ final class PlayCaptionTV: ObservableObject {
             sendDatagram(packet, to: target, reportStatus: reportStatus)
         }
         return true
+    }
+
+    /// Clear captions on a previously selected receiver without changing the
+    /// active TV IP, switching the heartbeat, or publishing a false connection.
+    /// Uses a dedicated UDP datagram: the former live connection is cancelled
+    /// immediately after the IP changes.
+    func clearOverlays(at address: String) {
+        let target = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !target.isEmpty else { return }
+
+        sequence += 1
+        let dialogue = Data([
+            "PCT1", String(sequence), "0", "", "",
+            "0.5", "0.93", "0.62", "1.0", "0"
+        ].joined(separator: "\t").utf8)
+        sequence += 1
+        let choices = Data("PCV1\t\(sequence)\t0\t0\t0\t1\t1\t-1\t".utf8)
+
+        for payload in [dialogue, choices] {
+            if !sendSignedSubtitle(payload, to: target,
+                                   reportStatus: false, forceDatagram: true) {
+                // Legacy TV receivers only recognize the unsigned packets.
+                sendDatagram(payload, to: target, reportStatus: false)
+            }
+        }
     }
 
     /// Sends one packet and repeats it once a second while the caption is valid,
