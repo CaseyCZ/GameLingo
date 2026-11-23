@@ -252,6 +252,53 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn('playStationLoginPIN',home)
         self.assertNotIn('GLHeader(title: "PIN PlayStation"',home)
 
+    def test_original_neon_screens_are_native_swiftui(self):
+        theme=code(IOS/"GameLingoVisualSystem.swift")
+        home=code(IOS/"GameLingoHome.swift")
+        setup=code(IOS/"GameLingoSetupView.swift")
+        regions=code(IOS/"SubtitleSettingsView.swift")
+        devices=code(IOS/"GameLingoDevicesPanel.swift")
+        settings=code(IOS/"SettingsHomeView.swift")
+        for component in ("GLNeonBackground", "GLNeonPanel", "GLBrandWordmark",
+                          "GLPlatformBadge", "GLDetailRow"):
+            self.assertIn("struct "+component,theme)
+        for marker in ("heroBanner", "GLBrandWordmark(compact: true)",
+                       "GLPlatformBadge(family: .xbox",
+                       "GLPlatformBadge(family: .playStation",
+                       "GLNeonPanel(emphasized: connected)", "GLNeonBackground()"):
+            self.assertIn(marker,home)
+        for marker in ("GLBrandWordmark()", "GLPlatformBadge(family: family",
+                       "case 1: languageStep", "case 2: outputStep",
+                       "ForEach(0..<4)", "GLNeonBackground()"):
+            self.assertIn(marker,setup)
+        for marker in ("GLNeonTitle(", "GLNeonPanel(emphasized: true)",
+                       "ForEach(Area.allCases", "model.choicesOutputArea"):
+            self.assertIn(marker,regions)
+        self.assertIn("GLPlatformBadge(family: console.family",devices)
+        for marker in ("GLDetailRow(icon:", "GameLingoLanguageSettingsView",
+                       "GameLingoLicenseView", "GLNeonBackground()"):
+            self.assertIn(marker,settings)
+
+    def test_configured_languages_change_real_ocr_and_translation(self):
+        language=code(IOS/"GameLingoLanguages.swift")
+        model=code(IOS/"PlayCaptionIOSApp.swift")
+        pipeline=code(IOS/"CaptionPipeline.swift")
+        settings=code(IOS/"SettingsHomeView.swift")
+        setup=code(IOS/"GameLingoSetupView.swift")
+        self.assertIn("enum GLGameLanguage",language)
+        self.assertIn("enum GLTargetLanguage",language)
+        for needle in ("@Published var gameLanguage", "@Published var targetLanguage",
+                       "gameLanguage: activeGameLanguage", "to: activeTargetLanguage"):
+            self.assertIn(needle,model)
+        for needle in ("gameLanguage.visionIdentifier", "source.rawValue",
+                       "target.rawValue", 'URLQueryItem(name: "sl"',
+                       'URLQueryItem(name: "tl"'):
+            self.assertIn(needle,pipeline)
+        for view in (settings,setup):
+            self.assertIn("$model.gameLanguage",view)
+            self.assertIn("$model.targetLanguage",view)
+        self.assertIn("Rozhraní GameLingo je zatím kompletně dostupné v češtině.",setup)
+
     def test_pinned_native_source_and_build(self):
         workflow=code(ROOT/".github/workflows/build-gamelingo.yml")
         project=code(ROOT/"ios/GameLingoIOS/project.yml")
