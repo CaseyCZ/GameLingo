@@ -34,7 +34,11 @@ object GameLingoSettings {
                 text = title; textSize = 17f
                 setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
             })
-
+            addView(TextView(c).apply {
+                text = detail; textSize = 13f
+                setTextColor(muted)
+                setPadding(0, 5, 0, 0)
+            })
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         addView(Switch(c).apply {
             isChecked = state
@@ -260,7 +264,9 @@ object GameLingoSettings {
 
         section("ZOBRAZENÍ A DALŠÍ VOLBY")
         menu("Aa", "Vzhled titulků",
-             "Velikost, poloha a výstupní oblasti") { onAreas() }
+             "Skutečná velikost písma a šířka výstupu") {
+             GameLingoSubtitleAppearance.show(activity)
+         }
         menu("♧", "Profily her",
              "Vlastní nastavení pro každou hru") {
             GameLingoProfiles.show(activity, settings) {}
