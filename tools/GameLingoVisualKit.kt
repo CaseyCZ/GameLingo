@@ -56,43 +56,65 @@ object GameLingoVisualKit {
         }
 
     fun hero(activity: Activity): View {
-        val row = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+        fun caption(label: String, size: Float, color: Int,
+                    strong: Boolean = false) = TextView(activity).apply {
+            text = label
+            textSize = size
+            setTextColor(color)
+            if (strong) setTypeface(null, Typeface.BOLD)
+        }
+        val panel = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(dp(activity, 17), dp(activity, 16),
-                dp(activity, 17), dp(activity, 16))
+                dp(activity, 17), dp(activity, 17))
             background = card(activity, selected = true)
         }
-        row.addView(ImageView(activity).apply {
+        val top = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        top.addView(LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(caption("HRAJ. ROZUMĚJ.", 11f, cyan, true).apply {
+                letterSpacing = 0.14f
+            })
+            addView(caption("Překlad přímo při hraní", 18f, Color.WHITE, true).apply {
+                setPadding(0, dp(activity, 5), 0, 0)
+            })
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        top.addView(ImageView(activity).apply {
             setImageResource(R.drawable.gamelingo_ikona)
             adjustViewBounds = true
             contentDescription = "GameLingo"
-        }, LinearLayout.LayoutParams(dp(activity, 65), dp(activity, 65))
-            .apply { rightMargin = dp(activity, 13) })
-        row.addView(LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(TextView(activity).apply {
-                text = "HRAJ. ROZUMĚJ."
-                textSize = 11f
-                letterSpacing = 0.12f
-                setTextColor(cyan)
-                setTypeface(null, Typeface.BOLD)
+        }, LinearLayout.LayoutParams(dp(activity, 51), dp(activity, 51)))
+        panel.addView(top)
+
+        // Same two platform badges as GameLingoHome.swift on iPhone.
+        val consoles = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(activity, 14), 0, 0)
+        }
+        consoles.addView(platformEmblem(activity, "Xbox"),
+            LinearLayout.LayoutParams(dp(activity, 44), dp(activity, 44)).apply {
+                rightMargin = dp(activity, 8)
             })
-            addView(TextView(activity).apply {
-                text = "Překlad přímo při hraní"
-                textSize = 17f
-                setTextColor(Color.WHITE)
-                setTypeface(null, Typeface.BOLD)
-                setPadding(0, dp(activity, 4), 0, dp(activity, 4))
+        consoles.addView(caption("Xbox", 14f, Color.WHITE, true),
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        consoles.addView(TextView(activity).apply {
+            text = "│"
+            textSize = 24f
+            setTextColor(Color.parseColor("#554078"))
+            gravity = Gravity.CENTER
+        }, LinearLayout.LayoutParams(dp(activity, 25), dp(activity, 44)))
+        consoles.addView(platformEmblem(activity, "PlayStation"),
+            LinearLayout.LayoutParams(dp(activity, 44), dp(activity, 44)).apply {
+                rightMargin = dp(activity, 8)
             })
-            addView(TextView(activity).apply {
-                text = "Xbox  •  PlayStation"
-                textSize = 13f
-                setTextColor(muted)
-            })
-        }, LinearLayout.LayoutParams(0,
-            ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        return row
+        consoles.addView(caption("PlayStation", 14f, Color.WHITE, true),
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        panel.addView(consoles)
+        return panel
     }
 
     fun shortcut(activity: Activity, symbol: String, title: String,
@@ -126,7 +148,10 @@ object GameLingoVisualKit {
             rightMargin = dp(activity, 9)
         })
         bar.addView(TextView(activity).apply {
-            text = "GameLingo"
+            val brand = android.text.SpannableString("GameLingo")
+            brand.setSpan(android.text.style.ForegroundColorSpan(purple),
+                4, 9, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            text = brand
             textSize = 27f
             setTextColor(Color.WHITE)
             setTypeface(null, Typeface.BOLD)
