@@ -420,6 +420,12 @@ final class CaptionAppModel: ObservableObject {
             Task { @MainActor in
                 await self?.processFrame(frame, currentSession: currentSession)
             }
+        }, onEnded: { [weak self] reason in
+            guard let self, self.isRunning,
+                  self.sessionRevision == currentSession else { return }
+            self.stop()
+            self.status = "PlayStation: " + reason
+            self.write(self.status)
         })
     }
 
