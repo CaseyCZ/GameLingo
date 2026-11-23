@@ -39,6 +39,42 @@ object GameLingoTVPairing {
     private const val PREFS = "gamelingo_tv_receiver"
     private const val KEY_ALIAS = "cz.caseycz.gamelingo.receiver.v1"
     private const val PORT = 41989
+    private val availablePorts = 41989..41993
+
+    /**
+     * The GameLingo TV receiver moves to a free UDP port if PlayCaption
+     * already listens on the standard one. Discover that port BEFORE any
+     * six-digit pairing or authenticated PING, without revealing credentials.
+     * Legacy receivers without GLPORT1 keep their original port.
+     */
+    private fun receiverPort(ip: String): Int {
+        return runCatching {
+            DatagramSocket().use { socket ->
+                socket.soTimeout = 1_500
+                val address = InetAddress.getByName(ip)
+                val query = "GLPORT1\tQUERY".toByteArray(Charsets.UTF_8)
+                for (port in availablePorts) {
+                    socket.send(DatagramPacket(query, query.size, address, port))
+                }
+                val buffer = ByteArray(256)
+                while (true) {
+                    val reply = DatagramPacket(buffer, buffer.size)
+                    socket.receive(reply)
+                    if (reply.address != address) continue
+                    val data = String(reply.data, 0, reply.length, Charsets.UTF_8)
+                        .split("\t")
+                    val port = data.getOrNull(2)?.toIntOrNull()
+                    if (data.size == 3 && data[0] == "GLPORT1" &&
+                        data[1] == "PORT" && port != null &&
+                        port in availablePorts && reply.port == port) {
+                        return@use port
+                    }
+                }
+                @Suppress("UNREACHABLE_CODE")
+                PORT
+            }
+        }.getOrDefault(PORT)
+    }
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var lastVerifiedIp = ""
     @Volatile private var lastVerifiedAt = 0L
@@ -142,7 +178,7 @@ object GameLingoTVPairing {
                     socket.soTimeout = 3_000
                     val address = InetAddress.getByName(tv.ip)
                     val data = packetText.toByteArray(Charsets.UTF_8)
-                    socket.send(DatagramPacket(data, data.size, address, PORT))
+                    socket.send(DatagramPacket(data, data.size, address, receiverPort(tv.ip)))
                     val buf = ByteArray(2048)
                     val reply = DatagramPacket(buf, buf.size)
                     socket.receive(reply)
@@ -167,7 +203,7 @@ object GameLingoTVPairing {
             socket.soTimeout = 10_000
             val address = InetAddress.getByName(ip)
             val payload = "PCPAIR1\tPAIR\t$pin\t$clientId".toByteArray(Charsets.UTF_8)
-            socket.send(DatagramPacket(payload, payload.size, address, PORT))
+            socket.send(DatagramPacket(payload, payload.size, address, receiverPort(ip)))
             val buffer = ByteArray(2048)
             val packet = DatagramPacket(buffer, buffer.size)
             socket.receive(packet)
