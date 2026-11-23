@@ -153,7 +153,7 @@ jobs:
           python kit/tools/brand_android.py tv upstream
           python kit/tools/create_brand_assets.py android upstream
           python kit/tools/polish_gamelingo.py upstream
-          grep -q "ORANGE V5" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
+          grep -q "GameLingo TV · Přijímač titulků" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
           grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
           grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
           sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
