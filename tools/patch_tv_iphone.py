@@ -84,13 +84,6 @@ def main() -> None:
          '                                }.also { prijimaciPort = port }\n'
          '                            }.getOrNull()\n'
          '                        } ?: throw java.net.BindException("UDP 41989–41993 obsazeny")')
-    once(networking,
-         '                        var casti = String(p.data, 0, p.length, Charsets.UTF_8).split("\\t")\n',
-         '                        var casti = String(p.data, 0, p.length, Charsets.UTF_8).split("\\t")\n'
-         '                        if (casti.size == 2 && casti[0] == "GLPORT1" && casti[1] == "QUERY") {\n'
-         '                            odpovez(s, p, "GLPORT1\\tPORT\\t$prijimaciPort")\n'
-         '                            continue\n'
-         '                        }\n')
     once(networking, '                        posledniCislo = cislo\n                        val doba =',
          '                        posledniCislo = cislo\n'
          '                        pocetTitulku += 1\n'
@@ -104,6 +97,10 @@ def main() -> None:
          '                        val casti = String(p.data, 0, p.length, Charsets.UTF_8).split("\\t")\n'
          '                        if (pribeh.zpracuj(p)) {\n',
          '                        var casti = String(p.data, 0, p.length, Charsets.UTF_8).split("\\t")\n'
+         '                        if (casti.size == 2 && casti[0] == "GLPORT1" && casti[1] == "QUERY") {\n'
+         '                            odpovez(s, p, "GLPORT1\\tPORT\\t$prijimaciPort")\n'
+         '                            continue\n'
+         '                        }\n'
          '                        if (casti.size >= 2 && casti[0] == "PCPAIR1") {\n'
          '                            if (casti[1] == "PAIR") {\n'
          '                                posledniParovaciStav = "požadavek dorazil na TV"\n'
