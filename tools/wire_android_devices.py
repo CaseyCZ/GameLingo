@@ -63,7 +63,7 @@ def main():
         )
         # The native dashboard supplies the same central device action to both
         # the fourth home tile and fifth-row navigation, without string patches.
-        if 'fun openDevices() {' not in code or 'GameLingoDeviceCenter.show(this,' not in code:
+        if 'fun openDevices() {' not in code or 'GameLingoDeviceCenter.content(this,' not in code:
             raise RuntimeError("Mobile GameLingo device screen missing")
         if 'onDevices = { openDevices() }' not in code:
             raise RuntimeError("Mobile bottom navigation is not wired to devices")
