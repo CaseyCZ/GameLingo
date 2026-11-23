@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Rebuild verified mobile parity with secure six-digit TV PIN pairing and authenticated receiver check; TV UI unchanged.
+# Final Android mobile parity QA: restrict PIN to Android TV and verify TV receiver before first-run completion.
 
 on:
   push:
