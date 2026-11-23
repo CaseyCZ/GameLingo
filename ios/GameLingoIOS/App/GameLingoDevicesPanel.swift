@@ -147,7 +147,7 @@ struct GameLingoDevicesPanel: View {
                 GLHeader(title: "Titulky")
                 Picker("Zobrazit na", selection: $devices.subtitleOutput) {
                     ForEach(GLSubtitleOutput.allCases) { option in
-                        Text(option.rawValue).tag(option)
+                        Text(LocalizedStringKey(option.rawValue)).tag(option)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -220,7 +220,7 @@ struct GameLingoDevicesPanel: View {
     private func emptyRow(_ title: String, icon: String) -> some View {
         HStack {
             Image(systemName: icon).foregroundStyle(GLStyle.muted)
-            Text(title).foregroundStyle(GLStyle.muted)
+            Text(LocalizedStringKey(title)).foregroundStyle(GLStyle.muted)
             Spacer()
         }
         .padding(17)
