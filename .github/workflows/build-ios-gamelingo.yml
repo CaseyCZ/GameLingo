@@ -1,5 +1,5 @@
 name: GameLingo iOS · Native UI candidate
-# Native iOS validation checkpoint: approved five-screen onboarding, localized labels and phone/TV subtitle controls.
+# Final iOS compilation gate: fixed language order, complete locale strings, four-zone OCR preview and console Settings.
 # iOS ONLY — compile final GameLingo screens, language packs, console icons, subtitle appearance and working settings navigation; keep release unchanged.
 
 on:
