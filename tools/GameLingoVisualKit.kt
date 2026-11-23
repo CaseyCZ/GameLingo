@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -279,10 +281,27 @@ object GameLingoVisualKit {
         return row
     }
 
-    fun pageBackground(activity: Activity): GradientDrawable =
-        GradientDrawable(GradientDrawable.Orientation.TL_BR,
-            intArrayOf(ink, Color.parseColor("#0D1733"),
-                       Color.parseColor("#211047")))
+    /**
+     * Same three violet/blue/cyan ambient light pools as GLNeonBackground on
+     * iPhone, native Android radial drawables behind real interactive views.
+     */
+    fun pageBackground(activity: Activity): Drawable {
+        val base = GradientDrawable().apply { setColor(ink) }
+        fun glow(color: Int, centerX: Float, centerY: Float,
+                 radiusDp: Int): GradientDrawable = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            gradientType = GradientDrawable.RADIAL_GRADIENT
+            colors = intArrayOf(color, Color.TRANSPARENT)
+            gradientRadius = dp(activity, radiusDp).toFloat()
+            setGradientCenter(centerX, centerY)
+        }
+        return LayerDrawable(arrayOf(
+            base,
+            glow(Color.argb(80, 53, 87, 255), 0.88f, 0.12f, 260),
+            glow(Color.argb(74, 163, 41, 250), 0.86f, 0.75f, 260),
+            glow(Color.argb(34, 2, 214, 255), 0.08f, 0.40f, 230)
+        ))
+    }
 
     fun navigationTile(activity: Activity, symbol: String, title: String,
                        onClick: () -> Unit): LinearLayout {
