@@ -214,6 +214,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Theme_Material_NoActionBar_Fullscreen",android)
         self.assertIn("ViewGroup.LayoutParams.MATCH_PARENT",android)
 
+    def test_mobile_parity_does_not_fabricate_connected_state(self):
+        android=code(TOOLS/"redesign_gamelingo.py")
+        first_run=code(TOOLS/"GameLingoFirstRun.kt")
+        ios_setup=code(IOS/"GameLingoSetupView.swift")
+        self.assertIn("4 -> consoleRegistered() && televisionSaved()", first_run)
+        self.assertIn("isEnabled = canContinue", first_run)
+        self.assertIn("disabled: !canFinish", ios_setup)
+        self.assertIn("Konzole je nastavená · připojení neověřeno", android)
+        self.assertIn("Uložené zařízení samo o sobě nepotvrzuje živé spojení.", android)
+        self.assertIn('false\n            ), odsazeni(bottom = 9))', android)
+
     def test_five_destinations_native_android_navigation(self):
         nav=code(TOOLS/"GameLingoNavigation.kt")
         mobile=code(TOOLS/"redesign_gamelingo.py")
