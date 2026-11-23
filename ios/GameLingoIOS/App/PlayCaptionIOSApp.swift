@@ -130,6 +130,25 @@ final class CaptionAppModel: ObservableObject {
         didSet { UserDefaults.standard.set(phoneBackground.rawValue, forKey: "gamelingo.phoneBackground") }
     }
 
+    // These values are independent of iPhone subtitle colors. The paired TV
+    // receiver accepts authenticated STYLE messages and saves them locally.
+    @Published var tvTextColor: GLPhoneSubtitleColor = GLPhoneSubtitleColor(
+        rawValue: UserDefaults.standard.string(forKey: "gamelingo.tvTextColor") ?? ""
+    ) ?? .white {
+        didSet {
+            UserDefaults.standard.set(tvTextColor.rawValue, forKey: "gamelingo.tvTextColor")
+            tv.updateCaptionStyle(color: tvTextColor.rawValue, background: tvBackground.rawValue)
+        }
+    }
+    @Published var tvBackground: GLPhoneSubtitleBackground = GLPhoneSubtitleBackground(
+        rawValue: UserDefaults.standard.string(forKey: "gamelingo.tvBackground") ?? ""
+    ) ?? .dark {
+        didSet {
+            UserDefaults.standard.set(tvBackground.rawValue, forKey: "gamelingo.tvBackground")
+            tv.updateCaptionStyle(color: tvTextColor.rawValue, background: tvBackground.rawValue)
+        }
+    }
+
     @Published var outputLocked = UserDefaults.standard.bool(forKey: "outputLocked") {
         didSet { UserDefaults.standard.set(outputLocked, forKey: "outputLocked") }
     }
@@ -286,7 +305,9 @@ final class CaptionAppModel: ObservableObject {
             targetLanguage: targetLanguage.rawValue,
             phoneFontScale: phoneFontScale,
             phoneTextColor: phoneTextColor.rawValue,
-            phoneBackground: phoneBackground.rawValue
+            phoneBackground: phoneBackground.rawValue,
+            tvTextColor: tvTextColor.rawValue,
+            tvBackground: tvBackground.rawValue
         )
         if let existingIndex {
             gameProfiles[existingIndex] = profile
@@ -337,6 +358,14 @@ final class CaptionAppModel: ObservableObject {
         if let name = profile.phoneBackground,
            let value = GLPhoneSubtitleBackground(rawValue: name) {
             phoneBackground = value
+        }
+        if let name = profile.tvTextColor,
+           let value = GLPhoneSubtitleColor(rawValue: name) {
+            tvTextColor = value
+        }
+        if let name = profile.tvBackground,
+           let value = GLPhoneSubtitleBackground(rawValue: name) {
+            tvBackground = value
         }
         write("Načten profil: \(profile.name)")
     }
