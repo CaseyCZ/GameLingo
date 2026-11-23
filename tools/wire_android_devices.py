@@ -34,18 +34,29 @@ def main():
                     onTV = { vyberVystupTv() },
                     onUpdated = { ukazHlavni() })'''
 
-    code=one(code,
-        '''druhy.addView(akce("▭", "Zařízení") {
-                vyberVystupTv()
-            }''',
-        '''druhy.addView(akce("▭", "Zařízení") {
-                '''+manager()+'''
-            }''',"MainActivity devices tile")
+    # Mobile and TV share the PSN source, but the TV has a different
+    # dashboard and no phone-only 'druhy' tiles. Never require a mobile
+    # anchor inside the Google TV branch.
+    mobile_dashboard = 'druhy.addView(akce("▭", "Zařízení")' in code
+    tv_dashboard = '"Překlad z telefonu"' in code and '"Přímo na TV"' in code
+    if mobile_dashboard:
+        code=one(code,
+            '''druhy.addView(akce("▭", "Zařízení") {
+                    vyberVystupTv()
+                }''',
+            '''druhy.addView(akce("▭", "Zařízení") {
+                    '''+manager()+'''
+                }''',"MainActivity devices tile")
 
-    code=one(code,
-        '''Triple("▭\\nTV", 3, { vyberVystupTv() })''',
-        '''Triple("▭\\nZařízení", 3, { '''+manager()+''' })''',
-        "MainActivity bottom navigation")
+        code=one(code,
+            '''Triple("▭\\nTV", 3, { vyberVystupTv() })''',
+            '''Triple("▭\\nZařízení", 3, { '''+manager()+''' })''',
+            "MainActivity bottom navigation")
+
+    elif tv_dashboard:
+        print("Google TV landing screen uses its own GameLingo device actions")
+    else:
+        raise RuntimeError("Neither Android phone nor Google TV dashboard recognized")
 
     code=one(code,
         '''                            if (ok) {
