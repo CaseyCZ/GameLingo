@@ -96,6 +96,28 @@ def tv(s):
                 Color.parseColor("#172033")) {
                 if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
             }
+            // Both receiver modes need real D-pad focus, including a visible
+            // high-contrast outline independent of touch-only ripple effects.
+            fun nastavDpad(v: View, nazev: String) {
+                v.isFocusable = true
+                v.contentDescription = nazev
+                v.setOnFocusChangeListener { view, focused ->
+                    view.background = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(Color.parseColor(if (focused) "#263A61" else "#172033"))
+                        cornerRadius = dp(18).toFloat()
+                        setStroke(dp(if (focused) 3 else 1),
+                            Color.parseColor(if (focused) "#38BDF8" else "#33476B"))
+                    }
+                    view.scaleX = if (focused) 1.02f else 1f
+                    view.scaleY = if (focused) 1.02f else 1f
+                }
+            }
+            dlazdiceTel.id = View.generateViewId()
+            dlazdiceTv.id = View.generateViewId()
+            dlazdiceTel.nextFocusRightId = dlazdiceTv.id
+            dlazdiceTv.nextFocusLeftId = dlazdiceTel.id
+            nastavDpad(dlazdiceTel, "Překlad z telefonu")
+            nastavDpad(dlazdiceTv, "Přímo na TV")
             val volby = vodorovne().apply {
                 clipChildren = false; clipToPadding = false
                 setPadding(dp(8), dp(8), dp(8), dp(8))
@@ -107,6 +129,11 @@ def tv(s):
             volby.addView(dlazdiceTv,
                 LinearLayout.LayoutParams(0, dp(132), 1f))
             obsah.addView(volby, odsazeni(bottom = 9))
+            volby.post {
+                if (!dlazdiceTel.hasFocus() && !dlazdiceTv.hasFocus()) {
+                    dlazdiceTel.requestFocus()
+                }
+            }
             obsah.addView(text("GameLingo TV", 14f,
                 Color.parseColor("#94A3B8")).apply { gravity = Gravity.CENTER })
 '''
