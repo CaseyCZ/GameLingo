@@ -24,6 +24,7 @@ final class ConsoleDiscoveryStore: ObservableObject {
 
     nonisolated(unsafe) private var discovery: OpaquePointer?
     private var registeredConsoles: [RegisteredConsole] = []
+    private var includeUnregistered = false
 
     var coreVersion: String {
         String(cString: tp_play_core_version())
@@ -38,6 +39,19 @@ final class ConsoleDiscoveryStore: ObservableObject {
         errorMessage = nil
         consoles = []
         if !registeredConsoles.isEmpty { start() }
+    }
+
+    /// GameLingo initial setup must display unpaired PlayStation 5/4 devices.
+    /// Discovery itself does not connect or mark the devices as paired.
+    func discoverAll() {
+        includeUnregistered = true
+        restart()
+        start()
+    }
+
+    func stopAll() {
+        includeUnregistered = false
+        stopDiscovery()
     }
 
     func updateRegisteredConsoles(_ registeredConsoles: [RegisteredConsole]) {
@@ -109,7 +123,7 @@ final class ConsoleDiscoveryStore: ObservableObject {
     }
 
     fileprivate func receive(_ consoles: [DiscoveredConsole]) {
-        self.consoles = consoles.filter(matchesRegisteredConsole)
+        self.consoles = includeUnregistered ? consoles : consoles.filter(matchesRegisteredConsole)
         errorMessage = nil
     }
 
