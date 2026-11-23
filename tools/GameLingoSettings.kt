@@ -34,10 +34,7 @@ object GameLingoSettings {
                 text = title; textSize = 17f
                 setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
             })
-            addView(TextView(c).apply {
-                text = detail; textSize = 12f
-                setTextColor(muted); setPadding(0,7,0,0)
-            })
+
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         addView(Switch(c).apply {
             isChecked = state
@@ -56,14 +53,16 @@ object GameLingoSettings {
             setPadding(24, 24, 24, 24)
             background = rounded(bg)
         }
-        content.addView(TextView(activity).apply {
-            text = "Nastavení překladu"; textSize = 25f
+        val header = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
+        header.addView(TextView(activity).apply {
+            text = "Překlad"; textSize = 25f
             setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
-        })
-        content.addView(TextView(activity).apply {
-            text = "GameLingo · Xbox / PS5 / PS4"; textSize = 13f
-            setTextColor(muted); setPadding(0, 5, 0, 19)
-        })
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        header.addView(GameLingoHelp.button(activity, "translation"),
+            LinearLayout.LayoutParams(54, 54))
+        content.addView(header, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { bottomMargin = 18 })
         fun add(r: LinearLayout) {
             content.addView(r, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
