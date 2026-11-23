@@ -24,7 +24,6 @@ struct GameLingoHome: View {
     @State private var playStationSheet = false
     @State private var tvSheet = false
     @State private var setupSheet = false
-    @State private var playStationLoginPIN = ""
     @State private var regionsSheet = false
     @State private var profilesSheet = false
     @State private var settingsSheet = false
@@ -307,26 +306,6 @@ struct GameLingoHome: View {
                 tile("Zařízení", icon: "display.2") { tab = .devices }
             }
             readiness
-            if model.isRunning &&
-                devices.chosenConsole?.family == .playStation &&
-                model.playStation.status.localizedCaseInsensitiveContains("PIN") {
-                GLCard {
-                    GLHeader(title: "PIN PlayStation",
-                        help: "Zadej přihlašovací kód požadovaný PlayStation Remote Play při navazování streamu. To není osmimístný PIN pro prvotní spárování.")
-                    SecureField("Přihlašovací PIN", text: $playStationLoginPIN)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: playStationLoginPIN) { _, value in
-                            playStationLoginPIN = String(value.filter(\.isNumber).prefix(8))
-                        }
-                    GLPrimaryButton(title: "Potvrdit PIN",
-                                    systemImage: "lock.open",
-                                    disabled: playStationLoginPIN.isEmpty) {
-                        model.playStation.submitLoginPIN(playStationLoginPIN)
-                        playStationLoginPIN = ""
-                    }
-                }
-            }
             if devices.subtitleOutput == .phone && !model.phoneSubtitle.isEmpty {
                 GLCard {
                     GLHeader(title: "Dialog")
