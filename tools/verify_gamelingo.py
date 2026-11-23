@@ -46,12 +46,15 @@ def ios():
         "PCPAIR1", "receiverCode", "sendChoices", "sendSubtitle")
 
 
-def android(root: Path):
+def android(root: Path, mode: str):
     base = root / "app/src/main/java/cz/titulky/tv"
     contains(base / "MainActivity.kt",
-        "GameLingoFirstRun.show", "GameLingoDeviceCenter.show",
-        "GameLingoPlayStationConsoles.capture", "Vyber konzoli",
-        "Překlad z telefonu", "Přímo na TV")
+        "GameLingoDeviceCenter.show", "GameLingoPlayStationConsoles.capture",
+        "Vyber konzoli")
+    if mode == "mobile":
+        contains(base / "MainActivity.kt", "GameLingoFirstRun.show")
+    else:
+        contains(base / "MainActivity.kt", "Překlad z telefonu", "Přímo na TV")
     text = (base / "MainActivity.kt").read_text(encoding="utf8")
     if 'seznam.getOrNull()?.firstOrNull()' in text:
         raise AssertionError("Android still selects first Xbox instead of prompting")
@@ -62,18 +65,20 @@ def android(root: Path):
              "TvProfily", "Přidat zařízení")
     contains(base / "GameLingoPlayStationConsoles.kt",
              "AndroidKeyStore", "AES/GCM/NoPadding", "fun select(")
-    contains(base / "PrijemService.kt", "IPhoneTVPairing")
-    contains(base / "OverlayService.kt", "EXTRA_VYSTUP_VOLEB")
+    if mode == "tv":
+        contains(base / "PrijemService.kt", "IPhoneTVPairing")
+        contains(base / "OverlayService.kt", "EXTRA_VYSTUP_VOLEB")
 
 
 if __name__ == "__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--android-root",type=Path)
+    parser.add_argument("--mode",choices=("mobile","tv"),default="mobile")
     args=parser.parse_args()
     try:
         ios()
         if args.android_root:
-            android(args.android_root)
+            android(args.android_root,args.mode)
     except AssertionError as exc:
         print("GAME LINGO SOURCE AUDIT FAILED:", exc, file=sys.stderr)
         raise SystemExit(1)
