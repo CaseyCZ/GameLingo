@@ -235,7 +235,7 @@ object GameLingoDeviceCenter {
         }
 
         add(root, line(c, "Hotovo") { dialog.dismiss() })
-        val scroll = ScrollView(c).apply { fillViewport = true }
+        val scroll = ScrollView(c).apply { isFillViewport = true }
         scroll.addView(root)
         dialog.setContentView(scroll)
         dialog.show()
