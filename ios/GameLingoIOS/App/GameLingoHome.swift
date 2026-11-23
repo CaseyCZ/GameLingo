@@ -33,17 +33,18 @@ struct GameLingoHome: View {
 
     private enum Page: String, CaseIterable, Identifiable {
         case home = "Domů"
-        case regions = "Oblasti"
-        case profiles = "Profily"
-        case devices = "Zařízení"
+        case regions = "Obrazovka"
+        case devices = "Konzole"
+        case settings = "Nastavení"
         case about = "O aplikaci"
+
         var id: String { rawValue }
         var icon: String {
             switch self {
             case .home: return "house.fill"
             case .regions: return "rectangle.dashed"
-            case .profiles: return "gamecontroller.fill"
-            case .devices: return "tv"
+            case .devices: return "gamecontroller"
+            case .settings: return "slider.horizontal.3"
             case .about: return "info.circle"
             }
         }
@@ -58,8 +59,8 @@ struct GameLingoHome: View {
                         switch tab {
                         case .home: homePage
                         case .regions: regionsPage
-                        case .profiles: profilesPage
                         case .devices: devicesPage
+                        case .settings: GameLingoSettingsOverview(model: model)
                         case .about: aboutPage
                         }
                     }
@@ -161,7 +162,7 @@ struct GameLingoHome: View {
             Spacer(minLength: 0)
             GLHelpButton(title: "GameLingo", explanation:
                 "Vyber Xbox nebo PlayStation, nastav výstup titulků na telefon či Google TV, uprav čtyři oblasti OCR a spusť překlad.")
-            Button { settingsSheet = true } label: {
+            Button { tab = .settings } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 19, weight: .semibold))
                     .foregroundStyle(.white)
@@ -330,7 +331,7 @@ struct GameLingoHome: View {
                                 GridItem(.flexible())], spacing: 11) {
                 tile("Oblasti", icon: "rectangle.dashed") { regionsSheet = true }
                 tile("Profily her", icon: "gamecontroller") { profilesSheet = true }
-                tile("Překlad", icon: "slider.horizontal.3") { settingsSheet = true }
+                tile("Nastavení překladu", icon: "slider.horizontal.3") { tab = .settings }
                 tile("Zařízení", icon: "display.2") { tab = .devices }
             }
             readiness
@@ -595,7 +596,7 @@ struct GameLingoHome: View {
         HStack(spacing: 0) {
             ForEach(Page.allCases) { option in
                 Button {
-                    tab = option
+                    withAnimation(.easeInOut(duration: 0.16)) { tab = option }
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: option.icon).font(.system(size: 20))
