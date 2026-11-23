@@ -255,7 +255,9 @@ object GameLingoSettings {
 
         section(GameLingoUIContract.settingsSections[1])
         menu("▣", "OCR a rozpoznávání",
-             "Čtyři oblasti a přesnost snímání") { onAreas() }
+             "Režim, filtrování, rozšíření a ruční oblast") {
+            GameLingoOCRSettings.show(activity, onAreas)
+        }
         menu("文", "Překlad", "Režimy, dialogy a časování") {
             showTranslation(activity, settings, onAreas, onLanguage)
         }
