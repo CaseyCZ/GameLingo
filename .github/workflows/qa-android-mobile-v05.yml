@@ -1,5 +1,5 @@
 name: GameLingo 0.5 Android mobile compile QA
-# Cross-platform shared UI contract, native five-step onboarding, settings, regions and diagnostics compilation gate.
+# Recheck generated five-tab contract and compile native mobile dialogs, settings and OCR regions.
 
 on:
   push:
