@@ -55,7 +55,7 @@ struct GameLingoHome: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 15) {
-                        brandHeader
+                        if tab == .home { brandHeader }
                         switch tab {
                         case .home: homePage
                         case .regions: regionsPage
