@@ -32,7 +32,7 @@ object GameLingoTVUi {
 
     // Android TV already has an enlarged interface density. Match the
     // original compact 10-foot UI and preserve readable D-pad focus targets.
-    private const val TV_SCALE = 0.72f
+    private const val TV_SCALE = 0.66f
     fun dp(a: Activity, v: Int): Int =
         (a.resources.displayMetrics.density * v * TV_SCALE + .5f).toInt()
 
