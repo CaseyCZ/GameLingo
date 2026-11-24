@@ -7,6 +7,7 @@ Remote Play, subtitle placement, OAuth, Sony credentials or TV transport.
 from pathlib import Path
 import sys
 from tv_translation_policy import tv_variant, tv_translator, finalize_tv
+from direct_tv_mode import patch_direct_tv
 
 SRC = Path("app/src/main/java/cz/titulky/tv")
 
@@ -644,6 +645,8 @@ def main():
             GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), corrected.joinToString("\\n"))
             Propojeni.Vysilac.nastavVolby(corrected, volbyVybrana)''', service.name)
     service.write_text(s, encoding="utf8")
+    if tv_variant(root):
+        patch_direct_tv(folder)
     finalize_tv(root, folder)
     print("GameLingo source and target languages connected to real Android translation")
 
