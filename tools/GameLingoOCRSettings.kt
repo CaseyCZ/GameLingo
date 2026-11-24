@@ -91,13 +91,20 @@ object GameLingoOCRSettings {
             }
             row.addView(words, LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            row.addView(Switch(activity).apply {
+            val television=GameLingoTVUi.isTV(activity)
+            val switch=Switch(activity).apply {
                 isChecked = active
                 isEnabled = available
-                isFocusable = available
-                if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
+                isFocusable = available && !television
                 setOnCheckedChangeListener { _, value -> if (available) changed(value) }
-            })
+            }
+            row.addView(switch)
+            if(television) {
+                row.isFocusable=available; row.isClickable=available
+                row.descendantFocusability=ViewGroup.FOCUS_BLOCK_DESCENDANTS
+                GameLingoTVUi.controlFocus(activity,row)
+                row.setOnClickListener { if(available) switch.isChecked=!switch.isChecked }
+            }
             add(row)
         }
         val title = when (GameLingoOCRConfig.mode) {
@@ -113,9 +120,9 @@ object GameLingoOCRSettings {
             )
             val keys = arrayOf("classic", "automatic", "street")
             if (GameLingoTVUi.isTV(activity)) {
-                dialog.dismiss()
                 GameLingoTVUi.select(activity, "Režim OCR", labels, keys.indexOf(GameLingoOCRConfig.mode)) { index ->
                     GameLingoOCRConfig.setMode(activity, keys[index])
+                    dialog.dismiss()
                     show(activity, onAreas)
                 }
                 return@action

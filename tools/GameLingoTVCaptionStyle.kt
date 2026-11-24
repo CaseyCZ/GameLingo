@@ -66,7 +66,18 @@ object GameLingoTVCaptionStyle {
             gravity = android.view.Gravity.CENTER
             setPadding(12, 18, 12, 18)
         }
+        val label = android.widget.TextView(a).apply {
+            setTextColor(Color.WHITE)
+            textSize = 16f
+        }
+        val opacityBar = android.widget.SeekBar(a).apply {
+            max = 100; keyProgressIncrement = 5; isFocusable = true
+            GameLingoTVUi.controlFocus(a, this)
+        }
         fun refresh() {
+            val percent = (p.getInt("opacity",230).coerceIn(0,255)*100+127)/255
+            label.text = "Neprůhlednost pozadí: $percent %"
+            if(opacityBar.progress != percent) opacityBar.progress=percent
             preview.setTextColor(textColor(a)); preview.setBackgroundColor(background(a))
         }
         root.addView(preview)
@@ -84,16 +95,11 @@ object GameLingoTVCaptionStyle {
                 refresh()
             }
         })
-        val label = android.widget.TextView(a).apply { text = "Neprůhlednost pozadí" }
         root.addView(label)
-        root.addView(android.widget.SeekBar(a).apply {
-            max = 100; progress = p.getInt("opacity", 230) * 100 / 255
-            keyProgressIncrement = 5; isFocusable = true
-            GameLingoTVUi.controlFocus(a, this)
+        root.addView(opacityBar.apply {
             setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: android.widget.SeekBar, value: Int, fromUser: Boolean) {
-                    label.text = "Neprůhlednost pozadí: $value %"
-                    if (fromUser) { p.edit().putInt("opacity", value * 255 / 100).apply(); refresh() }
+                    if (fromUser) { p.edit().putInt("opacity", (value * 255 + 50) / 100).apply(); refresh() }
                 }
                 override fun onStartTrackingTouch(bar: android.widget.SeekBar) {}
                 override fun onStopTrackingTouch(bar: android.widget.SeekBar) {}

@@ -271,7 +271,7 @@ object GameLingoDirectTVLayout {
         editor=button("Posouvat"){cycleMode()}
         var editing=false
         editor.setOnFocusChangeListener { v, focused ->
-            v.background=GameLingoVisualKit.card(a,selected=focused)
+            v.background=GameLingoTVUi.panel(a,focused)
             if (!focused) editing=false
         }
         editor.setOnKeyListener { _,key,event ->

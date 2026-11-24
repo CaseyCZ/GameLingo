@@ -40,13 +40,20 @@ object GameLingoSettings {
                 setPadding(0, 5, 0, 0)
             })
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        addView(Switch(c).apply {
+        val television=GameLingoTVUi.isTV(c)
+        val toggle=Switch(c).apply {
             isChecked = state
-            isFocusable = true
-            if (GameLingoTVUi.isTV(c)) GameLingoTVUi.controlFocus(c, this)
+            isFocusable = !television
             thumbTintList = android.content.res.ColorStateList.valueOf(accent)
             setOnCheckedChangeListener { _, checked -> update(checked) }
-        })
+        }
+        addView(toggle)
+        if(television) {
+            isFocusable=true; isClickable=true
+            descendantFocusability=ViewGroup.FOCUS_BLOCK_DESCENDANTS
+            GameLingoTVUi.controlFocus(c,this)
+            setOnClickListener { toggle.isChecked=!toggle.isChecked }
+        }
     }
 
     fun showTranslation(activity: Activity, settings: Nastaveni,

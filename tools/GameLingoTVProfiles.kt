@@ -105,6 +105,28 @@ object GameLingoTVProfiles {
                 } else persist(name)
             }.show()
     }
+    private fun editSettings(a: Activity, name: String) {
+        if(busy()) return
+        val body=android.widget.LinearLayout(a).apply { orientation=android.widget.LinearLayout.VERTICAL }
+        body.addView(GameLingoTVUi.title(a,"Uprav aktuální nastavení a potom je ulož do profilu.",20f,true))
+        fun add(title: String, run:()->Unit) { body.addView(GameLingoTVUi.action(a,title,onActivate=run)) }
+        add("Jazyky"){GameLingoLanguages.show(a)}
+        add("OCR"){GameLingoOCRSettings.show(a){GameLingoDirectTVLayout.show(a){}}}
+        add("Překlad"){GameLingoSettings.showTranslation(a,Nastaveni(a),{GameLingoDirectTVLayout.show(a){}},{GameLingoLanguages.show(a)})}
+        add("Rozložení"){GameLingoDirectTVLayout.show(a){}}
+        add("Vzhled titulků"){GameLingoTVCaptionStyle.show(a)}
+        var page:android.app.Dialog?=null
+        add("Uložit změny do profilu"){
+            if(!busy()) {
+                val items=all(a); items.put(name,snapshot(a))
+                store(a).edit().putString("profiles",items.toString()).putString("activeProfile",name).apply()
+                page?.dismiss()
+                android.widget.Toast.makeText(a,"Profil uložen: "+name,android.widget.Toast.LENGTH_SHORT).show()
+                show(a)
+            }
+        }
+        page=GameLingoTVUi.page(a,"Upravit profil · "+name,body,helpTopic="profiles")
+    }
     fun show(a: Activity) {
         if (busy()) { AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show(); return }
         val items = all(a)
@@ -113,14 +135,20 @@ object GameLingoTVProfiles {
             if(i==0) saveCurrent(a){show(a)}
             else {
                 val name=names[i-1]
-                GameLingoTVUi.select(a,name,arrayOf("Použít","Upravit rozložení","Smazat")) { action ->
+                GameLingoTVUi.select(a,name,arrayOf("Použít","Upravit rozložení","Smazat","Upravit další nastavení")) { action ->
                     when(action) {
                         0,1 -> {
                             if(restore(a,all(a).getJSONObject(name))) {
                                 store(a).edit().putString("activeProfile",name).apply()
-                                if(action==1) GameLingoDirectTVLayout.show(a){saveCurrent(a){show(a)}}
+                                if(action==1) GameLingoDirectTVLayout.show(a){show(a)}
                                 else android.widget.Toast.makeText(a,"Profil načten",android.widget.Toast.LENGTH_SHORT).show()
                             } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                        3 -> {
+                            if(restore(a,all(a).getJSONObject(name))) {
+                                store(a).edit().putString("activeProfile",name).apply()
+                                editSettings(a,name)
+                            }
                         }
                         2 -> AlertDialog.Builder(a).setMessage("Smazat profil "+name+"?").setNegativeButton("Zrušit",null)
                             .setPositiveButton("Smazat"){_,_->

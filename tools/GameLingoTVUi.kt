@@ -69,7 +69,7 @@ object GameLingoTVUi {
             background = android.graphics.drawable.ColorDrawable(Color.parseColor("#080E1B"))
         }
         body.addView(title(a, heading, 27f))
-        val rows = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        val rows = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; clipChildren=false; clipToPadding=false }
         val buttons = labels.mapIndexed { index, label ->
             action(a, (if (index == selected) "✓  " else "    ") + label) {
                 dialog.dismiss(); onSelect(index)

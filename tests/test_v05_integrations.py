@@ -928,6 +928,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Active phone reception stays in the background",wiring)
         self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
 
+    def test_tv_review_fixes_focus_opacity_and_profile_editing(self):
+        style=code(TOOLS/"GameLingoTVCaptionStyle.kt")
+        self.assertIn("opacityBar.progress=percent",style)
+        self.assertIn("Neprůhlednost pozadí: $percent %",style)
+        self.assertIn("ViewGroup.FOCUS_BLOCK_DESCENDANTS",code(TOOLS/"GameLingoOCRSettings.kt"))
+        self.assertIn("ViewGroup.FOCUS_BLOCK_DESCENDANTS",code(TOOLS/"GameLingoSettings.kt"))
+        self.assertIn("Upravit další nastavení",code(TOOLS/"GameLingoTVProfiles.kt"))
+        self.assertIn("GameLingoTVUi.panel(a,focused)",code(TOOLS/"GameLingoDirectTVLayout.kt"))
+
     def test_tv_device_manager_shows_phones_instead_of_other_tvs(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         tv=code(TOOLS/"direct_tv_mode.py")

@@ -120,8 +120,7 @@ object GameLingoTVSettings {
         })
         body.addView(GameLingoTVUi.action(a,"Další nastavení") {
                 val legacy = GameLingoTVPairing.legacyEnabled(a)
-                AlertDialog.Builder(a).setTitle("Diagnostika a kompatibilita")
-                    .setItems(arrayOf("Legacy příjem: " + if (legacy) "Zapnuto" else "Vypnuto", "Vymazat místní diagnostický log")) { _, i ->
+                GameLingoTVUi.select(a,"Diagnostika a kompatibilita",arrayOf("Legacy příjem: " + if (legacy) "Zapnuto" else "Vypnuto", "Vymazat místní diagnostický log")) { i ->
                         if (i == 0) {
                             if (legacy) GameLingoTVPairing.setLegacyEnabled(a, false)
                             else AlertDialog.Builder(a).setMessage("Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?")
@@ -130,7 +129,7 @@ object GameLingoTVSettings {
                             .setNegativeButton("Zrušit", null).setPositiveButton("Vymazat") { _, _ ->
                                 if (!busy(a)) listOf("titulky.log","titulky-private-v2.log").forEach { java.io.File(a.filesDir,it).delete() }
                             }.show()
-                    }.setNegativeButton("Zpět", null).show()
+                    }
         })
         body.addView(GameLingoTVUi.action(a,"Test OCR") { GameLingoScreenTranslationService.diagnostics(a) })
         GameLingoTVUi.page(a,"Diagnostika TV",body,helpTopic="diagnostics")
