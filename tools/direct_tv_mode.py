@@ -304,21 +304,21 @@ def patch_direct_tv(folder):
     if reader_text.count(reader_anchor) != 1:
         raise RuntimeError("Standalone TV OCR reader anchor changed")
     reader_text = reader_text.replace(reader_anchor, """    fun prectiSamostatnyTitulek(obraz: Bitmap, source: String, filterMenu: Boolean,
-                                 hotovo: (String) -> Unit, chyba: (String) -> Unit) {
-        if (obraz.width < 32 || obraz.height < 32) { hotovo(""); return }
+                                 hotovo: (String, Rect?, Int) -> Unit, chyba: (String) -> Unit) {
+        if (obraz.width < 32 || obraz.height < 32) { hotovo("", null, 0); return }
         recognizer.process(InputImage.fromBitmap(obraz, 0))
             .addOnSuccessListener outer@ { result ->
                 val lines = result.textBlocks.flatMap { it.lines }.mapNotNull { line ->
                     line.boundingBox?.let { line.text.trim() to it }
                 }.filter { it.first.count { c -> c.isLetter() } >= 2 }
-                if (lines.isEmpty()) { hotovo(""); return@outer }
+                if (lines.isEmpty()) { hotovo("", null, 0); return@outer }
                 val center = obraz.width / 2f
                 val centered = lines.filter { (_, box) ->
                     kotlin.math.abs((box.left + box.right) / 2f - center) <= obraz.width * .18f
                 }.sortedBy { it.second.top }
                 // A menu/grid typically has several independent columns or rows.
                 if (filterMenu && (centered.isEmpty() || lines.size > 3 || centered.size != lines.size || centered.size > 2)) {
-                    hotovo(""); return@outer
+                    hotovo("", null, 0); return@outer
                 }
                 val chosen = (if (filterMenu) centered else lines.sortedBy { it.second.top }).takeLast(2)
                 if (chosen.size == 2) {
@@ -326,21 +326,24 @@ def patch_direct_tv(folder):
                     val gap = second.top - first.bottom
                     val lineHeight = maxOf(first.height(), second.height(), 1)
                     if (gap < -lineHeight / 3 || gap > lineHeight || kotlin.math.abs(first.centerX() - second.centerX()) > obraz.width * .16f) {
-                        hotovo(""); return@outer
+                        hotovo("", null, 0); return@outer
                     }
                 }
                 val text = chosen.joinToString(" ") { it.first }.trim()
                 if (text.length > 240 || (filterMenu && text.count { it.isDigit() } > text.length / 5)) {
-                    hotovo(""); return@outer
+                    hotovo("", null, 0); return@outer
                 }
                 jazyk.identifyLanguage(text)
                     .addOnSuccessListener { code ->
                         val shortEnglish = source == "en" && code == "und" && text.length < 40 &&
                             text.none { it.isLetter() && it.code > 127 } && anglickeSlovo(text)
-                        hotovo(if (code == source || shortEnglish) {
+                        val accepted = if (code == source || shortEnglish) {
                             if (source == "en") vycisti(text) else text
-                        } else "")
-                    }.addOnFailureListener { hotovo("") }
+                        } else ""
+                        val bounds = Rect(chosen.minOf { it.second.left }, chosen.minOf { it.second.top },
+                            chosen.maxOf { it.second.right }, chosen.maxOf { it.second.bottom })
+                        hotovo(accepted, bounds.takeIf { accepted.isNotBlank() }, chosen.size)
+                    }.addOnFailureListener { hotovo("", null, 0) }
             }.addOnFailureListener { chyba(it.message ?: "Chyba OCR") }
     }
 
@@ -363,6 +366,32 @@ def patch_direct_tv(folder):
         if overlay_text.count(old) != 1:
             raise RuntimeError("TV overlay test anchor changed: " + old[:90])
         overlay_text = overlay_text.replace(old, new, 1)
+
+    overlay_one('        super.onCreate()\n        startAsForeground()', '''        super.onCreate()
+        captureInstance = this
+        startAsForeground()''')
+    overlay_one('        pripravena = false\n        ui.removeCallbacks(hideRunnable)',
+        '''        if (captureInstance === this) captureInstance = null
+        pripravena = false
+        ui.removeCallbacks(hideRunnable)''')
+    overlay_one('    private fun showText(text: CharSequence, hideAfterMs: Long = 6000) {',
+        '''    // Only our own windows are hidden during a consented MediaProjection sample.
+    private fun suppressForCapture(hidden: Boolean): Boolean {
+        val views = listOfNotNull(textView, podklad, napoveda, seznamVoleb, ramecekTitulku, ramecekVoleb)
+        val visible = views.any { it.visibility == android.view.View.VISIBLE && it.alpha > 0f }
+        views.forEach { it.alpha = if (hidden) 0f else 1f }
+        return visible
+    }
+
+    private fun showText(text: CharSequence, hideAfterMs: Long = 6000) {''')
+    overlay_one('        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"',
+        '''        private var captureInstance: OverlayService? = null
+        internal fun suppressStandaloneCapture(hidden: Boolean): Boolean {
+            check(android.os.Looper.myLooper() == android.os.Looper.getMainLooper())
+            if (hidden && !GameLingoScreenTranslationService.running) return false
+            return captureInstance?.suppressForCapture(hidden) ?: false
+        }
+        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"''')
 
     overlay_one('        if (!android.provider.Settings.canDrawOverlays(this)) {',
         '''        recordOverlayTest("Oprávnění překryvu: " + android.provider.Settings.canDrawOverlays(this))

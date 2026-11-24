@@ -157,6 +157,25 @@ class GameLingoScreenTranslationService : Service() {
     private var output = floatArrayOf(.5f,.78f,.78f,1f)
     private var sourceLanguage = "en"
     private var dialogueEnabled = true
+    private var coverOriginal = false
+    private var storyMode = false
+    private var durationPercent = 100
+    private var hintsEnabled = false
+    private var useAutomaticOutput = true
+    private var cleanCapture = false
+    private var capturePending = false
+    private var sampleGeneration = 0L
+    private var currentBox: FloatArray? = null
+    private var currentRows = 1
+    private var shownAt = 0L
+    private var shownUntil = 0L
+    private var storySequence = 0L
+    private var storyPage: CteciFronta.Stranka? = null
+    private val story = PribehovaRelace({ lines, ok, fail ->
+        val p = translator
+        if (p == null) fail()
+        else p.prelozPribeh(lines.joinToString("\n"), { result -> ui.post { ok(result) } }, { ui.post { fail() } })
+    }, { translationState = it })
     private var yellowEnabled = false
     private var yellowTextMode = false
     private var yellowRoi = floatArrayOf(.1f,.1f,.9f,.5f)
@@ -174,9 +193,23 @@ class GameLingoScreenTranslationService : Service() {
         override fun run() {
             if (!active) return
             if (RemotePlayService.aktivni || PrijemService.bezi) { stopSelf(); return }
-            if (!paused && !ocrBusy && wantFrame.get() == 0) {
+            if (!paused && !ocrBusy && !capturePending && wantFrame.get() == 0) {
                 val region = if (yellowEnabled && (!dialogueEnabled || nextYellow)) 2 else 1
-                if (wantFrame.compareAndSet(0, region) && dialogueEnabled && yellowEnabled) nextYellow = !nextYellow
+                if (dialogueEnabled && yellowEnabled) nextYellow = !nextYellow
+                requestSample(region)
+            }
+            if (!paused && storyMode) {
+                story.nastavCasovani(CasovaniPribehu.priZpozdeni(durationPercent,
+                    (story.pocet - if (storyPage != null) 1 else 0).coerceAtLeast(0)))
+                val page = story.krok(SystemClock.elapsedRealtime(), false,
+                    yellowShown.isNotEmpty() && !yellowTextMode)
+                if (page?.token != storyPage?.token || page?.index != storyPage?.index) {
+                    storyPage = page
+                    render(page?.text ?: "", page?.let { (it.doMs-SystemClock.elapsedRealtime()).coerceAtLeast(1L) } ?: 0L)
+                }
+            }
+            if (!paused && !storyMode && shownUntil != 0L && SystemClock.elapsedRealtime() >= shownUntil) {
+                shownUntil = 0L; translatedText = ""; render("")
             }
             if (!paused && yellowLastAt != 0L && SystemClock.elapsedRealtime() - yellowLastAt > 1800L) {
                 clearYellow()
@@ -186,14 +219,14 @@ class GameLingoScreenTranslationService : Service() {
             if (!paused && lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt > 1800L) {
                 resetText(); render("")
             }
-            if (active) ui.postDelayed(this, GameLingoOCRConfig.tvIntervalMs(false).coerceIn(200L, 600L))
+            if (active) ui.postDelayed(this, GameLingoOCRConfig.tvIntervalMs(false).coerceIn(if (cleanCapture) 450L else 200L, 800L))
         }
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == STOP) { stopSelf(); return START_NOT_STICKY }
         if (intent?.action == PAUSE) {
             if (!active) { stopSelf(); return START_NOT_STICKY }
-            paused = !paused; resetText(); render(""); clearYellow()
+            paused = !paused; cancelSample(); resetText(); render(""); clearYellow()
             status = if (paused) "Pozastaveno" else source
             notification()
             return START_NOT_STICKY
@@ -242,6 +275,10 @@ class GameLingoScreenTranslationService : Service() {
             GameLingoOCRConfig.load(this); OblastTitulku.nacti(this); Volby.nacti(this)
             val settings = Nastaveni(this)
             dialogueEnabled = settings.dialogy
+            coverOriginal = settings.prekryvat
+            storyMode = settings.pribehovy
+            durationPercent = settings.casPribehuProcenta.coerceIn(CasovaniPribehu.MIN_PROCENT, CasovaniPribehu.MAX_PROCENT)
+            hintsEnabled = settings.napovedy
             yellowEnabled = Volby.zapnuto
             yellowTextMode = Volby.rezimText
             check(dialogueEnabled || yellowEnabled) { "Zapni dialogy nebo žlutou oblast v nastavení Překlad." }
@@ -251,28 +288,14 @@ class GameLingoScreenTranslationService : Service() {
             yellowRoi = GameLingoDirectTVLayout.yellow(this)
             orangeOutput = GameLingoDirectTVLayout.orange(this)
             val inputs = listOfNotNull(roi.takeIf { dialogueEnabled }, yellowRoi.takeIf { yellowEnabled })
-            fun safe(r: FloatArray) = inputs.none { GameLingoDirectTVLayout.intersects(it, r) }
+            fun overlaps(r: FloatArray) = inputs.any { GameLingoDirectTVLayout.intersects(it, r) }
             val savedOutput = GameLingoDirectTVLayout.green(this)
-            if (dialogueEnabled) {
-                if (savedOutput != null) {
-                    check(safe(GameLingoDirectTVLayout.greenBounds(savedOutput))) {
-                        "Zelený výstup zasahuje do oblasti OCR. Posuň jej v Rozložení; při snímání TV by jinak četl vlastní překlad."
-                    }
-                    output = savedOutput
-                } else {
-                    val candidates = listOf(floatArrayOf(.5f, (roi[1] - .02f).coerceAtLeast(.05f), .78f, 1f),
-                        floatArrayOf(.5f, (roi[3]+.27f).coerceAtMost(.98f), .78f, 1f),
-                        floatArrayOf(.5f,.25f,.78f,1f))
-                    output = candidates.firstOrNull { safe(GameLingoDirectTVLayout.greenBounds(it)) }
-                        ?: throw IllegalArgumentException("Nastav volné místo pro zelený výstup v Rozložení.")
-                }
-            }
-            if (yellowEnabled) {
-                check(safe(orangeOutput)) { "Oranžový výstup zasahuje do oblasti OCR. Posuň jej v Rozložení." }
-                check(!dialogueEnabled || !GameLingoDirectTVLayout.intersects(GameLingoDirectTVLayout.greenBounds(output),orangeOutput)) {
-                    "Zelený a oranžový výstup se překrývají. Uprav Rozložení."
-                }
-            }
+            useAutomaticOutput = savedOutput == null
+            output = savedOutput ?: floatArrayOf(.5f, if (coverOriginal) roi[3] else (roi[1]-.02f).coerceAtLeast(.05f), .78f,1f)
+            // Respect the selected layout; clean samples are required when the overlay may cover input.
+            cleanCapture = coverOriginal || hintsEnabled || (dialogueEnabled &&
+                (useAutomaticOutput || overlaps(GameLingoDirectTVLayout.greenBounds(output)))) ||
+                (yellowEnabled && overlaps(orangeOutput))
             layoutState = "Modrá: " + roi.joinToString("/") { (it*100).toInt().toString() } +
                 " · zelená Y: " + (output[1]*100).toInt() + " % · žlutá: " +
                 if (yellowEnabled) yellowRoi.joinToString("/") { (it*100).toInt().toString() } else "vypnuta"
@@ -301,7 +324,7 @@ class GameLingoScreenTranslationService : Service() {
             frameHandler = handler
             val images = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
             reader = images
-            wantFrame.set(if (!dialogueEnabled && yellowEnabled) 2 else 1)
+            wantFrame.set(0)
             images.setOnImageAvailableListener({ source -> receive(source) }, handler)
             display = p.createVirtualDisplay("GameLingo-screen", width, height, metrics.densityDpi.coerceAtLeast(1),
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, images.surface, null, ui)
@@ -328,6 +351,8 @@ class GameLingoScreenTranslationService : Service() {
     }
     private fun resetText() {
         epoch++; candidate = ""; shown = ""; translatedText = ""
+        shownAt = 0L; shownUntil = 0L; currentBox = null; currentRows = 1
+        story.reset(); storyPage = null
         lastAttempt = ""; lastAttemptAt = 0L
         lastTextAt = 0; blankFrames = 0; blankSince = 0
     }
@@ -337,6 +362,28 @@ class GameLingoScreenTranslationService : Service() {
             status = value
             notification()
         }
+    }
+    private fun requestSample(region: Int) {
+        if (!cleanCapture || !OverlayService.suppressStandaloneCapture(true)) {
+            OverlayService.suppressStandaloneCapture(false)
+            wantFrame.compareAndSet(0,region)
+            return
+        }
+        capturePending = true
+        val generation = ++sampleGeneration
+        // Give the compositor time to remove our overlay before acquiring a fresh frame.
+        ui.postDelayed({
+            if (active && !paused && capturePending && generation == sampleGeneration)
+                wantFrame.compareAndSet(0,region)
+        }, 90L)
+        // Always restore visibility if the projection stops delivering frames.
+        ui.postDelayed({
+            if (capturePending && generation == sampleGeneration) cancelSample()
+        }, 350L)
+    }
+    private fun cancelSample() {
+        sampleGeneration++; capturePending = false; wantFrame.set(0)
+        OverlayService.suppressStandaloneCapture(false)
     }
     // Acquire and close every Image on the dedicated frame thread. Copy just
     // the ROI, accounting for row stride and the unmapped last-row padding.
@@ -375,6 +422,7 @@ class GameLingoScreenTranslationService : Service() {
             } finally { image.close() }
             decoded.incrementAndGet()
             ui.post {
+                if (capturePending) cancelSample()
                 if (!active || paused || ocrBusy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
                 else if (yellow) processYellow(bitmap) else process(bitmap)
             }
@@ -402,7 +450,12 @@ class GameLingoScreenTranslationService : Service() {
         val ocrStarted = SystemClock.elapsedRealtime()
         val read = ocr ?: run { cropped.recycle(); ocrBusy=false; return }
         try {
-            read.prectiSamostatnyTitulek(cropped, sourceLanguage, GameLingoOCRConfig.filterMenuText, { raw ->
+            read.prectiSamostatnyTitulek(cropped, sourceLanguage, GameLingoOCRConfig.filterMenuText, { raw, box, rows ->
+                val normalized = box?.let { floatArrayOf(
+                    roi[0]+it.left.toFloat()/cropped.width*(roi[2]-roi[0]),
+                    roi[1]+it.top.toFloat()/cropped.height*(roi[3]-roi[1]),
+                    roi[0]+it.right.toFloat()/cropped.width*(roi[2]-roi[0]),
+                    roi[1]+it.bottom.toFloat()/cropped.height*(roi[3]-roi[1])) }
                 cropped.recycle()
                 ui.post {
                     ocrBusy = false
@@ -412,6 +465,7 @@ class GameLingoScreenTranslationService : Service() {
                     if (raw.isNotBlank()) ocrHits.incrementAndGet()
                     ocrState = if (raw.isBlank()) "Bez textu" else "Text rozpoznán"
                     if (diagnostic && raw.isNotBlank()) lastRaw = raw.take(300)
+                    if (raw.isNotBlank()) { currentBox = normalized; currentRows = rows.coerceAtLeast(1) }
                     accept(raw)
                 }
             }, { cropped.recycle(); ui.post { ocrBusy=false; ocrState = "Chyba OCR" } })
@@ -424,28 +478,37 @@ class GameLingoScreenTranslationService : Service() {
         val now = SystemClock.elapsedRealtime()
         if (value.isBlank()) {
             if (++blankFrames >= 2 && blankSince == 0L) {
-                resetText(); blankSince = now; render("")
+                blankSince = now
+                if (storyMode) story.zmizelo(++storySequence,now)
+                // Invalidate in-flight translation. The display timer is never extended by blank frames.
+                epoch++; candidate = ""; lastAttempt = ""; lastAttemptAt = 0L
+                if (!storyMode) { shownUntil = minOf(shownUntil, now + 700L) }
             }
             return
         }
         blankFrames = 0; blankSince = 0; lastTextAt = now
+        if (storyMode) {
+            if (value != candidate) {
+                candidate = value
+                story.prijmiOcr(++storySequence, listOf(value), intArrayOf(), false, now)
+            }
+            return
+        }
         if (value != candidate) {
             candidate = value
             if (shown != value && translatedText.isNotEmpty()) {
                 shown = ""; translatedText = ""; render("")
             }
         }
-        if (value == shown && translatedText.isNotEmpty()) {
-            if (now - lastRenderAt >= 900L) render(translatedText)
-            return
-        }
+        // Do not keep restarting the timer for the same OCR text.
+        if (value == shown) return
         translateLatest()
     }
     /** Independent OCR + one translation in flight; never queue stale dialogue. */
     private fun translateLatest() {
         if (!active || paused || translationBusy || candidate.isBlank()) return
         val now = SystemClock.elapsedRealtime()
-        if (lastTextAt == 0L || now - lastTextAt > 1800L || (candidate == shown && translatedText.isNotEmpty())) return
+        if (lastTextAt == 0L || now - lastTextAt > 1800L || candidate == shown) return
         if (candidate == lastAttempt && now - lastAttemptAt < 1000L) return
         val p = translator ?: return
         val value = candidate
@@ -462,7 +525,11 @@ class GameLingoScreenTranslationService : Service() {
                 if (current && !translated.isNullOrBlank()) {
                     translationState = "Přeloženo"; translationHits.incrementAndGet()
                     if (diagnostic) lastTranslated = translated.take(300)
-                    shown = value; translatedText = translated; render(translated)
+                    shown = value; translatedText = translated
+                    shownAt = SystemClock.elapsedRealtime()
+                    val duration = ((1800L+60L*translated.length)*durationPercent/100L).coerceIn(800L,15000L)
+                    shownUntil = shownAt + duration
+                    render(translated, duration)
                 } else if (current) {
                     translationState = "Chyba překladu"; render("")
                 } else {
@@ -562,12 +629,17 @@ class GameLingoScreenTranslationService : Service() {
         }
         next(0)
     }
-    private fun render(text: String) {
+    private fun render(text: String, duration: Long = 1800L) {
         lastRenderAt = android.os.SystemClock.elapsedRealtime()
         if (PrijemService.bezi || RemotePlayService.aktivni) return
-        OverlayService.posli(this, Intent(this, OverlayService::class.java)
+        val intent = Intent(this, OverlayService::class.java)
             .setAction(OverlayService.ACTION_SET_TEXT).putExtra(OverlayService.EXTRA_TEXT, text)
-            .putExtra(OverlayService.EXTRA_DOBA, 1800L).putExtra(OverlayService.EXTRA_VLASTNI, output))
+            .putExtra(OverlayService.EXTRA_DOBA, duration)
+        val box = currentBox
+        if (useAutomaticOutput && box != null && !storyMode) {
+            intent.putExtra(OverlayService.EXTRA_BOX, box).putExtra(OverlayService.EXTRA_RADKU, currentRows)
+        } else intent.putExtra(OverlayService.EXTRA_VLASTNI, output)
+        OverlayService.posli(this, intent)
     }
     private fun notification() {
         val nm = getSystemService(NotificationManager::class.java)
@@ -586,6 +658,7 @@ class GameLingoScreenTranslationService : Service() {
         if (starting) startupFailed = true
         starting = false
         pendingStart?.let { ui.removeCallbacks(it) }; pendingStart = null
+        cancelSample(); story.reset(); storyPage=null
         active=false; running=false; wantFrame.set(0); epoch++; ui.removeCallbacks(tick)
         if (wasActive && !status.startsWith("Systém ukončil")) status = "Zastaveno · poslední stav: " + source
         if (wasActive) { render(""); clearYellow() }
