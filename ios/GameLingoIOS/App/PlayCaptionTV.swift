@@ -94,7 +94,7 @@ final class PlayCaptionTV: ObservableObject {
     @Published var discovered: [PlayCaptionDevice] = []
     @Published var pairingCode = ""
     @Published private(set) var pairedIP = UserDefaults.standard.string(forKey: "pairedTVIP") ?? ""
-    @Published private(set) var pairingStatus = "Párování je volitelné – pro samotné titulky stačí IP televize."
+    @Published private(set) var pairingStatus = "Přenos titulků vyžaduje bezpečné spárování TV."
     var isPaired: Bool { !ip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                          ip.trimmingCharacters(in: .whitespacesAndNewlines) == pairedIP }
 
@@ -570,12 +570,13 @@ final class PlayCaptionTV: ObservableObject {
     }
 
     /// Authenticated subtitle sent through the verified receiver session.
-    /// Original PlayCaption 0.22 still receives regular PCT1 when not paired.
+    /// New clients never fall back to unsigned caption traffic.
     private func sendSignedSubtitle(_ canonicalPayload: Data, to target: String,
                                     reportStatus: Bool,
                                     forceDatagram: Bool = false) -> Bool {
         guard let token = ReceiverSecretStore.load(target) else { return false }
         let encoded = canonicalPayload.base64EncodedString()
+        guard encoded.utf8.count < 11000 else { return false }
         let body = "TEXT\t\(receiverID)\t\(encoded)"
         guard let mac = signature(body, tokenHex: token) else { return false }
         let packet = Data("PCPAIR1\t\(body)\t\(mac)".utf8)
@@ -640,8 +641,8 @@ final class PlayCaptionTV: ObservableObject {
         for payload in [dialogue, choices] {
             if !sendSignedSubtitle(payload, to: target,
                                    reportStatus: false, forceDatagram: true) {
-                // Legacy TV receivers only recognize the unsigned packets.
-                sendDatagram(payload, to: target, reportStatus: false)
+                // No authenticated receiver: do not send unsigned game text.
+                continue
             }
         }
     }
@@ -677,7 +678,8 @@ final class PlayCaptionTV: ObservableObject {
         ]
         let payload = Data(fields.joined(separator: "\t").utf8)
         if !sendSignedSubtitle(payload, to: target, reportStatus: true) {
-            sendDatagram(payload, to: target, reportStatus: true)
+            message = "Nejdříve bezpečně spáruj GameLingo TV."
+            return
         }
         guard duration > 0 else { return }
         repeatTask = Task { [weak self] in
@@ -687,7 +689,7 @@ final class PlayCaptionTV: ObservableObject {
                 guard !Task.isCancelled, Date() < expiry else { break }
                 guard let self else { break }
                 if !self.sendSignedSubtitle(payload, to: target, reportStatus: false) {
-                    self.sendDatagram(payload, to: target, reportStatus: false)
+                    break
                 }
             }
         }
@@ -702,7 +704,7 @@ final class PlayCaptionTV: ObservableObject {
             return
         }
         let packet = "PCO1\t\(visible ? 1 : 0)\t\(area.minX)\t\(area.minY)\t\(area.maxX)\t\(area.maxY)"
-        sendDatagram(Data(packet.utf8), to: target, reportStatus: false)
+        _ = sendSignedSubtitle(Data(packet.utf8), to: target, reportStatus: false)
     }
 
     private var choicesSequence: UInt64 {
@@ -739,7 +741,7 @@ final class PlayCaptionTV: ObservableObject {
         let packet = "PCV1\t\(choicesSequence)\t\(frameFlag)\t\(area.minX)\t\(area.minY)\t\(area.maxX)\t\(area.maxY)\t\(chosen)\t\(escaped)\(outputSuffix)"
         let bytes = Data(packet.utf8)
         if !sendSignedSubtitle(bytes, to: target, reportStatus: false) {
-            sendDatagram(bytes, to: target, reportStatus: false)
+            message = "Nejdříve bezpečně spáruj GameLingo TV."
         }
     }
 

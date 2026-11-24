@@ -374,6 +374,12 @@ object GameLingoTVUi {
             "Pro čtení her přímo v TV potřebuje aplikace povolení překryvu.",
             14f, muted = true))
 
+        section("ZABEZPEČENÍ")
+        addGrid(listOf(toggle("Legacy · staré aplikace",
+            "Povolí nepodepsané titulky (jen důvěryhodná síť)",
+            { GameLingoTVPairing.legacyEnabled(a) },
+            { GameLingoTVPairing.setLegacyEnabled(a, it) })))
+
         section("DALŠÍ")
         addGrid(listOf(settingsTile("ⓘ", "O aplikaci / Licence",
             "Původní autoři, zdrojový kód a GNU AGPLv3") {

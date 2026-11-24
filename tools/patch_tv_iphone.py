@@ -475,6 +475,32 @@ def main() -> None:
          '                } else setTextColor(ZLUTA)\n',
          '                } else setTextColor(GameLingoTVCaptionStyle.textColor(this@OverlayService))\n')
 
+    # GameLingo audit P0.1: authenticate every game-data packet before any renderer.
+    # Legacy compatibility is explicit, receiver-only and disabled by default.
+    once(networking,
+         '                    val buf = ByteArray(8192)\n',
+         '                    val buf = ByteArray(16384)\n')
+    once(networking,
+         '                        if (casti.size >= 2 && casti[0] == "PCPAIR1") {\n',
+         '                        var authenticatedGameData = false\n'
+         '                        if (casti.size >= 2 && casti[0] == "PCPAIR1") {\n')
+    once(networking,
+         '                                        if (!decoded.startsWith("PCT1\\t") &&\n'
+         '                                            !decoded.startsWith("PCV1\\t")) continue\n'
+         '                                        casti = decoded.split("\\t")\n',
+         '                                        val inner = decoded.split("\\t")\n'
+         '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")) continue\n'
+         '                                        if (inner.firstOrNull() == "PCS1" && inner.getOrNull(1) in listOf("ZADOST", "KOD")) continue\n'
+         '                                        casti = inner\n'
+         '                                        authenticatedGameData = true\n'
+         '                                        p.setData(decoded.toByteArray(Charsets.UTF_8))\n')
+    once(networking,
+         '                        if (pribeh.zpracuj(p)) {\n',
+         '                        // The old Xbox account-transfer handshake is not game data.\n'
+         '                        val accountPairing = casti.firstOrNull() == "PCS1" && casti.getOrNull(1) in listOf("ZADOST", "KOD")\n'
+         '                        if (!authenticatedGameData && !accountPairing && !GameLingoTVPairing.legacyEnabled(c)) continue\n'
+         '                        if (pribeh.zpracuj(p)) {\n')
+
     print("iPhone TV PCV1 output geometry enabled: yellow OCR and orange output independent.")
     print("PlayCaption iPhone-only TV receiver + six-digit device pairing ready.")
 

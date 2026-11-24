@@ -26,6 +26,9 @@ def main():
 
     mainFile=folder/"MainActivity.kt"
     code=mainFile.read_text(encoding="utf-8")
+    code=one(code, "        super.onCreate(savedInstanceState)",
+        "        super.onCreate(savedInstanceState)\n        GameLingoTVPairing.initialize(this)",
+        "initialize signed TV sender")
 
     def manager():
         return '''GameLingoDeviceCenter.show(this,
@@ -103,7 +106,7 @@ def main():
                                 AutoStart.nastavZapnuto(this, true)''',
         "PlayStation registration success")
 
-    if mobile_dashboard:
+    if mobile_dashboard or tv_dashboard:
         # The Android TV pairing code may select 41990-41993, but the
         # upstream mobile subtitle sender independently used 41989 for ALL
         # PCT1/PCV1 data. Route caption, choices, preview and clear through
@@ -117,27 +120,45 @@ def main():
         for old, new, label in (
             (
                 'data.forEach { s.send(DatagramPacket(it, it.size, kam, PORT_TITULKY)) }',
-                'data.forEach { s.send(DatagramPacket(it, it.size, kam, GameLingoTVPairing.portFor(ip))) }',
+                'data.forEach { GameLingoTVPairing.sendSigned(s, ip, kam, it, GameLingoTVPairing.portFor(ip)) }',
                 "Android subtitle clear",
             ),
             (
                 's.send(DatagramPacket(cil.third, cil.third.size, kam, PORT_TITULKY))',
-                's.send(DatagramPacket(cil.third, cil.third.size, kam, GameLingoTVPairing.portFor(cil.first)))',
+                'GameLingoTVPairing.sendSigned(s, cil.first, kam, cil.third, GameLingoTVPairing.portFor(cil.first))',
                 "Android caption immediate delivery",
             ),
             (
                 's.send(DatagramPacket(data, data.size, kam, PORT_TITULKY))',
-                's.send(DatagramPacket(data, data.size, kam, GameLingoTVPairing.portFor(ip)))',
+                'GameLingoTVPairing.sendSigned(s, ip, kam, data, GameLingoTVPairing.portFor(ip))',
                 "Android caption repeat",
             ),
             (
                 's.send(DatagramPacket(v, v.size, kam, PORT_TITULKY))',
-                's.send(DatagramPacket(v, v.size, kam, GameLingoTVPairing.portFor(ip)))',
+                'GameLingoTVPairing.sendSigned(s, ip, kam, v, GameLingoTVPairing.portFor(ip))',
                 "Android game text/choices repeat",
             ),
         ):
             sender = one(sender, old, new, label)
         transport.write_text(prefix + sender_marker + sender, encoding="utf-8")
+
+        # Story-mode packets bypass Vysilac. Protect the independent socket too.
+        story=folder/"PribehSpojeni.kt"
+        source=story.read_text(encoding="utf-8")
+        source=one(source, 'sit.connect(InetAddress.getByName(ip), port)',
+            'sit.connect(InetAddress.getByName(ip), GameLingoTVPairing.storyPort(ip))', "story port")
+        source=one(source, 'runCatching { sit.send(DatagramPacket(data, data.size)) }',
+            'runCatching { val signed = GameLingoTVPairing.signedPacket(ip, data); sit.send(DatagramPacket(signed, signed.size)) }',
+            "signed story messages")
+        source=one(source, 'repeat(3) { runCatching { socket?.send(DatagramPacket(data, data.size)) } }',
+            'repeat(3) { runCatching { val signed = GameLingoTVPairing.signedPacket(ip, data); socket?.send(DatagramPacket(signed, signed.size)) } }',
+            "signed story clear")
+        story.write_text(source, encoding="utf-8")
+        service=folder/"RemotePlayService.kt"
+        source=service.read_text(encoding="utf-8")
+        source=one(source, "        super.onCreate()",
+            "        super.onCreate()\n        GameLingoTVPairing.initialize(this)", "background sender context")
+        service.write_text(source, encoding="utf-8")
 
     mainFile.write_text(code,encoding="utf-8")
 

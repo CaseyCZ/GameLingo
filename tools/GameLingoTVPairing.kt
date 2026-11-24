@@ -39,6 +39,40 @@ object GameLingoTVPairing {
     private const val PREFS = "gamelingo_tv_receiver"
     private const val KEY_ALIAS = "cz.caseycz.gamelingo.receiver.v1"
     private const val PORT = 41989
+    @Volatile private var appContext: Context? = null
+
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    /** Compatibility applies to the TV receiver only; new senders never downgrade. */
+    fun legacyEnabled(c: Context): Boolean =
+        prefs(c).getBoolean("legacy_unsigned_receiver", false)
+
+    fun setLegacyEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean("legacy_unsigned_receiver", enabled).apply()
+    }
+
+    /** All outbound game data uses the same authenticated envelope. */
+    fun signedPacket(ip: String, payload: ByteArray): ByteArray {
+        val context = appContext ?: throw IllegalStateException("GameLingo TV není připravena")
+        val secret = token(context, ip)
+            ?: throw IllegalStateException("Nejdříve spáruj GameLingo TV")
+        val encoded = Base64.encodeToString(payload, Base64.NO_WRAP)
+        require(encoded.length < 11000) { "Příliš dlouhá TV zpráva" }
+        val clientId = pairingId(context)
+        val body = "TEXT\t$clientId\t$encoded"
+        return ("PCPAIR1\t$body\t" + sign(secret, body)).toByteArray(Charsets.UTF_8)
+    }
+
+    /** Resolve the story socket on its worker thread, not the UI thread. */
+    fun storyPort(ip: String): Int = receiverPort(ip)
+
+    fun sendSigned(socket: DatagramSocket, ip: String, address: InetAddress,
+                   payload: ByteArray, port: Int) {
+        val packet = signedPacket(ip, payload)
+        socket.send(DatagramPacket(packet, packet.size, address, port))
+    }
     private val availablePorts = 41989..41993
     private val portLock = Any()
     @Volatile private var lastPortIp = ""

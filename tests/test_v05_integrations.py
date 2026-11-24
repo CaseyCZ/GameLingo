@@ -327,6 +327,24 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("var shownCode: String? = IPhoneTVPairing.startCode()",native)
         self.assertIn("PrijemService.statistikaPrijmu()",native)
 
+    def test_p0_1_no_unsigned_caption_fallback(self):
+        ios = code(IOS/"PlayCaptionTV.swift")
+        android = code(TOOLS/"GameLingoTVPairing.kt")
+        wire = code(TOOLS/"wire_android_devices.py")
+        receiver = code(TOOLS/"patch_tv_iphone.py")
+        tv = code(TOOLS/"GameLingoTVUi.kt")
+        self.assertNotIn("sendDatagram(payload, to: target", ios)
+        self.assertNotIn("sendDatagram(bytes, to: target", ios)
+        self.assertIn("sendSignedSubtitle(Data(packet.utf8)", ios)
+        self.assertIn('getBoolean("legacy_unsigned_receiver", false)', android)
+        self.assertIn("fun signedPacket(", android)
+        self.assertEqual(wire.count("GameLingoTVPairing.sendSigned("), 4)
+        self.assertEqual(wire.count("GameLingoTVPairing.signedPacket(ip, data)"), 2)
+        self.assertIn("GameLingoTVPairing.initialize(this)", wire)
+        self.assertIn("!authenticatedGameData && !accountPairing && !GameLingoTVPairing.legacyEnabled(c)", receiver)
+        self.assertIn('p.setData(decoded.toByteArray(Charsets.UTF_8))', receiver)
+        self.assertIn("GameLingoTVPairing.setLegacyEnabled(a, it)", tv)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

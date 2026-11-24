@@ -35,7 +35,7 @@ Datum: 2026-11-24. Stav: fáze 0, statická kontrola; žádné změny aplikačn�
 ## Fronta úkolů
 - [x] F0 — průzkum a checkpoint
 - [x] Založit auditní větev přímo z poslední vývojové revize 0.5 a ověřit push triggery publikace.
-- [ ] Baseline build/test na auditní větvi (CI připraveno, výsledek čeká).
+- [x] Baseline build/test na auditní větvi: run 45343148434, všechny tři nativní buildy, kontroly a balíčky success.
 - [ ] P0.1 povinné HMAC všech typů titulků, legacy opt-in default off
 - [ ] P0.2 ochrana proti replay (podepsaná sekvence/nonce, restart relace a ochrana pořadí)
 - [ ] P0.3 Keystore na TV, bezpečná migrace nebo nové párování
@@ -81,3 +81,8 @@ Ověřit čtyři oblasti, oranžový náhled, profily, barvy, přepnutí HDMI, r
 ### Výsledek výchozí CI (run 45343148434)
 - CI commit `6af49ee02bf271153395cf4e65208e42e4edac96`, [run](https://github.com/CaseyCZ/GameLingo/actions/runs/45343148434). Stav při kontrole: in_progress; Python integration contracts, Python tooling syntax a Parse every iOS Swift source: jednotlivé kroky success. Nativní sestavení zatím bez výsledku.
 - Návaznost P0.1: cíleně prověřeny `tools/wire_android_devices.py` (všechny 4 sender rewrite), `tools/GameLingoTVPairing.kt` (Keystore + HMAC), `tools/patch_tv_iphone.py` (receiver dispatch a PCV1), `ios/GameLingoIOS/App/PlayCaptionTV.swift` (sendSignedSubtitle, clear, subtitle, choices, legacy fallback). Před změnou navíc zkontrolovat upstream příběhové zprávy a všechna odesílací/přijímací místa; legacy opt-in na TV i odesílatelích bez automatického downgradu. Žádná aplikační změna dosud necommitována. Další krok: zkontrolovat výsledek tohoto runu a případně opravit baseline, pak jediný atomický P0.1 commit.
+
+## P0.1 — povinný podepsaný přenos
+- Baseline run 45343148434 dokončen success: iOS (Chiaki + IPA), Android mobil APK, TV APK, quick checks a SHA-256 balíčků.
+- Commit `security: require authenticated TV game data and explicit legacy opt-in`: iOS bez automatického unsigned fallbacku; Android všechny čtyři Vysilac cesty i samostatný příběhový socket podepisují; TV kontroluje HMAC před vstupem do všech herních parserů. Povolené vnitřní typy PCT1/PCV1/PCO1/PCQ1/PCS1 story; původní PCS1 ZADOST/KOD přenos účtu zůstává oddělený. GLPORT1 discovery zachováno. Legacy přepínač pouze na přijímači (default off) pro starší klienty; nové klienty nikdy automaticky nesníží na nepodepsaný režim. Explicitní volba v TV Nastavení > Zabezpečení. Samostatné lokální překrytí není síťový přenos.
+- Přidán regresní kontrakt do test_v05_integrations.py; plný build/test spustí auditní CI. P0.1 zatím čeká na výsledek; nepovažovat za HW ověřené. P0.2 replay, P0.3 TV Keystore a P0.4 více telefonů zůstávají otevřené. P0.1 zajišťuje podpis herních dat, ne důvěrnost, ani autentizaci potvrzení přijímače.
