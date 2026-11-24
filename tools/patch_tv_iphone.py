@@ -117,7 +117,7 @@ def main() -> None:
          '                                "PAIR" -> {\n'
          '                                    val code = casti.getOrNull(2).orEmpty()\n'
          '                                    val id = casti.getOrNull(3).orEmpty()\n'
-         '                                    val secret = IPhoneTVPairing.confirm(c, code, id, casti.getOrNull(4).orEmpty())\n'
+         '                                    val secret = IPhoneTVPairing.confirm(c, code, id, casti.getOrNull(4).orEmpty(), p.address.hostAddress.orEmpty())\n'
          '                                    posledniParovaciStav = if (secret != null)\n'
          '                                        "kód přijat; odpověď OK odeslána" else "kód odmítnut nebo vypršel"\n'
          '                                    if (secret != null)\n'
@@ -521,6 +521,10 @@ def main() -> None:
          '                        if (pribeh.zpracuj(p)) {\n',
          '                        // The old Xbox account-transfer handshake is not game data.\n'
          '                        val accountPairing = casti.firstOrNull() == "PCS1" && casti.getOrNull(1) in listOf("ZADOST", "KOD")\n'
+         '                        if (accountPairing && !Propojeni.Pridani.platny()) {\n'
+         '                            odpovez(s, p, "PCS1\\tCHYBA\\tlokalni_souhlas")\n'
+         '                            continue\n'
+         '                        }\n'
          '                        if (!authenticatedGameData && !accountPairing && !GameLingoTVPairing.legacyEnabled(c)) continue\n'
          '                        if (!authenticatedGameData && !accountPairing && IPhoneTVPairing.hasActiveSource()) continue\n'
          '                        if (pribeh.zpracuj(p)) {\n')
