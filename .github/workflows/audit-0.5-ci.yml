@@ -1,0 +1,25 @@
+name: GameLingo • audit 0.5 build and regression checks
+
+on:
+  push:
+    branches:
+      - feature/audit-0.5
+    paths:
+      - "ios/**"
+      - "tools/**"
+      - "tests/**"
+      - "shared/**"
+      - ".github/workflows/audit-0.5-ci.yml"
+      - ".github/workflows/build-gamelingo.yml"
+      - ".github/workflows/fast-gamelingo-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quick:
+    uses: ./.github/workflows/fast-gamelingo-checks.yml
+  native:
+    needs: quick
+    uses: ./.github/workflows/build-gamelingo.yml

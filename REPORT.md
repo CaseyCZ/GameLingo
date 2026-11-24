@@ -35,7 +35,7 @@ Datum: 2026-11-24. Stav: fáze 0, statická kontrola; žádné změny aplikačn�
 ## Fronta úkolů
 - [x] F0 — průzkum a checkpoint
 - [x] Založit auditní větev přímo z poslední vývojové revize 0.5 a ověřit push triggery publikace.
-- [ ] Baseline build/test na auditní větvi.
+- [ ] Baseline build/test na auditní větvi (CI připraveno, výsledek čeká).
 - [ ] P0.1 povinné HMAC všech typů titulků, legacy opt-in default off
 - [ ] P0.2 ochrana proti replay (podepsaná sekvence/nonce, restart relace a ochrana pořadí)
 - [ ] P0.3 Keystore na TV, bezpečná migrace nebo nové párování
@@ -73,3 +73,7 @@ Ověřit čtyři oblasti, oranžový náhled, profily, barvy, přepnutí HDMI, r
 - AI: volitelný poskytovatel za stejným rozhraním, explicitní souhlas se zasíláním textu, kontext omezený na profil.
 - Dabing: samostatná audio/ASR/TTS větev s časováním a ochranou před vlastní zpětnou vazbou.
 - Samsung/LG: samostatné přijímače dle oficiálních SDK a kompatibilního verzovaného protokolu, bez příslibu univerzální HDMI podpory.
+
+## 2026-11-24 — výchozí CI před P0.1
+- Samostatný commit `ci: enable audit-only baseline and per-change checks` zapojuje existující rychlé kontroly a celý nativní build přes workflow_call, spouštěné pouze z feature/audit-0.5 při změně kódu/testů/workflow. Pouze contents: read, žádný publish workflow, instalační soubory jen jako Actions artefakty.
+- Výchozí kontrola: lokální git ls-remote nedostupné (DNS github.com); dostupný GitHub konektor nemá dispatch API, proto baseline spouští push tohoto CI commitu. Výsledky zatím nepotvrzené. P0.1 ještě nezačal; navázat po ověření runu pro tento commit. Dokumentační změny samy nový nativní build nespouští.

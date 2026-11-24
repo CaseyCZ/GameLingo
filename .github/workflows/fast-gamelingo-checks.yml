@@ -18,6 +18,7 @@ on:
       - "tests/**"
       - ".github/workflows/fast-gamelingo-checks.yml"
   workflow_dispatch:
+  workflow_call:
 
 # Native iOS/Android/Google TV packaging is deliberately separate.
 # This inexpensive workflow checks changes without downloading and building Chiaki.
