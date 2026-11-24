@@ -83,6 +83,7 @@ class GameLingoScreenTranslationService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == STOP) { stopSelf(); return START_NOT_STICKY }
         if (intent?.action == PAUSE) {
+            if (!active) { stopSelf(); return START_NOT_STICKY }
             paused = !paused; epoch++; candidate = ""; shown = ""; render("")
             notification()
             return START_NOT_STICKY
