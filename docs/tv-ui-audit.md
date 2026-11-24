@@ -1,0 +1,25 @@
+# GameLingo TV — UI audit scope
+
+The audit follows the generated TV variant after all upstream branding and patch steps. It does not claim screenshots or hardware validation.
+
+| Destination | Treatment |
+|---|---|
+| First run, introduction, beta, home, navigation | Existing branded screens; shared TV theme |
+| Languages | Preserve approved content and picker |
+| OCR and translation | Shared settings panels, full-screen TV presentation |
+| Four-region editor | D-pad editor, temporary TV preview, profile save |
+| Caption style | Full-screen preview and controls |
+| Profiles | Branded picker and edit/save workflow |
+| Receiver | Branded PIN, QR, IP and phone list |
+| Expanded QR | Full-screen QR, live expiry, cleanup |
+| Device management and source selection | Branded dashboard, themed confirmation/input dialogs, console pickers |
+| PS registration, Xbox linking, login, takeover | Inherited functional paths; common app/dialog theme; external OAuth remains external |
+| Glossary, history, translation cache | Branded pages and selection; themed confirmations |
+| Diagnostics, OCR tests, overlay test | Branded pages and status; consent is system-owned |
+| Help, About, license notices | Branded pages / themed dialogs |
+| LG / Samsung wizard, export and developer screens | Inherited functionality; common explicit dialog theme where applicable |
+| Android permissions, IME, external web/login | System/external UI; not redesigned |
+
+The build runs `tools/audit_tv_ui.py` on the final generated TV source and publishes a separate **GameLingo-TV-UI-inventory** artifact. It inventories manifest activities, Kotlin UI entry points and unthemed alert/dialog constructors. It is not a guarantee of focus order, geometry, typography or runtime behavior. Those still require physical TV testing.
+
+Do not change approved languages, phone UI, translation defaults, permissions, account or signing behavior as part of visual-only changes.

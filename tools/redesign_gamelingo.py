@@ -388,9 +388,7 @@ def redesign_tv(s: str) -> str:
                     .setPositiveButton("OK", null).show()
             } else {
                 val labels = phones.map { it.label + if (it.connected) " · připojen" else " · uložen" }.toTypedArray()
-                android.app.AlertDialog.Builder(this)
-                    .setTitle("Spárované telefony")
-                    .setItems(labels) { _, index ->
+                GameLingoTVUi.select(this,"Spárované telefony",labels) { index ->
                         val phone = phones[index]
                         android.app.AlertDialog.Builder(this)
                             .setTitle("Odpárovat " + phone.label + "?")
@@ -404,7 +402,6 @@ def redesign_tv(s: str) -> str:
                             }
                             .setNegativeButton("Zpět", null).show()
                     }
-                    .setNegativeButton("Zpět", null).show()
             }
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         pravá.addView(akce, odsazeni(top = 6))

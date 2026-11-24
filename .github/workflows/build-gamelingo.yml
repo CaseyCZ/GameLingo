@@ -225,6 +225,7 @@ jobs:
           python kit/tools/wire_android_devices.py upstream
           python kit/tools/wire_gamelingo_languages.py upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
+          python kit/tools/audit_tv_ui.py upstream --output gamelingo-tv-ui-inventory.md
           python kit/tools/package_license_notices.py tv --kit kit --upstream upstream --output upstream/app/src/main/assets
           grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
           grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
@@ -294,6 +295,13 @@ jobs:
             mv "$KEYDIR/signed.apk" "$APK"
           fi
           "$SIGNER" verify --verbose --print-certs "$APK"
+      - name: Upload generated TV UI inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-TV-UI-inventory
+          path: gamelingo-tv-ui-inventory.md
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-GoogleTV-v05-dev

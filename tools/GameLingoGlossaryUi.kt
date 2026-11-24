@@ -44,6 +44,19 @@ internal object GameLingoGlossaryUi {
         })
         val error = TextView(a)
         body.addView(error)
+        if(GameLingoTVUi.isTV(a)) {
+            var page:android.app.Dialog?=null
+            GameLingoTVUi.controlFocus(a,input)
+            body.addView(GameLingoTVUi.action(a,"Uložit",primary=true) {
+                if(stopped(a)) {
+                    if(!GameLingoGlossaryStore.save(a,name,source,target,input.text.toString()))
+                        error.text="Neplatný formát, duplicita originálu nebo překročený limit."
+                    else {page?.dismiss();onSaved()}
+                }
+            })
+            page=GameLingoTVUi.page(a,"Herní slovník · "+name,body)
+            return
+        }
         val dialog = AlertDialog.Builder(a).setTitle("Herní slovník · " + name)
             .setView(ScrollView(a).apply { addView(body) })
             .setNegativeButton("Zrušit", null).setPositiveButton("Uložit", null).create()
@@ -80,8 +93,8 @@ internal object GameLingoGlossaryUi {
                 }
                 else -> {
                     val name = names[i-2]
-                    AlertDialog.Builder(a).setTitle(name).setItems(arrayOf("Použít", "Upravit", "Smazat")) { _, option ->
-                        if (!stopped(a)) return@setItems
+                    fun action(option: Int) {
+                        if (!stopped(a)) return
                         when(option) {
                             0 -> GameLingoGlossaryStore.activate(a, name)
                             1 -> edit(a, name) { show(a) }
@@ -90,7 +103,10 @@ internal object GameLingoGlossaryUi {
                                     if (stopped(a)) GameLingoGlossaryStore.remove(a, name)
                                 }.show()
                         }
-                    }.show()
+                    }
+                    val options=arrayOf("Použít","Upravit","Smazat")
+                    if(GameLingoTVUi.isTV(a)) GameLingoTVUi.select(a,name,options,onSelect=::action)
+                    else AlertDialog.Builder(a).setTitle(name).setItems(options){_,option->action(option)}.show()
                 }
             }
         }

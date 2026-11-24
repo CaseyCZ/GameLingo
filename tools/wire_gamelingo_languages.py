@@ -632,7 +632,21 @@ def install_tv_theme(root):
         <item name="android:textColorPrimary">#FFFFFF</item>
         <item name="android:textColorSecondary">#A2B4D6</item>
         <item name="android:alertDialogTheme">@style/GameLingoTVAlert</item>
-        <item name="android:dialogTheme">@style/GameLingoTVAlert</item>
+        <item name="android:dialogTheme">@style/GameLingoTVDialog</item>
+        <item name="android:buttonStyle">@style/GameLingoTVButton</item>
+    </style>
+    <style name="GameLingoTVFullscreen" parent="@style/GameLingoTVTheme">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+    <style name="GameLingoTVDialog" parent="@android:style/Theme.Material.Dialog.NoActionBar">
+        <item name="android:windowBackground">@drawable/gamelingo_tv_dialog</item>
+        <item name="android:colorBackground">#101A2C</item>
+        <item name="android:colorAccent">#02D6FF</item>
+        <item name="android:colorControlActivated">#02D6FF</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#A2B4D6</item>
+        <item name="android:alertDialogTheme">@style/GameLingoTVAlert</item>
         <item name="android:buttonStyle">@style/GameLingoTVButton</item>
     </style>
     <style name="GameLingoTVAlert" parent="@android:style/Theme.Material.Dialog.Alert">
@@ -685,9 +699,15 @@ def install_tv_theme(root):
     for path in folder.rglob("*.kt"):
         source=path.read_text(encoding="utf8")
         updated, count = re.subn(r'(?<![\w.])(?:android\.app\.)?AlertDialog\.Builder\(([^(),\n]+)\)',r'android.app.AlertDialog.Builder(\1, R.style.GameLingoTVAlert)',source)
-        if count:
+        # Explicit legacy activity/dialog themes otherwise bypass the app theme.
+        updated = re.sub(r'(\bDialog\([^,\n]+,\s*)android\.R\.style\.Theme_(?:Material_NoActionBar_Fullscreen|DeviceDefault_NoActionBar)(?=\s*\))',
+                         r'\1R.style.GameLingoTVFullscreen', updated)
+        # The approved language picker owns its colors/layout; do not replace
+        # its custom content or navigation. Other ordinary Dialogs inherit the
+        # app dialogTheme, and all AlertDialogs are explicitly styled above.
+        if updated != source:
             path.write_text(updated,encoding="utf8")
-            total+=count
+        total+=count
     if total < 20: raise RuntimeError("Unexpectedly few themed TV dialogs")
     print(f"GameLingo TV: themed {total} inherited and branded dialogs")
 
