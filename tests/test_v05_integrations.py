@@ -670,7 +670,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             def make(*parts):
                 with zipfile.ZipFile(apk, "w") as out:
                     for i, part in enumerate(parts):
-                        out.writestr("classes.dex" if i == 0 else f"classes{i+1}.dex", b"dex\\n035\\x00"+part)
+                        out.writestr("classes.dex" if i == 0 else f"classes{i+1}.dex", b"dex\n035\x00"+part)
             make(b"Lcom/google/mlkit/vision/text/TextRecognition;")
             gate.verify(apk, "tv")
             with self.assertRaises(AssertionError):
