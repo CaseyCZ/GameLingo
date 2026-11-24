@@ -74,7 +74,11 @@ object GameLingoTVCaptionStyle {
             max = 100; keyProgressIncrement = 5; isFocusable = true
             GameLingoTVUi.controlFocus(a, this)
         }
+        val colorAction=GameLingoTVUi.action(a,"Barva písma") {}
+        val backgroundAction=GameLingoTVUi.action(a,"Pozadí titulků") {}
         fun refresh() {
+            colorAction.text="Barva písma: "+names[keys.indexOf(p.getString("color","white")).coerceAtLeast(0)]
+            backgroundAction.text="Pozadí: "+when(p.getInt("opacity",230)){0->"Žádné";230->"Tmavé";117->"Průhledné";else->"Vlastní"}
             val percent = (p.getInt("opacity",230).coerceIn(0,255)*100+127)/255
             label.text = "Neprůhlednost pozadí: $percent %"
             if(opacityBar.progress != percent) opacityBar.progress=percent
@@ -82,12 +86,13 @@ object GameLingoTVCaptionStyle {
             preview.setTextColor(textColor(a)); preview.setBackgroundColor(background(a))
         }
         root.addView(preview)
-        root.addView(GameLingoTVUi.action(a, "Barva písma") {
+        colorAction.setOnClickListener {
             GameLingoTVUi.select(a, "Barva písma", names, keys.indexOf(p.getString("color", "white"))) { index ->
                 p.edit().putString("color", keys[index]).apply(); refresh()
             }
-        })
-        root.addView(GameLingoTVUi.action(a, "Pozadí titulků") {
+        }
+        root.addView(colorAction)
+        backgroundAction.setOnClickListener {
             val dialogColors = arrayOf("Bez pozadí", "Tmavé", "Průhledné")
             val values = intArrayOf(0,230,117)
             val selected = values.indexOf(p.getInt("opacity",230))
@@ -95,7 +100,8 @@ object GameLingoTVCaptionStyle {
                 p.edit().putInt("opacity",values[index]).apply()
                 refresh()
             }
-        })
+        }
+        root.addView(backgroundAction)
         root.addView(label)
         root.addView(opacityBar.apply {
             setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {

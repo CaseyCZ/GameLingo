@@ -142,7 +142,7 @@ object GameLingoTVProfiles {
         if (busy()) { AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show(); return }
         val items = all(a)
         val names = items.keys().asSequence().sorted().toList()
-        GameLingoTVUi.select(a,"Profily her a aplikací",(listOf("+ Uložit aktuální nastavení")+names).toTypedArray()) { i ->
+        GameLingoTVUi.select(a,"Profily her a aplikací",(listOf("+ Uložit aktuální nastavení")+names).toTypedArray(),names.indexOf(store(a).getString("activeProfile",null))+1) { i ->
             if(i==0) saveCurrent(a){show(a)}
             else {
                 val name=names[i-1]

@@ -172,6 +172,7 @@ object GameLingoDirectTVLayout {
         val defaults=arrayOf(OblastTitulku.VYCHOZI.copyOf(),greenDefault.copyOf(),Volby.VYCHOZI.copyOf(),orangeDefault.copyOf())
         val locks=booleanArrayOf(OblastTitulku.zamceno,locked(a,"Green"),Volby.zamceno,locked(a,"Orange"))
         var manual=OblastTitulku.rucne
+        var autoRegion=GameLingoOCRConfig.region(a)
         var custom=savedGreen!=null
         var enabled=Volby.zapnuto
         var textMode=Volby.rezimText
@@ -216,6 +217,7 @@ object GameLingoDirectTVLayout {
         lateinit var lockButton:TextView
         lateinit var option:TextView
         lateinit var contentType:TextView
+        lateinit var presetButton:TextView
         lateinit var editor:TextView
         fun refresh() {
             active.text=names[selected]; active.setTextColor(colors[selected])
@@ -224,6 +226,8 @@ object GameLingoDirectTVLayout {
             modeButtons[2].visibility=if(selected==1 || selected==3) View.VISIBLE else View.GONE
             lockButton.text=if(locks[selected]) "Odemknout oblast" else "Zamknout oblast"
             option.text=when(selected) {0->if(manual)"Čtení: ruční" else "Čtení: automatické";1->if(custom)"Poloha: vlastní" else "Poloha: automatická";else->if(enabled)"Další texty: zapnuto" else "Další texty: vypnuto"}
+            presetButton.visibility=if(selected==0 && !manual) View.VISIBLE else View.GONE
+            presetButton.text="Výchozí oblast: "+GameLingoOCRConfig.regionLabels[GameLingoOCRConfig.regionKeys.indexOf(autoRegion)]
             contentType.visibility=if(selected==2) View.VISIBLE else View.GONE
             contentType.text=if(textMode)"Typ: celý text" else "Typ: volby odpovědí"
             val r=boxes[selected]
@@ -302,6 +306,11 @@ object GameLingoDirectTVLayout {
         side.addView(editor)
         lockButton=button("Zamknout oblast"){locks[selected]=!locks[selected];refresh()};side.addView(lockButton)
         option=button("Režim"){when(selected){0->manual=!manual;1->custom=!custom;else->enabled=!enabled};refresh()};side.addView(option)
+        presetButton=button("Výchozí oblast") {
+            GameLingoTVUi.select(a,"Výchozí oblast",GameLingoOCRConfig.regionLabels,GameLingoOCRConfig.regionKeys.indexOf(autoRegion)) { i ->
+                autoRegion=GameLingoOCRConfig.regionKeys[i];refresh()
+            }
+        };side.addView(presetButton)
         contentType=button("Typ"){textMode=!textMode;refresh()};side.addView(contentType)
         side.addView(button("Obnovit oblast"){
             if(!locks[selected]) {defaults[selected].copyInto(boxes[selected]);refresh()}
@@ -313,6 +322,7 @@ object GameLingoDirectTVLayout {
             if(busy() || !validRect(boxes[0]) || !validRect(boxes[2]) || !validRect(boxes[3])) {
                 Toast.makeText(a,"Překlad běží nebo oblast není platná.",Toast.LENGTH_LONG).show();return false
             }
+            GameLingoOCRConfig.setRegion(a,autoRegion)
             OblastTitulku.zamceno=locks[0]; OblastTitulku.rucne=manual; OblastTitulku.oblast=boxes[0].copyOf(); OblastTitulku.uloz(a)
             Volby.zamceno=locks[2]; Volby.zapnuto=enabled; Volby.rezimText=textMode; Volby.oblast=boxes[2].copyOf();Volby.uloz(a)
             val e=prefs(a).edit().putBoolean("directGreenEnabled",custom)
