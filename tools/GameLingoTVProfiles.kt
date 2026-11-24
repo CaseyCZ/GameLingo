@@ -20,7 +20,7 @@ object GameLingoTVProfiles {
         return JSONObject().apply {
             put("source", GameLingoLanguages.game(a)); put("target", GameLingoLanguages.target(a))
             put("ocr", GameLingoOCRConfig.mode); put("filter", GameLingoOCRConfig.filterMenuText); put("expand", GameLingoOCRConfig.expandSearch)
-            put("dialogues", n.dialogy); put("hints", n.napovedy); put("cover", n.prekryvat); put("story", n.pribehovy)
+            put("dialogues", n.dialogy); put("hints", n.napovedy); put("cover", n.prekryvat); put("story", n.pribehovy); put("duration", n.casPribehuProcenta)
             put("manual", OblastTitulku.rucne); put("blue", array(OblastTitulku.oblast))
             put("yellowEnabled", Volby.zapnuto); put("yellowText", Volby.rezimText); put("yellow", array(Volby.oblast))
             put("orange", array(GameLingoDirectTVLayout.orange(a)))
@@ -49,7 +49,7 @@ object GameLingoTVProfiles {
         if (mode in setOf("classic", "automatic", "street")) GameLingoOCRConfig.setMode(a, mode)
         GameLingoOCRConfig.setFilterMenu(a, p.optBoolean("filter", true))
         GameLingoOCRConfig.setExpandSearch(a, p.optBoolean("expand", false))
-        Nastaveni(a).apply { dialogy = p.optBoolean("dialogues", true); napovedy = p.optBoolean("hints", true); prekryvat = p.optBoolean("cover"); pribehovy = p.optBoolean("story") }
+        Nastaveni(a).apply { dialogy = p.optBoolean("dialogues", true); napovedy = p.optBoolean("hints", true); prekryvat = p.optBoolean("cover"); pribehovy = p.optBoolean("story"); casPribehuProcenta = p.optInt("duration", casPribehuProcenta).coerceIn(CasovaniPribehu.MIN_PROCENT, CasovaniPribehu.MAX_PROCENT) }
         OblastTitulku.rucne = p.optBoolean("manual"); OblastTitulku.oblast = blue; OblastTitulku.uloz(a)
         Volby.zapnuto = p.optBoolean("yellowEnabled"); Volby.rezimText = p.optBoolean("yellowText"); Volby.oblast = yellow; Volby.uloz(a)
         val editor = a.getSharedPreferences("gamelingo", Context.MODE_PRIVATE).edit().putBoolean("directGreenEnabled", greenEnabled)
