@@ -1,0 +1,40 @@
+import Foundation
+
+@main
+struct CaptionStabilityTests {
+    static func main() {
+        var state = CaptionStability()
+        precondition(state.observe("Go!", now: 0) == .accept("Go!"))
+        precondition(state.observe("Go!", now: 0.1) == .hold)
+        precondition(state.observe("", now: 0.2) == .hold)
+        precondition(state.observe("Go!", now: 0.4) == .hold)
+        precondition(state.observe("", now: 1.0) == .hold)
+        precondition(state.observe("", now: 1.81) == .clear)
+        precondition(state.observe("Go!", now: 2) == .accept("Go!"))
+        precondition(state.observe("Go!", now: 2.5, retry: true) == .accept("Go!"))
+        state.reset()
+        precondition(state.observe("We need to get", now: 3) == .hold)
+        precondition(state.needsConfirmation)
+        precondition(state.observe("We need to get out", now: 3.3) == .hold)
+        precondition(state.observe("We need to get out!", now: 3.6) == .accept("We need to get out!"))
+        precondition(state.observe("We need to", now: 4) == .hold)
+        precondition(state.observe("We need to get out!", now: 4.3) == .hold)
+        precondition(state.observe("Help", now: 5) == .accept("Help"))
+        state.reset()
+        precondition(state.observe("This is a long sentence", now: 6) == .hold)
+        precondition(state.observe("This is a long sentence", now: 6.3) == .accept("This is a long sentence"))
+        state.reset()
+        precondition(state.observe("We have to get", now: 7) == .hold)
+        precondition(state.observe("We have to get back", now: 7.4) == .hold)
+        precondition(state.observe("We have to get back home", now: 7.9) == .accept("We have to get back home"))
+        var game = GameTextStability()
+        let document = ["Long document"]
+        precondition(game.permits(document, previous: [], now: 0))
+        precondition(!game.permits([], previous: document, now: 1))
+        precondition(game.permits(document, previous: document, now: 1.3))
+        precondition(game.permits(document, previous: document, now: 300))
+        precondition(!game.permits([], previous: document, now: 301))
+        precondition(game.permits([], previous: document, now: 301.81))
+        print("CaptionStability: short replies, progressive text, dropout, clear and long text passed")
+    }
+}

@@ -81,6 +81,8 @@ struct RecognizedCaption {
 /// OCR of a configurable bottom-center band. Only changed subtitle text is sent.
 actor CaptionPipeline {
     private var lastText = ""
+    private var dialogueStability = CaptionStability()
+    private var gameTextStability = GameTextStability()
     private var lastRead = Date.distantPast
     private var lastSeen = Date.distantPast
     private let translationCache = GLTranslationCache()
@@ -93,6 +95,7 @@ actor CaptionPipeline {
 
     func resetDialogue() {
         lastText = ""
+        dialogueStability.reset()
         lastRead = .distantPast
         lastSeen = .distantPast
         lastSettings = ""
@@ -135,6 +138,7 @@ actor CaptionPipeline {
         if settings != lastSettings {
             lastSettings = settings
             lastText = ""
+            dialogueStability.reset()
             lastRead = .distantPast
             lastSeen = .distantPast
             dialogueImageGate.reset()
@@ -153,7 +157,7 @@ actor CaptionPipeline {
         let roi = searchWide ? SubtitleRegion.wide.rect : baseROI
         let imageTime = ProcessInfo.processInfo.systemUptime
         let fingerprint = OCRFrameFingerprint.read(buffer, visionROI: roi)
-        guard dialogueImageGate.shouldRead(fingerprint, now: imageTime) else { return nil }
+        guard dialogueStability.needsConfirmation || dialogueImageGate.shouldRead(fingerprint, now: imageTime) else { return nil }
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.recognitionLanguages = [gameLanguage.visionIdentifier]
@@ -175,27 +179,24 @@ actor CaptionPipeline {
             }
             let text = lines.joined(separator: " ")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            guard text.count >= (mode == .street ? 2 : 4),
-                  text.filter({ $0.isLetter }).count >= minLetters else {
-                emptyReads += 1
-                // A repeated greeting must be eligible again after it disappears.
-                if !lastText.isEmpty && now.timeIntervalSince(lastSeen) > 1.0 {
-                    // Allow the same phrase again without invalidating a
-                    // translation still in flight for the last visible line.
-                    lastText = ""
-                    dialogueRetryAt = nil
-                }
-                return nil
-            }
-
-            lastSeen = now
-            emptyReads = 0
+            let readable = text.count >= (mode == .street ? 2 : 4) &&
+                text.filter({ $0.isLetter }).count >= minLetters
+            if readable { lastSeen = now; emptyReads = 0 } else { emptyReads += 1 }
             let retryDue = dialogueRetryAt.map { imageTime >= $0 } ?? false
-            guard text != lastText || retryDue else { return nil }
-            dialogueRetryAt = nil
-            lastText = text
-            revision += 1
-            return RecognizedCaption(english: text, revision: revision, capturedAt: now)
+            switch dialogueStability.observe(readable ? text : "", now: imageTime, retry: retryDue) {
+            case .hold:
+                return nil
+            case .clear:
+                lastText = ""
+                dialogueRetryAt = nil
+                revision += 1
+                return RecognizedCaption(english: "", revision: revision, capturedAt: now)
+            case .accept(let stable):
+                dialogueRetryAt = nil
+                lastText = stable
+                revision += 1
+                return RecognizedCaption(english: stable, revision: revision, capturedAt: now)
+            }
         } catch {
             return nil
         }
@@ -210,6 +211,7 @@ actor CaptionPipeline {
 
     func resetOptions() {
         lastOptions = []
+        gameTextStability.reset()
         lastOptionsRead = .distantPast
         lastOptionsSettings = ""
         optionsImageGate.reset()
@@ -226,6 +228,7 @@ actor CaptionPipeline {
         if signature != lastOptionsSettings {
             lastOptionsSettings = signature
             lastOptions = []
+            gameTextStability.reset()
             lastOptionsRead = .distantPast
             optionsImageGate.reset()
             optionsRetryAt = nil
@@ -237,7 +240,7 @@ actor CaptionPipeline {
                          width: area.width, height: area.height)
         let imageTime = ProcessInfo.processInfo.systemUptime
         let fingerprint = OCRFrameFingerprint.read(buffer, visionROI: roi)
-        guard optionsImageGate.shouldRead(fingerprint, now: imageTime) else { return nil }
+        guard gameTextStability.needsConfirmation || optionsImageGate.shouldRead(fingerprint, now: imageTime) else { return nil }
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.recognitionLanguages = [gameLanguage.visionIdentifier]
@@ -255,6 +258,7 @@ actor CaptionPipeline {
             let output = asText
                 ? (lines.isEmpty ? [] : [lines.joined(separator: " ")])
                 : Array(lines.prefix(6))
+            guard gameTextStability.permits(output, previous: lastOptions, now: imageTime) else { return nil }
             let retryDue = optionsRetryAt.map { imageTime >= $0 } ?? false
             guard output != lastOptions || retryDue else { return nil }
             optionsRetryAt = nil

@@ -505,6 +505,22 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("vysledky[i] = null", wiring)
         self.assertIn("prelozene.size != volby.size", wiring)
 
+    def test_p1_5_stabilization_and_bounded_dialogue_display(self):
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        stability = code(IOS/"CaptionStability.swift")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("dialogueStability.needsConfirmation", pipeline)
+        self.assertIn("gameTextStability.needsConfirmation", pipeline)
+        self.assertIn('RecognizedCaption(english: "", revision: revision', pipeline)
+        self.assertIn("now - since >= 0.8", stability)
+        self.assertIn("text.split(separator:", stability)
+        self.assertIn("min(4.0, max(0.1, requested))", model)
+        self.assertIn("self.dialogueDisplayRevision == display", model)
+        self.assertIn("self.clearDialogueOutput()", model)
+        self.assertIn("ukaz(cesky, 4000, box, radku, barvyJmen)", wiring)
+        self.assertIn("coerceIn(0L, 800L)", wiring)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

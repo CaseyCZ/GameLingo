@@ -43,6 +43,10 @@ jobs:
         run: |
           swiftc ios/GameLingoIOS/App/TranslationOutcome.swift tests/TranslationOutcomeTests.swift -o "$RUNNER_TEMP/translation-outcome-tests"
           "$RUNNER_TEMP/translation-outcome-tests"
+      - name: Test dialogue and game text stabilization
+        run: |
+          swiftc ios/GameLingoIOS/App/CaptionStability.swift tests/CaptionStabilityTests.swift -o "$RUNNER_TEMP/caption-stability-tests"
+          "$RUNNER_TEMP/caption-stability-tests"
       - name: Parse every iOS Swift source
         shell: bash
         run: |

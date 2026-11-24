@@ -254,6 +254,8 @@ final class CaptionAppModel: ObservableObject {
     private var processingChoices = false
     private var processingOCR = false
     private var sessionRevision = 0
+    private var dialogueExpiry: Task<Void, Never>?
+    private var dialogueDisplayRevision = 0
     private var dialogueFrames: LatestFrameMailbox<CVPixelBuffer>?
     private var optionsFrames: LatestFrameMailbox<CVPixelBuffer>?
     // Cache only the translation already visible on TV. Moving the orange
@@ -542,6 +544,32 @@ final class CaptionAppModel: ObservableObject {
         self.write("Volby: \(translated.count) rozpoznaných položek")
     }
 
+    /// An explicit clear also cancels the TV sender's repeat task.
+    private func clearDialogueOutput() {
+        dialogueDisplayRevision &+= 1
+        dialogueExpiry?.cancel()
+        dialogueExpiry = nil
+        lastCzech = ""
+        phoneSubtitle = ""
+        if devices.subtitleOutput == .googleTV {
+            devices.prepareTV(tv)
+            if verifiedTelevisionOutput { tv.sendSubtitle("", duration: 0) }
+        }
+    }
+
+    private func scheduleDialogueExpiry(seconds: Double, currentSession: Int) {
+        dialogueExpiry?.cancel()
+        dialogueDisplayRevision &+= 1
+        let display = dialogueDisplayRevision
+        dialogueExpiry = Task { @MainActor [weak self] in
+            do { try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000)) }
+            catch { return }
+            guard let self, self.sessionRevision == currentSession,
+                  self.dialogueDisplayRevision == display, !Task.isCancelled else { return }
+            self.clearDialogueOutput()
+        }
+    }
+
     /// Both Xbox WebRTC and PS4/PS5 Chiaki video feed the same latest-frame OCR.
     private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int) async {
         guard isRunning, sessionRevision == currentSession else { return }
@@ -567,6 +595,10 @@ final class CaptionAppModel: ObservableObject {
             if let reading, self.isRunning,
                self.sessionRevision == currentSession {
                 self.lastEnglish = reading.english
+                if reading.english.isEmpty {
+                    self.clearDialogueOutput()
+                    return
+                }
                 self.write("OCR: \(reading.english)")
                 Task { @MainActor [weak self] in
                     guard let self else { return }
@@ -588,26 +620,24 @@ final class CaptionAppModel: ObservableObject {
                         if case .failure(let error) = outcome {
                             self.write("Chyba překladu (\(error.diagnostic))")
                             // Do not present an old or original line as this translation.
-                            self.lastCzech = ""
-                            self.phoneSubtitle = ""
-                            if self.devices.subtitleOutput == .googleTV {
-                                self.devices.prepareTV(self.tv)
-                                if self.verifiedTelevisionOutput {
-                                    self.tv.sendSubtitle("", duration: 0)
-                                }
-                            }
+                            self.clearDialogueOutput()
                             await self.pipeline.dialogueTranslationFailed(revision: reading.revision)
                         }
                         return
                     }
+                    // Cap an unchanged dialogue at about four seconds, while
+                    // respecting a shorter user-selected display duration.
+                    let requested = self.subtitleDuration.isFinite ? self.subtitleDuration : 4
+                    let displaySeconds = min(4.0, max(0.1, requested))
                     self.lastCzech = czech
+                    self.scheduleDialogueExpiry(seconds: displaySeconds, currentSession: currentSession)
                     if self.devices.subtitleOutput == .phone {
                         self.phoneSubtitle = czech
                     } else {
                         self.devices.prepareTV(self.tv)
                         if self.verifiedTelevisionOutput {
                             self.tv.sendSubtitle(czech,
-                                                 duration: Int(self.subtitleDuration * 1000))
+                                                 duration: Int(displaySeconds * 1000))
                         }
                     }
                     self.write("Překlad (\(activeTargetLanguage.rawValue)): \(czech)")
@@ -675,6 +705,9 @@ final class CaptionAppModel: ObservableObject {
 
     func stop() {
         sessionRevision += 1
+        dialogueExpiry?.cancel()
+        dialogueExpiry = nil
+        dialogueDisplayRevision &+= 1
         dialogueFrames?.close()
         optionsFrames?.close()
         dialogueFrames = nil

@@ -305,6 +305,21 @@ def main():
                 }
             }
         })''', service.name)
+    # P1.5: retain the pinned Android two-read stabilization and
+    # progressive correction. Bound standard dialogue lifetime only;
+    # story pages and long game text retain their own timing.
+    s=once(s, '        ukaz(cesky, 15000, box, radku, barvyJmen)',
+        '        ukaz(cesky, 4000, box, radku, barvyJmen)', service.name)
+    s=once(s, '''        val minDoba = 1800L + 60L * ukazanaDelka
+        val zbyva = ukazanoKdy + minDoba - System.currentTimeMillis()
+        ui.removeCallbacks(schovatCesky)
+        ukazanoKdy = 0L
+        if (zbyva <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, zbyva)''',
+        '''        val zbyva = (ukazanoKdy + 4000L - System.currentTimeMillis()).coerceIn(0L, 800L)
+        ui.removeCallbacks(schovatCesky)
+        ukazanoKdy = 0L
+        if (zbyva <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, zbyva)''', service.name)
+    # The old story and game-text timers intentionally stay independent.
     service.write_text(s, encoding="utf8")
     print("GameLingo source and target languages connected to real Android translation")
 
