@@ -76,6 +76,8 @@ actor CaptionPipeline {
     private var lastRead = Date.distantPast
     private var lastSeen = Date.distantPast
     private let translationCache = GLTranslationCache()
+    func purgeTranslationCache() async -> Bool { await translationCache.purge() }
+    func setTranslationCacheEnabled(_ enabled: Bool) async { await translationCache.setEnabled(enabled) }
     private var providerBreakers: [String: TranslationCircuitBreaker] = [:]
     private var lastSettings = ""
     private var emptyReads = 0
@@ -315,6 +317,7 @@ actor CaptionPipeline {
         if Task.isCancelled { return .failure(.cancelled) }
         if source.rawValue == target.rawValue { return .success(original) }
         // Cache hits do not consume a provider probe. Prefer Google results.
+        let cacheRevision = await translationCache.revision()
         let engines = ["google-gtx-v1", "mymemory-v1"]
         for engine in engines {
             if let cached = await translationCache.lookup(engine: engine, source: source.rawValue,
@@ -341,7 +344,7 @@ actor CaptionPipeline {
             switch outcome {
             case .success(let translated):
                 await translationCache.remember(engine: engine, source: source.rawValue,
-                    target: target.rawValue, original: original, result: translated)
+                    target: target.rawValue, original: original, result: translated, revision: cacheRevision)
                 return outcome
             case .failure(.cancelled): return outcome
             case .failure(let failure): lastFailure = failure
