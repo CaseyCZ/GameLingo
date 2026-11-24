@@ -73,6 +73,17 @@ object GameLingoAbout {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9*d })
         }
+        page.addView(label("Licenční texty v aplikaci", 19f, true))
+        page.addView(GameLingoVisualKit.deviceCard(activity, "TV",
+            "Licence třetích stran", "Číst bez internetu", false) {
+            val notices = runCatching {
+                activity.assets.open("GameLingoNotices.txt").bufferedReader(Charsets.UTF_8).use { it.readText() }
+            }.getOrNull()
+            android.app.AlertDialog.Builder(activity)
+                .setTitle("Licence třetích stran")
+                .setMessage(notices ?: "Licenční soubor není v tomto sestavení dostupný.")
+                .setPositiveButton("Zavřít", null).show()
+        })
         page.addView(label("Zdrojové kódy", 19f, true))
         link("GameLingo na GitHubu", "https://github.com/CaseyCZ/GameLingo")
         link("Původní PlayCaption", "https://github.com/AdamRuzick4/PlayCaption-app")
