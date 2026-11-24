@@ -17,9 +17,9 @@ import javax.crypto.spec.SecretKeySpec
 
 /**
  * Local-only iPhone -> TV pairing. NEVER transfers Xbox or Microsoft credentials.
- * Six-digit PIN authorizes a unique per-phone secret; signed heartbeats and
+ * 128-bit out-of-band code authorizes a unique per-phone secret; signed heartbeats and
  * subtitles prove that the saved phone still knows that secret.
- * Transport is local UDP, not encrypted. Only use on a trusted home network.
+ * Game text is authenticated and encrypted. Pairing uses a high-entropy code, never a transmitted PIN.
  */
 object IPhoneTVPairing {
     private val random = SecureRandom()
@@ -33,9 +33,11 @@ object IPhoneTVPairing {
     private var lastSuccessPin: String? = null
     private var lastSuccessPhoneId: String? = null
     private var lastSuccessAddress: String? = null
+    private var lastSuccessNonce: String? = null
+    private var lastSuccessLabel: String? = null
     private var lastSuccessAtMs = 0L
     private const val REPLY_RETRY_WINDOW_MS = 15_000L
-    private const val KEY_ALIAS = "cz.caseycz.gamelingo.tv.pairing.v1"
+    private const val KEY_ALIAS = "cz.caseycz.gamelingo.tv.pairing.v2"
     private const val ENCRYPTED_TOKEN = "token_v1" // old single-phone format
     private const val PHONE_IDS = "phone_ids_v2"
     private const val MAX_PHONES = 32
@@ -50,7 +52,7 @@ object IPhoneTVPairing {
         private set
 
     private fun prefs(ctx: Context) =
-        ctx.getSharedPreferences("playcaption_iphone_receiver", Context.MODE_PRIVATE)
+        ctx.getSharedPreferences("gamelingo_encrypted_receiver_v2", Context.MODE_PRIVATE)
 
     // The wrapping key never leaves Android Keystore. All callers of the
     // following helpers hold lock; never replace an existing key on decrypt.
@@ -77,7 +79,7 @@ object IPhoneTVPairing {
         token.length == 64 && hexBytes(token)?.size == 32
 
     private fun aad(phoneId: String): ByteArray =
-        ("GameLingo-TV-pairing-v1:" + phoneId).toByteArray(Charsets.UTF_8)
+        ("GameLingo-TV-pairing-v2:" + phoneId).toByteArray(Charsets.UTF_8)
 
     private fun encryptToken(phoneId: String, token: String): String? = runCatching {
         require(validToken(token))
@@ -117,31 +119,9 @@ object IPhoneTVPairing {
     private fun platformLabel(label: String): String =
         if (label in listOf("iPhone", "Android")) label else "Telefon"
 
-    /** Atomic migration of either prior single-phone format. An encrypted
-     * record wins over a plaintext copy, including when it is corrupt. */
+    // Previously transmitted plaintext keys MUST NOT migrate into v2.
     private fun migrateLegacy(ctx: Context) {
-        val p = prefs(ctx)
-        if (!p.contains("token") && !p.contains(ENCRYPTED_TOKEN) && !p.contains("phone_id")) return
-        val id = p.getString("phone_id", "").orEmpty()
-        val editor = p.edit().remove("token").remove(ENCRYPTED_TOKEN).remove("phone_id")
-        val known = ids(ctx)
-        if (validPhoneId(id) && id !in known && known.size < MAX_PHONES) {
-            val encrypted = if (p.contains(ENCRYPTED_TOKEN)) p.getString(ENCRYPTED_TOKEN, null)
-                else p.getString("token", null)?.takeIf(::validToken)?.let { encryptToken(id, it) }
-            if (encrypted != null && decryptToken(id, encrypted) != null) {
-                editor.putStringSet(PHONE_IDS, known + id)
-                    .putString(tokenSlot(id), encrypted).putString(labelSlot(id), "Telefon")
-                replayLanes.forEach { lane ->
-                    val old = p.getLong("wire_sequence_" + lane, 0L)
-                    editor.putLong(sequenceSlot(id, lane), old)
-                }
-            }
-        }
-        replayLanes.forEach { editor.remove("wire_sequence_" + it) }
-        if (!editor.commit()) {
-            lastAuthenticatedMs = 0L
-            storageWriteFailed = true
-        }
+        // New namespace and Keystore alias isolate all v1 records.
     }
 
     private var storageWriteFailed = false
@@ -237,6 +217,8 @@ object IPhoneTVPairing {
             lastSuccessPin = null
             lastSuccessPhoneId = null
         lastSuccessAddress = null
+        lastSuccessNonce = null
+        lastSuccessLabel = null
             lastSuccessAtMs = 0L
         }
         lastAuthenticatedMs = authenticatedAt.values.maxOrNull() ?: 0L
@@ -246,13 +228,15 @@ object IPhoneTVPairing {
     }
 
     fun startCode(): String = synchronized(lock) {
-        val pin = (random.nextInt(900_000) + 100_000).toString()
+        val pin = GameLingoWireCrypto.randomHex(16)
         code = pin
         expiresAtMs = SystemClock.elapsedRealtime() + 180_000L
         attempts = 0
         lastSuccessPin = null
         lastSuccessPhoneId = null
         lastSuccessAddress = null
+        lastSuccessNonce = null
+        lastSuccessLabel = null
         lastSuccessAtMs = 0L
         pin
     }
@@ -267,15 +251,15 @@ object IPhoneTVPairing {
     }
 
     /** Returns a 32-byte secret (hex) only after PIN succeeds. */
-    fun confirm(ctx: Context, input: String, phoneId: String, label: String = "Telefon", address: String = ""): String? = synchronized(lock) {
+    fun confirm(ctx: Context, input: String, phoneId: String, label: String, nonce: String, address: String = ""): String? = synchronized(lock) {
         migrateLegacy(ctx)
         val now = SystemClock.elapsedRealtime()
         if (lastSuccessAtMs > 0 && now - lastSuccessAtMs <= REPLY_RETRY_WINDOW_MS &&
-            input == lastSuccessPin && phoneId == lastSuccessPhoneId && address == lastSuccessAddress) {
+            GameLingoWireCrypto.equalHex(input, lastSuccessPin.orEmpty()) && phoneId == lastSuccessPhoneId && address == lastSuccessAddress && nonce == lastSuccessNonce && label == lastSuccessLabel) {
             // Never consume another PIN attempt or change the pairing secret.
             return@synchronized loadSecret(ctx, phoneId)
         }
-        val valid = input.length == 6 && input.all { it.isDigit() } &&
+        val valid = input.matches(Regex("[0-9a-f]{64}")) && GameLingoWireCrypto.validCode(nonce) && label in listOf("iPhone", "Android") &&
             validPhoneId(phoneId) &&
             (phoneId in ids(ctx) || ids(ctx).size < MAX_PHONES) &&
             !storageWriteFailed &&
@@ -283,12 +267,12 @@ object IPhoneTVPairing {
             attempts < 5
         if (!valid) return@synchronized null
         attempts += 1
-        if (input != code) {
+        val pairingCode = code ?: return@synchronized null
+        if (!GameLingoWireCrypto.equalHex(input, GameLingoWireCrypto.pairProof(pairingCode, phoneId, label, nonce))) {
             if (attempts >= 5) code = null
             return@synchronized null
         }
-        val bytes = ByteArray(32).also(random::nextBytes)
-        val token = bytes.joinToString("") { "%02x".format(it) }
+        val token = GameLingoWireCrypto.sessionKey(pairingCode, phoneId, label, nonce)
         val encrypted = encryptToken(phoneId, token) ?: return@synchronized null
         val editor = prefs(ctx).edit().putStringSet(PHONE_IDS, ids(ctx) + phoneId)
             .putString(tokenSlot(phoneId), encrypted).putString(labelSlot(phoneId), platformLabel(label))
@@ -300,6 +284,8 @@ object IPhoneTVPairing {
         }
         storageWriteFailed = false
         lastSuccessPin = input
+        lastSuccessNonce = nonce
+        lastSuccessLabel = label
         lastSuccessPhoneId = phoneId
         lastSuccessAddress = address
         lastSuccessAtMs = now
@@ -335,20 +321,23 @@ object IPhoneTVPairing {
         lastSuccessPin = null
         lastSuccessPhoneId = null
         lastSuccessAddress = null
+        lastSuccessNonce = null
+        lastSuccessLabel = null
         lastSuccessAtMs = 0L
     }
 
     /** A separate high-water mark per renderer lane avoids dropping a clear
      *  just because a different lane's datagram arrived first. */
-    fun textLane(encoded: String): String? = runCatching {
-        if (encoded.length >= 11000) return null
-        val inner = String(android.util.Base64.decode(encoded, android.util.Base64.DEFAULT), Charsets.UTF_8)
-        when (val kind = inner.substringBefore('\t')) {
-            "PCT1", "PCV1", "PCO1" -> kind
-            "PCQ1", "PCS1" -> "STORY"
-            else -> null
-        }
-    }.getOrNull()
+    fun decryptText(ctx: Context, phoneId: String, encoded: String): String? = synchronized(lock) {
+        val secret = loadSecret(ctx, phoneId) ?: return@synchronized null
+        GameLingoWireCrypto.open(secret, encoded, phoneId)
+    }
+
+    fun textLane(inner: String): String? = when (val kind = inner.substringBefore('\t')) {
+        "PCT1", "PCV1", "PCO1" -> kind
+        "PCQ1" -> "STORY"
+        else -> null
+    }
 
     fun verifyFresh(ctx: Context, phoneId: String, content: String,
                     timestampText: String?, sequenceText: String?,
