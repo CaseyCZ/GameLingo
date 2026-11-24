@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 from tv_translation_policy import tv_variant, tv_translator, finalize_tv
 from direct_tv_mode import patch_direct_tv
+from translation_backpressure import bound_translator, bound_choices
 
 SRC = Path("app/src/main/java/cz/titulky/tv")
 
@@ -309,6 +310,7 @@ def main():
     root = Path(sys.argv[1])
     if tv_variant(root):
         t = tv_translator(t)
+    t = bound_translator(t)
     translator.write_text(t, encoding="utf8")
 
     service = folder / "RemotePlayService.kt"
@@ -644,6 +646,7 @@ def main():
             }
             GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), corrected.joinToString("\\n"))
             Propojeni.Vysilac.nastavVolby(corrected, volbyVybrana)''', service.name)
+    s = bound_choices(s, folder)
     service.write_text(s, encoding="utf8")
     if tv_variant(root):
         patch_direct_tv(folder)
