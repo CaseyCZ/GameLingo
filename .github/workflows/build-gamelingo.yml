@@ -279,7 +279,8 @@ jobs:
           APK=GameLingo-GoogleTV-v0.5.0-dev-TEST.apk
           SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           if [[ -z "$GAMELINGO_TV_KEYSTORE_B64" && -z "$GAMELINGO_TV_KEYSTORE_PASSWORD" ]]; then
-            echo "::warning::Persistent TV signing key not configured; debug APK may require uninstall before update."
+            echo "::error::Missing persistent TV signing key. Configure GAMELINGO_TV_KEYSTORE_B64 and GAMELINGO_TV_KEYSTORE_PASSWORD before publishing; refusing randomly signed APK."
+            exit 1
           else
             test -n "$GAMELINGO_TV_KEYSTORE_B64"
             test -n "$GAMELINGO_TV_KEYSTORE_PASSWORD"

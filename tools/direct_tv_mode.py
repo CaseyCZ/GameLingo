@@ -170,7 +170,10 @@ def patch_direct_tv(folder):
 
     # Install all TV-only screens and services in the actual generated workspace.
     for name in ("GameLingoTVSettings.kt", "GameLingoTVProfiles.kt",
-                 "GameLingoScreenTranslationService.kt", "GameLingoTVFit.kt"):
+                 "GameLingoScreenTranslationService.kt", "GameLingoTVFit.kt",
+                 "GameLingoSettings.kt", "GameLingoOCRSettings.kt",
+                 "GameLingoProfiles.kt", "GameLingoSubtitleAppearance.kt",
+                 "GameLingoDiagnostics.kt", "GameLingoPhoneSubtitleStyle.kt"):
         (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
 
     main = folder / "MainActivity.kt"
