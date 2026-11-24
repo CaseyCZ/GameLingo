@@ -99,13 +99,39 @@ def main():
     else:
         raise RuntimeError("Neither Android phone nor Google TV dashboard recognized")
 
+    # P0.5: registration and console selection, shared by phone and TV.
+    code=one(code,
+        "    private var nalezenaIp: String? = null",
+        "    private var nalezenaIp: String? = null\n    private var nalezenaPS: HledacPS.Konzole? = null\n    private var psDiscoveryGeneration = 0L",
+        "remember actual PlayStation type")
+    code=one(code,
+        "            hledaniStav.text = t(\"hledam\")\n            Thread {\n                val seznam = runCatching { HledacPS.hledej() }.getOrDefault(emptyList())",
+        "            hledaniStav.text = t(\"hledam\")\n            nalezenaIp = null\n            nalezenaPS = null\n            val generation = ++psDiscoveryGeneration\n            Thread {\n                val seznam = runCatching { HledacPS.hledej() }.getOrDefault(emptyList())",
+        "reset stale selection")
+    code=one(code,
+        "                    val ps = seznam.firstOrNull { it.typ == \"PS5\" } ?: seznam.firstOrNull()\n                    nalezenaIp = ps?.ip\n                    hledaniStav.text = if (ps != null) \"✔ ${t(\"nalezena\")}: ${ps.jmeno} (${ps.ip})\" else \"✘ ${t(\"nenalezena\")}\"\n                    hledaniStav.setTextColor(if (ps != null) Color.parseColor(\"#7DFF9A\") else Color.parseColor(\"#FF8A8A\"))",
+        "                    if (isFinishing || obrazovka != \"pripojeni\" || generation != psDiscoveryGeneration) return@runOnUiThread\n                    val supported = seznam.filter { it.typ == \"PS4\" || it.typ == \"PS5\" }\n                    fun selectPS(ps: HledacPS.Konzole) {\n                        if (generation != psDiscoveryGeneration || obrazovka != \"pripojeni\") return\n                        nalezenaPS = ps\n                        nalezenaIp = ps.ip\n                        hledaniStav.text = \"✔ \"+ps.typ+\" · \"+ps.jmeno+\" (\"+ps.ip+\")\"\n                        hledaniStav.setTextColor(Color.parseColor(\"#7DFF9A\"))\n                    }\n                    when (supported.size) {\n                        0 -> {\n                            hledaniStav.text = \"✘ \"+t(\"nenalezena\")\n                            hledaniStav.setTextColor(Color.parseColor(\"#FF8A8A\"))\n                        }\n                        1 -> selectPS(supported.single())\n                        else -> {\n                            hledaniStav.text = \"Vyber konzoli PS4 / PS5\"\n                            android.app.AlertDialog.Builder(this)\n                                .setTitle(\"Vyber konzoli\")\n                                .setItems(supported.map { it.typ+\" · \"+it.jmeno+\" (\"+it.ip+\")\" }.toTypedArray()) { _, i ->\n                                    selectPS(supported[i])\n                                }.setNegativeButton(android.R.string.cancel, null).show()\n                        }\n                    }",
+        "explicit PlayStation selection")
+    code=one(code,
+        "            val ip = nalezenaIp ?: udaje.ipKonzole",
+        "            val selectedPS = nalezenaPS\n            val ip = nalezenaIp\n            val target = if (selectedPS?.typ == \"PS4\") com.metallic.chiaki.lib.Target.PS4_10\n                else com.metallic.chiaki.lib.Target.PS5_1",
+        "selected console registration type")
+    code=one(code,
+        "Parovani.sparuj(this, ip, cislo.toInt(), log = {}, hotovo = { ok, zprava ->",
+        "Parovani.sparuj(this, ip, cislo.toInt(), target = target, log = {}, hotovo = { ok, zprava ->",
+        "pass target to native registration")
+    code=one(code,
+        "                                u.accountId = odp[1]",
+        "                                val transferredTarget = odp.firstOrNull { it.startsWith(\"PS_TARGET:\") }\n                                    ?.substringAfter(\":\")?.toIntOrNull()\n                                u.consoleTarget = com.metallic.chiaki.lib.Target.values().firstOrNull {\n                                    it.value == transferredTarget\n                                } ?: com.metallic.chiaki.lib.Target.PS5_1\n                                u.accountId = odp[1]",
+        "restore optional target extension")
+
     code=one(code,
         '''                            if (ok) {
                                 AutoStart.nastavZapnuto(this, true)''',
         '''                            if (ok) {
                                 if (ip != null)
                                     GameLingoPlayStationConsoles.capture(this,
-                                        "PlayStation", ip)
+                                        selectedPS?.jmeno ?: "PlayStation", ip)
                                 AutoStart.nastavZapnuto(this, true)''',
         "PlayStation registration success")
 
@@ -183,7 +209,36 @@ def main():
             '                                    if (!pribehRidi || cisloVoleb > 0) prenos.vysledek(relace, null)',
             '                                    if (repeatDialogue || repeatChoices) prenos.vysledek(relace, null)',
             "report actual repeats only")
+        # Optional extension keeps Xbox X: marker intact.
+        prefix=one(prefix,
+            "${b64p(u.rpKey)}\" + XboxUcet.proPredani(c)",
+            "${b64p(u.rpKey)}\\tPS_TARGET:${u.consoleTarget.value}\" + XboxUcet.proPredani(c)",
+            "transfer target via PIN")
+        prefix=one(prefix,
+            "${b64(u.rpKey)}\" + XboxUcet.proPredani(c)",
+            "${b64(u.rpKey)}\\tPS_TARGET:${u.consoleTarget.value}\" + XboxUcet.proPredani(c)",
+            "transfer target via receiver PIN")
         transport.write_text(prefix + sender_marker + sender, encoding="utf-8")
+
+        registration=folder/"RemotePlay.kt"
+        source=registration.read_text(encoding="utf-8")
+        source=one(source,
+            "    var registKey: ByteArray?",
+            "    var consoleTarget: Target\n        get() = Target.values().firstOrNull { it.value == prefs.getInt(\"ps_target\", Target.PS5_1.value) }\n            ?: Target.PS5_1\n        set(value) { prefs.edit().putInt(\"ps_target\", value.value).apply() }\n\n    val isPS5: Boolean get() = consoleTarget.value >= 1_000_000\n    val consoleType: String get() = if (isPS5) \"PS5\" else \"PS4\"\n\n    var registKey: ByteArray?",
+            "persist actual target")
+        source=one(source,
+            "        pin: Int,\n        log: (String) -> Unit,",
+            "        pin: Int,\n        target: Target = Target.PS5_1,\n        log: (String) -> Unit,",
+            "explicit registration target parameter")
+        source=one(source,
+            "target = Target.PS5_1,",
+            "target = target,",
+            "native registration target")
+        source=one(source,
+            "                        udaje.ipKonzole = ip",
+            "                        udaje.consoleTarget = udalost.host.target\n                        udaje.ipKonzole = ip",
+            "record successful registration target")
+        registration.write_text(source, encoding="utf-8")
 
         # Story-mode packets bypass Vysilac. Protect the independent socket too.
         story=folder/"PribehSpojeni.kt"
@@ -207,6 +262,22 @@ def main():
             '        if (telefon) Propojeni.Vysilac.stopGameData()\n'
             '        ukonciStareSpojeni()',
             "clear queued TV game data on service destruction")
+        source=one(source,
+            "                val ps5 = seznam.firstOrNull { it.ip == ip } ?: seznam.firstOrNull { it.typ == \"PS5\" }\n                if (ps5 != null && ps5.ip != ip) udaje.ipKonzole = ps5.ip\n                ps5?.stav == \"zapnutá\"",
+            "                val selected = seznam.firstOrNull { it.ip == ip && it.typ == udaje.consoleType }\n                selected?.stav == \"zapnutá\"",
+            "do not substitute another console")
+        source=one(source,
+            "val hevc = telefon && !prefsObraz.getBoolean(\"bezHevc\", false) && umiHevc()",
+            "val hevc = udaje.isPS5 && telefon && !prefsObraz.getBoolean(\"bezHevc\", false) && umiHevc()",
+            "PS4 H264")
+        source=one(source,
+            "ConnectInfo(ps5 = true, host = ip,",
+            "ConnectInfo(ps5 = udaje.isPS5, host = ip,",
+            "native PS4 or PS5 stream")
+        source=one(source,
+            "HledacPS.hledej(1500, primaIp = udaje.ipKonzole).any { it.typ == \"PS5\" && it.stav == \"zapnutá\" }",
+            "HledacPS.hledej(1500, primaIp = udaje.ipKonzole).any { it.ip == udaje.ipKonzole && it.typ == udaje.consoleType && it.stav == \"zapnutá\" }",
+            "selected console switch availability")
         service.write_text(source, encoding="utf-8")
 
     mainFile.write_text(code,encoding="utf-8")

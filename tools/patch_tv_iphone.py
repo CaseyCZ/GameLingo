@@ -228,6 +228,16 @@ def main() -> None:
          '        val vstup = ramecek > 0 || runCatching { popredi.jeVstupTv() }.getOrDefault(true)\n',
          '        val vstup = true // iPhone-only TV receiver; show choices on HDMI\n')
 
+    # Receiver story has the same HDMI policy as ordinary phone subtitles.
+    # Preserve the direct-on-TV foreground heuristic.
+    once(service,
+         '                        val vstup = runCatching { popredi.jeVstupTv() }.getOrDefault(true)\n',
+         '                        val vstup = true // explicit receiver mode, same as standard captions\n')
+    story_overlay = root / "app/src/main/java/cz/titulky/tv/OverlayService.kt"
+    once(story_overlay,
+         '            val vstup = runCatching { poprediPribehu.jeVstupTv() }.getOrDefault(true)\n',
+         '            val vstup = PrijemService.bezi || runCatching { poprediPribehu.jeVstupTv() }.getOrDefault(true)\n')
+
     activity = root / "app/src/main/java/cz/titulky/tv/MainActivity.kt"
     # Replace upstream PlayCaption's oversized legacy overlay help with a
     # concise TV-specific guide and the actual installed GameLingo package ID.

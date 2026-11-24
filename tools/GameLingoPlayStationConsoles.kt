@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import com.metallic.chiaki.lib.Target
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.KeyStore
@@ -20,7 +21,7 @@ import javax.crypto.spec.GCMParameterSpec
  * a device-local non-exportable Android Keystore key, not in plain SharedPrefs.
  */
 object GameLingoPlayStationConsoles {
-    data class Console(val ip: String, val name: String, val selected: Boolean)
+    data class Console(val ip: String, val name: String, val selected: Boolean, val type: String)
 
     private const val STORE = "gamelingo_ps_consoles_v1"
     private const val ALIAS = "cz.caseycz.gamelingo.psconsoles.aes256gcm"
@@ -83,7 +84,8 @@ object GameLingoPlayStationConsoles {
             val item = array.getJSONObject(index)
             val ip = item.getString("ip")
             Console(ip, item.optString("name", "PlayStation"),
-                    selected == ip)
+                    selected == ip,
+                    if (item.optInt("target", Target.PS5_1.value) >= 1_000_000) "PS5" else "PS4")
         }
     }.getOrDefault(emptyList())
 
@@ -103,6 +105,7 @@ object GameLingoPlayStationConsoles {
         filtered.put(JSONObject()
             .put("ip", ip)
             .put("name", name.take(64))
+            .put("target", current.consoleTarget.value)
             .put("accountID", account)
             .put("registKey", Base64.encodeToString(reg, Base64.NO_WRAP))
             .put("rpKey", Base64.encodeToString(key, Base64.NO_WRAP)))
@@ -121,6 +124,9 @@ object GameLingoPlayStationConsoles {
             "Chybí uložené klíče"
         }
         val active = RemotePlayUdaje(c)
+        active.consoleTarget = Target.values().firstOrNull {
+            it.value == profile.optInt("target", Target.PS5_1.value)
+        } ?: Target.PS5_1
         active.accountId = profile.getString("accountID")
         active.ipKonzole = ip
         active.registKey = newReg

@@ -415,6 +415,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("IPhoneTVPairing.permitsStoryReadiness(id)", patch)
         self.assertIn("assertEquals(revision, IPhoneTVPairing.overlayRevision())", device_tests)
 
+    def test_p0_5_real_android_ps4_target_and_hdmi_story_contract(self):
+        wire = code(TOOLS/"wire_android_devices.py")
+        store = code(TOOLS/"GameLingoPlayStationConsoles.kt")
+        patch = code(TOOLS/"patch_tv_iphone.py")
+        verify = code(TOOLS/"verify_gamelingo.py")
+        self.assertIn("Target.PS4_10", wire)
+        self.assertIn("udaje.consoleTarget = udalost.host.target", wire)
+        self.assertIn("ConnectInfo(ps5 = udaje.isPS5", wire)
+        self.assertIn("val hevc = udaje.isPS5", wire)
+        self.assertIn("it.ip == ip && it.typ == udaje.consoleType", wire)
+        self.assertIn('put("target", current.consoleTarget.value)', store)
+        self.assertIn("active.consoleTarget = Target.values()", store)
+        self.assertIn("PS_TARGET:", wire)
+        self.assertIn("explicit receiver mode, same as standard captions", patch)
+        self.assertIn("val vstup = PrijemService.bezi ||", patch)
+        self.assertIn("ConnectInfo(ps5 = udaje.isPS5", verify)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

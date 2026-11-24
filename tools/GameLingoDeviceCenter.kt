@@ -173,7 +173,7 @@ object GameLingoDeviceCenter {
                 })
             } else {
                 for (ps in saved) {
-                    add(consoles, line(c, ps.name, "PlayStation · " + ps.ip,
+                    add(consoles, line(c, ps.name, ps.type + " · " + ps.ip,
                                       ps.selected) {
                         AlertDialog.Builder(c)
                             .setTitle(ps.name)

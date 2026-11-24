@@ -39,7 +39,7 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P0.1 povinné HMAC všech typů titulků, legacy opt-in default off — CI success (45344083071), HW čeká.
 - [x] P0.2 ochrana proti replay (podepsaná sekvence/nonce, restart relace a ochrana pořadí) — CI success (45345559792), HW čeká.
 - [x] P0.3 Keystore na TV — CI success (45346535102), instrumentation zkompilována, runtime/HW čeká.
-- [ ] P0.4 více telefonů a jednotlivé odpojení
+- [x] P0.4 více telefonů a jednotlivé odpojení — poslední kumulativní CI 45348736716 success; HW čeká.
 - [ ] P0.5 konzole + HDMI; doplnit ruční QA matici
 - [ ] P1.1 obrazový otisk posledního OCR, periodická kontrola a krátké věty
 - [ ] P1.2 nejnovější snímek, omezená fronta
@@ -170,3 +170,9 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - P0.5 upřesnění z upstream: Chiaki.kt 13–25 má Target.PS4_10(1000), PS5_1(1000100). RemotePlay.kt 66–67 pevný PS5_1; MainActivity.kt 1462 vybírá první PS5, 1499 předává IP/PIN bez typu. RegistEventSuccess.host.target poskytuje skutečný target. RemotePlayService.kt 472 fallback může vybrat jinou konzoli, 655 ps5=true, HEVC podmínka musí omezit na PS5; 2020 kontrola PS5/Xbox jen typ PS5. Při implementaci předávat typ při registraci, uložit target do aktivního i šifrovaného profilu, nezaměnit dvě konzole v discovery. Stávající přenos PS účtu z TV (PCS1 DATA v Propojeni.kt 110–155; MainActivity.kt 1368–1370) musí buď přenést typ kompatibilním polem bez posunu Xbox dat, nebo PS4 převzetí jasně odmítnout a vyžadovat nové párování. Nepředstírat podporu PS4 před funkčním buildem a HW testem.
 
 - Readiness fix SHA `873299cbc4cd34d21c771ec2c41a7bfa6122e2d3`; CI [45348736716](https://github.com/CaseyCZ/GameLingo/actions/runs/45348736716): in_progress, bez výsledku. P0.4 checklist zůstává otevřený do dokončení obou buildů. P0.5 nebyl změněn aplikační kód.
+
+## P0.5 — PS4/PS5 Android + HDMI receiver story
+- P0.4 run 45348404394 zrušen při novějším push (concurrency), nikoli potvrzený úspěch. Kumulativní run 45348736716 obsahuje obě následné opravy a dokončil všech šest jobů success. Runtime instrumentation čeká.
+- Samostatný P0.5 commit `fix: wire actual PS4 registration and stream target with consistent HDMI story receiver`: explicitní výběr nalezené PS4/PS5, při více konzolích žádný skrytý výběr jiné. Native Chiaki Regist dostává PS4_10/PS5_1, ukládá vrácený target, ConnectInfo.ps5 dle target a PS4 H.264. Aktivní i šifrovaný profil uchovává typ. Starší PS5 záznamy bez target default PS5_1. Volitelné PS_TARGET pole při existujícím převzetí registrace bez posunu PS klíčů nebo Xbox X: markeru. Po změně IP je nutná nová registrace (odstraněn riskantní fallback na jinou konzoli); staré PS4 firmware před PS4_10 nepokrýváme. HW zatím neověřeno.
+- TV telefonní story používá stejnou HDMI policy jako normální receiver, včetně overlay ticku. Direct-on-TV zachovává Popredi detekci (známé TCL vstupy) a stávající auto-start. HDMI se nezachytává ani nepřehrává v appce. Riziko překryvu mimo HDMI při explicitním receiver režimu zůstává stejné jako u běžných titulků. Fyzické testy oprávnění, přepnutí vstupů a přímého režimu čekají.
+- Přidány source contracts a kontroly vygenerovaného Android/TV kódu. Full CI po commitu. C08/C11/C14: PS4 implementace nyní čeká na CI a HW, neoznačovat za PASS. H10 čeká na výběr správného typu. P0.5 uzavřít až po CI; HW zůstává release gate. Žádný release, Master beze změny.

@@ -99,7 +99,17 @@ def android(root: Path, mode: str):
              "TvProfily", "Přidat zařízení")
     contains(base / "GameLingoPlayStationConsoles.kt",
              "AndroidKeyStore", "AES/GCM/NoPadding", "fun select(")
+    contains(base / "RemotePlay.kt", "var consoleTarget: Target", "target = target,",
+             "udaje.consoleTarget = udalost.host.target")
+    contains(base / "RemotePlayService.kt", "ConnectInfo(ps5 = udaje.isPS5",
+             "val hevc = udaje.isPS5", "it.ip == ip && it.typ == udaje.consoleType")
+    contains(base / "GameLingoPlayStationConsoles.kt", 'put("target", current.consoleTarget.value)',
+             "active.consoleTarget = Target.values()")
+    contains(base / "MainActivity.kt", "Target.PS4_10", "target = target, log",
+             "supported.map", "PS_TARGET:")
     if mode == "tv":
+        contains(base / "PrijemService.kt", "explicit receiver mode, same as standard captions")
+        contains(base / "OverlayService.kt", "val vstup = PrijemService.bezi ||")
         contains(base / "Propojeni.kt", "IPhoneTVPairing.verify")
         contains(base / "OverlayService.kt", "EXTRA_VYSTUP_VOLEB")
 
