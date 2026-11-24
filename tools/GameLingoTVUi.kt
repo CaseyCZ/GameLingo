@@ -392,7 +392,13 @@ object GameLingoTVUi {
                     Uri.parse("package:" + a.packageName)))
             }
         }
-        addGrid(listOf(overlay))
+        addGrid(listOf(overlay, settingsTile("▣", "Oblasti přímého překladu",
+            "Modrá, zelená, žlutá a oranžová") {
+            GameLingoDirectTVLayout.show(a) {
+                dialog.dismiss()
+                onUpdate()
+            }
+        }))
         page.addView(title(a,
             "Pro čtení her přímo v TV potřebuje aplikace povolení překryvu.",
             14f, muted = true))
