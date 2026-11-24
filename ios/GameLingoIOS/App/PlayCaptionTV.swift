@@ -433,8 +433,8 @@ final class PlayCaptionTV: ObservableObject {
         pairingRequest = nil
         ReceiverSecretStore.remove(ip.trimmingCharacters(in: .whitespacesAndNewlines))
         receiverCode = ""
-        receiverStatus = "Párování na iPhonu zrušeno."
         startReceiverHeartbeat()
+        receiverStatus = "TV zapomenuta na iPhonu. Přístup telefonu odvolej také v nastavení TV."
     }
 
     private func signature(_ payload: String, tokenHex: String) -> String? {
@@ -575,11 +575,9 @@ final class PlayCaptionTV: ObservableObject {
                         self.lastPong = Date()
                         self.receiverConnected = true
                         self.receiverStatus = "TV spárovaná · spojení aktivní"
-                    } else if fields.count >= 3 && fields[0] == "PCA1" &&
-                                fields[2] == "RECEIVED" {
-                        self.lastCaptionAcknowledgement = "Televize potvrdila přijetí titulku."
-                        self.message = self.lastCaptionAcknowledgement
                     }
+                    // Legacy unsigned PCA1 and STYLE_OK cannot authenticate
+                    // reception or rendering. Only a signed PONG proves liveness.
                 }
                 if error == nil { self.readReceiverReply(on: conn, target: target) }
             }
@@ -603,7 +601,7 @@ final class PlayCaptionTV: ObservableObject {
                 if reportStatus {
                     Task { @MainActor in
                         self?.message = error == nil
-                            ? "Titulek odeslán. Čekám na potvrzení TV…"
+                            ? "Titulek předán síti. Zobrazení ověř na TV."
                             : "Chyba odeslání: \(error!.localizedDescription)"
                     }
                 }
