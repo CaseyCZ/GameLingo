@@ -30,6 +30,90 @@ enum XboxError: LocalizedError {
     }
 }
 
+/// Only the fixed login/auth endpoints and Xbox streaming service family
+/// may receive Xbox/Microsoft credentials. DNS suffix matching includes the
+/// label separator, never a substring match.
+enum XboxEndpointPolicy {
+    private static let fixedHosts: Set<String> = [
+        "login.microsoftonline.com", "login.live.com",
+        "user.auth.xboxlive.com", "xsts.auth.xboxlive.com"
+    ]
+
+    private static func isStreamingHost(_ host: String) -> Bool {
+        let suffixes = ["gssv-play-prod.xboxlive.com", "gssv-play-prodxhome.xboxlive.com"]
+        return suffixes.contains { host.hasSuffix("." + $0) }
+    }
+
+    private static func validated(_ address: String) -> URLComponents? {
+        guard let c = URLComponents(string: address),
+              c.scheme?.lowercased() == "https",
+              c.user == nil, c.password == nil, c.fragment == nil,
+              c.port == nil || c.port == 443,
+              let host = c.host?.lowercased(),
+              fixedHosts.contains(host) || isStreamingHost(host),
+              c.url != nil else { return nil }
+        return c
+    }
+
+    static func requestURL(_ address: String) throws -> URL {
+        guard let url = validated(address)?.url else {
+            throw XboxError.message("Nepovolená adresa služby Xbox/Microsoft")
+        }
+        return url
+    }
+
+    static func streamingBase(_ address: String) throws -> String {
+        guard let c = validated(address), let host = c.host?.lowercased(),
+              isStreamingHost(host), c.query == nil,
+              c.path.isEmpty || c.path == "/",
+              let url = c.url else {
+            throw XboxError.message("Xbox vrátil nepovolený region")
+        }
+        return url.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    }
+
+    static func sessionURL(base: String, path: String) throws -> String {
+        let trusted = try streamingBase(base)
+        guard let origin = URLComponents(string: trusted),
+              let supplied = URLComponents(string: path),
+              !path.isEmpty, !path.contains("\\"), !path.hasPrefix("//"),
+              supplied.fragment == nil, supplied.query == nil,
+              supplied.user == nil, supplied.password == nil,
+              supplied.port == nil || supplied.port == 443 else {
+            throw XboxError.message("Xbox vrátil neplatnou adresu relace")
+        }
+        let candidate: String
+        if supplied.scheme != nil {
+            candidate = path
+        } else {
+            guard supplied.host == nil else {
+                throw XboxError.message("Xbox vrátil nepovolenou adresu relace")
+            }
+            candidate = trusted + "/" + path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        }
+        guard let c = validated(candidate),
+              c.host?.lowercased() == origin.host?.lowercased(),
+              c.query == nil,
+              c.path.hasPrefix("/v5/sessions/") || c.path.hasPrefix("/v6/sessions/"),
+              !c.path.split(separator: "/").contains(where: { $0 == "." || $0 == ".." }),
+              let url = c.url else {
+            throw XboxError.message("Xbox vrátil nepovolenou adresu relace")
+        }
+        return url.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    }
+}
+
+/// Never forward authorization headers or token-bearing request bodies to a
+/// redirect destination, including 307/308 redirects that preserve the body.
+private final class XboxNoRedirectDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest,
+                    completionHandler: @escaping (URLRequest?) -> Void) {
+        completionHandler(nil)
+    }
+}
+
 /// Tokeny zůstávají pouze na zařízení, nikdy se neposílají do GitHub logu.
 private enum SecureTokenStore {
     private static let tokenAccount = "microsoft_refresh"
@@ -262,12 +346,21 @@ final class XboxAuthorization: ObservableObject {
         }.joined(separator: "&").data(using: .utf8) ?? Data()
     }
 
+    private static let credentialSession: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.urlCache = nil
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.httpCookieStorage = nil
+        config.httpShouldSetCookies = false
+        return URLSession(configuration: config, delegate: XboxNoRedirectDelegate(), delegateQueue: nil)
+    }()
+
     func request(_ address: String,
                  method: String = "GET",
                  json: [String: Any]? = nil,
                  form: [String: String]? = nil,
                  headers: [String: String] = [:]) async throws -> [String: Any] {
-        guard let url = URL(string: address) else { throw XboxError.message("Neplatná URL Xboxu") }
+        let url = try XboxEndpointPolicy.requestURL(address)
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.timeoutInterval = 35
@@ -280,15 +373,12 @@ final class XboxAuthorization: ObservableObject {
             request.httpBody = encode(form)
             request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await Self.credentialSession.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? -1
         let dict = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
         guard (200...299).contains(status) else {
-            let description = (dict["error_description"] as? String) ??
-                              (dict["error"] as? String) ??
-                              ((dict["errorDetails"] as? [String: Any])?["message"] as? String) ??
-                              "HTTP \(status)"
-            throw XboxError.message("Xbox/Microsoft: \(description)")
+            // Provider error bodies can contain account data. Do not display them.
+            throw XboxError.message("Xbox/Microsoft: HTTP \(status)")
         }
         return dict
     }
@@ -331,12 +421,15 @@ final class XboxAuthorization: ObservableObject {
 
     private func tokenResponse(_ form: [String: String],
                                endpoint: String = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token") async throws -> [String: Any] {
-        let url = URL(string: endpoint)!
+        let url = try XboxEndpointPolicy.requestURL(endpoint)
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.httpBody = encode(form)
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        let (data, _) = try await URLSession.shared.data(for: req)
+        let (data, response) = try await Self.credentialSession.data(for: req)
+        guard let http = response as? HTTPURLResponse, !(300...399).contains(http.statusCode) else {
+            throw XboxError.message("Microsoft přesměrování přihlášení odmítnuto")
+        }
         return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
     }
 
@@ -403,7 +496,7 @@ final class XboxAuthorization: ObservableObject {
         }
         let result = XboxStreamingAccess(
             token: gsToken,
-            baseURL: baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/")),
+            baseURL: try XboxEndpointPolicy.streamingBase(baseURL),
             expires: Date().addingTimeInterval(TimeInterval(home["durationInSeconds"] as? Int ?? 3600) - 120))
         cachedStreaming = result
         return result
