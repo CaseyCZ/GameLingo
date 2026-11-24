@@ -114,6 +114,16 @@ def android(root: Path, mode: str):
             if forbidden in source:
                 raise RuntimeError(f"{path}: obsolete account transfer remains: {forbidden}")
     if mode == "tv":
+        contains(base / "MainActivity.kt", "GameLingoTVSettings.show(this,", "GameLingoTVFit(this, obsah)",
+                 "GameLingoQRDisplay.bitmap(ipTv, it)", "paticka.addView(prijemDiag",
+                 "vyberZdrojTelevize()", "vyberPrimouPS()", "vyberPrimyXbox()",
+                 "GameLingoScreenTranslationService.open(this)")
+        contains(base / "GameLingoTVSettings.kt", "cards.chunked(3)", "GameLingoDirectTVLayout.show",
+                 "GameLingoTVCaptionStyle.show", "GameLingoTVProfiles.show")
+        contains(base / "GameLingoScreenTranslationService.kt", "createScreenCaptureIntent",
+                 "registerCallback", "createVirtualDisplay", "prectiVse")
+        contains(root / "app/src/main/AndroidManifest.xml", ".GameLingoScreenConsentActivity",
+                 ".GameLingoScreenTranslationService", 'android:foregroundServiceType="mediaProjection"')
         contains(base / "PrijemService.kt", "explicit receiver mode, same as standard captions")
         contains(base / "OverlayService.kt", "val vstup = PrijemService.bezi ||")
         contains(base / "Propojeni.kt", "IPhoneTVPairing.verify")
