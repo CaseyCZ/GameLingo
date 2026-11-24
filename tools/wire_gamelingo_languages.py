@@ -34,7 +34,7 @@ def main():
             '    @Volatile var cil: String = cilovy\n        private set\n'
             '    @Volatile var zdrojovyJazyk: String = zdrojovy\n        private set\n\n'
             '    private fun upravVstup(text: String): String =\n'
-            '        if (zdrojovyJazyk == "en") upravSlang(text.trim()) else text.trim()'
+            '        if (zdrojovyJazyk == "en" && zdrojovyJazyk != cil) upravSlang(text.trim()) else text.trim()'
         ),
         (
             '.setSourceLanguage(TranslateLanguage.ENGLISH)',
@@ -100,6 +100,8 @@ def main():
                             hotovo: (String) -> Unit, chyba: (String) -> Unit,
                             miss: () -> Unit) {
         if (!currentPair(source, target)) { chyba("Změna jazyka nebo relace"); return }
+        if (text.isBlank()) { chyba("Prázdný vstup"); return }
+        if (source == target) { zdroj = "originál"; hotovo(text); return }
         GameLingoTranslationCache.lookup(cacheContext, source, target, text) { cached ->
             ui.post {
                 if (!currentPair(source, target)) chyba("Změna jazyka nebo relace")
