@@ -235,6 +235,23 @@ final class CaptionAppModel: ObservableObject {
 
     @Published var lastChoices = ""
     @Published var logLines: [String] = []
+    @Published private(set) var cacheEnabled = !UserDefaults.standard.bool(forKey: "translationCacheDisabled")
+    @Published private(set) var cacheChanging = false
+    @Published private(set) var cacheStatus = ""
+
+    func manageTranslationCache(enabled: Bool? = nil) async {
+        guard !isRunning, !cacheChanging else { return }
+        cacheChanging = true
+        defer { cacheChanging = false }
+        if let enabled {
+            await pipeline.setTranslationCacheEnabled(enabled)
+            cacheEnabled = enabled
+            cacheStatus = enabled ? "Cache zapnuta." : "Cache vypnuta; uložené překlady lze vymazat zvlášť."
+        } else {
+            let ok = await pipeline.purgeTranslationCache()
+            cacheStatus = ok ? "Místní překladová cache vymazána." : "Cache se nepodařilo úplně vymazat. Zkus to znovu."
+        }
+    }
     @Published private(set) var translationHistory = TranslationHistory()
 
     func setHistoryEnabled(_ enabled: Bool) { translationHistory.setEnabled(enabled) }
@@ -443,7 +460,20 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func write(_ message: String) {
-        logLines.append("\(Date().formatted(date: .omitted, time: .standard))  \(message)")
+        // Only locally defined diagnostic categories enter the retained log.
+        // Never keep arbitrary server messages, recognized text or device names.
+        let safe: String
+        if message.hasPrefix("Diagnostika: Průměr / P95") {
+            safe = "Diagnostika: " + performanceSummary.replacingOccurrences(of: "\n", with: " | ")
+        } else if message.hasPrefix("OCR:") { safe = "OCR: text rozpoznán" }
+        else if message.hasPrefix("Překlad (") { safe = "Překlad dokončen" }
+        else if message.hasPrefix("Volby:") { safe = "Herní text: událost zpracování" }
+        else if message.hasPrefix("CHYBA:") || message.hasPrefix("Chyba překladu") { safe = "Chyba relace nebo překladu" }
+        else if message.hasPrefix("Start Remote Play:") { safe = "Xbox: zahájení relace" }
+        else if message.hasPrefix("PlayStation Remote Play:") { safe = "PlayStation: zahájení relace" }
+        else if message.hasPrefix("Profil uložen:") || message.hasPrefix("Načten profil:") { safe = "Změna profilu" }
+        else { safe = "Technická událost" }
+        logLines.append("\(Date().formatted(date: .omitted, time: .standard))  \(safe)")
         if logLines.count > 250 { logLines.removeFirst(logLines.count - 250) }
     }
 
@@ -936,7 +966,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func shareLogs() -> String {
-        (["GameLingo iOS 0.5.0", "Stav: \(status)", performanceSummary] + logLines).joined(separator: "\n")
+        (["GameLingo iOS 0.5.0", isRunning ? "Relace aktivní" : "Relace neaktivní", performanceSummary] + logLines).joined(separator: "\n")
     }
 }
 
