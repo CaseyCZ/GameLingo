@@ -251,8 +251,10 @@ def main():
         private val orangePreviewHandler = android.os.Handler(android.os.Looper.getMainLooper())
         private val clearOrangePreview = Runnable {
             synchronized(zamek) {
-                orangePreview = null; orangePreviewUntil = 0L; cisloVoleb++
-                posliData { zpravaVoleb() }
+                if (orangePreview != null && android.os.SystemClock.elapsedRealtime() >= orangePreviewUntil) {
+                    orangePreview = null; orangePreviewUntil = 0L; cisloVoleb++
+                    posliData { zpravaVoleb() }
+                }
             }
         }
 
@@ -306,6 +308,10 @@ def main():
                 '        Propojeni.Vysilac.nastavCil(tv.ip, tv.jmeno)',
                 '        GameLingoOrangeOutput.publish(this)\n        Propojeni.Vysilac.nastavCil(tv.ip, tv.jmeno)',
                 "restore per-TV orange geometry")
+            phone_code = one(phone_code,
+                '        // televize musí znát polohu rámečku voleb (český seznam ukazuje vedle něj)',
+                '        GameLingoOrangeOutput.publish(this)\n        // televize musí znát polohu rámečku voleb (český seznam ukazuje vedle něj)',
+                "restore initial orange geometry")
             phone_code = one(phone_code,
                 '        // ---- volby odpovědí: vypínač + zámeček + velikost žlutého rámečku',
                 '''        obal.addView(GameLingoOrangeOutput.editor(this) {},
