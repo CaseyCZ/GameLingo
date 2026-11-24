@@ -38,4 +38,10 @@ Tento soubor je pracovní kontrolní seznam. **CI build není potvrzení funkčn
 
 ## Pravidlo vydávání
 
-Vývojová větev: `feature/gamelingo-v05-platform-rebuild`. Nešířit jako hotové aplikace pouze proto, že proběhl build. Testovací APK/IPA určené k fyzické kontrole smí být označeny jako **dev/QA**, ne jako stabilní verze. Po dokončení povinných kontrol navázat na aktuální společný zdrojový commit, vygenerovat všechny tři instalační soubory a až potom provést release.
+Vývojový základ: `feature/gamelingo-v05-platform-rebuild`; aktuální audit: `feature/audit-0.5`. Nešířit jako hotové aplikace pouze proto, že proběhl build. Testovací APK/IPA určené k fyzické kontrole smí být označeny jako **dev/QA**, ne jako stabilní verze. Po dokončení povinných kontrol navázat na aktuální společný zdrojový commit, vygenerovat všechny tři instalační soubory a až potom provést release.
+
+## Dodatečné blokující body z auditu F0–P3
+- [ ] Vyjasněn předchozí písemný souhlas Google pro použití ML Kit on-device Translation na TV nebo odstraněna nepovolená TV integrace (včetně preload/quick/story a závislostí). Viz [P2.5](OFFLINE-TRANSLATION-DESIGN.md). Do té doby nepublikovat TV APK ani jako veřejný pre-release.
+- [ ] Ověřeny podmínky, soukromí a atribuce online providerů a ostatních SDK, odpovídající AGPL zdroj a notices. Stabilní release podpis, identita, aktualizace a kontrolní součty.
+- [ ] Fyzická kontrola HMAC/replay, QR/Keystore, více telefonů, odpárování, port fallback, story ACK a účtové cesty. Neuvádět šifrované titulky; rozhodnout o riziku plaintext pairing v důvěryhodné LAN před širší distribucí.
+- [ ] Fyzická kontrola všech P1/P2 implementovaných funkcí na téže revizi, doplněné případy v [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md). Auditní P2.4 CI 45379906749 PASS, hardware čeká. Návrhy P2.2/P2.5/P3 nejsou vydávané funkce.

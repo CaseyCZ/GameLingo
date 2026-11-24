@@ -47,3 +47,19 @@ Pracovní větev: `feature/gamelingo-v05-platform-rebuild`, [PR #5](https://gith
 Příklad: `TV-02 | FAIL | TCL C835 / HDMI 2 | v0.5.0-dev / SHA ... | 6místné párování OK, ale overlay po přepnutí vstupu zmizel | redigovaný snímek / GitHub issue`.
 
 **Release gate:** žádné „hotovo“, žádný merge do Master, žádné stabilní vydání, dokud povinné případy nejsou PASS nebo explicitně dokumentovaná nepodporovaná konfigurace. Ověření pouze skriptem označit `CI PASS / HW NEOTESTOVÁNO`.
+
+## Dodatek F0–P3 auditu — aktuální auditní větev
+Větev `feature/audit-0.5`, poslední nativní build `0eb2538cdf64ea252632912c54f5cd385dcd1ba7`, [CI PASS](https://github.com/CaseyCZ/GameLingo/actions/runs/45379906749). Tato revize nebyla na HW ověřena. TV ML Kit licenční blocker vyřešit před distribucí a před navazujícím TV QA s novou opravenou revizí. Původní případy výše a C01–C15/H01–H10 v REPORT zůstávají povinné. Návrhy P2.2/P2.5/P3 netestovat jako hotové funkce.
+
+| ID | Případ | Očekávání | Stav |
+|---|---|---|---|
+| AUD-01 | Podepsané/unsigned/poškozené/replayed/opožděné zprávy včetně clear/style/story | Fail closed, legacy off, ověřit clock skew, restart a source lease | NEOTESTOVÁNO |
+| AUD-02 | QR/PIN expiry, 5 pokusů, 2 telefony, odpárování jednoho, Keystore restart/reinstall | Izolované klíče, druhé zařízení funkční, expirovaný QR neplatí | NEOTESTOVÁNO |
+| AUD-03 | Obsazený výchozí port, přepnutí TV, Wi-Fi reconnect | GLPORT1 fallback, správný ověřený přijímač, žádný stale overlay | NEOTESTOVÁNO |
+| AUD-04 | OCR otisk, rychlé/krátké věty, pomalý překlad, změna ROI, A→B→A jazyk/TV, stop/start | Žádné staré překlady, nezávislé oblasti, zachování 3 režimů; story zvlášť | NEOTESTOVÁNO |
+| AUD-05 | Síťové chyby/timeout a obnovení služby, SQLite cache | Dvě chyby, 30s open, jediný probe; explicit failure, žádný falešný překlad; cache oddělená dle jazyka/engine | NEOTESTOVÁNO |
+| AUD-06 | Dialog zmizí, pokračuje, obraz se nemění; dlouhý žlutý text | Stabilní čitelnost; měřit skutečný clear/expiry, žádný nepovolený přepis | NEOTESTOVÁNO |
+| AUD-07 | Diagnostika 30min zátěž, vynucené ukončení, teplotní stav | Reálné P95, paměť, nedokončená relace není vydávána za prokázaný pád | NEOTESTOVÁNO |
+| AUD-08 | Historie off/on/clear/limit, restart, dva profily s různými slovníky, jazyky | RAM historie bez duplicit, profilové korekce jen po success, raw cache beze změny; story omezení dokumentováno | NEOTESTOVÁNO |
+| AUD-09 | iOS/Android kamera odmítnuta, QR chybný/použitý, D-pad na TV | Ruční PIN stále funguje, žádné auto-pair, potvrzení cíle | NEOTESTOVÁNO |
+| AUD-10 | TV overlay HDMI Xbox/PS4/PS5, oranžový náhled, barvy/font, čtyři ROI, originální vstup | Zachovat native HDMI a nezávislé oblasti, žádný záměrný přechod na app video; HDR/VRR podle konkrétního testu | NEOTESTOVÁNO |

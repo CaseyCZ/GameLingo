@@ -1,5 +1,5 @@
 # GameLingo 0.5 — audit a pracovní checkpoint
-Datum: 2026-11-24. Stav: F0, P0, P1, P2.1–P2.4 CI success; P2.2/P2.5 návrhy; P3 zbývá. HW QA a licenční release blocker TV otevřené.
+Datum: 2026-11-24. Stav: auditní plán F0–P3 dokončen (implementace P0/P1/P2.1/P2.3/P2.4 CI PASS; P2.2/P2.5/P3 pouze návrhy). HW QA a licenční release blocker TV otevřené. NEVYDÁVAT.
 
 ## Základ a pravidla
 - Na výslovné upřesnění uživatele je auditní větev založena na poslední vlastní vývojové verzi 0.5, nikoliv na Masteru. Původní dokumentační checkpoint `92026c899c3ebb2db0b1e917cb7ed29647c642d8` byl zachován obsahem v tomto souboru.
@@ -27,7 +27,7 @@ Datum: 2026-11-24. Stav: F0, P0, P1, P2.1–P2.4 CI success; P2.2/P2.5 návrhy; 
 | Android překladač – oprava dřívějšího auditu | Upstream Prekladac.kt 115–176 má alternativní online služby a ML Kit offline fallback, success/error callback; wire_gamelingo_languages.py 39–70 přizpůsobuje jazyk. Není doložen jednotný circuit breaker ani SQLite. Offline nový engine pouze návrh; existující funkci neodstraňovat. |
 | HDMI | Upstream OverlayService.kt 169–175,350–355 používá TYPE_APPLICATION_OVERLAY, NOT_FOCUSABLE, NOT_TOUCHABLE. Samostatná vrstva již existuje; fyzický HDMI test nutný. |
 
-## Testy a commity
+## Testy a commity — historický výchozí stav (aktuální souhrn na konci)
 - F0: tento dokument (commit `docs: record phase 0 audit and baseline checkpoint`). Statické čtení připnutých souborů a porovnání větví provedeno.
 - Build/test po původním F0 nebyl možný na Master základu. Po opravě základu je nutný baseline build/test; existující workflow push triggery auditní větev nezahrnují. Žádný test nebyl označen za úspěšný. Aplikační kód nebyl změněn.
 - P0/P1/P2: dosud nezačato. Zaznamenávat SHA, příkazy/workflow, výsledek, revert a zbývající rizika po každém bodu.
@@ -55,7 +55,7 @@ Datum: 2026-11-24. Stav: F0, P0, P1, P2.1–P2.4 CI success; P2.2/P2.5 návrhy; 
 - [x] P2.3 historie — CI 45377426847 success; HW čeká.
 - [x] P2.4 slovník a kontext profilu — CI 45379906749 success; HW a Android story omezení evidována.
 - [x] P2.5 návrh offline překladu — dokumentace; TV ML Kit licenční blocker před vydáním.
-- [ ] P3 návrh AI, dabingu, Samsung/LG; žádná implementace
+- [x] P3 návrh AI, dabingu, Samsung/LG a šifrovaného transportu; dokumentace, bez implementace.
 
 ## Ruční QA – předběžná matice (vše neověřeno na této revizi)
 | Zdroj | Konzole | Výstup | Stav |
@@ -66,7 +66,7 @@ Datum: 2026-11-24. Stav: F0, P0, P1, P2.1–P2.4 CI success; P2.2/P2.5 návrhy; 
 | Oba telefony | postupně připojené | jedna TV, změna portu, odpojení každého | čeká |
 Ověřit čtyři oblasti, oranžový náhled, profily, barvy, přepnutí HDMI, restart, výpadek sítě, staré pakety, delší relaci. Výsledek zapsat pro každou kombinaci, ne zaměnit CI s HW testem.
 
-## Odložená architektura (pouze návrh)
+## Odložená architektura (výchozí návrh F0; aktualizace P2.5/P3 níže)
 - Šifrování transportu/TLS: případně samostatné budoucí bezpečnostní rozhodnutí; nyní HMAC není důvěrnost.
 - Automatická instalace: opt-in přes oficiální ADB párování tam, kde je dostupné, jinak manuální APK; žádné obcházení oprávnění.
 - Offline: abstrakce poskytovatele, stažení modelu se souhlasem, dostupnost jazyka, velikost/úložiště, lokální inference; zachovat existující Android ML Kit.
@@ -291,3 +291,54 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - Návrh v [docs/OFFLINE-TRANSLATION-DESIGN.md](docs/OFFLINE-TRANSLATION-DESIGN.md). Android mobil: správa existujícího ML Kit, iOS kandidát ML Kit nebo Apple Translation dle verze a dostupnosti párů; TV receiver překlad na telefonu po LAN, samostatná TV NMT alternativa až po licenci/PoC. Model lifecycle, consent, cache model namespace, offline-only bez online fallbacku, explicitní chyby, žádná změna jazyků. Offline překlad není offline Remote Play.
 - **NOVÝ RELEASE BLOCKER (TV):** oficiální Google [Translation usage guidelines](https://developers.google.com/ml-kit/language/translation/translation-terms), aktualizované 2026-11-09, vyžadují předchozí písemný souhlas pro TV. Existující zděděný Prekladac.kt ML Kit používá včetně přípravy, quick/story/fallback. Souhlas nedoložen. Před distribucí vyřešit oprávnění nebo odstranit TV integraci (samostatný schválený commit, varianty a CI); ověřit atribuci a další SDK podmínky. Nezaměňovat úspěšný CI s licenčním/HW schválením. Historický plán zachovat ML Kit platí pouze pro povolené platformy; tento novější nález má přednost. Kód beze změny podle P2.5 pouze návrh.
 - Test dokumentace proti skutečným repo souborům a oficiálním zdrojům. Čistě docs commit nespouští CI; aplikační strom totožný s úspěšným P2.4. P3 následuje pouze architektura AI/dabing/Samsung/LG, případně TLS návrh a konsolidace reportu, bez implementace či release. TV blocker a HW testy zůstávají otevřené.
+
+## P3 — budoucí architektura (pouze návrh)
+- [docs/FUTURE-ARCHITECTURE.md](docs/FUTURE-ARCHITECTURE.md): AI opt-in s omezeným kontextem a cost cap; nejprve TTS existujících titulků, později autorizovaný ASR/TTS; Tizen foreground/PiP a webOS capability/partner gate, ne slib nativního overlay; TLS/DTLS a bezpečný bootstrap místo plaintext pairing secretu. Samsung oficiálně nepodporuje systémový overlay/screen capture a pozastavuje hidden app; LG public lifecycle suspend a consumer HDMI overlay/capture nepodložené. Výslovně žádný nový kód, závislost, oprávnění ani release. Dokumentace ověřena proti oficiálním SDK/RFC a aktuálnímu repo. P2.5 licenční blocker TV nezmizel.
+
+## Závěrečný audit — stav k 2026-11-24
+**Plán dokončen, nikoli release ready.** Větev feature/audit-0.5 z vlastní 0.5, Master a původní dev větev ponechány. Poslední nativní úspěšná revize 0eb2538cdf64ea252632912c54f5cd385dcd1ba7 (P2.4); P2.5 a P3 pouze dokumentace. Všechny níže uvedené CI výsledky jsou historicky ověřené v průběhu auditu, každý uváděný finální běh měl šest úspěšných jobů. Nejde o 18 nezávislých fyzických testů. Žádný fyzický akceptační PASS není doložen pro tuto revizi.
+
+| Bod | Kumulativní commit | Úspěšný CI |
+|---|---|---|
+| Baseline | `6af49ee0` | [45343148434](https://github.com/CaseyCZ/GameLingo/actions/runs/45343148434) — PASS |
+| P0.1 | `b2fe4320` | [45344083071](https://github.com/CaseyCZ/GameLingo/actions/runs/45344083071) — PASS |
+| P0.2 | `d8cb1221` | [45345559792](https://github.com/CaseyCZ/GameLingo/actions/runs/45345559792) — PASS |
+| P0.3 | `bcce7415` | [45346535102](https://github.com/CaseyCZ/GameLingo/actions/runs/45346535102) — PASS |
+| P0.4 včetně handover opravy | `873299cb` | [45348736716](https://github.com/CaseyCZ/GameLingo/actions/runs/45348736716) — PASS |
+| P0.5 | `3efcdc7c` | [45349556066](https://github.com/CaseyCZ/GameLingo/actions/runs/45349556066) — PASS |
+| P1.1 | `cfec54db` | [45353138433](https://github.com/CaseyCZ/GameLingo/actions/runs/45353138433) — PASS |
+| P1.2 + oprava testu | `b34bfa90` | [45356504392](https://github.com/CaseyCZ/GameLingo/actions/runs/45356504392) — PASS |
+| P1.3 | `3b498db0` | [45357244015](https://github.com/CaseyCZ/GameLingo/actions/runs/45357244015) — PASS |
+| P1.4 | `2b8389a8` | [45359504848](https://github.com/CaseyCZ/GameLingo/actions/runs/45359504848) — PASS |
+| P1.5 | `68e41a76` | [45360814692](https://github.com/CaseyCZ/GameLingo/actions/runs/45360814692) — PASS |
+| P1.6 + oprava testu | `d9c57b47` | [45362779460](https://github.com/CaseyCZ/GameLingo/actions/runs/45362779460) — PASS |
+| P1.7 | `cd5fe7b3` | [45363666595](https://github.com/CaseyCZ/GameLingo/actions/runs/45363666595) — PASS |
+| P1.8 | `d9b08d51` | [45364864455](https://github.com/CaseyCZ/GameLingo/actions/runs/45364864455) — PASS |
+| P1.9 | `13e285de` | [45367664700](https://github.com/CaseyCZ/GameLingo/actions/runs/45367664700) — PASS |
+| P2.1 | `b1e9dca8` | [45368960470](https://github.com/CaseyCZ/GameLingo/actions/runs/45368960470) — PASS |
+| P2.3 | `004665c7` | [45377426847](https://github.com/CaseyCZ/GameLingo/actions/runs/45377426847) — PASS |
+| P2.4 | `0eb2538c` | [45379906749](https://github.com/CaseyCZ/GameLingo/actions/runs/45379906749) — PASS |
+
+### Návrhové commity bez změny aplikace
+- P2.2 `54be017cf9f234974d237222cc31c2d0f747e3db`, [instalace TV](docs/TV-INSTALLATION-DESIGN.md).
+- P2.5 `f0e9ee08d39783310c5099eb552f4246e7b358fd`, [offline](docs/OFFLINE-TRANSLATION-DESIGN.md).
+- P3 tento commit, [budoucí architektura](docs/FUTURE-ARCHITECTURE.md). Docs-only: nativní CI záměrně nespouští; změny pouze v dokumentaci. Poslední plný P2.4 CI je důkaz sestavení, nikoli nové testování hardware.
+
+### Selhání, opravy a přeskočené kontroly
+- F0 první Master neměl kód, opraven základ větve; lokální git DNS nefungovalo, GitHub konektor a audit CI umožnily postup.
+- P0.4 run 45348404394 native zrušen concurrency; následující kumulativní run 45348736716 PASS. P1.2 run 45356393524 static kontrakt závislý na odsazení, opraven; P1.6 run 45362700345 starý success-only syntax kontrakt, opraven na switch podmínku. Nativní joby původních neúspěšných běhů neprovedeny; následné úplné CI PASS. Žádný známý nezhojený CI failure v konečné auditní revizi. Historické in_progress zápisy výše jsou checkpointy, nikoli aktuální stav.
+- Android device instrumentation (Keystore, pairing/replay, cache) kompilována, reálný runtime neproveden. Swift executable a cílené JVM unit testy proběhly; statické kontrakty nejsou plný end-to-end test. Neexistuje doložené měření FPS, render latency, OCR kvality, spotřeby nebo dlouhého hraní na cílovém HW. PS4 starší než PS4_10 není v novém Android targetu ověřena/podporována; změna IP může vyžadovat nové párování. Netflix/protected playback neověřeno.
+
+### Priorita před dalším vydáním
+| Priorita | Otevřený problém | Akce |
+|---|---|---|
+| STOP | ML Kit Translation na TV — vyžaduje písemný souhlas, nedoložen | Vyjasnit souhlas nebo odstranit nepovolenou TV integraci ve zvláštním schváleném commitu, zkontrolovat SDK/notice, celý build |
+| STOP | Fyzická QA všech kombinací a funkčních oblastí | Použít [PHYSICAL_QA_0.5.md](docs/PHYSICAL_QA_0.5.md), C01–C15/H01–H10 výše, doplněné audit cases; reálný PASS/FAIL/BLOCKED dle zařízení a SHA |
+| STOP | Podpis, odpovídající AGPL zdroj a distribuce | [RELEASE_GATES_0.5.md](docs/RELEASE_GATES_0.5.md), ověřit skutečné release podpisy, původní atribuci, podmínky všech SDK/providerů a notices |
+| Vysoká | HMAC není šifrování; plaintext pairing secret, clock tolerance, story ACK/account transfer odděleně | Zdokumentovat důvěryhodnou LAN, rozhodnout o P3 secure transport před širším vydáním, žádný veřejný port/downgrade |
+| Vysoká | P1.9 Android modrá OCR race a story context | Test A→B→A region/jazyk/TV, stop/start a stale odpovědi; opravit prokázanou regresi |
+| Střední | P2.3 RAM-only historie a Android story bez historie/slovníku, TV receiver neukládá historii telefonů | Úmyslná omezení popsat uživateli, případné rozšíření samostatně po souhlasu |
+| Střední | Online služby bez garantovaného API/SLA a MyMemory limity | Prověřit provider terms, atribuci, consent a praktickou kvalitu/timeout/limity; nikdy falešný success |
+| Odloženo | Offline nový engine, automatická instalace, AI, dabing, Samsung/LG, TLS | Pouze schválené návrhy k budoucímu rozhodnutí, žádná implementace |
+
+**Další krok není release.** Vyřešit licenční otázku TV a připravit fyzický QA cyklus poslední společné revize, podle výsledků opravit v auditní větvi. Následně uživatel rozhodne o dalším postupu. Žádný push do Master, merge, publikace nebo podpis release v rámci tohoto auditu.
