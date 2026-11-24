@@ -805,6 +805,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                        "received.incrementAndGet()", "decoded.incrementAndGet()", "ticket == epoch",
                        "Spustit překlad TV", "Diagnostika samostatného OCR", "Test překryvu"):
             self.assertIn(marker, capture)
+        for marker in ("ACTION_TEST_OVERLAY", "ACTION_STOP_TEST_OVERLAY", 'showText("Testovací titulek", 0L)',
+                       "TYPE_APPLICATION_OVERLAY", "FLAG_NOT_TOUCHABLE", "recordOverlayTest"):
+            self.assertIn(marker, wiring)
         self.assertNotIn("android.permission.BIND_ACCESSIBILITY_SERVICE", wiring)
         self.assertIn('android:foregroundServiceType="mediaProjection"', wiring)
         self.assertIn("GameLingoScreenTranslationService.running ||", wiring)

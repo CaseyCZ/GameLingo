@@ -292,6 +292,108 @@ def patch_direct_tv(folder):
     marker = "val vstup = PrijemService.bezi || runCatching { poprediPribehu.jeVstupTv() }"
     if overlay_text.count(marker) != 1:
         raise RuntimeError("TV overlay foreground anchor changed")
-    overlay.write_text(overlay_text.replace(marker,
-        "val vstup = PrijemService.bezi || GameLingoScreenTranslationService.running || runCatching { poprediPribehu.jeVstupTv() }", 1), encoding="utf8")
+    overlay_text = overlay_text.replace(marker,
+        "val vstup = PrijemService.bezi || GameLingoScreenTranslationService.running || runCatching { poprediPribehu.jeVstupTv() }", 1)
+
+    # The persistent self-test uses the real subtitle window, not a separate
+    # overlay, a screenshot, OCR or a translation request.
+    def overlay_one(old, new):
+        nonlocal overlay_text
+        if overlay_text.count(old) != 1:
+            raise RuntimeError("TV overlay test anchor changed: " + old[:90])
+        overlay_text = overlay_text.replace(old, new, 1)
+
+    overlay_one('        if (!android.provider.Settings.canDrawOverlays(this)) {',
+        '''        recordOverlayTest("Oprávnění překryvu: " + android.provider.Settings.canDrawOverlays(this))
+        if (!android.provider.Settings.canDrawOverlays(this)) {''')
+    overlay_one('        wm.addView(tv, lp)',
+        '''        recordOverlayTest("addView: TYPE_APPLICATION_OVERLAY · FLAG_NOT_TOUCHABLE")
+        try {
+            wm.addView(tv, lp)
+            recordOverlayTest("addView titulků: úspěch")
+        } catch (e: Exception) {
+            recordOverlayTest("addView titulků: chyba " + e.javaClass.simpleName)
+            throw e
+        }''')
+    overlay_one('        runCatching { startAsForeground() }',
+        '''        runCatching { startAsForeground() }
+            .onSuccess { if (intent?.action == ACTION_TEST_OVERLAY) recordOverlayTest("Foreground service: OK") }
+            .onFailure { recordOverlayTest("Foreground service: chyba " + it.javaClass.simpleName) }
+        if (intent?.action == ACTION_STOP_TEST_OVERLAY) {
+            if (overlayTestActive) {
+                overlayTestActive = false
+                showText("")
+                recordOverlayTest("Test vypnut")
+            }
+            return START_NOT_STICKY
+        }
+        if (intent?.action == ACTION_TEST_OVERLAY) {
+            if (RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running) {
+                recordOverlayTest("Test odmítnut: běží jiný režim")
+                return START_NOT_STICKY
+            }
+            val allowed = android.provider.Settings.canDrawOverlays(this)
+            recordOverlayTest("Oprávnění překryvu: " + allowed)
+            if (!allowed) {
+                overlayTestActive = false
+                recordOverlayTest("Chybí oprávnění překryvu")
+                return START_NOT_STICKY
+            }
+            if (!pripravena || textView?.isAttachedToWindow != true) {
+                recordOverlayTest("Okno nepřipojeno, opakuji addView")
+                zkusOkna(0)
+            }
+            if (!pripravena || textView?.isAttachedToWindow != true) {
+                overlayTestActive = false
+                recordOverlayTest("Chyba: okno titulků není připojené")
+                return START_NOT_STICKY
+            }
+            recordOverlayTest("Okno titulků připojeno")
+            zrusPribeh()
+            konecUpravy.run()
+            val position = GameLingoDirectTVLayout.green(this) ?: floatArrayOf(.5f,.84f,.75f,1f)
+            nastavVlastniPolohu(position)
+            try {
+                val view = checkNotNull(textView)
+                val lp = checkNotNull(layout)
+                wm.updateViewLayout(view, lp)
+                showText("Testovací titulek", 0L)
+                overlayTestActive = true
+                recordOverlayTest("Testovací titulek: zobrazení vyžádáno, bez časovače")
+            } catch (e: Exception) {
+                overlayTestActive = false
+                recordOverlayTest("Zobrazení: chyba " + e.javaClass.simpleName)
+            }
+            return START_NOT_STICKY
+        }
+        if (overlayTestActive && (intent?.action == null || intent.action == ACTION_SET_TEXT ||
+            intent.action == ACTION_SET_PRIBEH || RemotePlayService.aktivni || PrijemService.bezi ||
+            GameLingoScreenTranslationService.running)) {
+            overlayTestActive = false
+            showText("")
+            recordOverlayTest("Test ukončen: jiný režim")
+        }''')
+    overlay_one('        pripravena = false\\n        ui.removeCallbacks(hideRunnable)',
+        '''        if (overlayTestActive) recordOverlayTest("Test ukončen: služba zastavena")
+        overlayTestActive = false
+        pripravena = false
+        ui.removeCallbacks(hideRunnable)''')
+    overlay_one('        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"',
+        '''        const val ACTION_TEST_OVERLAY = "gamelingo.overlay.TEST"
+        const val ACTION_STOP_TEST_OVERLAY = "gamelingo.overlay.STOP_TEST"
+        @Volatile var overlayTestActive = false
+            private set
+        private val overlayTestEvents = ArrayDeque<String>()
+        internal fun recordOverlayTest(message: String) {
+            android.util.Log.i("GameLingoOverlay", message)
+            synchronized(overlayTestEvents) {
+                if (overlayTestEvents.size >= 14) overlayTestEvents.removeFirst()
+                overlayTestEvents.addLast(message)
+            }
+        }
+        internal fun overlayTestReport(): String = synchronized(overlayTestEvents) {
+            overlayTestEvents.joinToString("\\n")
+        }
+        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"''')
+    overlay.write_text(overlay_text, encoding="utf8")
 

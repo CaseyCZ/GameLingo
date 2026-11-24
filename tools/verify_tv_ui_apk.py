@@ -14,6 +14,8 @@ REQUIRED = (
     "Spustit překlad TV",
     "Diagnostika samostatného OCR",
     "GameLingo-TV-frames",
+    "Testovací titulek",
+    "gamelingo.overlay.STOP_TEST",
     "Párovací QR kód",
     "Spárované telefony",
     "Vyber zdroj překladu",

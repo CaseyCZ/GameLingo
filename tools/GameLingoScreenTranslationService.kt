@@ -408,16 +408,40 @@ class GameLingoScreenTranslationService : Service() {
                     maxHeight = (a.resources.displayMetrics.heightPixels * .22f).toInt()
                 })
             }
-            panel.addView(GameLingoTVUi.action(a,"Test překryvu") {
-                if (running || RemotePlayService.aktivni || PrijemService.bezi || !Settings.canDrawOverlays(a)) {
-                    Toast.makeText(a,"Nejdříve zastav ostatní režimy a povol překryv.",Toast.LENGTH_LONG).show()
+            val overlayLog = android.widget.TextView(a).apply {
+                text = OverlayService.overlayTestReport(); textSize = 13f
+            }
+            val overlayAction = GameLingoTVUi.action(a,
+                if (OverlayService.overlayTestActive) "Vypnout test překryvu" else "Test překryvu") {
+                if (running || RemotePlayService.aktivni || PrijemService.bezi) {
+                    Toast.makeText(a,"Nejdříve zastav ostatní režimy.",Toast.LENGTH_LONG).show()
                 } else {
-                    OverlayService.spust(a)
-                    OverlayService.posli(a, Intent(a,OverlayService::class.java)
-                        .setAction(OverlayService.ACTION_SET_TEXT).putExtra(OverlayService.EXTRA_TEXT,"Test zobrazení titulků GameLingo")
-                        .putExtra(OverlayService.EXTRA_DOBA,4500L).putExtra(OverlayService.EXTRA_VLASTNI,floatArrayOf(.5f,.84f,.75f,1f)))
+                    val stopTest = OverlayService.overlayTestActive
+                    val allowed = Settings.canDrawOverlays(a)
+                    OverlayService.recordOverlayTest("Oprávnění před spuštěním: " + allowed)
+                    if (!allowed && !stopTest) {
+                        Toast.makeText(a,"Povol překryv v nastavení TV.",Toast.LENGTH_LONG).show()
+                    } else {
+                        val request = Intent(a,OverlayService::class.java).setAction(
+                            if (stopTest) OverlayService.ACTION_STOP_TEST_OVERLAY else OverlayService.ACTION_TEST_OVERLAY)
+                        runCatching { a.startForegroundService(request) }
+                            .onSuccess { OverlayService.recordOverlayTest("Požadavek foreground service odeslán") }
+                            .onFailure { OverlayService.recordOverlayTest("Start služby: chyba " + it.javaClass.simpleName) }
+                    }
+                    overlayLog.postDelayed({
+                        overlayLog.text = OverlayService.overlayTestReport()
+                        (overlayLog.parent as? android.widget.LinearLayout)?.let { parent ->
+                            for (i in 0 until parent.childCount) {
+                                val v = parent.getChildAt(i) as? android.widget.TextView ?: continue
+                                if (v.text == "Test překryvu" || v.text == "Vypnout test překryvu")
+                                    v.text = if (OverlayService.overlayTestActive) "Vypnout test překryvu" else "Test překryvu"
+                            }
+                        }
+                    },800L)
                 }
-            })
+            }
+            panel.addView(overlayAction)
+            panel.addView(overlayLog)
             panel.addView(GameLingoTVUi.action(a,"Test překladového jádra") {
                 if (running || RemotePlayService.aktivni || PrijemService.bezi) {
                     Toast.makeText(a,"Nejdříve zastav ostatní režimy.",Toast.LENGTH_LONG).show()
