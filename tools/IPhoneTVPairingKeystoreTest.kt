@@ -98,6 +98,33 @@ class IPhoneTVPairingKeystoreTest {
         assertTrue(verify(second, replacement, "1"))
     }
 
+    @Test fun emptyPacketsAndReadinessDoNotClaimSource() {
+        val second = "audit-test-android"
+        val firstKey = requireNotNull(IPhoneTVPairing.confirm(ctx, IPhoneTVPairing.startCode(), id))
+        val secondKey = requireNotNull(IPhoneTVPairing.confirm(ctx, IPhoneTVPairing.startCode(), second))
+        val now = System.currentTimeMillis().toString()
+        fun authenticate(phone: String, key: String) {
+            val body = "TEXT\t$phone\tpayload"
+            assertTrue(IPhoneTVPairing.verifyFresh(ctx, phone, body, now, "1",
+                mac(key, "$body\t$now\t1"), "PCT1"))
+        }
+        authenticate(id, firstKey)
+        authenticate(second, secondKey)
+        fun extends(packet: String) = IPhoneTVPairing.extendsSourceLease(packet.split('\t'))
+        assertFalse(extends("PCT1\t1\t0\t\t"))
+        assertFalse(extends("PCV1\t1\t0\t0\t0\t1\t1\t-1\t"))
+        assertFalse(extends("PCO1\t0\t0\t0\t1\t1"))
+        assertFalse(extends("PCQ1\tquery"))
+        assertTrue(extends("PCT1\t2\t6000\tHello\t"))
+        assertTrue(extends("PCV1\t2\t1\t0\t0\t1\t1\t-1\t"))
+        assertTrue(extends("PCO1\t1\t0\t0\t1\t1"))
+        assertTrue(IPhoneTVPairing.claimGameData(id, false))
+        assertFalse(IPhoneTVPairing.hasActiveSource())
+        assertTrue(IPhoneTVPairing.claimGameData(second))
+        assertFalse(IPhoneTVPairing.claimGameData(id, false))
+        assertTrue(IPhoneTVPairing.claimGameData(second, false))
+    }
+
     @Test fun pairRetryAndClearUseEncryptedStorage() {
         val pin = IPhoneTVPairing.startCode()
         val token = requireNotNull(IPhoneTVPairing.confirm(ctx, pin, id))

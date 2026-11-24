@@ -177,8 +177,24 @@ object IPhoneTVPairing {
     /** The first authenticated game-data sender owns the overlay until idle.
      * PING does not claim/extend the lease. A different phone's text cannot
      * interleave with the current phone's dialogue or choices. */
-    fun claimGameData(phoneId: String): Boolean = synchronized(lock) {
+    internal fun extendsSourceLease(fields: List<String>): Boolean {
+        fun present(index: Int) = !fields.getOrNull(index).isNullOrBlank()
+        return when (fields.firstOrNull()) {
+            "PCT1" -> present(3) || present(4) ||
+                fields.getOrNull(9) == "1" ||
+                (fields.getOrNull(5) == "" && fields.getOrNull(10) == "1")
+            "PCV1" -> present(8) || (fields.getOrNull(2)?.toIntOrNull() ?: 0) in 1..2
+            "PCO1" -> fields.getOrNull(1) == "1"
+            "PCS1" -> present(3)
+            else -> false // PCQ1 readiness queries and empty clears do not acquire ownership.
+        }
+    }
+
+    fun claimGameData(phoneId: String, extendsLease: Boolean = true): Boolean = synchronized(lock) {
         if (storageWriteFailed || phoneId !in authenticatedAt) return@synchronized false
+        // Accept an owner's clear without renewing the lease. When nobody
+        // owns the output, a readiness query may still receive a reply.
+        if (!extendsLease) return@synchronized activePhone == null || activePhone == phoneId
         val now = SystemClock.elapsedRealtime()
         if (activePhone != null && activePhone != phoneId && now - activeAt < SOURCE_LEASE_MS)
             return@synchronized false

@@ -501,7 +501,7 @@ def main() -> None:
          '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")) continue\n'
          '                                        if (inner.firstOrNull() == "PCS1" && inner.getOrNull(1) in listOf("ZADOST", "KOD")) continue\n'
          '                                        casti = inner\n'
-         '                                        if (!IPhoneTVPairing.claimGameData(id)) continue\n'
+         '                                        if (!IPhoneTVPairing.claimGameData(id, IPhoneTVPairing.extendsSourceLease(inner))) continue\n'
          '                                        resetSourceIfChanged()\n'
          '                                        authenticatedGameData = true\n'
          '                                        p.setData(decoded.toByteArray(Charsets.UTF_8))\n')

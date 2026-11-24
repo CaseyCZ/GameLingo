@@ -143,6 +143,46 @@ def main():
             ),
         ):
             sender = one(sender, old, new, label)
+        # Stop idle heartbeat traffic from retaining the receiver's source lease.
+        # Keep the selected TV and its profile so a later Start can reuse them.
+        sender = one(sender,
+            '        /** Každou sekundu aktuální stav; stará smyčka nesmí po změně cíle ožít. */',
+            '''        fun stopGameData() = synchronized(zamek) {
+            if (cilIp == null) return@synchronized
+            // Invalidate already queued senders, then send a new clear snapshot.
+            generace++
+            prenos.reset(generace)
+            text = ""; napoveda = ""; doba = 0L; barvy = null
+            ukazkaText = ""; upravaDo = 0L
+            volbyText = ""; vybrana = -1; volbyUpravaDo = 0L
+            trvaleOblast = false; pribehRidi = false
+            cislo++; cisloVoleb++
+            posliTed()
+            posliData { zpravaVoleb() }
+            oblastTitulku(floatArrayOf(0f, 0f, 1f, 1f), false)
+            spustOpakovani(generace)
+        }
+
+        /** Každou sekundu aktuální stav; stará smyčka nesmí po změně cíle ožít. */''',
+            "stop game data while retaining receiver selection")
+        sender = one(sender,
+            '''                                    if (!pribehRidi) {
+                                        val data = zprava()''',
+            '''                                    val live = RemotePlayService.aktivni
+                                    val now = System.currentTimeMillis()
+                                    val repeatDialogue = !pribehRidi && (live || now < upravaDo)
+                                    val repeatChoices = cisloVoleb > 0 && (live || now < volbyUpravaDo)
+                                    if (repeatDialogue) {
+                                        val data = zprava()''',
+            "bound idle dialogue preview repeats")
+        sender = one(sender,
+            '                                    if (cisloVoleb > 0) {',
+            '                                    if (repeatChoices) {',
+            "bound idle choices preview repeats")
+        sender = one(sender,
+            '                                    if (!pribehRidi || cisloVoleb > 0) prenos.vysledek(relace, null)',
+            '                                    if (repeatDialogue || repeatChoices) prenos.vysledek(relace, null)',
+            "report actual repeats only")
         transport.write_text(prefix + sender_marker + sender, encoding="utf-8")
 
         # Story-mode packets bypass Vysilac. Protect the independent socket too.
@@ -161,6 +201,12 @@ def main():
         source=service.read_text(encoding="utf-8")
         source=one(source, "        super.onCreate()",
             "        super.onCreate()\n        GameLingoTVPairing.initialize(this)", "background sender context")
+        source=one(source,
+            '        if (pripojeno()) zastav("Remote Play zastaveno.")\n        ukonciStareSpojeni()',
+            '        if (pripojeno()) zastav("Remote Play zastaveno.")\n'
+            '        if (telefon) Propojeni.Vysilac.stopGameData()\n'
+            '        ukonciStareSpojeni()',
+            "clear queued TV game data on service destruction")
         service.write_text(source, encoding="utf-8")
 
     mainFile.write_text(code,encoding="utf-8")

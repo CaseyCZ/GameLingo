@@ -159,3 +159,6 @@ Všechny případy čekají na test na zařízení. Zapsat model, firmware/OS, k
 | H10 | Přepnutí PS4 ↔ PS5 a více Xboxů | přesně vybraná konzole, správný typ a registrace | čeká; PS4 Android blokováno |
 
 Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 implementace a testy. Žádný release.
+
+## P0.4 — následná oprava před uzavřením
+- Původní run 45347464381: všech šest jobů success. Runtime testy neprovedeny. Nový samostatný commit `fix: release idle TV caption source without losing selected receiver` odstraňuje zjištěnou regresi handoveru. Android Vysilac opakuje pouze během aktivního RemotePlayService nebo omezeného náhledu; onDestroy invaliduje staré generace, vyčistí dialog/volby/oblast a zachová vybraný TV profil pro další start. Přijímač nezíská ani neprodlouží lease prázdným dialogem/volbami, skrytím rámečku nebo story readiness; clear od jiného zdroje nemůže přepsat aktuálního vlastníka. Viditelné náhledy stále mohou získat lease. Pětisekundová prodleva od posledních skutečných herních dat zůstává. Trvalý náhled mimo relaci se neopakuje bez omezení; ruční zobrazení funguje okamžitou zprávou. Přidán regresní kontrakt a instrumentation test klasifikace/oddělení zdrojů. CI čeká; HW handover, stop/restart, preview a příběhový režim nutno ověřit. P0.5 implementace PS4 a HDMI až po úspěchu tohoto commitu.

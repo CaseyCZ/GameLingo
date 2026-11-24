@@ -393,12 +393,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('putStringSet(PHONE_IDS, known - phoneId)', receiver)
         self.assertIn('sequenceSlot(phoneId, lane)', receiver)
         self.assertIn('private const val SOURCE_LEASE_MS = 5000L', receiver)
-        self.assertIn('IPhoneTVPairing.claimGameData(id)', patch)
+        self.assertIn('IPhoneTVPairing.claimGameData(id, IPhoneTVPairing.extendsSourceLease(inner))', patch)
         self.assertIn('resetSourceIfChanged()', patch)
         self.assertIn('pribeh = newStoryReceiver()', patch)
         self.assertIn('IPhoneTVPairing.unpair(this, phone.id)', tv)
         self.assertNotIn('IPhoneTVPairing.clear(this)', tv)
         self.assertIn('twoPhonesKeepIndependentKeysReplayAndRevocation', device_tests)
+
+    def test_p0_4_idle_packets_cannot_hold_overlay_source(self):
+        receiver = code(TOOLS/"IPhoneTVPairing.kt")
+        wire = code(TOOLS/"wire_android_devices.py")
+        device_tests = code(TOOLS/"IPhoneTVPairingKeystoreTest.kt")
+        self.assertIn("if (!extendsLease) return@synchronized", receiver)
+        self.assertIn("fun stopGameData()", wire)
+        self.assertIn("if (telefon) Propojeni.Vysilac.stopGameData()", wire)
+        self.assertIn("live || now < upravaDo", wire)
+        self.assertIn("live || now < volbyUpravaDo", wire)
+        self.assertIn("emptyPacketsAndReadinessDoNotClaimSource", device_tests)
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
