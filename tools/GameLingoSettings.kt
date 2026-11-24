@@ -280,6 +280,9 @@ object GameLingoSettings {
              "Poslední dialogy a herní texty · volitelné") {
             GameLingoHistoryUi.show(activity)
         }
+        menu("▣", "Překladová cache", "Ukládání a vymazání místních překladů") {
+            GameLingoCachePrivacyUi.show(activity)
+        }
         menu("≋", "Diagnostika",
              "Stav relace a uložených zařízení") {
             GameLingoDiagnostics.show(activity)
