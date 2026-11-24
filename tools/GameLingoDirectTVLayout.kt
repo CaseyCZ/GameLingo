@@ -34,7 +34,7 @@ object GameLingoDirectTVLayout {
         return r.takeIf { it.all { v -> v.isFinite() } && it[0] in 0f..1f &&
             it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0.6f..2f } ?: greenDefault.copyOf()
     }
-    private fun busy() = RemotePlayService.aktivni || PrijemService.bezi
+    private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
 
     fun show(a: Activity, onSaved: () -> Unit) {
         if (busy()) {
@@ -53,6 +53,42 @@ object GameLingoDirectTVLayout {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 12, 24, 16)
         }
+        // A live schematic of the actual normalized geometry, updated by every D-pad slider.
+        val preview = object : android.view.View(a) {
+            private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+            override fun onDraw(canvas: android.graphics.Canvas) {
+                super.onDraw(canvas)
+                val inset = 8f
+                val w = (width - inset * 2).coerceAtLeast(1f)
+                val h = (height - inset * 2).coerceAtLeast(1f)
+                paint.color = Color.parseColor("#111A33")
+                paint.style = android.graphics.Paint.Style.FILL
+                canvas.drawRect(inset,inset,inset+w,inset+h,paint)
+                fun area(r: FloatArray, color: Int, label: String) {
+                    val left = inset+r[0]*w; val top = inset+r[1]*h
+                    val right = inset+r[2]*w; val bottom = inset+r[3]*h
+                    paint.color = color; paint.style = android.graphics.Paint.Style.STROKE
+                    paint.strokeWidth = 3f
+                    canvas.drawRect(left,top,right,bottom,paint)
+                    paint.style = android.graphics.Paint.Style.FILL
+                    paint.textSize = 15f * resources.displayMetrics.scaledDensity
+                    canvas.save()
+                    canvas.clipRect(left,top,right,bottom)
+                    canvas.drawText(label,left+5f,minOf(bottom-3f,top+paint.textSize+3f),paint)
+                    canvas.restore()
+                }
+                area(blue,Color.parseColor("#4FB3FF"),"OCR dialogů")
+                area(yellow,Color.parseColor("#FFD54A"),"OCR herních textů")
+                val half = green[2]/2f
+                val left = (green[0]-half).coerceIn(0f,1f-green[2])
+                area(floatArrayOf(left,(green[1]-.12f*green[3]).coerceAtLeast(0f),left+green[2],green[1]),
+                    Color.parseColor("#3CFF6E"),"Přeložené dialogy")
+                area(orange,Color.parseColor("#FF9E34"),"Přeložené herní texty")
+            }
+        }
+        root.addView(TextView(a).apply { text = "Náhled rozložení · 4 nezávislé oblasti"; textSize = 16f })
+        root.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+            GameLingoTVUi.dp(a, 230)))
         val scroll = ScrollView(a).apply { addView(root) }
         fun heading(label: String, color: Int) {
             root.addView(TextView(a).apply {
@@ -82,6 +118,7 @@ object GameLingoDirectTVLayout {
                     if (fromUser) {
                         update((progress+min)/100f)
                         refreshAll.forEach { it() }
+                        preview.invalidate()
                     }
                 }
                 override fun onStartTrackingTouch(seek: SeekBar) {}
