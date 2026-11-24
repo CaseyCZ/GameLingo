@@ -118,7 +118,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         options=model.split("guard let englishChoices = await",1)[1]
         options=options.split("self.lastTranslatedChoiceItems = translated",1)[0]
         self.assertIn("self.sessionRevision == currentSession",options)
-        self.assertIn("defer {\n                            if self.sessionRevision == currentSession",model)
+        self.assertIn("defer {\n            if self.sessionRevision == currentSession",model)
         self.assertIn("self.processingChoices = false",model)
         self.assertIn("if self.sessionRevision == currentSession",model)
         stopped=model.split("func stop() {",1)[1]
@@ -445,6 +445,26 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("optionsImageGate.reset()", pipeline)
         self.assertEqual(pipeline.count("recordSuccessfulRead(fingerprint"), 2)
         self.assertEqual(pipeline.count("shouldRead(fingerprint"), 2)
+
+    def test_p1_2_latest_frame_mailboxes_are_bounded_and_session_owned(self):
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        mailbox = code(IOS/"LatestFrameMailbox.swift")
+        self.assertIn("pending = value", mailbox)
+        self.assertIn("guard !draining else { return false }", mailbox)
+        self.assertIn("draining = false", mailbox)
+        self.assertIn("guard !closed, enabled", mailbox)
+        self.assertIn("play.onFrame = receiveFrame", model)
+        self.assertIn("playStation.start(console: console, onFrame: receiveFrame", model)
+        self.assertIn("if dialogue.offer(buffer)", model)
+        self.assertIn("if options.offer(buffer)", model)
+        self.assertIn("while let frame = dialogue.takeNext()", model)
+        self.assertIn("while let frame = options.takeNext()", model)
+        self.assertIn("optionsFrames?.setEnabled(choicesEnabled)", model)
+        stop = model.split("func stop() {", 1)[1]
+        self.assertIn("dialogueFrames?.close()", stop)
+        self.assertIn("optionsFrames?.close()", stop)
+        self.assertNotIn("await self?.processFrame(buffer", model)
+        self.assertNotIn("await self?.processFrame(frame", model)
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""

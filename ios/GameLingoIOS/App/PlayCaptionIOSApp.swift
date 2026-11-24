@@ -157,6 +157,7 @@ final class CaptionAppModel: ObservableObject {
     @Published var choicesEnabled = UserDefaults.standard.bool(forKey: "choicesEnabled") {
         didSet {
             UserDefaults.standard.set(choicesEnabled, forKey: "choicesEnabled")
+            optionsFrames?.setEnabled(choicesEnabled)
             Task { await pipeline.resetOptions() }
             if !choicesEnabled {
                 lastTranslatedChoiceItems = []
@@ -253,6 +254,8 @@ final class CaptionAppModel: ObservableObject {
     private var processingChoices = false
     private var processingOCR = false
     private var sessionRevision = 0
+    private var dialogueFrames: LatestFrameMailbox<CVPixelBuffer>?
+    private var optionsFrames: LatestFrameMailbox<CVPixelBuffer>?
     // Cache only the translation already visible on TV. Moving the orange
     // rectangle must not trigger a fresh OCR/translation or show demo text.
     private var lastTranslatedChoiceItems: [String] = []
@@ -389,7 +392,7 @@ final class CaptionAppModel: ObservableObject {
         processingChoices = false
         lastTranslatedChoiceItems = []
         lastChoicesSentAt = nil
-        Task { await pipeline.resetDialogue(); await pipeline.resetOptions() }
+        let receiveFrame = makeFrameReceiver(currentSession: currentSession)
         UIApplication.shared.isIdleTimerDisabled = true
         status = "Navazuji Xbox Remote Play…"
         write("Start Remote Play: \(console.name)")
@@ -403,11 +406,7 @@ final class CaptionAppModel: ObservableObject {
                 self.write(status)
             }
         }
-        play.onFrame = { [weak self] buffer in
-            Task { @MainActor in
-                await self?.processFrame(buffer, currentSession: currentSession)
-            }
-        }
+        play.onFrame = receiveFrame
         Task {
             do { try await play.connect(console: console) }
             catch {
@@ -420,111 +419,157 @@ final class CaptionAppModel: ObservableObject {
         }
     }
 
-    /// Both Xbox WebRTC and PS4/PS5 Chiaki video feed these same OCR and
-    /// translation lanes. Source-specific networking is kept outside.
+    /// A decoder callback touches only the thread-safe session mailboxes.
+    /// Each lane owns at most one running drain and one pending latest frame.
+    private func makeFrameReceiver(currentSession: Int) -> @Sendable (CVPixelBuffer) -> Void {
+        dialogueFrames?.close()
+        optionsFrames?.close()
+        let dialogue = LatestFrameMailbox<CVPixelBuffer>()
+        let options = LatestFrameMailbox<CVPixelBuffer>(enabled: choicesEnabled)
+        dialogueFrames = dialogue
+        optionsFrames = options
+        let reset = Task {
+            await pipeline.resetDialogue()
+            await pipeline.resetOptions()
+        }
+
+        return { [weak self] buffer in
+            if dialogue.offer(buffer) {
+                Task { @MainActor [weak self] in
+                    await reset.value
+                    while let frame = dialogue.takeNext() {
+                        guard let self, self.isRunning,
+                              self.sessionRevision == currentSession else {
+                            dialogue.close()
+                            return
+                        }
+                        await self.processFrame(frame, currentSession: currentSession)
+                        await Task.yield()
+                    }
+                }
+            }
+            if options.offer(buffer) {
+                Task { @MainActor [weak self] in
+                    await reset.value
+                    while let frame = options.takeNext() {
+                        guard let self, self.isRunning,
+                              self.sessionRevision == currentSession else {
+                            options.close()
+                            return
+                        }
+                        await self.processChoicesFrame(frame, currentSession: currentSession)
+                        await Task.yield()
+                    }
+                }
+            }
+        }
+    }
+
+    /// Independent yellow-area drain. A slow options translation cannot block
+    /// dialogue OCR or enqueue a backlog of decoded images.
+    private func processChoicesFrame(_ buffer: CVPixelBuffer, currentSession: Int) async {
+        guard isRunning, sessionRevision == currentSession, choicesEnabled,
+              !processingChoices else { return }
+        processingChoices = true
+        let area = choicesArea
+        let asText = choicesTextMode
+        let activeGameLanguage = gameLanguage
+        let activeTargetLanguage = targetLanguage
+        defer {
+            if self.sessionRevision == currentSession {
+                self.processingChoices = false
+            }
+        }
+        guard let englishChoices = await self.pipeline.recognizeOptions(
+            buffer, area: area, asText: asText,
+            gameLanguage: activeGameLanguage
+        ), self.isRunning,
+           self.sessionRevision == currentSession,
+           self.choicesEnabled else { return }
+        var translated = [String]()
+        for option in englishChoices {
+            let item = await self.pipeline.translate(
+                option, from: activeGameLanguage,
+                to: activeTargetLanguage)
+            guard self.isRunning,
+                  self.sessionRevision == currentSession,
+                  self.choicesEnabled else { return }
+            translated.append(item)
+        }
+        guard self.isRunning,
+              self.sessionRevision == currentSession,
+              self.choicesEnabled,
+              self.choicesArea == area,
+              self.choicesTextMode == asText else { return }
+        self.lastChoices = translated.joined(separator: " · ")
+        self.lastTranslatedChoiceItems = translated
+        self.lastTranslatedChoiceIsText = asText
+        self.lastChoicesSentAt = Date()
+        if self.devices.subtitleOutput == .googleTV {
+            self.devices.prepareTV(self.tv)
+            if self.verifiedTelevisionOutput {
+                self.tv.sendChoices(translated, area: area, asText: asText,
+                                    outputArea: self.choicesOutputArea,
+                                    outputFont: self.choicesOutputFont)
+            }
+        }
+        self.write("Volby: \(translated.count) rozpoznaných položek")
+    }
+
+    /// Both Xbox WebRTC and PS4/PS5 Chiaki video feed the same latest-frame OCR.
     private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int) async {
         guard isRunning, sessionRevision == currentSession else { return }
         self.frameCount += 1
         let activeGameLanguage = self.gameLanguage
         let activeTargetLanguage = self.targetLanguage
 
-                // Choices use an independent region and may be translated while
-                // standard captions continue; don't block dialogue reading.
-                if self.choicesEnabled && !self.processingChoices {
-                    self.processingChoices = true
-                    let area = self.choicesArea
-                    let asText = self.choicesTextMode
-                    Task { @MainActor [weak self] in
-                        guard let self else { return }
-                        defer {
-                            if self.sessionRevision == currentSession {
-                                self.processingChoices = false
-                            }
-                        }
-                        guard let englishChoices = await self.pipeline.recognizeOptions(
-                            buffer, area: area, asText: asText,
-                            gameLanguage: activeGameLanguage
-                        ), self.isRunning,
-                           self.sessionRevision == currentSession,
-                           self.choicesEnabled else { return }
-                        var translated = [String]()
-                        for option in englishChoices {
-                            let item = await self.pipeline.translate(
-                                option, from: activeGameLanguage,
-                                to: activeTargetLanguage)
-                            guard self.isRunning,
-                                  self.sessionRevision == currentSession,
-                                  self.choicesEnabled else { return }
-                            translated.append(item)
-                        }
-                        guard self.isRunning,
-                              self.sessionRevision == currentSession,
-                              self.choicesEnabled,
-                              self.choicesArea == area,
-                              self.choicesTextMode == asText else { return }
-                        self.lastChoices = translated.joined(separator: " · ")
-                        self.lastTranslatedChoiceItems = translated
-                        self.lastTranslatedChoiceIsText = asText
-                        self.lastChoicesSentAt = Date()
-                        if self.devices.subtitleOutput == .googleTV {
-                            self.devices.prepareTV(self.tv)
-                            if self.verifiedTelevisionOutput {
-                                self.tv.sendChoices(translated, area: area, asText: asText,
-                                                    outputArea: self.choicesOutputArea,
-                                                    outputFont: self.choicesOutputFont)
-                            }
-                        }
-                        self.write("Volby: \(translated.count) rozpoznaných položek")
+        // Keep recognition independent of network translation: a slow
+        // request must not block OCR of the next short street dialogue.
+        if !self.processingOCR {
+            self.processingOCR = true
+            let reading = await self.pipeline.recognize(
+                buffer, region: self.subtitleRegion,
+                manualArea: self.manualOCR ? self.manualOCRBox : nil,
+                filterMenus: self.filterMenuText,
+                mode: self.ocrMode,
+                expandOnEmpty: self.expandOnEmpty,
+                gameLanguage: activeGameLanguage
+            )
+            if self.sessionRevision == currentSession {
+                self.processingOCR = false
+            }
+            if let reading, self.isRunning,
+               self.sessionRevision == currentSession {
+                self.lastEnglish = reading.english
+                self.write("OCR: \(reading.english)")
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    let czech = await self.pipeline.translate(
+                        reading.english, from: activeGameLanguage,
+                        to: activeTargetLanguage)
+                    let isLatest = await self.pipeline.isCurrent(revision: reading.revision)
+                    guard self.isRunning,
+                          self.sessionRevision == currentSession,
+                          isLatest else { return }
+                    if self.skipOldTranslations &&
+                       Date().timeIntervalSince(reading.capturedAt) > self.maxTranslationAge {
+                        self.write("Příliš starý překlad byl přeskočen.")
+                        return
                     }
+                    self.lastCzech = czech
+                    if self.devices.subtitleOutput == .phone {
+                        self.phoneSubtitle = czech
+                    } else {
+                        self.devices.prepareTV(self.tv)
+                        if self.verifiedTelevisionOutput {
+                            self.tv.sendSubtitle(czech,
+                                                 duration: Int(self.subtitleDuration * 1000))
+                        }
+                    }
+                    self.write("Překlad (\(activeTargetLanguage.rawValue)): \(czech)")
                 }
-
-                // Keep recognition independent of network translation: a slow
-                // request must not block OCR of the next short street dialogue.
-                if !self.processingOCR {
-                    self.processingOCR = true
-                    let reading = await self.pipeline.recognize(
-                        buffer, region: self.subtitleRegion,
-                        manualArea: self.manualOCR ? self.manualOCRBox : nil,
-                        filterMenus: self.filterMenuText,
-                        mode: self.ocrMode,
-                        expandOnEmpty: self.expandOnEmpty,
-                        gameLanguage: activeGameLanguage
-                    )
-                    if self.sessionRevision == currentSession {
-                        self.processingOCR = false
-                    }
-                    if let reading, self.isRunning,
-                       self.sessionRevision == currentSession {
-                        self.lastEnglish = reading.english
-                        self.write("OCR: \(reading.english)")
-                        Task { @MainActor [weak self] in
-                            guard let self else { return }
-                            let czech = await self.pipeline.translate(
-                                reading.english, from: activeGameLanguage,
-                                to: activeTargetLanguage)
-                            let isLatest = await self.pipeline.isCurrent(revision: reading.revision)
-                            guard self.isRunning,
-                                  self.sessionRevision == currentSession,
-                                  isLatest else { return }
-                            if self.skipOldTranslations &&
-                               Date().timeIntervalSince(reading.capturedAt) > self.maxTranslationAge {
-                                self.write("Příliš starý překlad byl přeskočen.")
-                                return
-                            }
-                            self.lastCzech = czech
-                            if self.devices.subtitleOutput == .phone {
-                                self.phoneSubtitle = czech
-                            } else {
-                                self.devices.prepareTV(self.tv)
-                                if self.verifiedTelevisionOutput {
-                                    self.tv.sendSubtitle(czech,
-                                                         duration: Int(self.subtitleDuration * 1000))
-                                }
-                            }
-                            self.write("Překlad (\(activeTargetLanguage.rawValue)): \(czech)")
-                        }
-                    }
-                }
+            }
+        }
     }
 
     /// Actual native PlayStation Remote Play, not just a console entry.
@@ -542,7 +587,7 @@ final class CaptionAppModel: ObservableObject {
         lastTranslatedChoiceItems = []
         lastChoicesSentAt = nil
         phoneSubtitle = ""
-        Task { await pipeline.resetDialogue(); await pipeline.resetOptions() }
+        let receiveFrame = makeFrameReceiver(currentSession: currentSession)
         UIApplication.shared.isIdleTimerDisabled = true
         status = "Připojuji PlayStation…"
         write("PlayStation Remote Play: " + console.nickname)
@@ -555,11 +600,7 @@ final class CaptionAppModel: ObservableObject {
                 self.status = value
             }
         }
-        playStation.start(console: console, onFrame: { [weak self] frame in
-            Task { @MainActor in
-                await self?.processFrame(frame, currentSession: currentSession)
-            }
-        }, onEnded: { [weak self] reason in
+        playStation.start(console: console, onFrame: receiveFrame, onEnded: { [weak self] reason in
             guard let self, self.isRunning,
                   self.sessionRevision == currentSession else { return }
             self.stop()
@@ -590,6 +631,10 @@ final class CaptionAppModel: ObservableObject {
 
     func stop() {
         sessionRevision += 1
+        dialogueFrames?.close()
+        optionsFrames?.close()
+        dialogueFrames = nil
+        optionsFrames = nil
         processingOCR = false
         processingChoices = false
         remotePlay?.stop()
