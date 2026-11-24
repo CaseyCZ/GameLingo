@@ -5,9 +5,6 @@ name: GameLingo 0.5 Google TV native UI candidate
 # This workflow intentionally runs only when explicitly revised or dispatched.
 
 on:
-  push:
-    branches: [feature/gamelingo-v05-platform-rebuild]
-    paths: [".github/workflows/qa-android-v05.yml"]
   workflow_dispatch:
 
 permissions:
