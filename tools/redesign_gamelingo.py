@@ -280,16 +280,16 @@ def redesign_tv(s: str) -> str:
 
         fun modraKarta(): LinearLayout = svisle().apply {
             background = GameLingoTVUi.panel(this@MainActivity)
-            setPadding(dp(23), dp(21), dp(23), dp(21))
+            setPadding(dp(13), dp(10), dp(13), dp(10))
         }
 
         val vrsek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
         vrsek.addView(ImageView(this).apply {
             setImageResource(R.drawable.gamelingo_ikona)
             adjustViewBounds = true
-        }, LinearLayout.LayoutParams(dp(100), dp(100)).apply { rightMargin = dp(12) })
+        }, LinearLayout.LayoutParams(dp(65), dp(65)).apply { rightMargin = dp(12) })
         val logo = svisle()
-        logo.addView(text("GameLingo", 36f, Color.WHITE, tucne = true))
+        logo.addView(text("GameLingo", 28f, Color.WHITE, tucne = true))
         logo.addView(text("TV", 16f, fialova, tucne = true))
         vrsek.addView(logo)
         vrsek.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
@@ -298,10 +298,10 @@ def redesign_tv(s: str) -> str:
 
         val levá = modraKarta()
         levá.addView(GameLingoTVUi.title(this,
-            "Překlad z telefonu", 26f), odsazeni(bottom = 13))
+            "Překlad z telefonu", 26f), odsazeni(bottom = 5))
         levá.addView(GameLingoTVUi.title(this,
             "Získej titulky z iPhonu nebo Androidu.", 17f, muted = true),
-            odsazeni(bottom = 18))
+            odsazeni(bottom = 5))
         listOf(
             "1" to "Otevři GameLingo na telefonu",
             "2" to "Spáruj TV šestimístným kódem",
@@ -309,13 +309,13 @@ def redesign_tv(s: str) -> str:
         ).forEach { (index, title) ->
             val krok = vodorovne().apply {
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(10), 0, dp(10))
+                setPadding(0, dp(3), 0, dp(3))
             }
             krok.addView(GameLingoTVUi.title(this, index, 25f).apply {
                 gravity = Gravity.CENTER
                 setTextColor(akcent)
                 background = GameLingoTVUi.panel(this@MainActivity)
-            }, LinearLayout.LayoutParams(dp(49), dp(49)).apply {
+            }, LinearLayout.LayoutParams(dp(34), dp(34)).apply {
                 rightMargin = dp(13)
             })
             krok.addView(GameLingoTVUi.title(this, title, 17f),
@@ -325,31 +325,39 @@ def redesign_tv(s: str) -> str:
         }
         levá.addView(GameLingoTVUi.title(this,
             "Titulky se zobrazí nad hrou, bez přepínání vstupu.",
-            15f, muted = true), odsazeni(top = 17))
+            15f, muted = true), odsazeni(top = 6))
 
         val pravá = modraKarta()
-        pravá.addView(text("Připojte svůj telefon", 32f,
+        pravá.addView(text("Připojte svůj telefon", 25f,
             Color.WHITE, tucne = true))
         pravá.addView(text(
             "Otevřete GameLingo na telefonu a zadejte tento šestimístný kód.",
-            19f, Color.parseColor("#CBD5E1")), odsazeni(top = 9, bottom = 13))
+            19f, Color.parseColor("#CBD5E1")), odsazeni(top = 4, bottom = 5))
 
         // Always show a fresh six-digit code when opening the receiver.
         // Existing phones remain paired when another phone confirms a new code.
         var shownCode: String? = IPhoneTVPairing.startCode()
         val kodRadek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
         val policka = (0 until 6).map {
-            text("•", 44f, Color.WHITE, tucne = true).apply {
+            text("•", 30f, Color.WHITE, tucne = true).apply {
                 gravity = Gravity.CENTER
                 background = zaobleni(Color.parseColor("#151B39"), 14f, fialova)
-                setPadding(dp(7), dp(9), dp(7), dp(9))
-                minWidth = dp(61)
+                setPadding(dp(3), dp(5), dp(3), dp(5))
+                minWidth = dp(28)
                 kodRadek.addView(this,
                     LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                        .apply { rightMargin = dp(if (it == 5) 0 else 8) })
+                        .apply { rightMargin = dp(if (it == 5) 0 else 4) })
             }
         }
-        pravá.addView(kodRadek, odsazeni(top = 10, bottom = 12))
+        val qrImage = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = "Párovací QR kód"
+        }
+        var displayedQR: String? = null
+        val pinAndQr = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
+        pinAndQr.addView(kodRadek, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        pinAndQr.addView(qrImage, LinearLayout.LayoutParams(dp(115), dp(115)).apply { leftMargin = dp(9) })
+        pravá.addView(pinAndQr, odsazeni(top = 4, bottom = 4))
         pravá.addView(GameLingoTVUi.action(this, "Zobrazit QR kód") {
             val pin = IPhoneTVPairing.activeCode()
             val address = cm.activeNetwork?.let { cm.getLinkProperties(it) }
@@ -399,7 +407,7 @@ def redesign_tv(s: str) -> str:
                     .setNegativeButton("Zpět", null).show()
             }
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        pravá.addView(akce, odsazeni(top = 17))
+        pravá.addView(akce, odsazeni(top = 6))
 
         val hlavni = vodorovne().apply {
             gravity = Gravity.CENTER_VERTICAL
@@ -415,7 +423,7 @@ def redesign_tv(s: str) -> str:
         val prijemDiag = text("", 15f, Color.parseColor("#94A3B8")).apply {
             gravity = Gravity.CENTER
             maxLines = 5
-            visibility = View.GONE
+            visibility = View.INVISIBLE
         }
         fun stavItem(ikonka: String, popisek: String, vysledek: String): LinearLayout =
             svisle().apply {
@@ -433,7 +441,7 @@ def redesign_tv(s: str) -> str:
         val statusy = vodorovne().apply {
             gravity = Gravity.CENTER_VERTICAL
             background = zaobleni(Color.parseColor("#151B39"), 20f, obrys)
-            setPadding(dp(20), dp(15), dp(20), dp(15))
+            setPadding(dp(12), dp(5), dp(12), dp(5))
         }
         val sitStav = stavItem("⌁", "Síť", "Zjišťuji")
         val sitLabel = sitStav.getChildAt(2) as TextView
@@ -478,9 +486,11 @@ def redesign_tv(s: str) -> str:
         paticka.addView(View(this), LinearLayout.LayoutParams(dp(14), 1))
         paticka.addView(GameLingoTVUi.action(this, "Podrobnosti") {
             prijemDiag.visibility =
-                if (prijemDiag.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+                if (prijemDiag.visibility == View.VISIBLE) View.INVISIBLE else View.VISIBLE
         })
-        paticka.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        paticka.addView(prijemDiag, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+            leftMargin = dp(5); rightMargin = dp(5)
+        })
         paticka.addView(zastav)
 
         val obsah = svisle().apply {
@@ -489,18 +499,17 @@ def redesign_tv(s: str) -> str:
                 intArrayOf(pozadi, Color.parseColor("#111A33"),
                     Color.parseColor("#211047"))
             )
-            setPadding(dp(36), dp(18), dp(36), dp(23))
-            addView(vrsek, odsazeni(bottom = 22))
+            setPadding(dp(22), dp(10), dp(22), dp(10))
+            addView(vrsek, odsazeni(bottom = 8))
             if (!android.provider.Settings.canDrawOverlays(this@MainActivity)) {
                 addView(GameLingoTVUi.action(this@MainActivity,
                     "⚠  Povolit titulky přes obraz hry", primary = true) {
                     pozadejOPovoleni()
                 }, odsazeni(bottom = 12))
             }
-            addView(hlavni, odsazeni(bottom = 22))
-            addView(statusy, odsazeni(bottom = 12))
+            addView(hlavni, odsazeni(bottom = 8))
+            addView(statusy, odsazeni(bottom = 6))
             addView(paticka, odsazeni(bottom = 8))
-            addView(prijemDiag)
         }
         nastavObsah(obsah, sirka = ViewGroup.LayoutParams.MATCH_PARENT)
         akce.getChildAt(0)?.requestFocus()
@@ -510,7 +519,12 @@ def redesign_tv(s: str) -> str:
                 if (obrazovka != "prijem" || isFinishing) return
                 val zbyva = IPhoneTVPairing.remainingSeconds()
                 if (zbyva == 0) shownCode = null
-                val code = shownCode?.takeIf { zbyva > 0 }
+                val code = IPhoneTVPairing.activeCode()?.takeIf { zbyva > 0 }
+                val qrKey = code?.let { "$ipTv:$it" }
+                if (qrKey != displayedQR) {
+                    displayedQR = qrKey
+                    qrImage.setImageBitmap(code?.let { GameLingoQRDisplay.bitmap(ipTv, it) })
+                }
                 policka.forEachIndexed { index, policko ->
                     policko.text = code?.getOrNull(index)?.toString() ?: "•"
                 }
