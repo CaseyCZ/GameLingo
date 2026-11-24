@@ -22,17 +22,19 @@ object GameLingoOrangeOutput {
         r[2] > r[0] + 0.10f && r[3] > r[1] + 0.05f &&
         r[4].isFinite() && r[4] in 0.6f..2f
 
-    fun read(c: Context): FloatArray {
-        val p = prefs(c)
+    fun read(c: Context): FloatArray = readFrom(prefs(c))
+    fun readFrom(p: android.content.SharedPreferences): FloatArray {
         val d = defaults()
         return FloatArray(5) { p.getFloat(keys[it], d[it]) }.takeIf(::valid) ?: d
     }
 
-    fun locked(c: Context) = prefs(c).getBoolean(LOCK, false)
+    fun locked(c: Context) = lockedFrom(prefs(c))
+    fun lockedFrom(p: android.content.SharedPreferences) = p.getBoolean(LOCK, false)
 
-    fun save(c: Context, r: FloatArray, locked: Boolean) {
+    fun save(c: Context, r: FloatArray, locked: Boolean) = saveTo(prefs(c), r, locked)
+    fun saveTo(p: android.content.SharedPreferences, r: FloatArray, locked: Boolean) {
         if (!valid(r)) return
-        val editor = prefs(c).edit().putBoolean(LOCK, locked)
+        val editor = p.edit().putBoolean(LOCK, locked)
         keys.forEachIndexed { i, key -> editor.putFloat(key, r[i]) }
         editor.apply()
     }
