@@ -20,3 +20,6 @@ Sestavení nativního PlayStation jádra a aplikace iOS v CI **nenahrazuje** tes
 
 ## QR knihovny
 - [ZXing](https://github.com/zxing/zxing) core 3.5.3 (již v Android upstreamu) a [JourneyApps ZXing Android Embedded 4.3.0](https://github.com/journeyapps/zxing-android-embedded/tree/v4.3.0) pouze mobilní kamerový skener. Apache-2.0, původní licence a oznámení zachovat při distribuci. iOS používá systémové VisionKit/AVFoundation.
+
+## Inventář závislostí a distribuce 0.5
+Podrobný [licenční audit a překladové služby](docs/LICENSE-AND-PROVIDER-AUDIT.md) rozlišuje přímé deklarace, nativní závislosti, modely, externí služby a dosud neověřené tranzitivní součásti. Android/TV původní Chiaki binary provenance je v pinned PlayCaption native/chiaki-build.json a build_chiaki.py; před vydáním ověřit zabalené hashe a odpovídající zdroj. [Kredit ikon](docs/TV_ICON_CREDITS.md): Font Awesome Free 6.7.2, © Fonticons, Inc., CC BY 4.0, SVG převedeny na VectorDrawable. Tento seznam nenahrazuje úplné THIRD_PARTY_NOTICES, source bundle a provider attribution. Samostatný TV offline Translation SDK byl odstraněn; ML Kit obecné podmínky platí pro zbývající OCR/language ID a mobilní Translation.

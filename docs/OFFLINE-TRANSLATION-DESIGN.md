@@ -1,6 +1,6 @@
 # P2.5 — architektura offline překladu
 
-Datum: 2026-11-24. Návrh bez implementace; žádná nová závislost, model, build, release ani změna jazykových voleb.
+Datum: 2026-11-24. **Aktualizace rozhodnutí uživatele:** vlastní TV offline překladač definitivně mimo rozsah. Samostatné OCR, online překlad, cache a přijímač z telefonu zachovat. Níže uvedené historické TV standalone NMT alternativy jsou zrušené, ne budoucí úkol. TV ML Kit Translation odstraněn a CI 45384321662 PASS. Žádná žádost o výjimku. Offline inference zůstává tématem pouze telefonů. Návrh bez implementace; žádná nová závislost, model, build, release ani změna jazykových voleb.
 
 ## 1. Skutečný stav
 

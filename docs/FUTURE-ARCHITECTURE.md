@@ -56,3 +56,6 @@ Současný P0: HMAC-SHA256 a freshness/replay, per-phone key v TV Keystore, revo
 - TLS/DTLS security guidance: https://www.rfc-editor.org/info/rfc9325/
 
 Výsledek: všechny čtyři návrhy P3 dokončeny, žádná implementace, žádný test na fyzickém zařízení.
+
+## Aktualizace po licenčním auditu
+Uživatel definitivně vyřadil vlastní offline inference na TV. Zachovat samostatný online překlad, OCR, cache a přijímač z telefonu. Po CI 45384321662 je konkrétní TV ML Kit Translation dependency blocker technicky odstraněn. Nezahajovat TV offline PoC ani žádost o výjimku. Všechny ostatní release gates a budoucí návrhy zůstávají oddělené.

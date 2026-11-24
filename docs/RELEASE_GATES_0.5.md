@@ -48,3 +48,8 @@ Vývojový základ: `feature/gamelingo-v05-platform-rebuild`; aktuální audit: 
 
 ### Aktualizace — TV Translation SDK
 - [ ] Dodatečná náprava v auditní větvi: odstraněna TV ML Kit Translation deklarace a lokální kód, zaveden build/DEX guard. Ověřit plný CI včetně skutečného TV a mobilního APK a zapsat výsledek do REPORT.md. Po CI zůstává kontrola dalších SDK, práv a HW; žádný veřejný release automaticky.
+
+### Stav po licenčním auditu 2026-11-24
+- [x] Specifická TV ML Kit Translation závislost odstraněna a source/Gradle/DEX gate prošla v CI [45384321662](https://github.com/CaseyCZ/GameLingo/actions/runs/45384321662). Tento bod nahrazuje předchozí neuzavřené TV Translation checklisty; nejde o clearance ostatních SDK.
+- [ ] Uzavřít nedokumentované Google GTX / Microsoft Edge endpointy a MyMemory terms, doložit ML Kit attribution/privacy včetně přeneseného výsledku a kompatibilitu SDK. [Audit](LICENSE-AND-PROVIDER-AUDIT.md).
+- [ ] Resolved dependency SBOM, licence/notice balíčky, Android native .so hash a corresponding source, iOS WebRTC exact resolved, testovací snímky a zděděné WGT/IPK. Žádná veřejná distribuce do vyjasnění.
