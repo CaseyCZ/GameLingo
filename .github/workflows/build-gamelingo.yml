@@ -114,10 +114,12 @@ jobs:
           test "$LABEL" = "GameLingo"
           test "$VERSION" = "0.5.0"
           file "$APP/GameLingoIOS"
+          python tools/package_license_notices.py ios --kit . --upstream ps-core --output "$APP"
           mkdir -p "$PWD/.build/ipa/Payload"
           cp -R "$APP" "$PWD/.build/ipa/Payload/"
           (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v0.5.0-dev-unsigned.ipa" Payload)
           unzip -t GameLingo-iOS-v0.5.0-dev-unsigned.ipa >/dev/null
+          python tools/package_license_notices.py ios --verify GameLingo-iOS-v0.5.0-dev-unsigned.ipa
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-iOS-v05-dev
@@ -168,6 +170,7 @@ jobs:
           python kit/tools/wire_android_devices.py upstream
           python kit/tools/wire_gamelingo_languages.py upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode mobile
+          python kit/tools/package_license_notices.py mobile --kit kit --upstream upstream --output upstream/app/src/main/assets
           sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
       - name: Build Android phone APK
         working-directory: upstream
@@ -181,6 +184,7 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.mobile'"
           python kit/tools/verify_tv_translation_apk.py mobile "$APK"
+          python kit/tools/package_license_notices.py mobile --verify "$APK"
           cp "$APK" GameLingo-Android-v0.5.0-dev-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
@@ -226,6 +230,7 @@ jobs:
           python kit/tools/wire_android_devices.py upstream
           python kit/tools/wire_gamelingo_languages.py upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
+          python kit/tools/package_license_notices.py tv --kit kit --upstream upstream --output upstream/app/src/main/assets
           grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
           grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
           grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
@@ -263,6 +268,7 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'"
           python kit/tools/verify_tv_translation_apk.py tv "$APK"
+          python kit/tools/package_license_notices.py tv --verify "$APK"
           cp "$APK" GameLingo-GoogleTV-v0.5.0-dev-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
