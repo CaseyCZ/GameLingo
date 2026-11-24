@@ -867,15 +867,15 @@ class GameLingoScreenTranslationService : Service() {
                     catch (e: Exception) { finishTest("Chyba: " + e.javaClass.simpleName) }
                 }
             })
-            val dialog = AlertDialog.Builder(a).setTitle("Diagnostika samostatného OCR")
-                .setView(android.widget.ScrollView(a).apply { addView(panel) })
-                .setPositiveButton("Test snímání") { _,_ ->
+            var page: android.app.Dialog?=null
+            panel.addView(GameLingoTVUi.action(a,"Test snímání") {
+                page?.dismiss()
                     AlertDialog.Builder(a).setMessage("Po souhlasu otevři video do 10 sekund. Výřez a poslední rozpoznaný text zůstanou pouze v paměti do vymazání nebo nové relace. Po návratu sem se snímání zastaví.")
                         .setPositiveButton("Spustit test") { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java).putExtra("diagnostic",true)) }
                         .setNegativeButton("Zrušit",null).show()
-                }.setNeutralButton("Vymazat náhled") { _,_ -> clearPreview(); diagnostics(a) }
-                .setNegativeButton("Zpět",null).show()
-            dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .72f).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            })
+            panel.addView(GameLingoTVUi.action(a,"Vymazat náhled"){page?.dismiss();clearPreview();diagnostics(a)})
+            page=GameLingoTVUi.page(a,"Diagnostika samostatného OCR",panel)
         }
     }
 }

@@ -1,4 +1,3 @@
-import re
 #!/usr/bin/env python3
 """Wire real Android source and target language choices into translation core.
 
@@ -6,6 +5,7 @@ Only changes the pinned upstream language-specific paths. It never replaces
 Remote Play, subtitle placement, OAuth, Sony credentials or TV transport.
 """
 from pathlib import Path
+import re
 import sys
 from tv_translation_policy import tv_variant, strip_offline_translator, tv_translator, finalize_tv
 from direct_tv_mode import patch_direct_tv

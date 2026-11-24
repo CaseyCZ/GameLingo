@@ -206,8 +206,7 @@ def patch_direct_tv(folder):
     patch_main('else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()',
                'else vyberZdrojTelevize()')
     patch_main('private fun hratTelevizi() {', """private fun vyberZdrojTelevize() {
-        android.app.AlertDialog.Builder(this).setTitle("Vyber zdroj překladu")
-            .setItems(arrayOf("PlayStation 4 / 5", "Xbox Series / One", "Samostatná TV")) { _, index ->
+        GameLingoTVUi.select(this,"Vyber zdroj překladu",arrayOf("PlayStation 4 / 5", "Xbox Series / One", "Samostatná TV")) { index ->
                 if (index == 2) {
                     if (!GameLingoScreenTranslationService.running && (RemotePlayService.aktivni || PrijemService.bezi)) {
                         android.app.AlertDialog.Builder(this).setMessage("Nejdříve zastav překlad z konzole nebo telefonu.")
@@ -220,7 +219,7 @@ def patch_direct_tv(folder):
                     android.app.AlertDialog.Builder(this).setMessage("Nejdřív zastav probíhající překlad.")
                         .setPositiveButton("OK", null).show()
                 } else if (index == 0) vyberPrimouPS() else vyberPrimyXbox()
-            }.setNegativeButton("Zpět", null).show()
+            }
     }
 
     private fun spustPrimyZdroj(xbox: Boolean) {
@@ -244,12 +243,11 @@ def patch_direct_tv(folder):
             if (udaje.sparovano) spustPrimyZdroj(false) else ukazPripojeni()
             return
         }
-        android.app.AlertDialog.Builder(this).setTitle("Vyber PlayStation")
-            .setItems((consoles.map { it.type + " · " + it.name } + "+ Přidat PlayStation").toTypedArray()) { _, index ->
+        GameLingoTVUi.select(this,"Vyber PlayStation",(consoles.map { it.type + " · " + it.name } + "+ Přidat PlayStation").toTypedArray()) { index ->
                 if (index == consoles.size) ukazPripojeni()
                 else if (GameLingoPlayStationConsoles.select(this, consoles[index].ip)) spustPrimyZdroj(false)
                 else android.app.AlertDialog.Builder(this).setMessage("Konzoli se nepodařilo načíst.").setPositiveButton("OK", null).show()
-            }.setNegativeButton("Zpět", null).show()
+            }
     }
 
     private fun vyberPrimyXbox() {
@@ -268,8 +266,7 @@ def patch_direct_tv(folder):
                 val prefs = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
                 val hidden = prefs.getStringSet("hiddenXboxIds", emptySet()).orEmpty()
                 val consoles = result.getOrDefault(emptyList()).filterNot { it.id in hidden }
-                android.app.AlertDialog.Builder(this).setTitle("Vyber Xbox")
-                    .setItems((consoles.map { it.jmeno } + "+ Přidat Xbox").toTypedArray()) { _, index ->
+                GameLingoTVUi.select(this,"Vyber Xbox",(consoles.map { it.jmeno } + "+ Přidat Xbox").toTypedArray()) { index ->
                         if (index == consoles.size) ukazPripojeniXbox()
                         else {
                             val x = consoles[index]
@@ -277,7 +274,7 @@ def patch_direct_tv(folder):
                             XboxUcet.ulozKonzoli(this, x.id, x.jmeno)
                             spustPrimyZdroj(true)
                         }
-                    }.setNegativeButton("Zpět", null).show()
+                    }
             }
         }.start()
     }
