@@ -37,7 +37,7 @@ def patch_direct_tv(folder):
 
     private fun ukazLokalne(text: String, doba: Long, box: FloatArray?,
                             radku: Int, barvyJmen: IntArray?) {
-        if (telefon) return
+        if (telefon || PrijemService.bezi) return
         val i = Intent(this, OverlayService::class.java)""")
     # TV startup restores its own ROI. Validate normalized bounds before crop.
     one("if (telefon && OblastTitulku.rucne) OblastTitulku.oblast.copyOf() else null",
@@ -104,6 +104,7 @@ def patch_direct_tv(folder):
     private fun zobrazHerniText(items: List<String>, selected: Int) {
         if (telefon) { Propojeni.Vysilac.nastavVolby(items, selected); return }
         lokalniVolby = items.isNotEmpty() && selected != Volby.VYBRANA_TEXT
+        if (PrijemService.bezi) return
         OverlayService.posli(this, Intent(this, OverlayService::class.java)
             .setAction(OverlayService.ACTION_SET_VOLBY)
             .putExtra(OverlayService.EXTRA_VOLBY, items.toTypedArray())
@@ -117,12 +118,17 @@ def patch_direct_tv(folder):
     one("                val pauza = ip != null && Propojeni.Vysilac.aktivniVolby()",
         "                val pauza = if (telefon) ip != null && Propojeni.Vysilac.aktivniVolby() else lokalniVolby")
     # Local reading queue pauses for choices; hide current dialogue while paused.
+    one("    private var pribehLokalni: CteciFronta.Token? = null",
+        "    private var pribehLokalni: CteciFronta.Token? = null\n    private var lokalniStranka = -1")
     one("                } else {\n                    if (p?.token != pribehLokalni) {",
         """                } else {
                     if (!telefon && pauza) {
                         if (pribehLokalni != null) ukazLokalne("", 0, null, 1, null)
                         pribehLokalni = null
-                    } else if (p?.token != pribehLokalni) {""")
+                        lokalniStranka = -1
+                    } else if (p?.token != pribehLokalni || (!telefon && (p?.index ?: -1) != lokalniStranka)) {""")
+    one("                        pribehLokalni = p?.token",
+        "                        pribehLokalni = p?.token\n                        lokalniStranka = p?.index ?: -1")
     one("        bezi = false\n        stav = zprava",
         """        bezi = false
         if (!telefon) {
