@@ -344,6 +344,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoTVPairing.initialize(this)", wire)
         self.assertIn("!authenticatedGameData && !GameLingoTVPairing.legacyEnabled(c)", receiver)
         self.assertIn('p.setData(decoded.toByteArray(Charsets.UTF_8))', receiver)
+        self.assertIn('listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")', receiver)
+        self.assertIn('casti.firstOrNull() == "PCS1" && casti.getOrNull(1) in listOf("ZADOST", "KOD")', receiver)
         self.assertIn("GameLingoTVPairing.setLegacyEnabled(a, it)", tv)
 
     def test_p0_2_replay_guard_and_signed_pong(self):
@@ -427,7 +429,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("it.ip == ip && it.typ == udaje.consoleType", wire)
         self.assertIn('put("target", current.consoleTarget.value)', store)
         self.assertIn("active.consoleTarget = Target.values()", store)
-        self.assertIn("PS_TARGET:", wire)
+        self.assertIn("udaje.consoleTarget = udalost.host.target", wire)
         self.assertIn("explicit receiver mode, same as standard captions", patch)
         self.assertIn("val vstup = PrijemService.bezi ||", patch)
         self.assertIn("ConnectInfo(ps5 = udaje.isPS5", verify)
@@ -653,7 +655,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("finalize_tv(root, folder)", wiring)
         self.assertIn("assert_tv_source(root)", verify)
         self.assertIn("resolutionStrategy.eachDependency", policy)
-        self.assertIn("skipGoogle = true", policy)
+        self.assertIn("skipGoogle = true", wiring)
+        self.assertIn("skipGoogle: Boolean = false", policy)
         self.assertIn("Rychlý náhled není v paměti", policy)
         self.assertIn('verify_tv_translation_apk.py tv "$APK"', workflow)
         self.assertIn('verify_tv_translation_apk.py mobile "$APK"', workflow)
