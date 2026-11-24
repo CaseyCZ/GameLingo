@@ -649,6 +649,15 @@ def main():
             }
             GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), corrected.joinToString("\\n"))
             Propojeni.Vysilac.nastavVolby(corrected, volbyVybrana)''', service.name)
+    # A malformed saved OCR area or tiny decoder frame must not reach
+    # coerceIn with a negative upper bound, nor allocate an invalid bitmap.
+    # This applies to all frame sources, including the new direct-TV YUV path.
+    s=once(s, '        val o = Volby.oblast.copyOf()\n        val x =',
+        '''        val o = Volby.oblast.copyOf()
+        if (sirka < 16 || vyska < 16 || o.size != 4 ||
+            !o.all { it.isFinite() && it in 0f..1f } ||
+            o[2] <= o[0] || o[3] <= o[1]) return
+        val x =''', service.name)
     s = bound_choices(s, folder)
     s = restrict_service_log(s)
     service.write_text(s, encoding="utf8")
