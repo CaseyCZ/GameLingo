@@ -71,6 +71,14 @@ internal object GameLingoHistoryUi {
                 .setNegativeButton("Zrušit", null).show()
         }
         update()
+        if (GameLingoTVUi.isTV(a)) {
+            GameLingoTVUi.controlFocus(a,toggle)
+            GameLingoTVUi.controlFocus(a,refresh)
+            GameLingoTVUi.controlFocus(a,clear)
+            GameLingoTVUi.page(a,"Historie překladů",root,scroll=false)
+            toggle.requestFocus()
+            return
+        }
         val dialog = AlertDialog.Builder(a).setTitle("Historie překladů")
             .setView(root).setPositiveButton("Hotovo", null).create()
         dialog.show()

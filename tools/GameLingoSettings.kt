@@ -53,11 +53,12 @@ object GameLingoSettings {
              onAreas: () -> Unit, onLanguage: () -> Unit) {
         Volby.nacti(activity)
         OblastTitulku.nacti(activity)
-        val dialog = Dialog(activity)
+        val television=GameLingoTVUi.isTV(activity)
+        val dialog = if(television) Dialog(activity,android.R.style.Theme_Material_NoActionBar_Fullscreen) else Dialog(activity)
         val content = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 24, 24, 24)
-            background = rounded(bg)
+            background = if(television) GameLingoVisualKit.pageBackground(activity) else rounded(bg)
         }
         val header = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(TextView(activity).apply {
@@ -148,14 +149,13 @@ object GameLingoSettings {
         button("🌐  Jazyk překladu") { onLanguage() }
         button("Hotovo") {}
 
-        val scroll = ScrollView(activity)
-        scroll.addView(content)
+        val scroll = ScrollView(activity).apply { isFillViewport=television; addView(content) }
         dialog.setContentView(scroll)
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(
-            (activity.resources.displayMetrics.widthPixels * 0.93f).toInt(),
-            ViewGroup.LayoutParams.WRAP_CONTENT
+            if(television) ViewGroup.LayoutParams.MATCH_PARENT else (activity.resources.displayMetrics.widthPixels * 0.93f).toInt(),
+            if(television) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
         )
     }
     /**

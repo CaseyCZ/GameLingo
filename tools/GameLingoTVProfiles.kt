@@ -109,20 +109,32 @@ object GameLingoTVProfiles {
         if (busy()) { AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show(); return }
         val items = all(a)
         val names = items.keys().asSequence().sorted().toList()
-        AlertDialog.Builder(a).setTitle("Profily her a aplikací")
-            .setItems((listOf("+ Uložit aktuální nastavení") + names).toTypedArray()) { _, i ->
-                if (i == 0) {
-                    saveCurrent(a) { show(a) }
-                } else {
-                    val name = names[i-1]
-                    AlertDialog.Builder(a).setTitle(name).setItems(arrayOf("Použít", "Smazat")) { _, action ->
-                        if (action == 0) {
-                            if (restore(a, items.getJSONObject(name))) { store(a).edit().putString("activeProfile", name).apply(); android.widget.Toast.makeText(a, "Profil načten", android.widget.Toast.LENGTH_SHORT).show() }
-                            else android.widget.Toast.makeText(a, "Profil nelze načíst", android.widget.Toast.LENGTH_SHORT).show()
-                        } else AlertDialog.Builder(a).setMessage("Smazat profil $name?").setNegativeButton("Zrušit", null)
-                            .setPositiveButton("Smazat") { _, _ -> if (!busy()) { items.remove(name); store(a).edit().putString("profiles", items.toString()).apply() }; show(a) }.show()
-                    }.setNegativeButton("Zpět", null).show()
+        GameLingoTVUi.select(a,"Profily her a aplikací",(listOf("+ Uložit aktuální nastavení")+names).toTypedArray()) { i ->
+            if(i==0) saveCurrent(a){show(a)}
+            else {
+                val name=names[i-1]
+                GameLingoTVUi.select(a,name,arrayOf("Použít","Upravit rozložení","Smazat")) { action ->
+                    when(action) {
+                        0,1 -> {
+                            if(restore(a,all(a).getJSONObject(name))) {
+                                store(a).edit().putString("activeProfile",name).apply()
+                                if(action==1) GameLingoDirectTVLayout.show(a){saveCurrent(a){show(a)}}
+                                else android.widget.Toast.makeText(a,"Profil načten",android.widget.Toast.LENGTH_SHORT).show()
+                            } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                        2 -> AlertDialog.Builder(a).setMessage("Smazat profil "+name+"?").setNegativeButton("Zrušit",null)
+                            .setPositiveButton("Smazat"){_,_->
+                                if(!busy()) {
+                                    val latest=all(a); latest.remove(name)
+                                    val e=store(a).edit().putString("profiles",latest.toString())
+                                    if(store(a).getString("activeProfile",null)==name)e.remove("activeProfile")
+                                    e.apply()
+                                }
+                                show(a)
+                            }.show()
+                    }
                 }
-            }.setNegativeButton("Zpět", null).show()
+            }
+        }
     }
 }

@@ -150,6 +150,21 @@ internal object GameLingoCachePrivacyUi {
             return
         }
         val enabled = GameLingoTranslationCache.enabled(a)
+        if (GameLingoTVUi.isTV(a)) {
+            val body=android.widget.LinearLayout(a).apply { orientation=android.widget.LinearLayout.VERTICAL }
+            body.addView(GameLingoTVUi.title(a,"Místní překladová paměť · "+if(enabled)"zapnuto" else "vypnuto",22f))
+            body.addView(GameLingoTVUi.title(a,"Ukládá originály a překlady na tomto zařízení. Historie a profily jsou oddělené.",18f,true))
+            var page: android.app.Dialog?=null
+            body.addView(GameLingoTVUi.action(a,if(enabled)"Vypnout paměť" else "Zapnout paměť") {
+                if(!busy()){page?.dismiss();change(a,!enabled)}
+            })
+            body.addView(GameLingoTVUi.action(a,"Vymazat paměť") {
+                android.app.AlertDialog.Builder(a).setMessage("Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže.")
+                    .setNegativeButton("Zrušit",null).setPositiveButton("Vymazat"){_,_->if(!busy()){page?.dismiss();change(a,null)}}.show()
+            })
+            page=GameLingoTVUi.page(a,"Překladová paměť",body)
+            return
+        }
         android.app.AlertDialog.Builder(a)
             .setTitle("Překladová cache")
             .setMessage("Ukládá originály i překlady na tomto zařízení. Je oddělená od historie. Vypnutí může zvýšit počet online požadavků a omezit překlad bez internetu. Stav: " + if (enabled) "zapnuto" else "vypnuto")

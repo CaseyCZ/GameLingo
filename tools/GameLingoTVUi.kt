@@ -104,6 +104,30 @@ object GameLingoTVUi {
         (buttons.getOrNull(selected) ?: buttons.firstOrNull() ?: back).requestFocus()
     }
 
+    /** Full-screen TV settings destination. Content may supply its own weighted scroll area. */
+    fun page(a: Activity, heading: String, body: View, scroll: Boolean = true,
+             onClose: () -> Unit = {}): Dialog {
+        val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val root = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            background = GameLingoVisualKit.pageBackground(a)
+            setPadding(dp(a,32),dp(a,18),dp(a,32),dp(a,18))
+        }
+        val top = LinearLayout(a).apply { gravity=Gravity.CENTER_VERTICAL }
+        top.addView(title(a,heading,29f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
+        val back=action(a,"Zpět"){dialog.dismiss()}
+        top.addView(back)
+        root.addView(top,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(a,14)})
+        val content=if(scroll) ScrollView(a).apply{isFillViewport=true;addView(body)} else body
+        root.addView(content,LinearLayout.LayoutParams(-1,0,1f))
+        dialog.setContentView(root)
+        dialog.setOnDismissListener { onClose() }
+        dialog.show()
+        dialog.window?.setLayout(-1,-1)
+        if(!body.requestFocus()) back.requestFocus()
+        return dialog
+    }
+
     fun controlFocus(a: Activity, view: View) {
         val old = view.background
         view.setOnFocusChangeListener { v, focused ->

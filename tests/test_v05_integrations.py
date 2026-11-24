@@ -868,6 +868,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("blockedHome", capture)
         self.assertIn("clearHint()", capture)
 
+    def test_tv_fullscreen_pages_and_global_dialog_theme(self):
+        ui=code(TOOLS/"GameLingoTVUi.kt")
+        wiring=code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("fun page(a: Activity",ui)
+        for module in ("GameLingoTVCaptionStyle.kt","GameLingoHistoryUi.kt","GameLingoTVSettings.kt","GameLingoTranslationCache.kt"):
+            self.assertIn("GameLingoTVUi.page(a",code(TOOLS/module))
+        for marker in ("install_tv_theme(root)","GameLingoTVTheme","GameLingoTVAlert","state_focused","gamelingo_tv_focus"):
+            self.assertIn(marker,wiring)
+        self.assertIn("if(television) ViewGroup.LayoutParams.MATCH_PARENT",code(TOOLS/"GameLingoSettings.kt"))
+
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")

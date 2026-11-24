@@ -107,10 +107,12 @@ object GameLingoTVSettings {
             a.packageManager.getPackageInfo(a.packageName, 0).versionName +
             "\nSamostatná TV: " + GameLingoScreenTranslationService.status +
             "\nOCR obrazovky: pouze MediaProjection"
-        AlertDialog.Builder(a).setTitle("Diagnostika TV").setMessage(info +
-            "\nPřekryv: " + if (Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen")
-            .setNeutralButton("Povolit překryv") { _, _ -> a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + a.packageName))) }
-            .setNegativeButton("Další nastavení") { _, _ ->
+        val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
+        body.addView(GameLingoTVUi.title(a,info+"\nPřekryv: "+if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen",20f))
+        body.addView(GameLingoTVUi.action(a,"Povolit překryv") {
+            a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+a.packageName)))
+        })
+        body.addView(GameLingoTVUi.action(a,"Další nastavení") {
                 val legacy = GameLingoTVPairing.legacyEnabled(a)
                 AlertDialog.Builder(a).setTitle("Diagnostika a kompatibilita")
                     .setItems(arrayOf("Legacy příjem: " + if (legacy) "Zapnuto" else "Vypnuto", "Vymazat místní diagnostický log")) { _, i ->
@@ -123,6 +125,8 @@ object GameLingoTVSettings {
                                 if (!busy(a)) listOf("titulky.log","titulky-private-v2.log").forEach { java.io.File(a.filesDir,it).delete() }
                             }.show()
                     }.setNegativeButton("Zpět", null).show()
-            }.setPositiveButton("Test OCR") { _,_ -> GameLingoScreenTranslationService.diagnostics(a) }.show()
+        })
+        body.addView(GameLingoTVUi.action(a,"Test OCR") { GameLingoScreenTranslationService.diagnostics(a) })
+        GameLingoTVUi.page(a,"Diagnostika TV",body)
     }
 }

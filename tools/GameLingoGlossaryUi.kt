@@ -66,8 +66,8 @@ internal object GameLingoGlossaryUi {
         val labels = listOf("Bez slovníku", "Nový herní slovník") + names.map {
             it + if (GameLingoGlossaryStore.active(a) == it) " · aktivní" else ""
         }
-        AlertDialog.Builder(a).setTitle("Herní slovník").setItems(labels.toTypedArray()) { _, i ->
-            if (!stopped(a)) return@setItems
+        fun choose(i: Int) {
+            if (!stopped(a)) return
             when (i) {
                 0 -> GameLingoGlossaryStore.activate(a, null)
                 1 -> {
@@ -93,6 +93,9 @@ internal object GameLingoGlossaryUi {
                     }.show()
                 }
             }
-        }.setNegativeButton("Zavřít", null).show()
+        }
+        if(GameLingoTVUi.isTV(a)) GameLingoTVUi.select(a,"Herní slovník",labels.toTypedArray(),onSelect=::choose)
+        else AlertDialog.Builder(a).setTitle("Herní slovník").setItems(labels.toTypedArray()){_,i->choose(i)}
+            .setNegativeButton("Zavřít",null).show()
     }
 }

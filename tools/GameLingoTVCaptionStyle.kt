@@ -101,8 +101,6 @@ object GameLingoTVCaptionStyle {
         })
         root.addView(GameLingoTVUi.action(a, "Velikost a poloha titulků") { GameLingoDirectTVLayout.show(a) {} })
         refresh()
-        val dialog = android.app.AlertDialog.Builder(a).setTitle("Vzhled překladu přímo na TV")
-            .setView(root).setPositiveButton("Hotovo", null).show()
-        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .55f).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+        GameLingoTVUi.page(a,"Vzhled titulků",root)
     }
 }

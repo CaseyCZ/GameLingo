@@ -1,3 +1,4 @@
+import re
 #!/usr/bin/env python3
 """Wire real Android source and target language choices into translation core.
 
@@ -609,8 +610,86 @@ def main():
     service.write_text(s, encoding="utf8")
     if tv_variant(root):
         patch_direct_tv(folder)
+        install_tv_theme(root)
     finalize_tv(root, folder)
     print("GameLingo source and target languages connected to real Android translation")
+
+
+def install_tv_theme(root):
+    """TV-only theme: native confirmations, input dialogs and loading windows
+    must use our palette even when opened by inherited screens."""
+    res = root / "app/src/main/res"
+    for kind in ("values", "drawable"):
+        (res/kind).mkdir(parents=True, exist_ok=True)
+    (res/"values/gamelingo_tv_theme.xml").write_text("""<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="GameLingoTVTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#080E1B</item>
+        <item name="android:colorBackground">#080E1B</item>
+        <item name="android:colorAccent">#02D6FF</item>
+        <item name="android:colorControlActivated">#02D6FF</item>
+        <item name="android:colorControlNormal">#A2B4D6</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#A2B4D6</item>
+        <item name="android:alertDialogTheme">@style/GameLingoTVAlert</item>
+        <item name="android:dialogTheme">@style/GameLingoTVAlert</item>
+        <item name="android:buttonStyle">@style/GameLingoTVButton</item>
+    </style>
+    <style name="GameLingoTVAlert" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/gamelingo_tv_dialog</item>
+        <item name="android:colorBackground">#101A2C</item>
+        <item name="android:colorAccent">#02D6FF</item>
+        <item name="android:colorControlActivated">#02D6FF</item>
+        <item name="android:colorControlNormal">#A2B4D6</item>
+        <item name="android:colorControlHighlight">#5530CFFF</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#A2B4D6</item>
+        <item name="android:buttonBarButtonStyle">@style/GameLingoTVButton</item>
+        <item name="android:buttonStyle">@style/GameLingoTVButton</item>
+        <item name="android:listChoiceBackgroundIndicator">@drawable/gamelingo_tv_focus</item>
+        <item name="android:listSelector">@drawable/gamelingo_tv_focus</item>
+        <item name="android:windowMinWidthMajor">42%</item>
+        <item name="android:windowMinWidthMinor">70%</item>
+    </style>
+    <style name="GameLingoTVButton" parent="@android:style/Widget.Material.Button">
+        <item name="android:background">@drawable/gamelingo_tv_focus</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+    </style>
+</resources>
+""", encoding="utf8")
+    (res/"drawable/gamelingo_tv_dialog.xml").write_text("""<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#101A2C"/>
+    <stroke android:width="1dp" android:color="#34445D"/>
+    <corners android:radius="18dp"/>
+</shape>
+""",encoding="utf8")
+    (res/"drawable/gamelingo_tv_focus.xml").write_text("""<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true"><shape><solid android:color="#203B55"/><stroke android:width="3dp" android:color="#02D6FF"/><corners android:radius="12dp"/></shape></item>
+    <item android:state_pressed="true"><shape><solid android:color="#254A60"/><corners android:radius="12dp"/></shape></item>
+    <item><shape><solid android:color="#142033"/><stroke android:width="1dp" android:color="#34445D"/><corners android:radius="12dp"/></shape></item>
+</selector>
+""",encoding="utf8")
+    manifest=root/"app/src/main/AndroidManifest.xml"
+    source=manifest.read_text(encoding="utf8")
+    source, count = re.subn(r'(<application\b[^>]*\bandroid:theme=")[^"]+(")', r'\1@style/GameLingoTVTheme\2', source, count=1)
+    if count != 1: raise RuntimeError("TV application theme anchor missing")
+    manifest.write_text(source,encoding="utf8")
+    # Explicit theme for every application-owned AlertDialog, including
+    # inherited PlayStation/Xbox, login, pairing and developer screens.
+    folder=root/"app/src/main/java/cz/titulky/tv"
+    total=0
+    for path in folder.rglob("*.kt"):
+        source=path.read_text(encoding="utf8")
+        updated, count = re.subn(r'(?<![\w.])(?:android\.app\.)?AlertDialog\.Builder\(([^(),\n]+)\)',r'android.app.AlertDialog.Builder(\1, R.style.GameLingoTVAlert)',source)
+        if count:
+            path.write_text(updated,encoding="utf8")
+            total+=count
+    if total < 20: raise RuntimeError("Unexpectedly few themed TV dialogs")
+    print(f"GameLingo TV: themed {total} inherited and branded dialogs")
 
 
 if __name__ == "__main__":
