@@ -1,0 +1,101 @@
+name: Publish only newest GameLingo (verified installers)
+
+on:
+  push:
+    branches:
+      - Master
+    paths:
+      - ".github/workflows/publish-gamelingo-current.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  statuses: write
+
+concurrency:
+  group: gamelingo-current-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'CaseyCZ/GameLingo' && github.ref == 'refs/heads/Master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Record publication link
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -X POST -f state=pending -f context=gamelingo/current-test-release -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      - name: Verify new builds and publish GameLingo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          SOURCE="$GITHUB_SHA"
+          RUN="$(gh api "repos/$REPO/actions/workflows/audit-0.5-ci.yml/runs?branch=Master&status=success&per_page=1" --jq '.workflow_runs[0].id // empty')"
+          test -n "$RUN"
+          BUILD_SOURCE="$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.head_sha')"
+          test "$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.conclusion')" = success
+          test "$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.head_branch')" = Master
+          TAG="v0.5.0-test-${BUILD_SOURCE:0:8}-r$RUN"
+          # Original successful Beta 2 publishing flow: no checkout, no manual tag
+          # creation, ordinary GITHUB_TOKEN, explicit -R and target current SOURCE.
+          compare="$(gh api "repos/$REPO/compare/$BUILD_SOURCE...$SOURCE")"
+          test "$(jq -r .behind_by <<< "$compare")" = 0
+          test "$(jq -r .total_commits <<< "$compare")" -lt 250
+          if jq -r '.files[].filename' <<< "$compare" | grep -Ev '^(\.github/workflows/|docs/archive/)' | grep -q .; then
+            echo "::error::App source differs from the validated installers."
+            exit 1
+          fi
+          mkdir -p release
+          gh run download "$RUN" -R "$REPO" -n "GameLingo-v0.5.0-dev-all-installers" -D release
+          files=(GameLingo-iOS-v0.5.0-dev-unsigned.ipa GameLingo-Android-v0.5.0-dev-TEST.apk GameLingo-GoogleTV-v0.5.0-dev-TEST.apk SHA256SUMS.txt)
+          for name in "${files[@]}"; do test -s "release/$name"; done
+          (cd release && sha256sum --strict -c SHA256SUMS.txt)
+          for name in "${files[@]:0:3}"; do
+            unzip -t "release/$name" >/dev/null
+            (cd release && grep -Fx "$(sha256sum "$name")" SHA256SUMS.txt)
+          done
+          cat > release-notes.md <<EOF
+          # GameLingo 0.5.0 TEST — aktuální vydání
+          - iOS (nepodepsaná IPA), Android a Google TV (testovací APK).
+          - TV: kompaktní párování, QR, mřížka nastavení, profily a čtyři oblasti.
+          - Samostatná TV: text titulků + OCR, bez zvuku a mikrofonu.
+          - Online překlad a lokální paměť; chráněný obsah není ověřen.
+          - Automatické kontroly prošly; fyzické testování a licenční audit zůstávají otevřené.
+          Zdroj sestavení: https://github.com/$REPO/tree/$BUILD_SOURCE
+          Sestavení: https://github.com/$REPO/actions/runs/$RUN
+          Licence a upstream: https://github.com/$REPO/blob/$BUILD_SOURCE/ATTRIBUTION.md
+          EOF
+          if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
+            echo "Release exists; validate all assets before cleanup."
+          else
+            gh release create "$TAG" release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa release/GameLingo-Android-v0.5.0-dev-TEST.apk release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk release/SHA256SUMS.txt -R "$REPO" --target "$SOURCE" --title "GameLingo 0.5.0 TEST · ${BUILD_SOURCE:0:8}" --prerelease --notes-file release-notes.md
+          fi
+          gh release view "$TAG" -R "$REPO" --json assets > published-assets.json
+          test "$(jq '.assets | length' published-assets.json)" = 4
+          for name in "${files[@]}"; do
+            actual="$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .size' published-assets.json)"
+            test "$actual" = "$(stat -c%s "release/$name")"
+          done
+          gh release list -R "$REPO" --limit 100 --json tagName --jq '.[].tagName' > old-releases.txt
+          while IFS= read -r old; do
+            [ -n "$old" ] || continue
+            [ "$old" = "$TAG" ] && continue
+            gh release delete "$old" -R "$REPO" --yes
+          done < old-releases.txt
+          test "$(gh release list -R "$REPO" --limit 100 --json tagName --jq 'length')" = 1
+          gh release view "$TAG" -R "$REPO" --json url,tagName,assets,isPrerelease
+      - name: Report publication status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULT: ${{ job.status }}
+        run: |
+          state=failure
+          if [ "$RESULT" = success ]; then state=success; fi
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -X POST -f state="$state" -f context=gamelingo/current-test-release -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
