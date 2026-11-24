@@ -141,11 +141,6 @@ def main():
         "Parovani.sparuj(this, ip, cislo.toInt(), target = target, log = {}, hotovo = { ok, zprava ->",
         "pass target to native registration")
     code=one(code,
-        "                                u.accountId = odp[1]",
-        "                                val transferredTarget = odp.firstOrNull { it.startsWith(\"PS_TARGET:\") }\n                                    ?.substringAfter(\":\")?.toIntOrNull()\n                                u.consoleTarget = com.metallic.chiaki.lib.Target.values().firstOrNull {\n                                    it.value == transferredTarget\n                                } ?: com.metallic.chiaki.lib.Target.PS5_1\n                                u.accountId = odp[1]",
-        "restore optional target extension")
-
-    code=one(code,
         '''                            if (ok) {
                                 AutoStart.nastavZapnuto(this, true)''',
         '''                            if (ok) {
@@ -229,15 +224,6 @@ def main():
             '                                    if (!pribehRidi || cisloVoleb > 0) prenos.vysledek(relace, null)',
             '                                    if (repeatDialogue || repeatChoices) prenos.vysledek(relace, null)',
             "report actual repeats only")
-        # Optional extension keeps Xbox X: marker intact.
-        prefix=one(prefix,
-            "${b64p(u.rpKey)}\" + XboxUcet.proPredani(c)",
-            "${b64p(u.rpKey)}\\tPS_TARGET:${u.consoleTarget.value}\" + XboxUcet.proPredani(c)",
-            "transfer target via PIN")
-        prefix=one(prefix,
-            "${b64(u.rpKey)}\" + XboxUcet.proPredani(c)",
-            "${b64(u.rpKey)}\\tPS_TARGET:${u.consoleTarget.value}\" + XboxUcet.proPredani(c)",
-            "transfer target via receiver PIN")
         if mobile_dashboard:
             # PCV1 already accepts these optional fields on GameLingo TV.
             # Keep the legacy yellow ROI, selected item and text positions unchanged.
@@ -322,42 +308,37 @@ def main():
                 "orange editor in existing regions screen")
             phone.write_text(phone_code, encoding="utf-8")
 
-        # SEC-02: never generate an account-transfer PIN from a remote packet.
-        # Keep the existing local "add device" flow, but only while its user-
-        # opened window is active. This is a containment measure, not encryption.
-        prefix=one(prefix,
-            'val k = (1000..9999).random().toString()',
-            'val k = (java.security.SecureRandom().nextInt(9000) + 1000).toString()',
-            "secure random local legacy PIN")
-        prefix=one(prefix,
-            'private fun sparovani(s: DatagramSocket, p: DatagramPacket, casti: List<String>) {\n            val u = RemotePlayUdaje(c)',
-            '''private fun sparovani(s: DatagramSocket, p: DatagramPacket, casti: List<String>) {
-            if (!Pridani.platny()) {
-                odpovez(s, p, "$SPAROVANI\\tCHYBA\\tlokalni_souhlas")
-                return
-            }
-            val u = RemotePlayUdaje(c)''',
-            "require local consent for account transfer")
-        # Delete the remotely generated PIN fallback, not the local import feature.
-        start = prefix.index('                    // nový kód jen když starý už neplatí')
-        end = prefix.index('\n                }\n                "KOD" ->', start)
-        prefix = prefix[:start] + '                    odpovez(s, p, "$SPAROVANI\\tCHYBA\\tlokalni_souhlas")' + prefix[end:]
-        start = prefix.index('                    val kod = kodSparovani')
-        end = prefix.index('\n                }\n            }\n        }', start)
-        prefix = prefix[:start] + '                    odpovez(s, p, "$SPAROVANI\\tCHYBA\\tlokalni_souhlas")' + prefix[end:]
-        # The source-side UI must warn before issuing its local PIN.
-        code=one(code,
-            '    private fun pridatZarizeni() {',
-            '''    private fun pridatZarizeni() {
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Starý přenos konzolového účtu")
-            .setMessage("Přenos účtu používá nešifrovanou místní síť. Doporučujeme přihlásit konzoli samostatně. Pro běžné titulky použij šestímístné párování GameLingo TV.")
-            .setNegativeButton("Zrušit", null)
-            .setPositiveButton("Přesto pokračovat") { _, _ -> otevriStarePredani() }.show()
-    }
-
-    private fun otevriStarePredani() {''',
-            "warn before local account transfer")
+        # SEC-02: remove the account migration implementation, including the
+        # credential-bearing DATA response and its client. This is independent
+        # of the signed subtitle receiver and of console registration/login.
+        start = prefix.index('    object Pridani {')
+        end = prefix.index('    // ================================================================ TELEVIZE', start)
+        prefix = prefix[:start] + prefix[end:]
+        start = prefix.index('        // převzetí spárování telefonem')
+        end = prefix.index('        private fun odpovez(', start)
+        prefix = prefix[:start] + prefix[end:]
+        start = prefix.index('        private fun sparovani(s: DatagramSocket')
+        end = prefix.index('\n        }', start) + len('\n        }')
+        prefix = prefix[:start] + '''        private fun sparovani(s: DatagramSocket, p: DatagramPacket, casti: List<String>) {
+            // Reject legacy clients without ever accessing console credentials.
+            odpovez(s, p, "$SPAROVANI\\tCHYBA\\tzakazano")
+        }''' + prefix[end:]
+        start = prefix.index('    fun sparovaniDotaz(')
+        end = prefix.index('\n    }', start) + len('\n    }')
+        prefix = prefix[:start] + prefix[end:]
+        # Remove all inherited account-transfer entry points and implementation.
+        start = code.index('    private fun prevzitSparovaniZTv() {')
+        end = code.index('    private fun vyberVystupTv() {', start)
+        code = code[:start] + code[end:]
+        start = code.index('    private fun prevzitOd(')
+        end = code.index('    private fun zprava(', start)
+        code = code[:start] + code[end:]
+        lines = code.splitlines(keepends=True)
+        code = ''.join(line for line in lines if not (
+            'prevzitSparovaniZTv()' in line or 'pridatZarizeni()' in line))
+        for forbidden in ('Propojeni.Pridani', 'sparovaniDotaz(', 'XboxUcet.prevezmi(', 'XboxUcet.proPredani('):
+            if forbidden in prefix or forbidden in code:
+                raise RuntimeError("Legacy account transfer remains: " + forbidden)
         transport.write_text(prefix + sender_marker + sender, encoding="utf-8")
 
         registration=folder/"RemotePlay.kt"
