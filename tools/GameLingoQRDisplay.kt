@@ -87,15 +87,8 @@ internal object GameLingoQRDisplay {
             handler.removeCallbacks(tick)
             image.setImageDrawable(null)
         }
-        if(television) {
-            dialog=GameLingoTVUi.page(activity,"Párování pomocí QR",content,helpTopic="pairing",onClose=::cleanup)
-        } else {
-            dialog=AlertDialog.Builder(activity).setTitle("Párování pomocí QR")
-                .setView(content).setPositiveButton("Zavřít",null).create().apply {
-                    setOnDismissListener { cleanup() }
-                    show()
-                }
-        }
+        content.background=GameLingoVisualKit.card(activity)
+        dialog=GameLingoTVUi.page(activity,"Párování pomocí QR",content,helpTopic="pairing",onClose=::cleanup)
         tick.run()
     }
 }

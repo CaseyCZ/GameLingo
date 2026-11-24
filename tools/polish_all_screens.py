@@ -360,6 +360,15 @@ def main():
     p=loc/"MainActivity.kt"
     s=p.read_text(encoding="utf-8")
     s=mobile(s) if mode=="mobile" else tv(s)
+    # Add the same platform panels as GameLingoPlayStationSetup and GameLingoXboxScreen.
+    s=one(s, '        sloupec.addView(text(t("pripojitKonzoli"), 28f, Color.WHITE, tucne = true), odsazeni(bottom = 16))',
+        '''        sloupec.addView(text("PlayStation", 28f, Color.WHITE, tucne = true), odsazeni(bottom = 8))
+        sloupec.addView(GameLingoVisualKit.platformPanel(this,"PlayStation","Moje konzole","PlayStation 4 / 5 Remote Play"),odsazeni(bottom = 16))''',
+        "SwiftUI PlayStation platform panel")
+    s=one(s, '        sloupec.addView(text(t("xboxNadpis"), 28f, Color.WHITE, tucne = true), odsazeni(bottom = 16))',
+        '''        sloupec.addView(text("Můj Xbox", 28f, Color.WHITE, tucne = true), odsazeni(bottom = 8))
+        sloupec.addView(GameLingoVisualKit.platformPanel(this,"Xbox","Xbox Remote Play","Microsoft účet a vlastní konzole"),odsazeni(bottom = 16))''',
+        "SwiftUI Xbox platform panel")
     p.write_text(s,encoding="utf-8")
     h=Path(__file__).with_name("GameLingoHelp.kt")
     (loc/h.name).write_text(h.read_text(encoding="utf-8"),encoding="utf-8")

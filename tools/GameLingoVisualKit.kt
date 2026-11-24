@@ -327,6 +327,19 @@ object GameLingoVisualKit {
         }
     }
 
+    // The emphasized GLPlatformBadge panel used on the iOS Xbox and PlayStation registration screens.
+    fun platformPanel(activity:Activity,family:String,title:String,subtitle:String):LinearLayout =
+        LinearLayout(activity).apply {
+            orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+            background=card(activity,true)
+            val pad=dp(activity,15);setPadding(pad,pad,pad,pad)
+            addView(platformEmblem(activity,family),LinearLayout.LayoutParams(dp(activity,64),dp(activity,64)).apply{marginEnd=dp(activity,13)})
+            addView(LinearLayout(activity).apply {
+                orientation=LinearLayout.VERTICAL
+                addView(TextView(activity).apply{text=title;textSize=18f;setTextColor(Color.WHITE);typeface=Typeface.DEFAULT_BOLD})
+                addView(TextView(activity).apply{text=subtitle;textSize=13f;setTextColor(muted);setPadding(0,dp(activity,4),0,0)})
+            },LinearLayout.LayoutParams(0,-2,1f))
+        }
     fun deviceCard(activity: Activity, family: String, title: String,
                    subtitle: String, selected: Boolean,
                    onClick: () -> Unit): LinearLayout {

@@ -311,22 +311,43 @@ object GameLingoTVPairing {
             contentDescription = "Šestimístný kód z GameLingo TV"
             setSingleLine(true)
         }
-        val dialog = AlertDialog.Builder(activity)
-            .setTitle("Spárovat GameLingo TV")
-            .setMessage("Televize: " + tv.ip + "\nNa TV otevři Překlad z telefonu a vygeneruj šestimístný kód. " +
-                "Ověř adresu a potvrď párování.")
-            .setView(pinInput)
-            .setNegativeButton("Zrušit", null)
-            .setPositiveButton("Spárovat", null)
-            .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        val dialog=android.app.Dialog(activity,android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val d:(Int)->Int={GameLingoVisualKit.dp(activity,it)}
+        val root=android.widget.LinearLayout(activity).apply {
+            orientation=android.widget.LinearLayout.VERTICAL
+            setPadding(d(18),d(18),d(18),d(24));background=GameLingoVisualKit.pageBackground(activity)
+        }
+        val header=android.widget.LinearLayout(activity).apply {gravity=Gravity.CENTER_VERTICAL}
+        header.addView(GameLingoVisualKit.heading(activity,"Párování televize"),android.widget.LinearLayout.LayoutParams(0,-2,1f))
+        header.addView(GameLingoHelp.button(activity,"pairing"),GameLingoHelp.layout(activity,d(36),d(44)))
+        root.addView(header)
+        root.addView(GameLingoVisualKit.platformPanel(activity,"TV",tv.jmeno,tv.ip))
+        val card=android.widget.LinearLayout(activity).apply {
+            orientation=android.widget.LinearLayout.VERTICAL
+            val pad=d(13);setPadding(pad,pad,pad,pad);background=GameLingoVisualKit.card(activity)
+            addView(android.widget.TextView(activity).apply {
+                text="Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování."
+                textSize=14f;setTextColor(android.graphics.Color.parseColor("#92A4C7"))
+            })
+            pinInput.setTextColor(android.graphics.Color.WHITE)
+            pinInput.setHintTextColor(android.graphics.Color.parseColor("#92A4C7"))
+            pinInput.background=android.graphics.drawable.GradientDrawable().apply {
+                setColor(android.graphics.Color.parseColor("#172033"));cornerRadius=d(11).toFloat()
+            }
+            addView(pinInput,android.widget.LinearLayout.LayoutParams(-1,d(58)).apply{topMargin=d(13)})
+        }
+        root.addView(card,android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=d(13)})
+        val pair=GameLingoVisualKit.cta(activity,"Spárovat") {}
+        root.addView(pair,android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=d(13)})
+        root.addView(GameLingoTVUi.action(activity,"Zrušit"){dialog.dismiss()})
+        dialog.setContentView(android.widget.ScrollView(activity).apply{isFillViewport=true;addView(root)})
+        pair.setOnClickListener {
                 val pin = pinInput.text.toString().trim()
                 if (!pin.matches(Regex("[0-9]{6}"))) {
                     pinInput.error = "Je nutných šest číslic"
                     return@setOnClickListener
                 }
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                pair.isEnabled = false;pair.alpha=.45f
                 val id = pairingId(activity)
                 Thread {
                     val result = runCatching {
@@ -350,7 +371,7 @@ object GameLingoTVPairing {
                                         Toast.LENGTH_LONG).show()
                                 }
                             }.onFailure { err ->
-                                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                                pair.isEnabled = true;pair.alpha=1f
                                 AlertDialog.Builder(activity)
                                     .setMessage(err.message ?: "TV neodpověděla. Ověř IP a síť.")
                                     .setPositiveButton("OK", null).show()
@@ -358,8 +379,8 @@ object GameLingoTVPairing {
                         }
                     }
                 }.apply { name = "gamelingo-tv-pin"; isDaemon = true }.start()
-            }
         }
         dialog.show()
+        dialog.window?.setLayout(-1,-1)
     }
 }
