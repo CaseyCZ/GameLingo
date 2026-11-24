@@ -145,3 +145,19 @@ def patch_direct_tv(folder):
     service.write_text(s, encoding="utf8")
     module = Path(__file__).with_name("GameLingoDirectTVLayout.kt")
     (folder/module.name).write_text(module.read_text(encoding="utf8"), encoding="utf8")
+
+    # TV UI source is copied into both variants. Wire the TV-only module only
+    # in the generated TV workspace, so the mobile build has no missing symbol.
+    tv_ui = folder / "GameLingoTVUi.kt"
+    text = tv_ui.read_text(encoding="utf8")
+    anchor = '        addGrid(listOf(overlay))'
+    if text.count(anchor) != 1:
+        raise RuntimeError("Direct TV settings anchor changed")
+    text = text.replace(anchor, '''        addGrid(listOf(overlay, settingsTile("▣", "Oblasti přímého překladu",
+            "Modrá, zelená, žlutá a oranžová") {
+            GameLingoDirectTVLayout.show(a) {
+                dialog.dismiss()
+                onUpdate()
+            }
+        }))''', 1)
+    tv_ui.write_text(text, encoding="utf8")
