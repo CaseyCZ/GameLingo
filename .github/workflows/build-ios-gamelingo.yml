@@ -3,11 +3,6 @@ name: GameLingo iOS · Native UI candidate
 # iOS ONLY — verify the shared iPhone/Android navigation and palette compile; leave Android TV and release unchanged.
 
 on:
-  push:
-    branches:
-      - feature/gamelingo-v05-platform-rebuild
-    paths:
-      - ".github/workflows/build-ios-gamelingo.yml"
   workflow_dispatch:
 
 permissions:
