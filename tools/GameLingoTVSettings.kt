@@ -109,11 +109,37 @@ object GameLingoTVSettings {
     private fun translation(a: Activity) {
         if (busy(a)) return
         val s = Nastaveni(a)
-        val checked = booleanArrayOf(s.dialogy, s.napovedy, s.prekryvat, s.pribehovy)
+        Volby.nacti(a); OblastTitulku.nacti(a)
+        val labels = arrayOf("Dialogy", "Nápověda a úkoly", "Překrývat originál", "Příběhový režim", "Herní texty a volby (žlutá oblast)", "Celý text místo seznamu voleb", "Ruční oblast OCR (modrá)")
+        val checked = booleanArrayOf(s.dialogy, s.napovedy, s.prekryvat, s.pribehovy, Volby.zapnuto, Volby.rezimText, OblastTitulku.rucne)
+        val panel = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(24,8,24,8) }
+        for (i in labels.indices) panel.addView(android.widget.CheckBox(a).apply {
+            text = labels[i]; isChecked = checked[i]; isFocusable = true
+            setOnCheckedChangeListener { _, enabled -> checked[i] = enabled }
+        })
+        val min = CasovaniPribehu.MIN_PROCENT
+        var duration = s.casPribehuProcenta
+        val label = TextView(a).apply { text = "Doba zobrazení: $duration %" }
+        panel.addView(label)
+        panel.addView(SeekBar(a).apply {
+            max = CasovaniPribehu.MAX_PROCENT - min; progress = duration - min
+            keyProgressIncrement = 5; isFocusable = true
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
+                    duration = min + value; label.text = "Doba zobrazení: $duration %"
+                }
+                override fun onStartTrackingTouch(bar: SeekBar) {}
+                override fun onStopTrackingTouch(bar: SeekBar) {}
+            })
+        })
         AlertDialog.Builder(a).setTitle("Překlad hry")
-            .setMultiChoiceItems(arrayOf("Dialogy", "Herní texty", "Překrývat originál", "Příběhový režim"), checked) { _, i, value -> checked[i] = value }
+            .setView(android.widget.ScrollView(a).apply { addView(panel) })
             .setNegativeButton("Zrušit", null).setPositiveButton("Uložit") { _, _ ->
+                if (busy(a)) return@setPositiveButton
                 s.dialogy = checked[0]; s.napovedy = checked[1]; s.prekryvat = checked[2]; s.pribehovy = checked[3]
+                Volby.zapnuto = checked[4]; Volby.rezimText = checked[5]; Volby.uloz(a)
+                OblastTitulku.rucne = checked[6]; OblastTitulku.uloz(a)
+                s.casPribehuProcenta = duration
             }.show()
     }
     private fun diagnostics(a: Activity) {
@@ -122,6 +148,19 @@ object GameLingoTVSettings {
         AlertDialog.Builder(a).setTitle("Diagnostika TV").setMessage(info +
             "\nPřekryv: " + if (Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen")
             .setNeutralButton("Povolit překryv") { _, _ -> a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + a.packageName))) }
-            .setPositiveButton("Zpět", null).show()
+            .setNegativeButton("Další nastavení") { _, _ ->
+                val legacy = GameLingoTVPairing.legacyEnabled(a)
+                AlertDialog.Builder(a).setTitle("Diagnostika a kompatibilita")
+                    .setItems(arrayOf("Legacy příjem: " + if (legacy) "Zapnuto" else "Vypnuto", "Vymazat místní diagnostický log")) { _, i ->
+                        if (i == 0) {
+                            if (legacy) GameLingoTVPairing.setLegacyEnabled(a, false)
+                            else AlertDialog.Builder(a).setMessage("Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?")
+                                .setNegativeButton("Zrušit", null).setPositiveButton("Povolit") { _, _ -> GameLingoTVPairing.setLegacyEnabled(a, true) }.show()
+                        } else if (!busy(a)) AlertDialog.Builder(a).setMessage("Vymazat místní diagnostické logy?")
+                            .setNegativeButton("Zrušit", null).setPositiveButton("Vymazat") { _, _ ->
+                                if (!busy(a)) listOf("titulky.log","titulky-private-v2.log").forEach { java.io.File(a.filesDir,it).delete() }
+                            }.show()
+                    }.setNegativeButton("Zpět", null).show()
+            }.setPositiveButton("Zpět", null).show()
     }
 }
