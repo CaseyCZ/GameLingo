@@ -98,6 +98,10 @@ object GameLingoProfiles {
         put("tvY", p.getFloat("tvY", 0.9f).toDouble())
         put("tvSirka", p.getFloat("tvSirka", 0.75f).toDouble())
         put("tvPismo", p.getFloat("tvPismo", 1f).toDouble())
+        put("greenLocked", p.getBoolean("rozvrhZamek", false))
+        put("yellowPreview", Volby.ukazatNaTv)
+        put("orangeOutput", array(GameLingoOrangeOutput.read(c)))
+        put("orangeLocked", GameLingoOrangeOutput.locked(c))
     }
 
     private fun restore(c: Context, settings: Nastaveni, data: JSONObject) {
@@ -139,7 +143,17 @@ object GameLingoProfiles {
             val v = data.optDouble(key, Double.NaN).toFloat()
             if (v.isFinite() && v in min..max) output.putFloat(key, v)
         }
+        if (data.has("greenLocked")) output.putBoolean("rozvrhZamek", data.optBoolean("greenLocked"))
         output.apply()
+        if (data.has("yellowPreview")) {
+            Volby.ukazatNaTv = data.optBoolean("yellowPreview", Volby.ukazatNaTv)
+            Volby.uloz(c)
+        }
+        val currentOrange = GameLingoOrangeOutput.read(c)
+        val orange = data.optJSONArray("orangeOutput")?.takeIf { it.length() == 5 }
+            ?.let { a -> FloatArray(5) { a.optDouble(it, Double.NaN).toFloat() } }
+            ?.takeIf(GameLingoOrangeOutput::valid) ?: currentOrange
+        GameLingoOrangeOutput.save(c, orange, data.optBoolean("orangeLocked", GameLingoOrangeOutput.locked(c)))
     }
 
     private fun canChangeProfile(activity: Activity): Boolean {
