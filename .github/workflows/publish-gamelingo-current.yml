@@ -74,6 +74,7 @@ jobs:
           - Samostatná TV: text titulků + OCR, bez zvuku a mikrofonu.
           - TV: trvalý testovací titulek přes foreground službu, diagnostika překryvu a snímků bez ADB.
           - TV: kompaktní volba zařízení a jazyků, výraznější D-pad fokus a snímání jen se souhlasem.
+          - TV: oprava pořadí aktivace služby mediaProjection, kontrola typu služby a diagnostika startu snímání; funkčnost na fyzické TV a HDMI zatím neověřena.
           - Online překlad a lokální paměť; chráněný obsah není ověřen.
           - Automatické kontroly prošly; fyzické testování a licenční audit zůstávají otevřené.
           Zdroj sestavení: https://github.com/$REPO/tree/$BUILD_SOURCE
