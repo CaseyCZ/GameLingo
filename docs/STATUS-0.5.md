@@ -5,8 +5,8 @@ Aktualizace 2026-11-24. Jediný aktuální rozcestník pro auditní větev `feat
 |---|---|---|---|
 | Xbox / PS4 / PS5 | Implementované cesty Remote Play, HW čeká | Implementované cesty Remote Play, HW čeká | Přímé režimy implementované, HW čeká |
 | OCR | Vision | ML Kit OCR | ML Kit OCR v přímém režimu; telefonní receiver OCR nedělá |
-| Online překlad | Google GTX / MyMemory | Google GTX / Microsoft Edge / MyMemory | Google GTX / Microsoft Edge / MyMemory |
-| Offline překlad nové věty | Ne | ML Kit fallback; dostupný model a HW test nutné | Ne; SDK odstraněno, CI ověřeno |
+| Online překlad | Google GTX / Microsoft Edge / MyMemory | Google GTX / Microsoft Edge / MyMemory | Google GTX / Microsoft Edge / MyMemory |
+| Offline překlad nové věty | Ne | Ne; odstraněno ze zdroje, nové sestavení čeká | Ne; odstraněno ze zdroje, nové sestavení čeká |
 | Cache | SQLite | SQLite | SQLite pro lokální překlad |
 | Čtyři oblasti | Implementace, HW čeká | Implementace, orange→TV a profilová parita nedokončena | Receiver podporuje orange geometrii; přímý režim má omezení modré/story |
 | Párování TV | 6 číslic/QR, HMAC | 6 číslic/QR, HMAC | QR zobrazení/PIN, až 32 identit, jeden aktivní zdroj |
