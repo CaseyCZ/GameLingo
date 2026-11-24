@@ -169,8 +169,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         model=code(IOS/"PlayCaptionIOSApp.swift")
         self.assertIn("private var verifiedTelevisionOutput: Bool",model)
         self.assertIn("tv.receiverPaired && tv.receiverConnected",model)
-        self.assertIn("if self.verifiedTelevisionOutput {\n                                self.tv.sendChoices",model)
-        self.assertIn("if self.verifiedTelevisionOutput {\n                                    self.tv.sendSubtitle",model)
+        self.assertRegex(model, r"if self\.verifiedTelevisionOutput\s*\{\s*self\.tv\.sendChoices\(")
+        self.assertRegex(model, r"if self\.verifiedTelevisionOutput\s*\{\s*self\.tv\.sendSubtitle\(")
 
     def test_android_and_google_tv_supported(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
