@@ -94,14 +94,6 @@ final class PlayCaptionTV: ObservableObject {
         ReceiverSecretStore.load(ip.trimmingCharacters(in: .whitespacesAndNewlines)) != nil
     }
     @Published var discovered: [PlayCaptionDevice] = []
-    @Published var pairingCode = ""
-    @Published private(set) var pairedIP = UserDefaults.standard.string(forKey: "pairedTVIP") ?? ""
-    @Published private(set) var pairingStatus = "Přenos titulků vyžaduje bezpečné spárování TV."
-    var isPaired: Bool { !ip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-                         ip.trimmingCharacters(in: .whitespacesAndNewlines) == pairedIP }
-
-    /// Received PCS1 DATA is sensitive: handle on device, never put the packet into diagnostics.
-    var onPairingData: (([String]) -> Void)?
     @Published var message = "Na Google TV otevři GameLingo TV a zvol „Překlad z telefonu“."
     private let queue = DispatchQueue(label: "cz.caseycz.playcaption.udp")
 
@@ -170,7 +162,6 @@ final class PlayCaptionTV: ObservableObject {
         startReceiverHeartbeat()
     }
     private var listener: NWListener?
-    private var pairingConnection: NWConnection?
     private var repeatTask: Task<Void, Never>?
     private var sequence = UInt64(Date().timeIntervalSince1970 * 1000)
 
@@ -219,101 +210,6 @@ final class PlayCaptionTV: ObservableObject {
     }
 
 
-    /// Mirrors Android's PCS1 ZADOST/KOD handshake. Start this while the TV is
-    /// displaying "Titulky z telefonu". The TV overlays a one-time four-digit PIN.
-    func requestPairing() {
-        pairingStatus = "Žádám televizi o párovací kód…"
-        sendPairing("ZADOST\tPlayCaption iPhone")
-    }
-
-    func confirmPairing() {
-        let code = pairingCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard code.count == 4, code.allSatisfy(\.isNumber) else {
-            pairingStatus = "Zadej čtyřmístný kód z televize."
-            return
-        }
-        pairingStatus = "Ověřuji kód na televizi…"
-        sendPairing("KOD\t\(code)")
-    }
-
-    private func sendPairing(_ command: String) {
-        let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !target.isEmpty else {
-            pairingStatus = "Nejprve vyber televizi nebo zadej její IP."
-            return
-        }
-        pairingConnection?.cancel()
-        let connection = NWConnection(host: .init(target),
-                                      port: NWEndpoint.Port(rawValue: UInt16(cachedReceiverPort(target)))!,
-                                      using: .udp)
-        pairingConnection = connection
-        connection.stateUpdateHandler = { [weak self, weak connection] state in
-            guard let connection else { return }
-            switch state {
-            case .ready:
-                connection.receiveMessage { [weak self] data, _, _, error in
-                    Task { @MainActor in
-                        guard let self else { return }
-                        if let data {
-                            guard self.pairingConnection === connection, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target else { connection.cancel(); return }
-                            self.handlePairingReply(data, from: target, expectingData: command.hasPrefix("KOD\t"))
-                        } else {
-                            self.pairingStatus = "Televize neodpověděla: \(error?.localizedDescription ?? "ověř IP a síť")."
-                        }
-                        connection.cancel()
-                    }
-                }
-                connection.send(content: Data("PCS1\t\(command)".utf8),
-                                completion: .contentProcessed { [weak self] error in
-                    if let error {
-                        Task { @MainActor in self?.pairingStatus = "Odeslání párování selhalo: \(error.localizedDescription)" }
-                    }
-                })
-            case .failed(let error):
-                Task { @MainActor in self?.pairingStatus = "Spojení s TV selhalo: \(error.localizedDescription)" }
-                connection.cancel()
-            default: break
-            }
-        }
-        connection.start(queue: queue)
-    }
-
-    private func handlePairingReply(_ data: Data, from target: String, expectingData: Bool) {
-        guard let value = String(data: data, encoding: .utf8) else {
-            pairingStatus = "Neplatná odpověď televize."
-            return
-        }
-        let fields = value.components(separatedBy: "\t")
-        guard fields.count >= 2, fields[0] == "PCS1" else {
-            pairingStatus = "Neznámá odpověď televize."
-            return
-        }
-        switch fields[1] {
-        case "KOD":
-            pairingStatus = "Na televizi se ukázal čtyřmístný kód. Opiš ho níže."
-        case "DATA":
-            guard expectingData else { pairingStatus = "Neočekávaný přenos účtu odmítnut."; return }
-            // The reference TV may include Xbox refresh credentials here.
-            // Never log, display, or persist the raw pairing response.
-            onPairingData?(fields)
-            pairedIP = target
-            UserDefaults.standard.set(target, forKey: "pairedTVIP")
-            pairingStatus = "Televize úspěšně spárována."
-        case "CHYBA":
-            let reason = fields.dropFirst(2).first ?? ""
-            if reason == "lokalni_souhlas" {
-                pairingStatus = "Přenos účtu musíš výslovně povolit na TV. Doporučujeme samostatné přihlášení."
-                return
-            }
-            pairingStatus = reason == "kod" ? "Nesprávný nebo prošlý kód." :
-                reason == "nesparovano" ? "Televize zatím není spárována s konzolí." :
-                "Televize párování odmítla."
-        default:
-            pairingStatus = "Televize vrátila neznámý stav párování."
-        }
-    }
-
-    // TV pairing is separate from Xbox / Microsoft account sign-in.
     // The PIN is displayed only on our independent TV receiver app.
     func pairReceiver() {
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
