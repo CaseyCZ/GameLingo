@@ -1,5 +1,5 @@
 # GameLingo 0.5 — audit a pracovní checkpoint
-Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
+Datum: 2026-11-24. Stav: F0, P0, P1, P2.1–P2.4 CI success; P2.2/P2.5 návrhy; P3 zbývá. HW QA a licenční release blocker TV otevřené.
 
 ## Základ a pravidla
 - Na výslovné upřesnění uživatele je auditní větev založena na poslední vlastní vývojové verzi 0.5, nikoliv na Masteru. Původní dokumentační checkpoint `92026c899c3ebb2db0b1e917cb7ed29647c642d8` byl zachován obsahem v tomto souboru.
@@ -53,8 +53,8 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P2.1 QR párování — CI 45368960470 success; HW čeká.
 - [x] P2.2 návrh automatické instalace TV — dokumentace, bez implementace.
 - [x] P2.3 historie — CI 45377426847 success; HW čeká.
-- [ ] P2.4 slovník a kontext profilu
-- [ ] P2.5 návrh offline překladu
+- [x] P2.4 slovník a kontext profilu — CI 45379906749 success; HW a Android story omezení evidována.
+- [x] P2.5 návrh offline překladu — dokumentace; TV ML Kit licenční blocker před vydáním.
 - [ ] P3 návrh AI, dabingu, Samsung/LG; žádná implementace
 
 ## Ruční QA – předběžná matice (vše neověřeno na této revizi)
@@ -285,3 +285,9 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - Swift/JVM testy přesné fráze, podmíněné literal náhrady, neřetězení, jazyk/profil, chybné formáty; source contracts a nativní CI. HW editor, D-pad, skutečný text, změna profilu a cache čekají. P2.5 až po CI, pouze architektura offline překladu.
 
 - P2.4 commit `0eb2538cdf64ea252632912c54f5cd385dcd1ba7`, [CI 45379906749](https://github.com/CaseyCZ/GameLingo/actions/runs/45379906749). Stav: quick / verify: in_progress. Před P2.5 ověřit všech šest jobů včetně Swift/JVM glossary testů, nativní sestavení a P1.4 success-only kontraktu; případně opravit/revertovat. P2.5 pouze návrh offline překladu: audit současného Android ML Kit a iOS online fallback, platformní modely, licence, dostupnost jazyků, souhlas se stažením, úložiště a offline QA. HW editor, D-pad, změny profilu a zvláštní Android story režim jsou evidované omezení P2.4. Žádný release/Master.
+
+## P2.5 — offline překlad (návrh)
+- P2.4 CI 45379906749: všech šest jobů success včetně Swift/JVM slovníku a všech nativních balíčků. HW a story omezení čekají.
+- Návrh v [docs/OFFLINE-TRANSLATION-DESIGN.md](docs/OFFLINE-TRANSLATION-DESIGN.md). Android mobil: správa existujícího ML Kit, iOS kandidát ML Kit nebo Apple Translation dle verze a dostupnosti párů; TV receiver překlad na telefonu po LAN, samostatná TV NMT alternativa až po licenci/PoC. Model lifecycle, consent, cache model namespace, offline-only bez online fallbacku, explicitní chyby, žádná změna jazyků. Offline překlad není offline Remote Play.
+- **NOVÝ RELEASE BLOCKER (TV):** oficiální Google [Translation usage guidelines](https://developers.google.com/ml-kit/language/translation/translation-terms), aktualizované 2026-11-09, vyžadují předchozí písemný souhlas pro TV. Existující zděděný Prekladac.kt ML Kit používá včetně přípravy, quick/story/fallback. Souhlas nedoložen. Před distribucí vyřešit oprávnění nebo odstranit TV integraci (samostatný schválený commit, varianty a CI); ověřit atribuci a další SDK podmínky. Nezaměňovat úspěšný CI s licenčním/HW schválením. Historický plán zachovat ML Kit platí pouze pro povolené platformy; tento novější nález má přednost. Kód beze změny podle P2.5 pouze návrh.
+- Test dokumentace proti skutečným repo souborům a oficiálním zdrojům. Čistě docs commit nespouští CI; aplikační strom totožný s úspěšným P2.4. P3 následuje pouze architektura AI/dabing/Samsung/LG, případně TLS návrh a konsolidace reportu, bez implementace či release. TV blocker a HW testy zůstávají otevřené.
