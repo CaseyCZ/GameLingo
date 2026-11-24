@@ -69,7 +69,26 @@ struct RecognizedCaption {
 }
 
 /// OCR of a configurable bottom-center band. Only changed subtitle text is sent.
+private final class GLTranslationNoRedirect: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest,
+                    completionHandler: @escaping (URLRequest?) -> Void) {
+        // OCR text is sensitive even when it is sent as a GET query.
+        completionHandler(nil)
+    }
+}
+
 actor CaptionPipeline {
+    private let providerSession: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        configuration.urlCredentialStorage = nil
+        return URLSession(configuration: configuration, delegate: GLTranslationNoRedirect(), delegateQueue: nil)
+    }()
     private var lastText = ""
     private var dialogueStability = CaptionStability()
     private var gameTextStability = GameTextStability()
@@ -355,6 +374,7 @@ actor CaptionPipeline {
 
     private func requestTranslation(engine: String, original: String,
                                     source: String, target: String) async -> Result<String, GLTranslationFailure> {
+        guard engine == "google-gtx-v1" || engine == "mymemory-v1" else { return .failure(.invalidRequest) }
         let google = engine == "google-gtx-v1"
         var components = URLComponents(string: google
             ? "https://translate.googleapis.com/translate_a/single"
@@ -369,11 +389,17 @@ actor CaptionPipeline {
             URLQueryItem(name: "langpair", value: source + "|" + target),
             URLQueryItem(name: "q", value: original)
         ]
-        guard let url = components?.url else { return .failure(.invalidRequest) }
+        guard let url = components?.url, url.scheme == "https",
+              url.host == (google ? "translate.googleapis.com" : "api.mymemory.translated.net"),
+              url.user == nil, url.password == nil, url.port == nil else {
+            return .failure(.invalidRequest)
+        }
         do {
             var req = URLRequest(url: url)
             req.timeoutInterval = google ? 5 : 3
-            let (data, response) = try await URLSession.shared.data(for: req)
+            req.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+            req.httpShouldHandleCookies = false
+            let (data, response) = try await providerSession.data(for: req)
             if Task.isCancelled { return .failure(.cancelled) }
             let status = (response as? HTTPURLResponse)?.statusCode
             return google ? GLTranslationOutcome.googleResponse(data, statusCode: status)
