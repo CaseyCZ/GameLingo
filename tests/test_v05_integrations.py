@@ -814,7 +814,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")
         self.assertIn("prectiSamostatnyTitulek(cropped, sourceLanguage, GameLingoOCRConfig.filterMenuText", capture)
-        self.assertIn("if (!paused && !ocrBusy) wantFrame.set(true)", capture)
+        self.assertIn("if (!paused && !ocrBusy && !wantFrame.get())", capture)
         self.assertIn("translationBusy", capture)
         self.assertIn("value == candidate", capture)
         self.assertIn("Starý výsledek zahozen", capture)
@@ -824,6 +824,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("code == source || shortEnglish", wiring)
         self.assertIn("lastOcrMs", capture)
         self.assertIn("lastTranslationMs", capture)
+
+    def test_standalone_tv_reuses_all_four_profile_regions(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        layout = code(TOOLS/"GameLingoDirectTVLayout.kt")
+        profiles = code(TOOLS/"GameLingoTVProfiles.kt")
+        for marker in ("GameLingoDirectTVLayout.blue(this)", "GameLingoDirectTVLayout.green(this)",
+                       "GameLingoDirectTVLayout.yellow(this)", "GameLingoDirectTVLayout.orange(this)",
+                       "Volby.zapnuto", "Volby.rezimText", "prectiVolby(cropped", "ACTION_SET_VOLBY",
+                       "GameLingoTVProfiles.chooseForStart(a)", "if (yellow) yellowRoi else roi"):
+            self.assertIn(marker, capture)
+        self.assertIn("restore(a, items.getJSONObject(names[index-1]))", profiles)
+        self.assertIn("fun greenBounds", layout)
+        self.assertIn("Zelený výstup zasahuje", capture)
 
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")

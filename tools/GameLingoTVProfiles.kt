@@ -60,6 +60,21 @@ object GameLingoTVProfiles {
         a.getSharedPreferences("gamelingo_tv_local_style", Context.MODE_PRIVATE).edit().putString("color", color).putInt("opacity", p.optInt("opacity",230).coerceIn(0,255)).apply()
         return true
     }
+    /** Same stored TV profiles for console and MediaProjection sessions. */
+    fun chooseForStart(a: Activity, onChosen: () -> Unit) {
+        if (busy()) return
+        val items = all(a)
+        val names = items.keys().asSequence().sorted().toList()
+        val current = store(a).getString("activeProfile", null)
+        GameLingoTVUi.select(a, "Vybrat profil", (listOf("Aktuální nastavení") + names).toTypedArray(),
+            names.indexOf(current ?: "")+1) { index ->
+            if (index == 0) onChosen()
+            else if (restore(a, items.getJSONObject(names[index-1]))) {
+                store(a).edit().putString("activeProfile", names[index-1]).apply()
+                onChosen()
+            } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
     fun show(a: Activity) {
         if (busy()) { AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show(); return }
         val items = all(a)
@@ -81,7 +96,7 @@ object GameLingoTVProfiles {
                     val name = names[i-1]
                     AlertDialog.Builder(a).setTitle(name).setItems(arrayOf("Použít", "Smazat")) { _, action ->
                         if (action == 0) {
-                            if (restore(a, items.getJSONObject(name))) android.widget.Toast.makeText(a, "Profil načten", android.widget.Toast.LENGTH_SHORT).show()
+                            if (restore(a, items.getJSONObject(name))) { store(a).edit().putString("activeProfile", name).apply(); android.widget.Toast.makeText(a, "Profil načten", android.widget.Toast.LENGTH_SHORT).show() }
                             else android.widget.Toast.makeText(a, "Profil nelze načíst", android.widget.Toast.LENGTH_SHORT).show()
                         } else AlertDialog.Builder(a).setMessage("Smazat profil $name?").setNegativeButton("Zrušit", null)
                             .setPositiveButton("Smazat") { _, _ -> if (!busy()) { items.remove(name); store(a).edit().putString("profiles", items.toString()).apply() }; show(a) }.show()

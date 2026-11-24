@@ -34,6 +34,20 @@ object GameLingoDirectTVLayout {
         return r.takeIf { it.all { v -> v.isFinite() } && it[0] in 0f..1f &&
             it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0.6f..2f } ?: greenDefault.copyOf()
     }
+    fun blue(c: Context): FloatArray {
+        OblastTitulku.nacti(c)
+        return OblastTitulku.oblast.copyOf().takeIf(::validRect) ?: OblastTitulku.VYCHOZI.copyOf()
+    }
+    fun yellow(c: Context): FloatArray {
+        Volby.nacti(c)
+        return Volby.oblast.copyOf().takeIf(::validRect) ?: Volby.VYCHOZI.copyOf()
+    }
+    internal fun intersects(a: FloatArray, b: FloatArray) =
+        a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]
+    internal fun greenBounds(r: FloatArray): FloatArray {
+        val left = (r[0] - r[2]/2f).coerceIn(0f, 1f-r[2])
+        return floatArrayOf(left,(r[1]-.24f*r[3]).coerceAtLeast(0f),left+r[2],r[1])
+    }
     private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
 
     fun show(a: Activity, onSaved: () -> Unit) {
@@ -44,8 +58,8 @@ object GameLingoDirectTVLayout {
         }
         OblastTitulku.nacti(a)
         Volby.nacti(a)
-        val blue = OblastTitulku.oblast.copyOf().takeIf(::validRect) ?: OblastTitulku.VYCHOZI
-        val yellow = Volby.oblast.copyOf().takeIf(::validRect) ?: Volby.VYCHOZI
+        val blue = blue(a)
+        val yellow = yellow(a)
         val orange = orange(a)
         val savedGreen = green(a)
         val green = savedGreen ?: greenDefault.copyOf()
@@ -59,8 +73,14 @@ object GameLingoDirectTVLayout {
             override fun onDraw(canvas: android.graphics.Canvas) {
                 super.onDraw(canvas)
                 val inset = 8f
-                val w = (width - inset * 2).coerceAtLeast(1f)
-                val h = (height - inset * 2).coerceAtLeast(1f)
+                val metrics = android.util.DisplayMetrics()
+                @Suppress("DEPRECATION")
+                a.getSystemService(android.view.WindowManager::class.java).defaultDisplay.getRealMetrics(metrics)
+                val ratio = metrics.widthPixels.coerceAtLeast(1).toFloat() / metrics.heightPixels.coerceAtLeast(1)
+                val w = minOf((width - inset * 2).coerceAtLeast(1f), (height - inset * 2).coerceAtLeast(1f) * ratio)
+                val h = w / ratio
+                canvas.save()
+                canvas.translate((width-w-2*inset)/2f, (height-h-2*inset)/2f)
                 paint.color = Color.parseColor("#111A33")
                 paint.style = android.graphics.Paint.Style.FILL
                 canvas.drawRect(inset,inset,inset+w,inset+h,paint)
@@ -84,6 +104,7 @@ object GameLingoDirectTVLayout {
                 area(floatArrayOf(left,(green[1]-.12f*green[3]).coerceAtLeast(0f),left+green[2],green[1]),
                     Color.parseColor("#3CFF6E"),"Přeložené dialogy")
                 area(orange,Color.parseColor("#FF9E34"),"Přeložené herní texty")
+                canvas.restore()
             }
         }
         root.addView(TextView(a).apply { text = "Náhled rozložení · 4 nezávislé oblasti"; textSize = 16f })

@@ -156,11 +156,32 @@ class GameLingoScreenTranslationService : Service() {
     private var roi = floatArrayOf(.10f,.80f,.90f,.98f)
     private var output = floatArrayOf(.5f,.78f,.78f,1f)
     private var sourceLanguage = "en"
+    private var dialogueEnabled = true
+    private var yellowEnabled = false
+    private var yellowTextMode = false
+    private var yellowRoi = floatArrayOf(.1f,.1f,.9f,.5f)
+    private var orangeOutput = floatArrayOf(.07f,.43f,.50f,.60f,1f)
+    private var nextYellow = false
+    @Volatile private var captureYellow = false
+    private var yellowCandidate = emptyList<String>()
+    private var yellowShown = emptyList<String>()
+    private var yellowSelected = -1
+    private var yellowLastAt = 0L
+    private var yellowRequest = false
+    private var yellowAttemptAt = 0L
+    private var yellowLastAttempt = emptyList<String>()
     private val tick = object : Runnable {
         override fun run() {
             if (!active) return
             if (RemotePlayService.aktivni || PrijemService.bezi) { stopSelf(); return }
-            if (!paused && !ocrBusy) wantFrame.set(true)
+            if (!paused && !ocrBusy && !wantFrame.get()) {
+                captureYellow = yellowEnabled && (!dialogueEnabled || nextYellow)
+                if (dialogueEnabled && yellowEnabled) nextYellow = !nextYellow
+                wantFrame.set(true)
+            }
+            if (!paused && yellowLastAt != 0L && SystemClock.elapsedRealtime() - yellowLastAt > 1800L) {
+                clearYellow()
+            }
             if (!paused && received.get() == 0L && SystemClock.elapsedRealtime() - startedAt > 5000L)
                 setSource("MediaProjection běží, ale nedorazil žádný snímek")
             if (!paused && lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt > 1800L) {
@@ -173,7 +194,7 @@ class GameLingoScreenTranslationService : Service() {
         if (intent?.action == STOP) { stopSelf(); return START_NOT_STICKY }
         if (intent?.action == PAUSE) {
             if (!active) { stopSelf(); return START_NOT_STICKY }
-            paused = !paused; resetText(); render("")
+            paused = !paused; resetText(); render(""); clearYellow()
             status = if (paused) "Pozastaveno" else source
             notification()
             return START_NOT_STICKY
@@ -219,30 +240,43 @@ class GameLingoScreenTranslationService : Service() {
             check(Settings.canDrawOverlays(this) && !RemotePlayService.aktivni && !PrijemService.bezi) {
                 "Překryv nebo režim se mezitím změnil."
             }
-            GameLingoOCRConfig.load(this); OblastTitulku.nacti(this)
-            if (OblastTitulku.rucne) {
-                val r = OblastTitulku.oblast.copyOf()
-                if (r.size == 4 && r.all { it.isFinite() && it in 0f..1f } && r[2]-r[0] > .1f && r[3]-r[1] > .05f) roi = r
-            }
-            // Default immediately above the source ROI, not at a fixed screen height.
-            // An overlapping custom output is unsafe with MediaProjection (it would read itself).
-            output = when {
-                roi[1] >= .30f -> floatArrayOf(.5f, roi[1] - .02f, .78f, 1f)
-                roi[3] <= .70f -> floatArrayOf(.5f, (roi[3] + .27f).coerceAtMost(.98f), .78f, 1f)
-                else -> throw IllegalArgumentException("Nastav modrou oblast do horní nebo dolní části obrazu.")
-            }
+            GameLingoOCRConfig.load(this); OblastTitulku.nacti(this); Volby.nacti(this)
+            val settings = Nastaveni(this)
+            dialogueEnabled = settings.dialogy
+            yellowEnabled = Volby.zapnuto
+            yellowTextMode = Volby.rezimText
+            check(dialogueEnabled || yellowEnabled) { "Zapni dialogy nebo žlutou oblast v nastavení Překlad." }
+            // Same saved regions and automatic dialogue crop as Remote Play.
+            roi = if (OblastTitulku.rucne) GameLingoDirectTVLayout.blue(this)
+                else floatArrayOf(.05f,.70f,.95f,1f)
+            yellowRoi = GameLingoDirectTVLayout.yellow(this)
+            orangeOutput = GameLingoDirectTVLayout.orange(this)
+            val inputs = listOfNotNull(roi.takeIf { dialogueEnabled }, yellowRoi.takeIf { yellowEnabled })
+            fun safe(r: FloatArray) = inputs.none { GameLingoDirectTVLayout.intersects(it, r) }
             val savedOutput = GameLingoDirectTVLayout.green(this)
-            var positionNote = "Automaticky vedle modré oblasti"
-            if (savedOutput != null) {
-                val safeAbove = savedOutput[1] <= roi[1] - .02f
-                val safeBelow = savedOutput[1] - .24f * savedOutput[3] >= roi[3] + .02f
-                if (safeAbove || safeBelow) {
+            if (dialogueEnabled) {
+                if (savedOutput != null) {
+                    check(safe(GameLingoDirectTVLayout.greenBounds(savedOutput))) {
+                        "Zelený výstup zasahuje do oblasti OCR. Posuň jej v Rozložení; při snímání TV by jinak četl vlastní překlad."
+                    }
                     output = savedOutput
-                    positionNote = "Vlastní zelená oblast"
-                } else positionNote = "Zelená oblast zasahuje do OCR; použita bezpečná automatická poloha"
+                } else {
+                    val candidates = listOf(floatArrayOf(.5f, (roi[1] - .02f).coerceAtLeast(.05f), .78f, 1f),
+                        floatArrayOf(.5f, (roi[3]+.27f).coerceAtMost(.98f), .78f, 1f),
+                        floatArrayOf(.5f,.25f,.78f,1f))
+                    output = candidates.firstOrNull { safe(GameLingoDirectTVLayout.greenBounds(it)) }
+                        ?: throw IllegalArgumentException("Nastav volné místo pro zelený výstup v Rozložení.")
+                }
             }
-            layoutState = positionNote + " · OCR: " + roi.joinToString("/") { (it*100).toInt().toString() } +
-                " · výstup Y: " + (output[1]*100).toInt() + " %"
+            if (yellowEnabled) {
+                check(safe(orangeOutput)) { "Oranžový výstup zasahuje do oblasti OCR. Posuň jej v Rozložení." }
+                check(!dialogueEnabled || !GameLingoDirectTVLayout.intersects(GameLingoDirectTVLayout.greenBounds(output),orangeOutput)) {
+                    "Zelený a oranžový výstup se překrývají. Uprav Rozložení."
+                }
+            }
+            layoutState = "Modrá: " + roi.joinToString("/") { (it*100).toInt().toString() } +
+                " · zelená Y: " + (output[1]*100).toInt() + " % · žlutá: " +
+                if (yellowEnabled) yellowRoi.joinToString("/") { (it*100).toInt().toString() } else "vypnuta"
             sourceLanguage = GameLingoLanguages.game(this)
             val metrics = android.util.DisplayMetrics()
             @Suppress("DEPRECATION")
@@ -268,6 +302,7 @@ class GameLingoScreenTranslationService : Service() {
             frameHandler = handler
             val images = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
             reader = images
+            captureYellow = !dialogueEnabled && yellowEnabled
             wantFrame.set(true)
             images.setOnImageAvailableListener({ source -> receive(source) }, handler)
             display = p.createVirtualDisplay("GameLingo-screen", width, height, metrics.densityDpi.coerceAtLeast(1),
@@ -310,17 +345,20 @@ class GameLingoScreenTranslationService : Service() {
     private fun receive(images: ImageReader) {
         try {
             val image = images.acquireLatestImage() ?: return
+            var yellow = false
             val bitmap = try {
                 received.incrementAndGet()
                 if (!wantFrame.compareAndSet(true, false)) return
+                yellow = captureYellow
+                val region = if (yellow) yellowRoi else roi
                 val plane = image.planes[0]
                 val buffer = plane.buffer.duplicate()
                 val w = image.width; val h = image.height
                 require(plane.pixelStride == 4 && plane.rowStride >= w * 4)
-                val x = (roi[0] * w).toInt().coerceIn(0,w-1)
-                val y = (roi[1] * h).toInt().coerceIn(0,h-1)
-                val right = (roi[2] * w).toInt().coerceIn(x+1,w)
-                val bottom = (roi[3] * h).toInt().coerceIn(y+1,h)
+                val x = (region[0] * w).toInt().coerceIn(0,w-1)
+                val y = (region[1] * h).toInt().coerceIn(0,h-1)
+                val right = (region[2] * w).toInt().coerceIn(x+1,w)
+                val bottom = (region[3] * h).toInt().coerceIn(y+1,h)
                 val cw = right-x; val ch = bottom-y
                 val pixels = IntArray(cw * ch)
                 for (row in 0 until ch) {
@@ -339,7 +377,7 @@ class GameLingoScreenTranslationService : Service() {
             decoded.incrementAndGet()
             ui.post {
                 if (!active || paused || ocrBusy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
-                else process(bitmap)
+                else if (yellow) processYellow(bitmap) else process(bitmap)
             }
         } catch (e: Exception) { frameError = e.javaClass.simpleName + ": " + (e.message ?: "").take(120) }
     }
@@ -438,6 +476,92 @@ class GameLingoScreenTranslationService : Service() {
         try { p.preloz(value, { completed(it) }, { completed(null) }) }
         catch (e: Exception) { completed(null) }
     }
+    private fun clearYellow() {
+        yellowCandidate = emptyList(); yellowShown = emptyList(); yellowSelected = -1
+        yellowLastAt = 0L; yellowLastAttempt = emptyList(); yellowAttemptAt = 0L
+        renderYellow(emptyList(), -1)
+    }
+    private fun renderYellow(items: List<String>, selected: Int) {
+        if (PrijemService.bezi || RemotePlayService.aktivni) return
+        OverlayService.posli(this, Intent(this, OverlayService::class.java)
+            .setAction(OverlayService.ACTION_SET_VOLBY)
+            .putExtra(OverlayService.EXTRA_VOLBY, items.toTypedArray())
+            .putExtra(OverlayService.EXTRA_VYBRANA, selected)
+            .putExtra(OverlayService.EXTRA_OBLAST, yellowRoi)
+            .putExtra(OverlayService.EXTRA_RAMECEK, false)
+            .putExtra(OverlayService.EXTRA_VYSTUP_VOLEB, orangeOutput))
+    }
+    private fun processYellow(cropped: Bitmap) {
+        val read = ocr ?: run { cropped.recycle(); return }
+        ocrBusy = true
+        val ticket = epoch
+        try {
+            read.prectiVolby(cropped, { lines ->
+                val cleaned = lines.filter { it.first.count { c -> c.isLetter() } >= 2 }.take(8)
+                val selected = if (yellowTextMode) Volby.VYBRANA_TEXT else yellowHighlight(cropped, cleaned.map { it.second })
+                val words = if (yellowTextMode) listOf(cleaned.joinToString(" ") { it.first }.trim()).filter { it.isNotBlank() }
+                    else cleaned.map { it.first.trim() }
+                cropped.recycle()
+                ui.post {
+                    ocrBusy = false
+                    if (!active || paused || ticket != epoch) return@post
+                    if (words.isEmpty() || (!yellowTextMode && selected < 0 && words != yellowCandidate)) return@post
+                    yellowLastAt = SystemClock.elapsedRealtime()
+                    if (words != yellowCandidate) { yellowCandidate = words; yellowShown = emptyList(); renderYellow(emptyList(),-1) }
+                    if (selected >= 0 || yellowTextMode) yellowSelected = selected
+                    if (yellowShown.isNotEmpty()) renderYellow(yellowShown,yellowSelected)
+                    else translateYellow()
+                }
+            }, { cropped.recycle(); ui.post { ocrBusy=false } })
+        } catch (e: Exception) { cropped.recycle(); ocrBusy=false }
+    }
+    // Same brightness-based selection principle as the game choice reader.
+    private fun yellowHighlight(b: Bitmap, boxes: List<android.graphics.Rect>): Int {
+        if (boxes.size < 2) return -1
+        val averages = boxes.map { r ->
+            var sum = 0L; var count = 0
+            for (y in r.top.coerceIn(0,b.height) until r.bottom.coerceIn(0,b.height) step 3)
+                for (x in 0 until b.width step 5) {
+                    val c=b.getPixel(x,y); sum += ((c shr 16 and 255)+(c shr 8 and 255)+(c and 255)); count++
+                }
+            if (count == 0) 0.0 else sum.toDouble()/count
+        }
+        val ordered = averages.indices.sortedByDescending { averages[it] }
+        return if (averages[ordered[0]]-averages[ordered[1]] >= 40.0) ordered[0] else -1
+    }
+    private fun translateYellow() {
+        val value = yellowCandidate
+        val now = SystemClock.elapsedRealtime()
+        if (!active || paused || yellowRequest || value.isEmpty() || now-yellowLastAt > 1800L ||
+            (value == yellowLastAttempt && now-yellowAttemptAt < 1000L)) return
+        val p = translator ?: return
+        val ticket = epoch
+        yellowRequest = true; yellowLastAttempt = value; yellowAttemptAt = now
+        val results = mutableListOf<String>()
+        fun current() = active && !paused && ticket == epoch && value == yellowCandidate &&
+            SystemClock.elapsedRealtime()-yellowLastAt <= 1800L
+        fun finish() {
+            yellowRequest=false
+            if (active && !paused && yellowCandidate != value) translateYellow()
+        }
+        fun next(index: Int) {
+            if (!current()) { finish(); return }
+            if (index == value.size) {
+                yellowShown = results.toList()
+                renderYellow(yellowShown, yellowSelected)
+                finish(); return
+            }
+            try {
+                p.preloz(value[index], { result ->
+                    ui.post {
+                        if (!current() || result.isBlank()) finish()
+                        else { results.add(result); next(index+1) }
+                    }
+                }, { ui.post { finish() } })
+            } catch (e: Exception) { finish() }
+        }
+        next(0)
+    }
     private fun render(text: String) {
         lastRenderAt = android.os.SystemClock.elapsedRealtime()
         if (PrijemService.bezi || RemotePlayService.aktivni) return
@@ -464,7 +588,7 @@ class GameLingoScreenTranslationService : Service() {
         pendingStart?.let { ui.removeCallbacks(it) }; pendingStart = null
         active=false; running=false; wantFrame.set(false); epoch++; ui.removeCallbacks(tick)
         if (wasActive && !status.startsWith("Systém ukončil")) status = "Zastaveno · poslední stav: " + source
-        if (wasActive) render("")
+        if (wasActive) { render(""); clearYellow() }
         runCatching { display?.release() }; display=null
         val oldReader = reader; reader=null
         val handler = frameHandler; frameHandler=null
@@ -529,10 +653,16 @@ class GameLingoScreenTranslationService : Service() {
                     .setNeutralButton("Pozastavit / pokračovat") { _,_ ->
                         if (running) a.startService(Intent(a,GameLingoScreenTranslationService::class.java).setAction(PAUSE))
                     }.setNegativeButton("Zpět",null).show()
-            } else AlertDialog.Builder(a).setTitle("Samostatná TV")
-                .setMessage("OCR viditelných titulků ve vybrané oblasti. Po povolení snímání otevři video. Překlad běží do zastavení. Chráněný obraz může být nedostupný.")
-                .setPositiveButton("Spustit překlad TV") { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java)) }
-                .setNegativeButton("Zrušit",null).show()
+            } else GameLingoTVUi.select(a, "Samostatná TV", arrayOf(
+                "Spustit překlad TV · vybrat profil", "Rozložení oblastí", "Profily her a aplikací")) { index ->
+                when (index) {
+                    0 -> GameLingoTVProfiles.chooseForStart(a) {
+                        a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java))
+                    }
+                    1 -> GameLingoDirectTVLayout.show(a) { open(a) }
+                    2 -> GameLingoTVProfiles.show(a)
+                }
+            }
         }
         fun diagnostics(a: Activity) {
             if (running) stop(a)
