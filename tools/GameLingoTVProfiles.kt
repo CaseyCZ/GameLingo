@@ -28,7 +28,7 @@ object GameLingoTVProfiles {
             put("orange", array(GameLingoDirectTVLayout.orange(a)))
             val green = GameLingoDirectTVLayout.green(a)
             put("greenEnabled", green != null)
-            if (green != null) put("green", array(green))
+            put("green", array(GameLingoDirectTVLayout.storedGreen(a)))
             put("color", style.getString("color", "white")); put("opacity", style.getInt("opacity", 230))
         }
     }

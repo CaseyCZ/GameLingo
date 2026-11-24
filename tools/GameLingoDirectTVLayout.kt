@@ -7,8 +7,17 @@ import android.graphics.Color
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.SeekBar
-import android.widget.Switch
+import android.app.Dialog
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PixelFormat
+import android.view.KeyEvent
+import android.view.View
+import android.view.WindowManager
+import android.view.Gravity
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
 import android.widget.TextView
 
 /** Local direct-mode settings only. The authenticated phone receiver uses its
@@ -28,8 +37,8 @@ object GameLingoDirectTVLayout {
         val r = read(c, "directOrange", orangeDefault)
         return r.takeIf { validRect(it) && it[4].isFinite() && it[4] in 0.6f..2f } ?: orangeDefault.copyOf()
     }
-    fun green(c: Context): FloatArray? {
-        if (!prefs(c).getBoolean("directGreenEnabled", false)) return null
+    fun green(c: Context): FloatArray? = if (prefs(c).getBoolean("directGreenEnabled", false)) storedGreen(c) else null
+    internal fun storedGreen(c: Context): FloatArray {
         val r = read(c, "directGreen", greenDefault)
         return r.takeIf { it.all { v -> v.isFinite() } && it[0] in 0f..1f &&
             it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0.6f..2f } ?: greenDefault.copyOf()
@@ -51,196 +60,265 @@ object GameLingoDirectTVLayout {
     internal fun locked(c: Context, region: String): Boolean = prefs(c).getBoolean("directLock"+region, false)
     private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
 
+    private val names = arrayOf("Modrá · čtení dialogů", "Zelená · přeložené dialogy",
+        "Žlutá · čtení dalších textů", "Oranžová · přeložené texty")
+    private val colors = intArrayOf(0xFF4FB3FF.toInt(),0xFF3CFF6E.toInt(),0xFFFFD54A.toInt(),0xFFFF9E34.toInt())
+    private val handler = Handler(Looper.getMainLooper())
+    private var previewWindow: View? = null
+    private var previewManager: WindowManager? = null
+    private var previewTimeout: Runnable? = null
+
+    private fun removePreview() {
+        previewTimeout?.let { handler.removeCallbacks(it) }; previewTimeout = null
+        previewWindow?.let { view -> runCatching { previewManager?.removeViewImmediate(view) } }
+        previewWindow = null; previewManager = null
+    }
+
+    private class AreaCanvas(context: Context, private val boxes: Array<FloatArray>,
+                             private val selected: () -> Int, private val overVideo: Boolean,
+                             private val locked: (Int) -> Boolean) : View(context) {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        override fun onDraw(canvas: Canvas) {
+            super.onDraw(canvas)
+            val inset = if (overVideo) 0f else 8f
+            val metrics = android.util.DisplayMetrics()
+            @Suppress("DEPRECATION")
+            context.getSystemService(WindowManager::class.java).defaultDisplay.getRealMetrics(metrics)
+            val ratio = metrics.widthPixels.coerceAtLeast(1).toFloat()/metrics.heightPixels.coerceAtLeast(1)
+            val w = if (overVideo) width.toFloat() else minOf((width-2*inset).coerceAtLeast(1f),
+                (height-2*inset).coerceAtLeast(1f)*ratio)
+            val h = if (overVideo) height.toFloat() else w/ratio
+            val x = (width-w)/2f; val y = (height-h)/2f
+            val density = resources.displayMetrics.density
+            if (!overVideo) {
+                paint.style=Paint.Style.FILL; paint.color=0xFF111A33.toInt()
+                canvas.drawRoundRect(x,y,x+w,y+h,8*density,8*density,paint)
+            }
+            // Active region is drawn last, above overlapping outlines.
+            val order = (0..3).filter { it != selected() } + selected()
+            for (i in order) {
+                if (i !in 0..3) continue
+                val r = if (i == 1) greenBounds(boxes[i]) else boxes[i]
+                val left=x+r[0]*w; val top=y+r[1]*h
+                val right=x+r[2]*w; val bottom=y+r[3]*h
+                paint.color=colors[i]; paint.style=Paint.Style.STROKE
+                paint.strokeWidth=(if (i==selected()) 3.5f else 1.5f)*density
+                canvas.drawRect(left,top,right,bottom,paint)
+                paint.style=Paint.Style.FILL
+                paint.textSize=(if (overVideo) 15f else 12f)*density
+                val label=names[i].substringBefore(" ·") + if (locked(i)) " · zamčeno" else ""
+                canvas.save(); canvas.clipRect(left,top,right,bottom)
+                canvas.drawText(label,left+5*density,minOf(bottom-2*density,top+paint.textSize+3*density),paint)
+                canvas.restore()
+            }
+            if (overVideo) {
+                paint.color=0xC0000000.toInt(); paint.style=Paint.Style.FILL
+                val tw= minOf(w, 360*density)
+                canvas.drawRoundRect(x+(w-tw)/2,y+8*density,x+(w+tw)/2,y+42*density,8*density,8*density,paint)
+                paint.color=Color.WHITE; paint.textSize=14*density; paint.textAlign=Paint.Align.CENTER
+                canvas.drawText("Náhled oblastí · zmizí za 30 s",x+w/2,y+30*density,paint)
+                paint.textAlign=Paint.Align.LEFT
+            }
+        }
+    }
+
+    /** Temporary non-interactive outlines, without capture, OCR or changes to saved settings. */
+    private fun showOnTV(a: Activity, boxes: Array<FloatArray>, selected: Int, locks: BooleanArray) {
+        if (busy()) return
+        if (!android.provider.Settings.canDrawOverlays(a)) {
+            Toast.makeText(a,"Nejdříve povol překryv v nastavení TV.",Toast.LENGTH_LONG).show()
+            return
+        }
+        removePreview()
+        val c=a.applicationContext
+        val wm=c.getSystemService(WindowManager::class.java)
+        val copies=Array(4) { boxes[it].copyOf() }
+        val view=AreaCanvas(c,copies,{selected},true,{locks[it]})
+        val lp=WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT).apply { gravity=Gravity.TOP or Gravity.LEFT }
+        try {
+            wm.addView(view,lp)
+            previewWindow=view; previewManager=wm
+            val expiry=Runnable { removePreview() }; previewTimeout=expiry
+            handler.postDelayed(expiry,30000L)
+            a.moveTaskToBack(true)
+        } catch (e: Exception) {
+            removePreview()
+            Toast.makeText(a,"Náhled nelze zobrazit: "+e.javaClass.simpleName,Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun show(a: Activity, onSaved: () -> Unit) {
         if (busy()) {
             AlertDialog.Builder(a).setMessage("Nejdříve zastav překlad i příjem z telefonu.")
-                .setPositiveButton("OK", null).show()
+                .setPositiveButton("OK",null).show()
             return
         }
-        OblastTitulku.nacti(a)
-        Volby.nacti(a)
-        val blue = blue(a)
-        val yellow = yellow(a)
-        val orange = orange(a)
-        val savedGreen = green(a)
-        val green = savedGreen ?: greenDefault.copyOf()
-        val root = LinearLayout(a).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(24, 12, 24, 16)
+        removePreview()
+        OblastTitulku.nacti(a); Volby.nacti(a)
+        val savedGreen=green(a)
+        val storedGreen=read(a,"directGreen",greenDefault)
+        val validGreen=storedGreen.takeIf { r -> r.all { it.isFinite() } &&
+            r[0] in 0f..1f && r[1] in 0f..1f && r[2] in .2f..1f && r[3] in .6f..2f }
+        val boxes=arrayOf(blue(a),savedGreen ?: validGreen ?: greenDefault.copyOf(),yellow(a),orange(a))
+        val defaults=arrayOf(OblastTitulku.VYCHOZI.copyOf(),greenDefault.copyOf(),Volby.VYCHOZI.copyOf(),orangeDefault.copyOf())
+        val locks=booleanArrayOf(OblastTitulku.zamceno,locked(a,"Green"),Volby.zamceno,locked(a,"Orange"))
+        var manual=OblastTitulku.rucne
+        var custom=savedGreen!=null
+        var enabled=Volby.zapnuto
+        var textMode=Volby.rezimText
+        var selected=0
+        var mode=0
+        val dialog=Dialog(a,android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val root=LinearLayout(a).apply {
+            orientation=LinearLayout.VERTICAL
+            background=GameLingoVisualKit.pageBackground(a)
+            setPadding(GameLingoTVUi.dp(a,20),GameLingoTVUi.dp(a,12),GameLingoTVUi.dp(a,20),GameLingoTVUi.dp(a,12))
         }
-        // A live schematic of the actual normalized geometry, updated by every D-pad slider.
-        val preview = object : android.view.View(a) {
-            private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-            override fun onDraw(canvas: android.graphics.Canvas) {
-                super.onDraw(canvas)
-                val inset = 8f
-                val metrics = android.util.DisplayMetrics()
-                @Suppress("DEPRECATION")
-                a.getSystemService(android.view.WindowManager::class.java).defaultDisplay.getRealMetrics(metrics)
-                val ratio = metrics.widthPixels.coerceAtLeast(1).toFloat() / metrics.heightPixels.coerceAtLeast(1)
-                val w = minOf((width - inset * 2).coerceAtLeast(1f), (height - inset * 2).coerceAtLeast(1f) * ratio)
-                val h = w / ratio
-                canvas.save()
-                canvas.translate((width-w-2*inset)/2f, (height-h-2*inset)/2f)
-                paint.color = Color.parseColor("#111A33")
-                paint.style = android.graphics.Paint.Style.FILL
-                canvas.drawRect(inset,inset,inset+w,inset+h,paint)
-                fun area(r: FloatArray, color: Int, label: String) {
-                    val left = inset+r[0]*w; val top = inset+r[1]*h
-                    val right = inset+r[2]*w; val bottom = inset+r[3]*h
-                    paint.color = color; paint.style = android.graphics.Paint.Style.STROKE
-                    paint.strokeWidth = 3f
-                    canvas.drawRect(left,top,right,bottom,paint)
-                    paint.style = android.graphics.Paint.Style.FILL
-                    paint.textSize = 15f * resources.displayMetrics.scaledDensity
-                    canvas.save()
-                    canvas.clipRect(left,top,right,bottom)
-                    canvas.drawText(label,left+5f,minOf(bottom-3f,top+paint.textSize+3f),paint)
-                    canvas.restore()
+        fun d(v:Int)=GameLingoTVUi.dp(a,v)
+        fun button(label:String, run:()->Unit)=GameLingoTVUi.action(a,label,onActivate=run).apply {
+            minimumHeight=d(42); textSize=15f; setPadding(d(8),d(6),d(8),d(6))
+        }
+        fun row()=LinearLayout(a).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
+        fun addWeighted(parent:LinearLayout, view:View) {
+            parent.addView(view,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f).apply { marginEnd=d(6) })
+        }
+        val top=row()
+        top.addView(GameLingoTVUi.title(a,"Rozložení oblastí",24f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
+        top.addView(button("Zrušit"){dialog.dismiss()})
+        root.addView(top)
+        val tabs=row(); root.addView(tabs)
+        val body=row()
+        root.addView(body,LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f))
+        val left=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
+        body.addView(left,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,1.6f).apply { marginEnd=d(12) })
+        val preview=AreaCanvas(a,boxes,{selected},false,{locks[it]})
+        left.addView(preview,LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f))
+        val guide=TextView(a).apply { setTextColor(Color.WHITE); textSize=14f; gravity=Gravity.CENTER }
+        left.addView(guide)
+        val side=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
+        val scroll=ScrollView(a).apply { addView(side); isFillViewport=true }
+        body.addView(scroll,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,1f))
+        val active=GameLingoTVUi.title(a,"",18f)
+        val metricsLabel=TextView(a).apply { setTextColor(Color.WHITE); textSize=13f; setPadding(d(6),d(6),d(6),d(6)) }
+        side.addView(active); side.addView(metricsLabel)
+        val tabButtons=mutableListOf<TextView>()
+        val modeButtons=mutableListOf<TextView>()
+        lateinit var lockButton:TextView
+        lateinit var option:TextView
+        lateinit var contentType:TextView
+        lateinit var editor:TextView
+        fun refresh() {
+            active.text=names[selected]; active.setTextColor(colors[selected])
+            tabButtons.forEachIndexed { i,v -> v.text=(if(i==selected) "✓ " else "")+names[i].substringBefore(" ·"); v.setTextColor(colors[i]) }
+            modeButtons.forEachIndexed { i,v -> v.text=(if(i==mode) "✓ " else "")+arrayOf("Posun","Velikost","Písmo")[i] }
+            modeButtons[2].visibility=if(selected==1 || selected==3) View.VISIBLE else View.GONE
+            lockButton.text=if(locks[selected]) "Odemknout oblast" else "Zamknout oblast"
+            option.text=when(selected) {0->if(manual)"Čtení: ruční" else "Čtení: automatické";1->if(custom)"Poloha: vlastní" else "Poloha: automatická";else->if(enabled)"Další texty: zapnuto" else "Další texty: vypnuto"}
+            contentType.visibility=if(selected==2) View.VISIBLE else View.GONE
+            contentType.text=if(textMode)"Typ: celý text" else "Typ: volby odpovědí"
+            val r=boxes[selected]
+            fun pc(v:Float)=kotlin.math.round(v*100).toInt()
+            metricsLabel.text=if(selected==1) "X "+pc(r[0])+" % · Y "+pc(r[1])+" %\nŠířka "+pc(r[2])+" % · písmo "+pc(r[3])+" %"
+                else "X "+pc(r[0])+" % · Y "+pc(r[1])+" %\nŠířka "+pc(r[2]-r[0])+" % · výška "+pc(r[3]-r[1])+" %"+if(selected==3)" · písmo "+pc(r[4])+" %" else ""
+            editor.text=if(locks[selected])"Zamčeno · odemkni oblast" else when(mode){0->"OK · posouvat šipkami";1->if(selected==1)"OK · šířka a měřítko" else "OK · změnit velikost";else->"OK · velikost písma"}
+            guide.text="Vyber oblast a režim · v editoru stiskni OK, potom šipky · OK ukončí úpravy"
+            preview.invalidate()
+        }
+        fun cycleMode() { mode=(mode+1)%(if(selected==1 || selected==3)3 else 2); refresh() }
+        fun change(dx:Float,dy:Float) {
+            if(locks[selected]) return
+            val r=boxes[selected]
+            when(mode) {
+                0 -> if(selected==1) {
+                    r[0]=(r[0]+dx).coerceIn(r[2]/2f,1f-r[2]/2f)
+                    r[1]=(r[1]+dy).coerceIn((.24f*r[3]).coerceAtMost(1f),1f)
+                } else {
+                    val w=r[2]-r[0]; val h=r[3]-r[1]
+                    r[0]=(r[0]+dx).coerceIn(0f,(1f-w).coerceAtLeast(0f)); r[2]=(r[0]+w).coerceAtMost(1f)
+                    r[1]=(r[1]+dy).coerceIn(0f,(1f-h).coerceAtLeast(0f)); r[3]=(r[1]+h).coerceAtMost(1f)
                 }
-                area(blue,Color.parseColor("#4FB3FF"),"OCR dialogů")
-                area(yellow,Color.parseColor("#FFD54A"),"OCR herních textů")
-                area(GameLingoDirectTVLayout.greenBounds(green),
-                    Color.parseColor("#3CFF6E"),"Přeložené dialogy")
-                area(orange,Color.parseColor("#FF9E34"),"Přeložené herní texty")
-                canvas.restore()
-            }
-        }
-        root.addView(TextView(a).apply { text = "Náhled rozložení · 4 nezávislé oblasti"; textSize = 16f })
-        root.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-            GameLingoTVUi.dp(a, 170)))
-        val columns = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL }
-        val left = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
-        val right = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
-        columns.addView(left, LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f)
-            .apply { rightMargin = GameLingoTVUi.dp(a,18) })
-        columns.addView(right, LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
-        root.addView(ScrollView(a).apply { addView(columns) }, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, (a.resources.displayMetrics.heightPixels * .46f).toInt()))
-        var controls = left
-        var sectionLocked: Switch? = null
-        fun heading(label: String, color: Int) {
-            controls.addView(TextView(a).apply {
-                text = label; textSize = 16f; setTextColor(color)
-                setPadding(0, 16, 0, 6)
-            })
-        }
-        fun toggle(label: String, enabled: Boolean): Switch = Switch(a).apply {
-            text = label; isChecked = enabled; isFocusable = true
-            GameLingoTVUi.controlFocus(a, this)
-            controls.addView(this, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        }
-        fun slider(label: String, min: Int, max: Int, current: () -> Float, update: (Float) -> Unit,
-                   refreshAll: MutableList<() -> Unit>) {
-            val title = TextView(a)
-            val lock = sectionLocked
-            val bar = SeekBar(a).apply {
-                this.max = max-min; keyProgressIncrement = 5; isFocusable = true
-                GameLingoTVUi.controlFocus(a, this)
-            }
-            fun refresh() {
-                val percent = kotlin.math.round(current()*100).toInt()
-                title.text = "$label: $percent %"
-                bar.progress = (percent-min).coerceIn(0, max-min)
-            }
-            refreshAll.add { refresh() }
-            bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seek: SeekBar, progress: Int, fromUser: Boolean) {
-                    if (fromUser) {
-                        if (lock?.isChecked == true) { refresh(); return }
-                        update((progress+min)/100f)
-                        refreshAll.forEach { it() }
-                        preview.invalidate()
-                    }
+                1 -> if(selected==1) {
+                    r[2]=(r[2]+dx).coerceIn(.2f,1f)
+                    r[0]=r[0].coerceIn(r[2]/2f,1f-r[2]/2f)
+                    r[3]=(r[3]+dy).coerceIn(.6f,2f)
+                } else {
+                    val w=(r[2]-r[0]+dx).coerceIn(.11f,1f)
+                    val h=(r[3]-r[1]+dy).coerceIn(.06f,1f)
+                    r[0]=r[0].coerceAtMost(1f-w); r[2]=(r[0]+w).coerceAtMost(1f)
+                    r[1]=r[1].coerceAtMost(1f-h); r[3]=(r[1]+h).coerceAtMost(1f)
                 }
-                override fun onStartTrackingTouch(seek: SeekBar) {}
-                override fun onStopTrackingTouch(seek: SeekBar) {}
-            })
-            controls.addView(title)
-            controls.addView(bar)
+                2 -> { val index=if(selected==1)3 else 4; if(index<r.size) r[index]=(r[index]+dx+dy).coerceIn(.6f,2f) }
+            }
+            if(selected==0) manual=true
+            if(selected==1) custom=true
             refresh()
         }
-        fun reset(label: String, lock: Switch, run: () -> Unit) {
-            controls.addView(GameLingoTVUi.action(a,label) {
-                if (!lock.isChecked) { run(); preview.invalidate() }
-                else android.widget.Toast.makeText(a,"Nejdřív odemkni oblast.",android.widget.Toast.LENGTH_SHORT).show()
-            })
+        for(i in 0..3) {
+            val v=button(names[i].substringBefore(" ·")) { selected=i; mode=0; refresh(); editor.requestFocus() }
+            tabButtons.add(v); addWeighted(tabs,v)
         }
-        fun rect(r: FloatArray, defaults: FloatArray) {
-            val refresh = mutableListOf<() -> Unit>()
-            slider("Poloha X", 0, 89, { r[0] }, { v ->
-                val width = r[2]-r[0]
-                r[0] = v.coerceIn(0f, (1f-width).coerceAtLeast(0f)); r[2] = (r[0]+width).coerceAtMost(1f)
-            }, refresh)
-            slider("Poloha Y", 0, 94, { r[1] }, { v ->
-                val height = r[3]-r[1]
-                r[1] = v.coerceIn(0f, (1f-height).coerceAtLeast(0f)); r[3] = (r[1]+height).coerceAtMost(1f)
-            }, refresh)
-            slider("Šířka", 11, 100, { r[2]-r[0] }, { v ->
-                r[0] = r[0].coerceAtMost(1f-v); r[2] = (r[0]+v).coerceAtMost(1f)
-            }, refresh)
-            slider("Výška", 6, 100, { r[3]-r[1] }, { v ->
-                r[1] = r[1].coerceAtMost(1f-v); r[3] = (r[1]+v).coerceAtMost(1f)
-            }, refresh)
-            if (r.size == 5) slider("Velikost písma", 60, 200, { r[4] }, { r[4] = it }, refresh)
-            sectionLocked?.let { lock -> reset("Obnovit oblast", lock) { defaults.copyInto(r); refresh.forEach { it() } } }
+        val modes=row()
+        for(i in 0..2) {
+            val v=button(arrayOf("Posun","Velikost","Písmo")[i]) { mode=i; refresh(); editor.requestFocus() }
+            modeButtons.add(v); addWeighted(modes,v)
         }
-        heading("Modrá · čtení dialogů", Color.parseColor("#4FB3FF"))
-        val manual = toggle("Ruční oblast", OblastTitulku.rucne)
-        val blueLock = toggle("Zamknout modrou oblast", OblastTitulku.zamceno)
-        sectionLocked = blueLock
-        rect(blue, OblastTitulku.VYCHOZI)
-        heading("Žlutá · čtení herních textů", Color.parseColor("#FFD54A"))
-        val enabled = toggle("Číst oblast herních textů", Volby.zapnuto)
-        val asText = toggle("Celý text místo seznamu voleb", Volby.rezimText)
-        val yellowLock = toggle("Zamknout žlutou oblast", Volby.zamceno)
-        sectionLocked = yellowLock
-        rect(yellow, Volby.VYCHOZI)
-        controls = right
-        heading("Zelená · výstup dialogů", Color.parseColor("#3CFF6E"))
-        val customGreen = toggle("Vlastní poloha místo automatické", savedGreen != null)
-        val greenLock = toggle("Zamknout zelenou oblast", locked(a,"Green"))
-        sectionLocked = greenLock
-        val refreshGreen = mutableListOf<() -> Unit>()
-        slider("Střed X", 0, 100, { green[0] }, { green[0] = it }, refreshGreen)
-        slider("Spodní hrana Y", 0, 100, { green[1] }, { green[1] = it }, refreshGreen)
-        slider("Šířka", 20, 100, { green[2] }, { green[2] = it }, refreshGreen)
-        slider("Velikost písma", 60, 200, { green[3] }, { green[3] = it }, refreshGreen)
-        reset("Obnovit výchozí polohu", greenLock) { greenDefault.copyInto(green); refreshGreen.forEach { it() } }
-        heading("Oranžová · výstup herních textů", Color.parseColor("#FF9E34"))
-        val orangeLock = toggle("Zamknout oranžovou oblast", locked(a,"Orange"))
-        sectionLocked = orangeLock
-        rect(orange, orangeDefault)
-        val dialog = AlertDialog.Builder(a).setTitle("Oblasti přímého překladu")
-            .setView(root).setNegativeButton("Zrušit", null)
-            .setPositiveButton("Uložit") { _, _ ->
-                if (busy()) {
-                    android.widget.Toast.makeText(a, "Překlad běží. Nastavení nebylo změněno.",
-                        android.widget.Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+        side.addView(modes)
+        editor=button("Posouvat"){cycleMode()}
+        var editing=false
+        editor.setOnKeyListener { _,key,event ->
+            if(key==KeyEvent.KEYCODE_DPAD_CENTER || key==KeyEvent.KEYCODE_ENTER) {
+                if(event.action==KeyEvent.ACTION_UP) {
+                    editing=!editing
+                    guide.text=if(editing)"Režim úprav · šipky mění rámeček · OK ukončí úpravy" else "Vyber další ovládací prvek šipkami"
                 }
-                if (!validRect(blue) || !validRect(yellow) || !validRect(orange)) {
-                    android.widget.Toast.makeText(a, "Neplatná oblast. Nastavení nebylo změněno.",
-                        android.widget.Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+                true
+            } else if(editing && key==KeyEvent.KEYCODE_BACK) {
+                if(event.action==KeyEvent.ACTION_UP) { editing=false; guide.text="Úpravy ukončeny · šipkami vyber další ovládací prvek" }
+                true
+            } else if(editing && key in arrayOf(KeyEvent.KEYCODE_DPAD_LEFT,KeyEvent.KEYCODE_DPAD_RIGHT,KeyEvent.KEYCODE_DPAD_UP,KeyEvent.KEYCODE_DPAD_DOWN)) {
+                if(event.action==KeyEvent.ACTION_DOWN) {
+                    val step=if(event.repeatCount>5).05f else .01f
+                    change(when(key){KeyEvent.KEYCODE_DPAD_LEFT->-step;KeyEvent.KEYCODE_DPAD_RIGHT->step;else->0f},
+                        when(key){KeyEvent.KEYCODE_DPAD_UP->-step;KeyEvent.KEYCODE_DPAD_DOWN->step;else->0f})
+                    guide.text="Režim úprav · OK ukončí úpravy"
                 }
-                OblastTitulku.zamceno = blueLock.isChecked
-                Volby.zamceno = yellowLock.isChecked
-                OblastTitulku.rucne = manual.isChecked
-                OblastTitulku.oblast = blue.copyOf()
-                OblastTitulku.uloz(a)
-                Volby.zapnuto = enabled.isChecked
-                Volby.rezimText = asText.isChecked
-                Volby.oblast = yellow.copyOf()
-                Volby.uloz(a)
-                val editor = prefs(a).edit().putBoolean("directGreenEnabled", customGreen.isChecked)
-                editor.putBoolean("directLockGreen", greenLock.isChecked).putBoolean("directLockOrange", orangeLock.isChecked)
-                orange.forEachIndexed { i, v -> editor.putFloat("directOrange"+i, v) }
-                green.forEachIndexed { i, v -> editor.putFloat("directGreen"+i, v) }
-                editor.apply()
-                onSaved()
-            }.show()
-        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .86f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+                true
+            } else false
+        }
+        side.addView(editor)
+        lockButton=button("Zamknout oblast"){locks[selected]=!locks[selected];refresh()};side.addView(lockButton)
+        option=button("Režim"){when(selected){0->manual=!manual;1->custom=!custom;else->enabled=!enabled};refresh()};side.addView(option)
+        contentType=button("Typ"){textMode=!textMode;refresh()};side.addView(contentType)
+        side.addView(button("Obnovit oblast"){
+            if(!locks[selected]) {defaults[selected].copyInto(boxes[selected]);refresh()}
+            else Toast.makeText(a,"Nejdřív odemkni oblast.",Toast.LENGTH_SHORT).show()
+        })
+        val footer=row()
+        addWeighted(footer,button("Náhled na TV"){showOnTV(a,boxes,selected,locks.copyOf())})
+        fun save():Boolean {
+            if(busy() || !validRect(boxes[0]) || !validRect(boxes[2]) || !validRect(boxes[3])) {
+                Toast.makeText(a,"Překlad běží nebo oblast není platná.",Toast.LENGTH_LONG).show();return false
+            }
+            OblastTitulku.zamceno=locks[0]; OblastTitulku.rucne=manual; OblastTitulku.oblast=boxes[0].copyOf(); OblastTitulku.uloz(a)
+            Volby.zamceno=locks[2]; Volby.zapnuto=enabled; Volby.rezimText=textMode; Volby.oblast=boxes[2].copyOf();Volby.uloz(a)
+            val e=prefs(a).edit().putBoolean("directGreenEnabled",custom)
+                .putBoolean("directLockGreen",locks[1]).putBoolean("directLockOrange",locks[3])
+            boxes[1].forEachIndexed { i,v->e.putFloat("directGreen"+i,v) }
+            boxes[3].forEachIndexed { i,v->e.putFloat("directOrange"+i,v) }
+            e.apply();return true
+        }
+        addWeighted(footer,button("Uložit do profilu"){if(save()){dialog.dismiss();GameLingoTVProfiles.show(a)}})
+        addWeighted(footer,button("Uložit"){if(save()){dialog.dismiss();onSaved()}})
+        root.addView(footer)
+        refresh()
+        dialog.setContentView(root)
+        dialog.setOnDismissListener { removePreview() }
+        dialog.show()
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT)
+        tabButtons.first().requestFocus()
     }
 }
