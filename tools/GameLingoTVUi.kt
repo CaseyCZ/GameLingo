@@ -56,6 +56,61 @@ object GameLingoTVUi {
         setTypeface(null, if (muted) Typeface.NORMAL else Typeface.BOLD)
     }
 
+    fun isTV(a: Activity): Boolean = (a.resources.configuration.uiMode and
+        android.content.res.Configuration.UI_MODE_TYPE_MASK) == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
+
+    // Selected is a persistent checkmark; focus is an independent bright ring.
+    // Do not depend on the manufacturer's AlertDialog row selector.
+    fun select(a: Activity, heading: String, labels: Array<String>, selected: Int = -1, onSelect: (Int) -> Unit) {
+        val dialog = Dialog(a)
+        val body = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(a, 24),dp(a, 16),dp(a, 24),dp(a, 16))
+            background = android.graphics.drawable.ColorDrawable(Color.parseColor("#080E1B"))
+        }
+        body.addView(title(a, heading, 27f))
+        val rows = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        val buttons = labels.mapIndexed { index, label ->
+            action(a, (if (index == selected) "✓  " else "    ") + label) {
+                dialog.dismiss(); onSelect(index)
+            }.apply {
+                id = View.generateViewId()
+                gravity = Gravity.CENTER_VERTICAL
+                textSize = 16f
+                minimumHeight = dp(a, 50)
+                setPadding(dp(a, 14), dp(a, 7), dp(a, 14), dp(a, 7))
+                setTextColor(if (index == selected) Color.parseColor("#57EBA3") else Color.WHITE)
+                rows.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(a, 7) })
+            }
+        }
+        val scroll = ScrollView(a).apply { addView(rows) }
+        body.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+            minOf(dp(a, 430), a.resources.displayMetrics.heightPixels * 55 / 100,
+                dp(a, 63 * labels.size)).coerceAtLeast(dp(a, 54))))
+        val back = action(a, "Zpět") { dialog.dismiss() }
+        back.id = View.generateViewId()
+        body.addView(back, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            .apply { topMargin = dp(a, 12) })
+        buttons.forEachIndexed { i, button ->
+            button.nextFocusUpId = buttons.getOrNull(i-1)?.id ?: button.id
+            button.nextFocusDownId = buttons.getOrNull(i+1)?.id ?: back.id
+        }
+        back.nextFocusUpId = buttons.lastOrNull()?.id ?: back.id
+        dialog.setContentView(body)
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .48f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        (buttons.getOrNull(selected) ?: buttons.firstOrNull() ?: back).requestFocus()
+    }
+
+    fun controlFocus(a: Activity, view: View) {
+        val old = view.background
+        view.setOnFocusChangeListener { v, focused ->
+            v.background = if (focused) panel(a, true) else old
+        }
+    }
+
     fun brand(a: Activity): LinearLayout = LinearLayout(a).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL

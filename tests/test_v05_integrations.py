@@ -793,25 +793,22 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GITHUB_RUN_NUMBER", code(TOOLS/"brand_android.py"))
         self.assertIn("verify_tv_ui_apk.py", code(TOOLS.parent/".github/workflows/build-gamelingo.yml"))
 
-    def test_tv_hybrid_reads_only_selected_player_subtitle_nodes(self):
-        access = code(TOOLS/"GameLingoSubtitleAccessibility.kt")
+    def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")
-        for marker in ("rootInActiveWindow", "root.packageName", "node.isPassword", "node.isEditable",
-                       "Rect.intersects(bounds, area)", "GameLingoScreenTranslationService.running",
-                       'id.contains("subtitle")', 'id.contains("caption")'):
-            self.assertIn(marker, access)
-        for forbidden in ("takeScreenshot(", "dispatchGesture(", "performAction(", "AudioRecord", "RECORD_AUDIO"):
-            self.assertNotIn(forbidden, access)
+        self.assertFalse((TOOLS/"GameLingoSubtitleAccessibility.kt").exists())
+        for forbidden in ("takeScreenshot(", "dispatchGesture(", "performAction(", "AudioRecord", "RECORD_AUDIO",
+                          "GameLingoSubtitleAccessibility", "Pouze text titulků"):
             self.assertNotIn(forbidden, capture)
-        for marker in ("GameLingoSubtitleAccessibility.read(player, roi)", "if (!hasProjection)",
-                       "setSource(\"Text titulků\")", "currentPlayer()", "ticket == epoch",
-                       "Pouze text titulků", "Pouze OCR obrazovky"):
+        for marker in ("resultCode == RESULT_OK", "HandlerThread", "setOnImageAvailableListener",
+                       "acquireLatestImage", "finally { image.close() }", "plane.rowStride",
+                       "received.incrementAndGet()", "decoded.incrementAndGet()", "ticket == epoch",
+                       "Spustit překlad TV", "Diagnostika samostatného OCR", "Test překryvu"):
             self.assertIn(marker, capture)
-        self.assertIn("android.permission.BIND_ACCESSIBILITY_SERVICE", wiring)
-        self.assertIn('android:canTakeScreenshot="false"', wiring)
+        self.assertNotIn("android.permission.BIND_ACCESSIBILITY_SERVICE", wiring)
+        self.assertIn('android:foregroundServiceType="mediaProjection"', wiring)
         self.assertIn("GameLingoScreenTranslationService.running ||", wiring)
-        self.assertIn("GameLingoSubtitleAccessibility;", code(TOOLS/"verify_tv_ui_apk.py"))
+        self.assertIn("Obsolete accessibility implementation included", code(TOOLS/"verify_tv_ui_apk.py"))
 
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")

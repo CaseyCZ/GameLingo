@@ -40,10 +40,10 @@ object GameLingoDeviceCenter {
             val tenFoot = (c.resources.configuration.uiMode and
                 android.content.res.Configuration.UI_MODE_TYPE_MASK) ==
                 android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
-            val h = GameLingoVisualKit.dp(c, if (tenFoot) 17 else 13)
-            val v = GameLingoVisualKit.dp(c, if (tenFoot) 17 else 12)
+            val h = GameLingoVisualKit.dp(c, if (tenFoot) 10 else 13)
+            val v = GameLingoVisualKit.dp(c, if (tenFoot) 8 else 12)
             setPadding(h, v, h, v)
-            minimumHeight = GameLingoVisualKit.dp(c, if (tenFoot) 75 else 62)
+            minimumHeight = GameLingoVisualKit.dp(c, if (tenFoot) 52 else 62)
             background = GameLingoVisualKit.card(c, checked)
             isClickable = true
             isFocusable = true
@@ -64,22 +64,22 @@ object GameLingoDeviceCenter {
                 else -> null
             }
             if (family != null) addView(GameLingoVisualKit.platformEmblem(c, family),
-                LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, 46),
-                    GameLingoVisualKit.dp(c, 46)).apply {
+                LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, if (tenFoot) 30 else 46),
+                    GameLingoVisualKit.dp(c, if (tenFoot) 30 else 46)).apply {
                     rightMargin = GameLingoVisualKit.dp(c, 12)
                 })
             addView(LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(c).apply {
                     text = title
-                    textSize = if (tenFoot) 20f else 17f
+                    textSize = if (tenFoot) 15f else 17f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
                 })
                 if (sub.isNotEmpty()) {
                     addView(TextView(c).apply {
                         text = sub
-                        textSize = if (tenFoot) 15f else 13f
+                        textSize = if (tenFoot) 12f else 13f
                         setTextColor(muted)
                         setPadding(0, 6, 0, 0)
                     })
@@ -158,11 +158,21 @@ object GameLingoDeviceCenter {
         }
         add(root, addDeviceButton)
 
-        root.addView(label(c, "Konzole", 19f))
+        val tenFoot = GameLingoTVUi.isTV(c)
+        val consolePanel = if (tenFoot) LinearLayout(c).apply { orientation = LinearLayout.VERTICAL } else root
+        val tvPanel = if (tenFoot) LinearLayout(c).apply { orientation = LinearLayout.VERTICAL } else root
+        if (tenFoot) {
+            val columns = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL }
+            columns.addView(consolePanel, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                .apply { rightMargin = GameLingoVisualKit.dp(c, 16) })
+            columns.addView(tvPanel, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            root.addView(columns)
+        }
+        consolePanel.addView(label(c, "Konzole", 16f))
         val consoles = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
         }
-        root.addView(consoles)
+        consolePanel.addView(consoles)
 
         fun psRows() {
             val saved = GameLingoPlayStationConsoles.list(c)
@@ -212,7 +222,7 @@ object GameLingoDeviceCenter {
 
         // Fetch every Xbox owned by the Microsoft account, NOT firstOrNull.
         val xboxStatus = label(c, "Xbox: vyhledávám…", 14f, muted)
-        root.addView(xboxStatus)
+        consolePanel.addView(xboxStatus)
         if (XboxUcet.prihlasen(c)) {
             Thread {
                 val found = runCatching { XboxSpojeni.konzole(c) }
@@ -288,11 +298,11 @@ object GameLingoDeviceCenter {
             })
         }
 
-        root.addView(label(c, "Televize", 19f))
+        tvPanel.addView(label(c, "Televize", 16f))
         val tvStore = TvProfily(c)
         val tvs = tvStore.seznam()
         if (tvs.isEmpty()) {
-            add(root, line(c, "Google TV", "Přidat televizor") {
+            add(tvPanel, line(c, "Google TV", "Přidat televizor") {
                 onDismiss()
                 onTV()
             })
@@ -324,7 +334,7 @@ object GameLingoDeviceCenter {
                 GameLingoTVPairing.connected(tv.ip) -> " · TV odpověděla"
                 else -> " · Kód uložen, spojení neověřeno"
             }
-            add(root, line(c, tv.jmeno, descriptor,
+            add(tvPanel, line(c, tv.jmeno, descriptor,
                           tvStore.posledniId == tv.id) {
                 AlertDialog.Builder(c)
                     .setTitle(tv.jmeno)
@@ -395,7 +405,7 @@ object GameLingoDeviceCenter {
             ViewGroup.LayoutParams.MATCH_PARENT
         )
         scroll.post {
-            root.findFocus()?.requestFocus()
+            root.findFocus()?.requestFocus() ?: root.focusSearch(android.view.View.FOCUS_DOWN)?.requestFocus()
         }
     }
 }

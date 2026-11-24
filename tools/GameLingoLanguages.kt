@@ -79,24 +79,60 @@ object GameLingoLanguages {
             Kind.TARGET -> target(activity)
         }
         val index = choices.indexOfFirst { it.code == current }.coerceAtLeast(0)
-        AlertDialog.Builder(activity)
+        fun applyChoice(choice: Int) {
+            val selected = choices[choice].code
+            when (kind) {
+                Kind.APP -> Nastaveni(activity).jazyk = selected
+                Kind.GAME -> setTranslationLanguage(activity, "game", selected)
+                Kind.TARGET -> setTranslationLanguage(activity, "target", selected)
+            }
+            onChanged()
+        }
+        if (GameLingoTVUi.isTV(activity)) {
+            GameLingoTVUi.select(activity, title, choices.map { it.title }.toTypedArray(), index, ::applyChoice)
+        } else AlertDialog.Builder(activity)
             .setTitle(title)
-            .setSingleChoiceItems(choices.map { it.title }.toTypedArray(), index) {
-                picker, choice ->
-                val selected = choices[choice].code
-                when (kind) {
-                    Kind.APP -> Nastaveni(activity).jazyk = selected
-                    Kind.GAME -> setTranslationLanguage(activity, "game", selected)
-                    Kind.TARGET -> setTranslationLanguage(activity, "target", selected)
-                }
-                picker.dismiss()
-                onChanged()
-            }.setNegativeButton("Zrušit", null)
-            .show()
+            .setSingleChoiceItems(choices.map { it.title }.toTypedArray(), index) { picker, choice ->
+                picker.dismiss(); applyChoice(choice)
+            }.setNegativeButton("Zrušit", null).show()
     }
 
     fun show(activity: Activity, onChanged: () -> Unit = {}) {
         if (activity.isFinishing) return
+        if (GameLingoTVUi.isTV(activity)) {
+            val dialog = android.app.Dialog(activity)
+            val body = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(GameLingoTVUi.dp(activity,20),GameLingoTVUi.dp(activity,20),
+                    GameLingoTVUi.dp(activity,20),GameLingoTVUi.dp(activity,20))
+                background = android.graphics.drawable.ColorDrawable(Color.parseColor("#080E1B"))
+            }
+            body.addView(GameLingoTVUi.title(activity,"Jazyky GameLingo",28f))
+            val row = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
+            for (kind in Kind.values()) {
+                val label = when (kind) {
+                    Kind.APP -> "Jazyk aplikace"
+                    Kind.GAME -> "Jazyk hry"
+                    Kind.TARGET -> "Jazyk překladu"
+                }
+                val value = when (kind) {
+                    Kind.APP -> name(appLanguages,app(activity))
+                    Kind.GAME -> name(gameLanguages,game(activity))
+                    Kind.TARGET -> name(targetLanguages,target(activity))
+                }
+                row.addView(GameLingoTVUi.tile(activity,"◎",label,value) {
+                    choose(activity,kind) { dialog.dismiss(); onChanged(); show(activity,onChanged) }
+                }, LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f)
+                    .apply { rightMargin = GameLingoTVUi.dp(activity,10) })
+            }
+            body.addView(row)
+            body.addView(GameLingoTVUi.action(activity,"Hotovo") { dialog.dismiss() })
+            dialog.setContentView(body); dialog.show()
+            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+            dialog.window?.setLayout((activity.resources.displayMetrics.widthPixels * .75f).toInt(),ViewGroup.LayoutParams.WRAP_CONTENT)
+            row.getChildAt(0).requestFocus()
+            return
+        }
         val container = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             val pad = GameLingoVisualKit.dp(activity, 21)

@@ -34,7 +34,7 @@ class GameLingoScreenConsentActivity : Activity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         if (state != null) return
-        if (!Settings.canDrawOverlays(this) || RemotePlayService.aktivni || PrijemService.bezi) {
+        if (!Settings.canDrawOverlays(this) || RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running) {
             Toast.makeText(this, "Zastav ostatní režimy a povol překryv.", Toast.LENGTH_LONG).show()
             finish(); return
         }
@@ -168,7 +168,7 @@ class GameLingoScreenTranslationService : Service() {
             projection = p
             projectionState = "Povoleno"
             p.registerCallback(object : MediaProjection.Callback() {
-                override fun onStop() { status = "Systém ukončil snímání"; stopSelf() }
+                override fun onStop() { if (active) { status = "Systém ukončil snímání"; stopSelf() } }
                 override fun onCapturedContentResize(width: Int, height: Int) {
                     capturedSize = "${width} × ${height}"
                 }
@@ -179,6 +179,7 @@ class GameLingoScreenTranslationService : Service() {
             frameHandler = handler
             val images = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
             reader = images
+            wantFrame.set(true)
             images.setOnImageAvailableListener({ source -> receive(source) }, handler)
             display = p.createVirtualDisplay("GameLingo-screen", width, height, metrics.densityDpi.coerceAtLeast(1),
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, images.surface, null, ui)
@@ -407,6 +408,36 @@ class GameLingoScreenTranslationService : Service() {
                     maxHeight = (a.resources.displayMetrics.heightPixels * .22f).toInt()
                 })
             }
+            panel.addView(GameLingoTVUi.action(a,"Test překryvu") {
+                if (running || RemotePlayService.aktivni || PrijemService.bezi || !Settings.canDrawOverlays(a)) {
+                    Toast.makeText(a,"Nejdříve zastav ostatní režimy a povol překryv.",Toast.LENGTH_LONG).show()
+                } else {
+                    OverlayService.spust(a)
+                    OverlayService.posli(a, Intent(a,OverlayService::class.java)
+                        .setAction(OverlayService.ACTION_SET_TEXT).putExtra(OverlayService.EXTRA_TEXT,"Test zobrazení titulků GameLingo")
+                        .putExtra(OverlayService.EXTRA_DOBA,4500L).putExtra(OverlayService.EXTRA_VLASTNI,floatArrayOf(.5f,.84f,.75f,1f)))
+                }
+            })
+            panel.addView(GameLingoTVUi.action(a,"Test překladového jádra") {
+                if (running || RemotePlayService.aktivni || PrijemService.bezi) {
+                    Toast.makeText(a,"Nejdříve zastav ostatní režimy.",Toast.LENGTH_LONG).show()
+                } else {
+                    val p = Prekladac(a,GameLingoLanguages.target(a),"en")
+                    val done = AtomicBoolean(false)
+                    val handler = Handler(Looper.getMainLooper())
+                    fun finishTest(text: String) {
+                        if (!done.compareAndSet(false,true)) return
+                        handler.post {
+                            runCatching { p.zavri() }
+                            if (!a.isFinishing && !a.isDestroyed) AlertDialog.Builder(a)
+                                .setTitle("Test překladu").setMessage(text).setPositiveButton("OK",null).show()
+                        }
+                    }
+                    handler.postDelayed({ finishTest("Vypršel čas testu.") },15000)
+                    try { p.preloz("This is a test of GameLingo subtitles.",{ finishTest(it) },{ finishTest("Překlad selhal.") }) }
+                    catch (e: Exception) { finishTest("Chyba: " + e.javaClass.simpleName) }
+                }
+            })
             val dialog = AlertDialog.Builder(a).setTitle("Diagnostika samostatného OCR")
                 .setView(android.widget.ScrollView(a).apply { addView(panel) })
                 .setPositiveButton("Test snímání") { _,_ ->

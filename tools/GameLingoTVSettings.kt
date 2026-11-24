@@ -104,9 +104,9 @@ object GameLingoTVSettings {
                 "Rozšířené hledání: " + if (GameLingoOCRConfig.expandSearch) "Ano" else "Ne",
                 "Výchozí nastavení")) { _, i ->
                 when (i) {
-                    0 -> AlertDialog.Builder(a).setTitle("Režim OCR").setSingleChoiceItems(labels, keys.indexOf(GameLingoOCRConfig.mode)) { pick, n ->
-                        GameLingoOCRConfig.setMode(a, keys[n]); pick.dismiss(); ocr(a)
-                    }.setNegativeButton("Zpět", null).show()
+                    0 -> GameLingoTVUi.select(a, "Režim OCR", labels, keys.indexOf(GameLingoOCRConfig.mode)) { n ->
+                        GameLingoOCRConfig.setMode(a, keys[n]); ocr(a)
+                    }
                     1 -> { GameLingoOCRConfig.setFilterMenu(a, !GameLingoOCRConfig.filterMenuText); ocr(a) }
                     2 -> { GameLingoOCRConfig.setExpandSearch(a, !GameLingoOCRConfig.expandSearch); ocr(a) }
                     3 -> { GameLingoOCRConfig.reset(a); ocr(a) }
@@ -122,6 +122,7 @@ object GameLingoTVSettings {
         val panel = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(24,8,24,8) }
         for (i in labels.indices) panel.addView(android.widget.CheckBox(a).apply {
             text = labels[i]; isChecked = checked[i]; isFocusable = true
+            GameLingoTVUi.controlFocus(a, this)
             setOnCheckedChangeListener { _, enabled -> checked[i] = enabled }
         })
         val min = CasovaniPribehu.MIN_PROCENT
@@ -131,6 +132,7 @@ object GameLingoTVSettings {
         panel.addView(SeekBar(a).apply {
             max = CasovaniPribehu.MAX_PROCENT - min; progress = duration - min
             keyProgressIncrement = 5; isFocusable = true
+            GameLingoTVUi.controlFocus(a, this)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
                     duration = min + value; label.text = "Doba zobrazení: $duration %"

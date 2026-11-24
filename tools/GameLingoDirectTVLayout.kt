@@ -88,17 +88,26 @@ object GameLingoDirectTVLayout {
         }
         root.addView(TextView(a).apply { text = "Náhled rozložení · 4 nezávislé oblasti"; textSize = 16f })
         root.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-            GameLingoTVUi.dp(a, 230)))
-        val scroll = ScrollView(a).apply { addView(root) }
+            GameLingoTVUi.dp(a, 170)))
+        val columns = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL }
+        val left = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        val right = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        columns.addView(left, LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f)
+            .apply { rightMargin = GameLingoTVUi.dp(a,18) })
+        columns.addView(right, LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
+        root.addView(ScrollView(a).apply { addView(columns) }, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, (a.resources.displayMetrics.heightPixels * .46f).toInt()))
+        var controls = left
         fun heading(label: String, color: Int) {
-            root.addView(TextView(a).apply {
-                text = label; textSize = 19f; setTextColor(color)
+            controls.addView(TextView(a).apply {
+                text = label; textSize = 16f; setTextColor(color)
                 setPadding(0, 16, 0, 6)
             })
         }
         fun toggle(label: String, enabled: Boolean): Switch = Switch(a).apply {
             text = label; isChecked = enabled; isFocusable = true
-            root.addView(this, LinearLayout.LayoutParams(
+            GameLingoTVUi.controlFocus(a, this)
+            controls.addView(this, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
         fun slider(label: String, min: Int, max: Int, current: () -> Float, update: (Float) -> Unit,
@@ -106,6 +115,7 @@ object GameLingoDirectTVLayout {
             val title = TextView(a)
             val bar = SeekBar(a).apply {
                 this.max = max-min; keyProgressIncrement = 5; isFocusable = true
+                GameLingoTVUi.controlFocus(a, this)
             }
             fun refresh() {
                 val percent = kotlin.math.round(current()*100).toInt()
@@ -124,8 +134,8 @@ object GameLingoDirectTVLayout {
                 override fun onStartTrackingTouch(seek: SeekBar) {}
                 override fun onStopTrackingTouch(seek: SeekBar) {}
             })
-            root.addView(title)
-            root.addView(bar)
+            controls.addView(title)
+            controls.addView(bar)
             refresh()
         }
         fun rect(r: FloatArray) {
@@ -153,6 +163,7 @@ object GameLingoDirectTVLayout {
         val enabled = toggle("Číst oblast herních textů", Volby.zapnuto)
         val asText = toggle("Celý text místo seznamu voleb", Volby.rezimText)
         rect(yellow)
+        controls = right
         heading("Zelená · výstup dialogů", Color.parseColor("#3CFF6E"))
         val customGreen = toggle("Vlastní poloha místo automatické", savedGreen != null)
         val refreshGreen = mutableListOf<() -> Unit>()
@@ -162,8 +173,8 @@ object GameLingoDirectTVLayout {
         slider("Velikost písma", 60, 200, { green[3] }, { green[3] = it }, refreshGreen)
         heading("Oranžová · výstup herních textů", Color.parseColor("#FF9E34"))
         rect(orange)
-        AlertDialog.Builder(a).setTitle("Oblasti přímého překladu")
-            .setView(scroll).setNegativeButton("Zrušit", null)
+        val dialog = AlertDialog.Builder(a).setTitle("Oblasti přímého překladu")
+            .setView(root).setNegativeButton("Zrušit", null)
             .setPositiveButton("Uložit") { _, _ ->
                 if (busy()) {
                     android.widget.Toast.makeText(a, "Překlad běží. Nastavení nebylo změněno.",
@@ -188,5 +199,6 @@ object GameLingoDirectTVLayout {
                 editor.apply()
                 onSaved()
             }.show()
+        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .86f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 }

@@ -71,16 +71,16 @@ object GameLingoTVCaptionStyle {
         }
         root.addView(preview)
         root.addView(GameLingoTVUi.action(a, "Barva písma") {
-            android.app.AlertDialog.Builder(a).setTitle("Barva písma")
-                .setSingleChoiceItems(names, keys.indexOf(p.getString("color", "white"))) { dlg, index ->
-                    p.edit().putString("color", keys[index]).apply(); refresh(); dlg.dismiss()
-                }.setNegativeButton("Zpět", null).show()
+            GameLingoTVUi.select(a, "Barva písma", names, keys.indexOf(p.getString("color", "white"))) { index ->
+                p.edit().putString("color", keys[index]).apply(); refresh()
+            }
         })
         val label = android.widget.TextView(a).apply { text = "Neprůhlednost pozadí" }
         root.addView(label)
         root.addView(android.widget.SeekBar(a).apply {
             max = 100; progress = p.getInt("opacity", 230) * 100 / 255
             keyProgressIncrement = 5; isFocusable = true
+            GameLingoTVUi.controlFocus(a, this)
             setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: android.widget.SeekBar, value: Int, fromUser: Boolean) {
                     label.text = "Neprůhlednost pozadí: $value %"
@@ -92,7 +92,8 @@ object GameLingoTVCaptionStyle {
         })
         root.addView(GameLingoTVUi.action(a, "Velikost a poloha titulků") { GameLingoDirectTVLayout.show(a) {} })
         refresh()
-        android.app.AlertDialog.Builder(a).setTitle("Vzhled překladu přímo na TV")
+        val dialog = android.app.AlertDialog.Builder(a).setTitle("Vzhled překladu přímo na TV")
             .setView(root).setPositiveButton("Hotovo", null).show()
+        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .55f).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 }

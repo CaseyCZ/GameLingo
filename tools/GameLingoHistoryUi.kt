@@ -74,8 +74,8 @@ internal object GameLingoHistoryUi {
         val dialog = AlertDialog.Builder(a).setTitle("Historie překladů")
             .setView(root).setPositiveButton("Hotovo", null).create()
         dialog.show()
-        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * 0.90).toInt(),
-            (a.resources.displayMetrics.heightPixels * 0.82).toInt())
+        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * (if (GameLingoTVUi.isTV(a)) 0.70 else 0.90)).toInt(),
+            (a.resources.displayMetrics.heightPixels * (if (GameLingoTVUi.isTV(a)) 0.70 else 0.82)).toInt())
         toggle.requestFocus()
     }
 }
