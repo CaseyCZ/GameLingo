@@ -357,7 +357,8 @@ object GameLingoDeviceCenter {
                             }
                         } else {
                             AlertDialog.Builder(c)
-                                .setMessage("Odebrat " + tv.jmeno + "?")
+                                .setMessage("Odebrat " + tv.jmeno + " z tohoto zařízení?" +
+                                    if (pinSupported) "\n\nPřístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači." else "")
                                 .setPositiveButton("Odebrat") { _, _ ->
                                     tvStore.odeber(tv.id)
                                     if (mobile) GameLingoTVPairing.forget(c, tv.ip)
