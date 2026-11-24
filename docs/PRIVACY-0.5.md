@@ -5,7 +5,7 @@
 |---|---|
 | Remote Play video | Dekódování a OCR na zařízení (Vision / ML Kit); kompletní absence dalších přenosů není ještě síťově ověřena |
 | Rozpoznaný text a jazyky | Online překlad: iOS Google GTX/MyMemory, Android/TV také Microsoft Edge. Fallback může poslat text více poskytovatelům; poskytovatel zpracovává síťové údaje a text podle svých podmínek. |
-| Přihlašovací údaje konzolí | Autentizace Sony/Microsoft. iOS tokeny v Keychain; Android credential persistence a starší account-transfer cesta ještě vyžadují úplné ověření. |
+| Přihlašovací údaje konzolí | Autentizace Sony/Microsoft. iOS tokeny v Keychain; Android credential persistence ještě vyžaduje úplné ověření. Starý PCS1 přenos konzolových účtů byl ze zdrojové implementace odstraněn; konzole se přihlašují samostatně. Nové sestavení čeká. |
 | Párování TV | IP, identita telefonu, PIN/klíč, HMAC a replay ochrana; Keychain/Keystore na ověřených cestách. UDP není šifrované; bootstrap PIN/secret nešifrovaný. |
 | Cache | Trvalá SQLite s originály, výsledky, jazyky, engine a LRU; limit cca 20 000, ne časová expirace. iOS vyloučena ze zálohy; Android generated manifest ověřit. Přidaná správa cache umožňuje vypnout ukládání a samostatně odstranit místní databázi a sidecars po zastavení překladu. Kompilace a purge test čekají. |
 | Historie | Oddělená volitelná RAM-only historie; vypnutí/vymazání historie nevymaže SQLite cache. |
@@ -20,3 +20,6 @@ Uživatel může vypnout historii, zastavit relaci, lokálně zapomenout přijí
 
 ## Online přenos — aktualizace SEC-05
 Překladový HTTP klient ve zdroji přijímá pouze určené HTTPS endpointy a odmítá přesměrování. iOS používá ephemeral session bez cookies, credential storage a HTTP cache; Android/TV vypíná HTTP cache pro jednotlivé překladové connection a nastavuje no-store. To není ochrana před ukládáním textu poskytovatelem, ani odstranění GET query z Google/MyMemory. Neposíláme konzolové tokeny překladačům v těchto callsites; Edge token je oddělený překladový token. Žádný nový poskytovatel, placená služba ani přenos snímků těmito callsites. Celkový síťový audit včetně SDK/native a skutečné retence zůstává otevřený. Nepoužívat pro soukromý či důvěrný text. Lokální cache opt-out není opt-out online překladu; TV stále potřebuje online službu pro dosud nepřeložený text. Změny nejsou ověřeny sestavením.
+
+### Změna přenosu účtů pro 0.5
+Nešifrovaný čtyřmístný PCS1 přenos účtu již není nabízen. Android/TV receiver odmítá PCS1 i při legacy kompatibilitě titulků a nečte pro něj konzolové údaje; iOS odstranil klienta a import tokenu. Běžný PCPAIR1 šestiznakový PIN/QR, lokální párování titulků a samostatné konzolové přihlášení zůstávají. Oprava ještě neprošla sestavením a negativním síťovým ověřením. Nejde o šifrování PCPAIR1 bootstrapu.
