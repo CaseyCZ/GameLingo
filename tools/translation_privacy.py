@@ -5,6 +5,7 @@ def once(s, a, b):
     return s.replace(a, b, 1)
 
 def protect_cache_writes(t, tv):
+    if not tv: raise RuntimeError('Offline translation is no longer supported')
     # Capture epoch at the public request, pass it through all fallbacks.
     # The cache worker checks it again when the write is actually performed.
     anchor = '        cachedOrRun(vstup, source, '
@@ -26,28 +27,10 @@ def protect_cache_writes(t, tv):
         'remember("google-gtx-v1", source, jazyk, t, vysledek, cacheRevision)')
     t = once(t, 'remember(engine, source, target, vstup, hotovyText)',
         'remember(engine, source, target, vstup, hotovyText, cacheRevision)')
-    if tv:
-        t = once(t, 'chyba: (String) -> Unit,\n                                 skipGoogle: Boolean = false)',
-            'chyba: (String) -> Unit, cacheRevision: Long,\n                                 skipGoogle: Boolean = false)')
-        t = once(t, 'prelozOnlineMiss(t, source, jazyk, ok, { err() }, skipGoogle = true)',
-            'prelozOnlineMiss(t, source, jazyk, ok, { err() }, cacheRevision, skipGoogle = true)')
-    else:
-        t = once(t, 'private fun prelozOnlineMiss(vstup: String, source: String, target: String,\n                                 hotovo: (String) -> Unit, chyba: (String) -> Unit)',
-            'private fun prelozOnlineMiss(vstup: String, source: String, target: String,\n                                 hotovo: (String) -> Unit, chyba: (String) -> Unit, cacheRevision: Long)')
-        t = once(t, 'prelozVTelevizi(t, source, jazyk, ok, { err() })',
-            'prelozVTelevizi(t, source, jazyk, ok, { err() }, cacheRevision)')
-        t = once(t, 'prelozZalozne(vstup, source, target, hotovo, chyba)',
-            'prelozZalozne(vstup, source, target, hotovo, chyba, cacheRevision)')
-        t = once(t, 'private fun prelozZalozne(vstup: String, source: String, target: String,\n                               hotovo: (String) -> Unit, chyba: (String) -> Unit)',
-            'private fun prelozZalozne(vstup: String, source: String, target: String,\n                               hotovo: (String) -> Unit, chyba: (String) -> Unit, cacheRevision: Long)')
-        if t.count('prelozVTelevizi(vstup, source, target, hotovo, chyba)') != 2:
-            raise RuntimeError("Expected preview and fallback cache propagation")
-        t = t.replace('prelozVTelevizi(vstup, source, target, hotovo, chyba)',
-            'prelozVTelevizi(vstup, source, target, hotovo, chyba, cacheRevision)')
-        t = once(t, 'private fun prelozVTelevizi(vstup: String, source: String, target: String, hotovo: (String) -> Unit, chyba: (String) -> Unit)',
-            'private fun prelozVTelevizi(vstup: String, source: String, target: String, hotovo: (String) -> Unit, chyba: (String) -> Unit, cacheRevision: Long)')
-        t = once(t, 'remember("mlkit-v1", source, target, vstup, cesky)',
-            'remember("mlkit-v1", source, target, vstup, cesky, cacheRevision)')
+    t = once(t, 'chyba: (String) -> Unit,\n                                 skipGoogle: Boolean = false)',
+        'chyba: (String) -> Unit, cacheRevision: Long,\n                                 skipGoogle: Boolean = false)')
+    t = once(t, 'prelozOnlineMiss(t, source, jazyk, ok, { err() }, skipGoogle = true)',
+        'prelozOnlineMiss(t, source, jazyk, ok, { err() }, cacheRevision, skipGoogle = true)')
     return t
 
 def restrict_service_log(s):
