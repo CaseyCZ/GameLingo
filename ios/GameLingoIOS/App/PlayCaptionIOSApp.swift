@@ -507,7 +507,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func start(_ console: XboxConsole) {
-        guard !isRunning else { return }
+        guard !isRunning, !cacheChanging else { return }
         frameCount = 0
         lastEnglish = ""
         lastCzech = ""
@@ -872,7 +872,7 @@ final class CaptionAppModel: ObservableObject {
 
     /// Actual native PlayStation Remote Play, not just a console entry.
     func start(_ console: RegisteredConsole) {
-        guard !isRunning else { return }
+        guard !isRunning, !cacheChanging else { return }
         frameCount = 0
         lastEnglish = ""
         lastCzech = ""
