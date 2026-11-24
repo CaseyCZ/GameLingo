@@ -105,10 +105,10 @@ object GameLingoTVProfiles {
                 } else persist(name)
             }.show()
     }
-    private fun editSettings(a: Activity, name: String) {
+    private fun editSettings(a: Activity, name: String, openLayout: Boolean = false) {
         if(busy()) return
         val body=android.widget.LinearLayout(a).apply { orientation=android.widget.LinearLayout.VERTICAL }
-        body.addView(GameLingoTVUi.title(a,"Uprav aktuální nastavení a potom je ulož do profilu.",20f,true))
+        body.addView(GameLingoTVUi.title(a,"Uprav aktuální nastavení. Tlačítkem Uložit změny do profilu přepíšeš uložený profil.",20f,true))
         fun add(title: String, run:()->Unit) { body.addView(GameLingoTVUi.action(a,title,onActivate=run)) }
         add("Jazyky"){GameLingoLanguages.show(a)}
         add("OCR"){GameLingoOCRSettings.show(a){GameLingoDirectTVLayout.show(a){}}}
@@ -126,6 +126,7 @@ object GameLingoTVProfiles {
             }
         }
         page=GameLingoTVUi.page(a,"Upravit profil · "+name,body,helpTopic="profiles")
+        if(openLayout) GameLingoDirectTVLayout.show(a) {}
     }
     fun show(a: Activity) {
         if (busy()) { AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show(); return }
@@ -140,7 +141,7 @@ object GameLingoTVProfiles {
                         0,1 -> {
                             if(restore(a,all(a).getJSONObject(name))) {
                                 store(a).edit().putString("activeProfile",name).apply()
-                                if(action==1) GameLingoDirectTVLayout.show(a){show(a)}
+                                if(action==1) editSettings(a,name,openLayout=true)
                                 else android.widget.Toast.makeText(a,"Profil načten",android.widget.Toast.LENGTH_SHORT).show()
                             } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_SHORT).show()
                         }
