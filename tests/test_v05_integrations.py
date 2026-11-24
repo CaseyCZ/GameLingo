@@ -493,7 +493,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         wiring = code(TOOLS/"wire_gamelingo_languages.py")
         self.assertIn("async -> Result<String, GLTranslationFailure>", pipeline)
         self.assertNotIn("return original", pipeline)
-        self.assertIn("if case .success(let translated) = outcome", pipeline)
+        self.assertRegex(pipeline, r"case \.success\(let translated\):\s*await translationCache\.remember")
         self.assertIn("guard case .success(let czech) = outcome", model)
         self.assertIn("case .failure(let error):", model)
         self.assertIn("dialogueTranslationFailed(revision: reading.revision)", model)
