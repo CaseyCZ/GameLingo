@@ -264,6 +264,8 @@ jobs:
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'"
           python kit/tools/verify_tv_translation_apk.py tv "$APK"
           python kit/tools/verify_tv_ui_apk.py "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > tv-manifest.txt
+          python -c 'import pathlib,re; s=pathlib.Path("tv-manifest.txt").read_text(); assert "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" in s; blocks=re.split(r"(?m)^\s*E: service ",s); match=[b for b in blocks[1:] if "GameLingoScreenTranslationService" in b.split("E: ",1)[0]]; assert len(match)==1 and re.search(r"foregroundServiceType.*(?:0x0*20)\b",match[0].split("E: ",1)[0]), "APK missing mediaProjection service type"'
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | head -n 1
           python kit/tools/package_license_notices.py tv --verify "$APK"
           cp "$APK" GameLingo-GoogleTV-v0.5.0-dev-TEST.apk

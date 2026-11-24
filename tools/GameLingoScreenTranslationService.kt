@@ -31,6 +31,47 @@ import android.widget.Toast
 
 /** System consent is always requested anew. This does not bypass secure/DRM surfaces. */
 class GameLingoScreenConsentActivity : Activity() {
+    private val startupUi = Handler(Looper.getMainLooper())
+    private var waitingForCapture = false
+    private var startupDeadline = 0L
+    private val checkStartup = object : Runnable {
+        override fun run() {
+            if (!waitingForCapture || isFinishing) return
+            when {
+                GameLingoScreenTranslationService.running -> {
+                    waitingForCapture = false
+                    moveTaskToBack(true)
+                    finish()
+                }
+                GameLingoScreenTranslationService.startupFailed -> {
+                    waitingForCapture = false
+                    Toast.makeText(this@GameLingoScreenConsentActivity, GameLingoScreenTranslationService.status, Toast.LENGTH_LONG).show()
+                    finish()
+                }
+                SystemClock.elapsedRealtime() >= startupDeadline -> {
+                    waitingForCapture = false
+                    GameLingoScreenTranslationService.status = "Služba snímání neodpověděla"
+                    GameLingoScreenTranslationService.stop(this@GameLingoScreenConsentActivity)
+                    Toast.makeText(this@GameLingoScreenConsentActivity, GameLingoScreenTranslationService.status, Toast.LENGTH_LONG).show()
+                    finish()
+                }
+                else -> startupUi.postDelayed(this, 100L)
+            }
+        }
+    }
+    @Deprecated("TV back navigation")
+    override fun onBackPressed() {
+        if (waitingForCapture) {
+            waitingForCapture = false
+            GameLingoScreenTranslationService.stop(this)
+        }
+        super.onBackPressed()
+    }
+    override fun onDestroy() {
+        startupUi.removeCallbacks(checkStartup)
+        if (waitingForCapture) GameLingoScreenTranslationService.stop(this)
+        super.onDestroy()
+    }
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         if (state != null) return
@@ -67,14 +108,15 @@ class GameLingoScreenConsentActivity : Activity() {
             .putExtra("result", RESULT_OK).putExtra("consent", consent)
             .putExtra("diagnostic", intent.getBooleanExtra("diagnostic", false))
         runCatching {
-            OverlayService.spust(this)
             startForegroundService(request)
-            moveTaskToBack(true)
+            waitingForCapture = true
+            startupDeadline = SystemClock.elapsedRealtime() + 15000L
+            startupUi.post(checkStartup)
         }.onFailure {
             GameLingoScreenTranslationService.status = "Start služby: " + it.javaClass.simpleName
             Toast.makeText(this, "Překlad se nepodařilo spustit.", Toast.LENGTH_LONG).show()
+            finish()
         }
-        finish()
     }
 }
 
@@ -87,6 +129,8 @@ class GameLingoScreenTranslationService : Service() {
     private var ocr: Ctecka? = null
     private var translator: Prekladac? = null
     private var active = false
+    private var starting = false
+    private var pendingStart: Runnable? = null
     private var paused = false
     private var source = "Čekám na první snímek"
     private var worker: HandlerThread? = null
@@ -130,7 +174,7 @@ class GameLingoScreenTranslationService : Service() {
             notification()
             return START_NOT_STICKY
         }
-        if (active) return START_NOT_STICKY
+        if (active || starting) return START_NOT_STICKY
         diagnostic = intent?.getBooleanExtra("diagnostic", false) == true
         val result = intent?.getIntExtra("result", Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
         val consent: Intent? = if (Build.VERSION.SDK_INT >= 33) intent?.getParcelableExtra("consent", Intent::class.java)
@@ -138,10 +182,39 @@ class GameLingoScreenTranslationService : Service() {
         if (result != Activity.RESULT_OK || consent == null ||
             !Settings.canDrawOverlays(this) || RemotePlayService.aktivni || PrijemService.bezi) {
             status = "Chybí souhlas nebo překryv, případně běží jiný režim"
+            startupFailed = true
             stopSelf(); return START_NOT_STICKY
         }
+        starting = true
         try {
+            status = "Aktivuji službu snímání"
             notification()
+            if (Build.VERSION.SDK_INT >= 29) {
+                val type = foregroundServiceType
+                check(type and ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION != 0) {
+                    "Služba nemá typ mediaProjection (typ=$type)"
+                }
+            }
+            foregroundState = "Aktivní · mediaProjection"
+            android.util.Log.i("GameLingoCapture", foregroundState)
+            // Let TV firmware propagate foreground state before consuming the one-shot consent.
+            val task = Runnable {
+                pendingStart = null
+                if (starting) beginCapture(result, consent)
+            }
+            pendingStart = task
+            ui.postDelayed(task, 500L)
+        } catch (e: Exception) {
+            foregroundState = "Chyba: " + e.javaClass.simpleName
+            failStartup("Aktivace foreground služby", e)
+        }
+        return START_NOT_STICKY
+    }
+    private fun beginCapture(result: Int, consent: Intent) {
+        try {
+            check(Settings.canDrawOverlays(this) && !RemotePlayService.aktivni && !PrijemService.bezi) {
+                "Překryv nebo režim se mezitím změnil."
+            }
             GameLingoOCRConfig.load(this); OblastTitulku.nacti(this)
             if (OblastTitulku.rucne) {
                 val r = OblastTitulku.oblast.copyOf()
@@ -163,6 +236,8 @@ class GameLingoScreenTranslationService : Service() {
             width = minOf(1280, metrics.widthPixels).coerceAtLeast(320)
             height = (width.toDouble() * metrics.heightPixels / metrics.widthPixels.coerceAtLeast(1)).toInt().coerceAtLeast(180)
             resolution = "${width} × ${height}"
+            status = "Zahajuji MediaProjection"
+            projectionState = "Zahajuji"
             val p = getSystemService(MediaProjectionManager::class.java).getMediaProjection(result, consent)
                 ?: throw IllegalStateException("Snímání nebylo povoleno.")
             projection = p
@@ -188,15 +263,21 @@ class GameLingoScreenTranslationService : Service() {
             ocr = Ctecka()
             startedAt = SystemClock.elapsedRealtime()
             translator = Prekladac(this, GameLingoLanguages.target(this), GameLingoLanguages.game(this))
-            active = true; running = true; status = source
+            active = true; starting = false; status = source
+            // Only start the independent overlay after MediaProjection and VirtualDisplay exist.
+            running = true
             OverlayService.spust(this)
             ui.post(tick)
         } catch (e: Exception) {
-            status = "Start snímání: " + e.javaClass.simpleName + " · " + (e.message ?: "").take(120)
-            Toast.makeText(this, status, Toast.LENGTH_LONG).show()
-            stopSelf()
+            failStartup("Start snímání", e)
         }
-        return START_NOT_STICKY
+    }
+    private fun failStartup(stage: String, e: Exception) {
+        status = stage + ": " + e.javaClass.simpleName + " · " + (e.message ?: "").take(180)
+        android.util.Log.e("GameLingoCapture", status, e)
+        startupFailed = true
+        starting = false
+        stopSelf()
     }
     private fun resetText() {
         epoch++; candidate = ""; shown = ""; translatedText = ""
@@ -335,6 +416,9 @@ class GameLingoScreenTranslationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onDestroy() {
         val wasActive = active
+        if (starting) startupFailed = true
+        starting = false
+        pendingStart?.let { ui.removeCallbacks(it) }; pendingStart = null
         active=false; running=false; wantFrame.set(false); epoch++; ui.removeCallbacks(tick)
         if (wasActive && !status.startsWith("Systém ukončil")) status = "Zastaveno · poslední stav: " + source
         if (wasActive) render("")
@@ -353,6 +437,9 @@ class GameLingoScreenTranslationService : Service() {
     companion object {
         @Volatile var running = false
             private set
+        @Volatile var startupFailed = false
+            private set
+        @Volatile private var foregroundState = "Nezahájena"
         @Volatile var status = "Zastaveno"
             internal set
         private val received = AtomicLong()
@@ -374,11 +461,12 @@ class GameLingoScreenTranslationService : Service() {
         private const val PAUSE = "gamelingo.screen.PAUSE"
         internal fun resetDiagnostics() {
             received.set(0); decoded.set(0); ocrCalls.set(0); ocrHits.set(0); translationHits.set(0)
+            startupFailed=false; foregroundState="Nezahájena"
             projectionState="Nezahájeno"; displayState="Nevytvořen"; resolution="—"; capturedSize="—"
             frameError="—"; ocrState="Čeká"; translationState="Čeká"; clearPreview()
         }
         private fun clearPreview() { preview=null; lastRaw=""; lastTranslated="" }
-        fun report(): String = "Stav: $status\nSouhlas / projekce: $projectionState\nVirtualDisplay: $displayState" +
+        fun report(): String = "Stav: $status\nForeground služba: $foregroundState\nSouhlas / projekce: $projectionState\nVirtualDisplay: $displayState" +
             "\nSnímání: $resolution · zdroj: $capturedSize\nPřijaté snímky: ${received.get()} · výřezy: ${decoded.get()}" +
             "\nChyba snímku: $frameError\nOCR: $ocrState (${ocrHits.get()}/${ocrCalls.get()})" +
             "\nPřekladač: $translationState (${translationHits.get()})" +

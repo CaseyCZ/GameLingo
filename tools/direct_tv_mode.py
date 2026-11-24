@@ -281,6 +281,9 @@ def patch_direct_tv(folder):
     xml = manifest.read_text(encoding="utf8")
     if xml.count("</application>") != 1:
         raise RuntimeError("TV manifest application anchor changed")
+    for permission in ("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"):
+        if f'android:name="{permission}"' not in xml:
+            xml = xml.replace("<application", f'<uses-permission android:name="{permission}"/>\n    <application', 1)
     xml = xml.replace("</application>", """    <activity android:name=".GameLingoScreenConsentActivity" android:exported="false"/>
         <service android:name=".GameLingoScreenTranslationService" android:exported="false"
             android:foregroundServiceType="mediaProjection"/>

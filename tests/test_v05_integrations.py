@@ -793,6 +793,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GITHUB_RUN_NUMBER", code(TOOLS/"brand_android.py"))
         self.assertIn("verify_tv_ui_apk.py", code(TOOLS.parent/".github/workflows/build-gamelingo.yml"))
 
+    def test_tv_projection_waits_for_typed_foreground_and_success_before_background(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        activity = capture.split("class GameLingoScreenTranslationService", 1)[0]
+        session = activity.split("private fun startSession", 1)[1]
+        self.assertNotIn("OverlayService.spust", session)
+        self.assertNotIn("moveTaskToBack", session)
+        self.assertIn("GameLingoScreenTranslationService.running ->", activity)
+        self.assertIn("GameLingoScreenTranslationService.startupFailed ->", activity)
+        service = capture.split("class GameLingoScreenTranslationService", 1)[1]
+        self.assertLess(service.index("notification()", service.index("starting = true")), service.index("ui.postDelayed(task, 500L)"))
+        self.assertIn("foregroundServiceType", service)
+        start = service.split("private fun beginCapture", 1)[1].split("private fun failStartup", 1)[0]
+        self.assertLess(start.index("getMediaProjection"), start.index("createVirtualDisplay"))
+        self.assertLess(start.index("createVirtualDisplay"), start.index("OverlayService.spust"))
+        self.assertIn("pendingStart?.let", service)
+        self.assertIn("FOREGROUND_SERVICE_MEDIA_PROJECTION", code(TOOLS/"direct_tv_mode.py"))
+
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")
