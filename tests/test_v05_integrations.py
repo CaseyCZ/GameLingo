@@ -673,12 +673,12 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                         out.writestr("classes.dex" if i == 0 else f"classes{i+1}.dex", b"dex\n035\x00"+part)
             make(b"Lcom/google/mlkit/vision/text/TextRecognition;")
             gate.verify(apk, "tv")
-            with self.assertRaises(AssertionError):
-                gate.verify(apk, "mobile")
-            make(b"normal", gate.MOBILE_MARKER)
             gate.verify(apk, "mobile")
-            with self.assertRaises(AssertionError):
-                gate.verify(apk, "tv")
+            for marker in gate.MARKERS:
+                make(b"normal", marker)
+                for mode in ("tv", "mobile"):
+                    with self.assertRaises(AssertionError):
+                        gate.verify(apk, mode)
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
