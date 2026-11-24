@@ -123,6 +123,7 @@ class GameLingoScreenTranslationService : Service() {
         if (intent?.action == PAUSE) {
             if (!active) { stopSelf(); return START_NOT_STICKY }
             paused = !paused; resetText(); render("")
+            status = if (paused) "Pozastaveno" else source
             notification()
             return START_NOT_STICKY
         }
@@ -149,6 +150,14 @@ class GameLingoScreenTranslationService : Service() {
                 roi[1] >= .40f -> floatArrayOf(.5f, .32f, .78f, 1f)
                 roi[3] <= .60f -> floatArrayOf(.5f, .98f, .78f, 1f)
                 else -> throw IllegalArgumentException("Nastav modrou oblast do horní nebo dolní části obrazu.")
+            }
+            val savedOutput = GameLingoDirectTVLayout.green(this)
+            // Text-only mode reads nodes, not pixels, so a user-selected output may overlap the original.
+            if (!hasProjection && savedOutput != null) output = savedOutput
+            else if (savedOutput != null) {
+                val safeAbove = savedOutput[1] <= roi[1] - .05f
+                val safeBelow = savedOutput[1] - .22f * savedOutput[3] >= roi[3] + .03f
+                if (safeAbove || safeBelow) output = savedOutput
             }
             val metrics = resources.displayMetrics
             width = minOf(960, metrics.widthPixels).coerceAtLeast(320)
@@ -232,7 +241,13 @@ class GameLingoScreenTranslationService : Service() {
             Bitmap.createBitmap(rowWidth, height, Bitmap.Config.ARGB_8888).apply { copyPixelsFromBuffer(p.buffer) }
         } finally { image.close() }
         var light = 0
-        for (y in 0 until height step 24) for (x in 0 until width step 24) {
+        // Inspect the input area rather than the whole frame: our output overlay
+        // or player chrome may otherwise make a protected/black region look readable.
+        val left = (roi[0] * width).toInt().coerceIn(0,width-1)
+        val top = (roi[1] * height).toInt().coerceIn(0,height-1)
+        val right = (roi[2] * width).toInt().coerceIn(left+1,width)
+        val bottom = (roi[3] * height).toInt().coerceIn(top+1,height)
+        for (y in top until bottom step 12) for (x in left until right step 12) {
             val pixel = full.getPixel(x,y)
             if ((pixel shr 16 and 255) + (pixel shr 8 and 255) + (pixel and 255) > 24) light++
         }
@@ -240,12 +255,10 @@ class GameLingoScreenTranslationService : Service() {
         if (darkFrames >= 6) {
             full.recycle()
             resetText(); render("")
-            if (player.isNotEmpty()) {
-                setSource("Obraz není dostupný · čekám na text titulků")
-                return
-            }
-            Toast.makeText(this, "Obraz je černý nebo chráněný. Snímání zastaveno.", Toast.LENGTH_LONG).show()
-            stopSelf(); return
+            setSource(if (player.isNotEmpty()) "Oblast obrazu je tmavá nebo nedostupná · čekám na text"
+                else "Oblast obrazu je tmavá nebo nedostupná")
+            // A black scene is not proof of DRM. Keep waiting; do not bypass protection.
+            return
         }
         setSource("OCR titulků")
         val x = (roi[0]*width).toInt().coerceIn(0,width-2)
@@ -281,18 +294,18 @@ class GameLingoScreenTranslationService : Service() {
             if (now - lastRenderAt >= 2500L) render(translatedText)
             return
         }
-        if (value != candidate) { candidate = value; return }
+        if (value != candidate) { candidate = value; if (shown.isNotEmpty()) { shown = ""; translatedText = ""; render("") }; return }
         val p = translator ?: return
         val ticket = epoch
         busy = true
-        p.preloz(value, { translated ->
+        try { p.preloz(value, { translated ->
             ui.post {
                 if (active && !paused && ticket == epoch && currentPlayer() && translated.isNotBlank()) {
                     shown = value; translatedText = translated; render(translated)
                 }
                 busy = false
             }
-        }, { ui.post { if (active && ticket == epoch) render(""); busy = false } })
+        }, { ui.post { if (active && ticket == epoch) render(""); busy = false } }) } catch (_: Exception) { busy = false }
     }
     private fun render(text: String) {
         lastRenderAt = android.os.SystemClock.elapsedRealtime()
