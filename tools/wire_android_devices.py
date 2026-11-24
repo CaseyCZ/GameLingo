@@ -72,6 +72,9 @@ def main():
             raise RuntimeError("Mobile bottom navigation is not wired to devices")
 
     elif tv_dashboard:
+        code=one(code, "        GameLingoTVPairing.initialize(this)",
+            "        GameLingoTVPairing.initialize(this)\n        IPhoneTVPairing.initialize(this)",
+            "migrate receiver key on TV startup")
         # TV first boot has its own welcome and three real language choices.
         # The upstream beta promotion is not part of GameLingo.
         code=one(code,

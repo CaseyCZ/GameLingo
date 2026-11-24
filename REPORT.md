@@ -1,5 +1,5 @@
 # GameLingo 0.5 — audit a pracovní checkpoint
-Datum: 2026-11-24. Stav: fáze 0, statická kontrola; žádné změny aplikačního kódu.
+Datum: 2026-11-24. Stav: P0.1/P0.2 sestaveny, P0.3 implementace čeká na CI.
 
 ## Základ a pravidla
 - Na výslovné upřesnění uživatele je auditní větev založena na poslední vlastní vývojové verzi 0.5, nikoliv na Masteru. Původní dokumentační checkpoint `92026c899c3ebb2db0b1e917cb7ed29647c642d8` byl zachován obsahem v tomto souboru.
@@ -37,7 +37,7 @@ Datum: 2026-11-24. Stav: fáze 0, statická kontrola; žádné změny aplikačn�
 - [x] Založit auditní větev přímo z poslední vývojové revize 0.5 a ověřit push triggery publikace.
 - [x] Baseline build/test na auditní větvi: run 45343148434, všechny tři nativní buildy, kontroly a balíčky success.
 - [x] P0.1 povinné HMAC všech typů titulků, legacy opt-in default off — CI success (45344083071), HW čeká.
-- [ ] P0.2 ochrana proti replay (podepsaná sekvence/nonce, restart relace a ochrana pořadí)
+- [x] P0.2 ochrana proti replay (podepsaná sekvence/nonce, restart relace a ochrana pořadí) — CI success (45345559792), HW čeká.
 - [ ] P0.3 Keystore na TV, bezpečná migrace nebo nové párování
 - [ ] P0.4 více telefonů a jednotlivé odpojení
 - [ ] P0.5 konzole + HDMI; doplnit ruční QA matici
@@ -96,3 +96,9 @@ Ověřit čtyři oblasti, oranžový náhled, profily, barvy, přepnutí HDMI, r
 - Přidán statický regresní test; CI po commitu. Ruční test zachyceného opakovaného paketu, prohozeného pořadí, restartu TV, nové relace, UDP opakování, story a odchylky hodin čeká. P0.3 teprve po výsledku tohoto runu.
 
 - P0.2 commit `d8cb12210270cefc2463fbdbf0f001ae0d8d5f77`, [CI run 45345559792](https://github.com/CaseyCZ/GameLingo/actions/runs/45345559792). Poslední stav: quick / verify: in_progress. Další krok: ověřit všechny joby, případně opravit/revertovat, pak P0.3. P0.2 zatím neoznačovat za otestovaný na HW.
+
+## P0.3 — šifrované uložení párovacího klíče na TV
+- P0.2 run 45345559792 dokončen success: všechny buildy, kontrakty, balíčky a SHA-256. HW čeká.
+- Samostatný commit `security: protect TV pairing keys with Android Keystore`: AES-256-GCM, náhodné IV, AAD vázané na phone_id, samostatný alias přijímače, ciphertext `token_v1` v privátních preferencích. Původní `token` je jednorázově odstraněn při startu TV/receiveru; platná migrace zachová identitu i replay high-water, při selhání je nutné nové párování. Žádný návrat k plaintext ani při poškození ciphertextu. Retry PIN načítá klíč z chráněného úložiště, nikoli z dlouhodobě uložené RAM kopie. Explicitní odpárování odstraní záznam a alias. Síťový formát nezměněn. Upstream minSdk 26, allowBackup=false.
+- Přidán statický kontrakt a tři Android instrumentation testy: migrace + replay, poškozený ciphertext + zákaz plaintext fallbacku, nové párování + retry + clear. TV CI navíc kompiluje androidTest APK (nepřidává ho do distribučních balíčků). Běh instrumentation na skutečné TV nebo emulátoru zatím neproveden; příkaz v připraveném upstream checkoutu `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=cz.titulky.tv.IPhoneTVPairingKeystoreTest`. POZOR: testy mažou testovanou párovací databázi; spouštět jen na vyhrazeném testovacím zařízení/instalaci.
+- Rizika: Keystore nemusí být hardwarový, při ztrátě/poškození klíče nové párování (případně nejdříve odpárovat na TV); starší diskové kopie nelze garantovaně fyzicky vymazat. Neprovádíme šifrování síťového přenosu. Náklady dešifrování při HMAC ověřování měřit v P1.7. P0.4 až po výsledku CI tohoto commitu.

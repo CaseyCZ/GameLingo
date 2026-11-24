@@ -45,6 +45,12 @@ def main() -> None:
     (root / "app/src/main/java/cz/titulky/tv/IPhoneTVPairing.kt").write_text(
         pairing_source.read_text(encoding="utf-8"), encoding="utf-8")
 
+    # Device-only instrumentation tests; never included in the app APK.
+    pairing_test = pathlib.Path(__file__).with_name("IPhoneTVPairingKeystoreTest.kt")
+    test_target = root / "app/src/androidTest/java/cz/titulky/tv/IPhoneTVPairingKeystoreTest.kt"
+    test_target.parent.mkdir(parents=True, exist_ok=True)
+    test_target.write_text(pairing_test.read_text(encoding="utf-8"), encoding="utf-8")
+
     style_source = pathlib.Path(__file__).with_name("GameLingoTVCaptionStyle.kt")
     (root / "app/src/main/java/cz/titulky/tv/GameLingoTVCaptionStyle.kt").write_text(
         style_source.read_text(encoding="utf-8"), encoding="utf-8")
@@ -74,6 +80,7 @@ def main() -> None:
          '                        soTimeout = 1000\n'
          '                        bind(InetSocketAddress(PORT_TITULKY))\n'
          '                    }',
+         '                    IPhoneTVPairing.initialize(c)\n'
          '                    val s = listOf(PORT_TITULKY, 41990, 41991, 41992, 41993)\n'
          '                        .firstNotNullOfOrNull { port ->\n'
          '                            runCatching {\n'

@@ -317,7 +317,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("PCPAIR1\\\\tOK",patch)
         self.assertIn("IPhoneTVPairing.confirm(c, code, id)",patch)
         self.assertIn("lastSuccessPhoneId",receiver)
-        self.assertIn("lastSuccessToken",receiver)
+        self.assertIn("return@synchronized loadSecret(ctx, phoneId)",receiver)
+        self.assertNotIn("lastSuccessToken",receiver)
         self.assertIn("REPLY_RETRY_WINDOW_MS = 15_000L",receiver)
         self.assertIn("input == lastSuccessPin && phoneId == lastSuccessPhoneId",receiver)
         self.assertIn("self.pairingRetryTask = Task",ios)
@@ -363,6 +364,25 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("self.pendingPingNonce = nil", ios)
         self.assertIn("IPhoneTVPairing.pongSignature(c, id, nonce)", patch)
         self.assertIn("MessageDigest.isEqual(", android)
+
+    def test_p0_3_receiver_key_is_encrypted_and_migrated(self):
+        receiver = code(TOOLS/"IPhoneTVPairing.kt")
+        patch = code(TOOLS/"patch_tv_iphone.py")
+        wire = code(TOOLS/"wire_android_devices.py")
+        device_tests = code(TOOLS/"IPhoneTVPairingKeystoreTest.kt")
+        self.assertIn('KeyStore.getInstance("AndroidKeyStore")', receiver)
+        self.assertIn('Cipher.getInstance("AES/GCM/NoPadding")', receiver)
+        self.assertIn("cipher.updateAAD(aad(phoneId))", receiver)
+        self.assertIn("wrappingKey(false)", receiver)
+        self.assertIn('p.edit().remove("token")', receiver)
+        self.assertIn("putString(ENCRYPTED_TOKEN, encrypted)", receiver)
+        self.assertNotIn('putString("token", token)', receiver)
+        self.assertIn("storageWriteFailed", receiver)
+        self.assertIn("IPhoneTVPairing.initialize(c)", patch)
+        self.assertIn("IPhoneTVPairing.initialize(this)", wire)
+        self.assertIn("legacyMigrationPreservesIdentityAndReplay", device_tests)
+        self.assertIn("tamperedCiphertextCannotFallBack", device_tests)
+        self.assertIn("pairRetryAndClearUseEncryptedStorage", device_tests)
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""

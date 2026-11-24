@@ -226,6 +226,9 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Compile receiver Keystore device tests
+        working-directory: upstream
+        run: ./gradlew :app:assembleDebugAndroidTest --no-daemon --stacktrace
       - name: Verify Google TV identity
         run: |
           set -euo pipefail
