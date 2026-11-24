@@ -29,15 +29,15 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 
 /**
- * Match the iPhone's 128-bit GameLingo TV receiver handshake (PCPAIR2).
+ * Match the iPhone's six-digit GameLingo TV receiver handshake (PCPAIR1).
  *
  * Android mobile only. Google TV already supports PAIR/PING on UDP 41989;
  * never transmit Microsoft/PSN credentials. A receiver secret is stored via
  * Android Keystore AES-GCM, never in logs or cleartext SharedPreferences.
  */
 object GameLingoTVPairing {
-    private const val PREFS = "gamelingo_tv_receiver_v2"
-    private const val KEY_ALIAS = "cz.caseycz.gamelingo.receiver.v2"
+    private const val PREFS = "gamelingo_tv_receiver"
+    private const val KEY_ALIAS = "cz.caseycz.gamelingo.receiver.v1"
     private const val PORT = 41989
     @Volatile private var appContext: Context? = null
     private var lastWireSequence = 0L
@@ -53,19 +53,24 @@ object GameLingoTVPairing {
         appContext = context.applicationContext
     }
 
-    /** Legacy plaintext is never allowed in version 2. */
-    fun legacyEnabled(c: Context): Boolean = false
+    /** Compatibility applies to the TV receiver only; new senders never downgrade. */
+    fun legacyEnabled(c: Context): Boolean =
+        prefs(c).getBoolean("legacy_unsigned_receiver", false)
+
+    fun setLegacyEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit().putBoolean("legacy_unsigned_receiver", enabled).apply()
+    }
 
     /** All outbound game data uses the same authenticated envelope. */
     fun signedPacket(ip: String, payload: ByteArray): ByteArray {
         val context = appContext ?: throw IllegalStateException("GameLingo TV není připravena")
         val secret = token(context, ip)
             ?: throw IllegalStateException("Nejdříve spáruj GameLingo TV")
-        val encoded = GameLingoWireCrypto.seal(secret, payload, pairingId(context))
+        val encoded = Base64.encodeToString(payload, Base64.NO_WRAP)
         require(encoded.length < 11000) { "Příliš dlouhá TV zpráva" }
         val clientId = pairingId(context)
         val body = freshBody("TEXT\t$clientId\t$encoded")
-        return ("PCPAIR2\t$body\t" + sign(secret, body)).toByteArray(Charsets.UTF_8)
+        return ("PCPAIR1\t$body\t" + sign(secret, body)).toByteArray(Charsets.UTF_8)
     }
 
     /** Resolve the story socket on its worker thread, not the UI thread. */
@@ -106,7 +111,7 @@ object GameLingoTVPairing {
     /**
      * The GameLingo TV receiver moves to a free UDP port if PlayCaption
      * already listens on the standard one. Discover that port BEFORE any
-     * 128-bit pairing or authenticated PING, without revealing credentials.
+     * six-digit pairing or authenticated PING, without revealing credentials.
      * Legacy receivers without GLPORT1 keep their original port.
      */
     private fun receiverPort(ip: String): Int {
@@ -228,7 +233,7 @@ object GameLingoTVPairing {
         }
     }
 
-    /** Verifies a TV receiver using the same signed PCPAIR2 PING as iPhone. */
+    /** Verifies a TV receiver using the same signed PCPAIR1 PING as iPhone. */
     fun verify(activity: Activity, tv: TvProfil, onResult: (Boolean) -> Unit) {
         val secret = token(activity, tv.ip)
         if (secret == null) {
@@ -240,7 +245,7 @@ object GameLingoTVPairing {
             val result = runCatching {
                 val nonce = UUID.randomUUID().toString()
                 val message = freshBody("PING\t$clientId\t$nonce")
-                val packetText = "PCPAIR2\t$message\t" + sign(secret, message)
+                val packetText = "PCPAIR1\t$message\t" + sign(secret, message)
                 DatagramSocket().use { socket ->
                     socket.soTimeout = 3_000
                     val address = InetAddress.getByName(tv.ip)
@@ -249,7 +254,7 @@ object GameLingoTVPairing {
                     val buf = ByteArray(2048)
                     val reply = DatagramPacket(buf, buf.size)
                     socket.receive(reply)
-                    val expected = "PCPAIR2\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
+                    val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
                     reply.address == address && MessageDigest.isEqual(
                         expected.toByteArray(Charsets.UTF_8),
                         reply.data.copyOfRange(reply.offset, reply.offset + reply.length))
@@ -273,46 +278,42 @@ object GameLingoTVPairing {
     }
 
     private fun handshake(ip: String, pin: String, clientId: String): String {
-        require(GameLingoWireCrypto.validCode(pin)) { "Zadej bezpečnostní kód z TV." }
-        val nonce = GameLingoWireCrypto.randomHex(16)
-        val proof = GameLingoWireCrypto.pairProof(pin, clientId, "Android", nonce)
-        val secret = GameLingoWireCrypto.sessionKey(pin, clientId, "Android", nonce)
-        val port = receiverPort(ip)
+        require(pin.matches(Regex("[0-9]{6}"))) { "Zadej šest číslic z TV." }
         DatagramSocket().use { socket ->
-            socket.soTimeout = 2500
+            socket.soTimeout = 10_000
             val address = InetAddress.getByName(ip)
-            socket.connect(address, port)
-            val payload = "PCPAIR2\tPAIR\t$clientId\tAndroid\t$nonce\t$proof".toByteArray(Charsets.UTF_8)
-            repeat(4) {
-                socket.send(DatagramPacket(payload, payload.size))
-                val packet = DatagramPacket(ByteArray(2048), 2048)
-                try {
-                    socket.receive(packet)
-                    val fields = String(packet.data, 0, packet.length, Charsets.UTF_8).split("\t")
-                    if (fields.size == 6 && fields[0] == "PCPAIR2" && fields[1] == "OK" &&
-                        fields[2] == clientId && fields[3] == "Android" && fields[4] == nonce &&
-                        GameLingoWireCrypto.equalHex(fields[5], GameLingoWireCrypto.replyProof(secret, clientId, "Android", nonce))) return secret
-                } catch (_: java.net.SocketTimeoutException) { }
+            val payload = "PCPAIR1\tPAIR\t$pin\t$clientId\tAndroid".toByteArray(Charsets.UTF_8)
+            socket.send(DatagramPacket(payload, payload.size, address, receiverPort(ip)))
+            val buffer = ByteArray(2048)
+            val packet = DatagramPacket(buffer, buffer.size)
+            socket.receive(packet)
+            require(packet.address == address) { "Odpověď nepřišla od vybrané TV." }
+            val fields = String(packet.data, 0, packet.length, Charsets.UTF_8).split("\t")
+            if (fields.size >= 2 && fields[0] == "PCPAIR1" && fields[1] == "ERROR")
+                throw IllegalArgumentException("TV kód odmítla. Vytvoř nový kód.")
+            require(fields.size == 4 && fields[0] == "PCPAIR1" &&
+                fields[1] == "OK" && fields[2] == clientId && validToken(fields[3])) {
+                "Televize vrátila neplatnou odpověď."
             }
-            throw IllegalArgumentException("TV nepotvrdila bezpečné párování. Vytvoř nový kód.")
+            return fields[3]
         }
     }
 
     fun show(activity: Activity, tv: TvProfil, initialPin: String = "", onPaired: () -> Unit = {}) {
         if (activity.isFinishing) return
         val pinInput = EditText(activity).apply {
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-            filters = arrayOf(InputFilter.LengthFilter(48))
-            hint = "32 znaků / QR"
-            setText(initialPin.takeIf { GameLingoWireCrypto.validCode(it) }.orEmpty())
+            inputType = InputType.TYPE_CLASS_NUMBER
+            filters = arrayOf(InputFilter.LengthFilter(6))
+            hint = "000000"
+            setText(initialPin.takeIf { it.matches(Regex("[0-9]{6}")) }.orEmpty())
             textSize = 26f
             gravity = Gravity.CENTER
-            contentDescription = "Bezpečnostní kód z GameLingo TV"
+            contentDescription = "Šestimístný kód z GameLingo TV"
             setSingleLine(true)
         }
         val dialog = AlertDialog.Builder(activity)
             .setTitle("Spárovat GameLingo TV")
-            .setMessage("Televize: " + tv.ip + "\nNa TV otevři Překlad z telefonu a vygeneruj bezpečnostní kód nebo načti QR. " +
+            .setMessage("Televize: " + tv.ip + "\nNa TV otevři Překlad z telefonu a vygeneruj šestimístný kód. " +
                 "Ověř adresu a potvrď párování.")
             .setView(pinInput)
             .setNegativeButton("Zrušit", null)
@@ -320,9 +321,9 @@ object GameLingoTVPairing {
             .create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val pin = pinInput.text.toString().filterNot { it.isWhitespace() || it == '-' }.lowercase(java.util.Locale.ROOT)
-                if (!GameLingoWireCrypto.validCode(pin)) {
-                    pinInput.error = "Zadej všech 32 hexadecimálních znaků"
+                val pin = pinInput.text.toString().trim()
+                if (!pin.matches(Regex("[0-9]{6}"))) {
+                    pinInput.error = "Je nutných šest číslic"
                     return@setOnClickListener
                 }
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
@@ -361,56 +362,4 @@ object GameLingoTVPairing {
         }
         dialog.show()
     }
-}
-
-
-/** Protocol v2. A 128-bit random, single-use out-of-band secret is NOT a PIN.
- * HMAC-SHA256 proof, RFC 5869 HKDF-SHA256 and AES-256-GCM (96-bit nonce).
- * No secret or session key is sent in UDP. Do not use with a low-entropy PIN.
- */
-internal object GameLingoWireCrypto {
-    private val random = SecureRandom()
-    fun randomHex(size: Int) = hex(ByteArray(size).also(random::nextBytes))
-    fun validCode(code: String) = code.matches(Regex("[0-9a-f]{32}"))
-    fun hex(bytes: ByteArray) = bytes.joinToString("") { "%02x".format(it) }
-    private fun bytes(hex: String): ByteArray = ByteArray(hex.length / 2) {
-        hex.substring(it * 2, it * 2 + 2).toInt(16).toByte()
-    }
-    fun equalHex(a: String, b: String): Boolean =
-        a.length == b.length && a.length % 2 == 0 &&
-        runCatching { MessageDigest.isEqual(bytes(a), bytes(b)) }.getOrDefault(false)
-    private fun hmac(key: ByteArray, data: ByteArray): ByteArray =
-        Mac.getInstance("HmacSHA256").run {
-            init(SecretKeySpec(key, "HmacSHA256"))
-            doFinal(data)
-        }
-    private fun hmac(key: ByteArray, data: String) = hmac(key, data.toByteArray(Charsets.UTF_8))
-    private fun hkdf(key: ByteArray, salt: ByteArray, info: String): ByteArray =
-        hmac(hmac(salt, key), info.toByteArray(Charsets.UTF_8) + byteArrayOf(1))
-    fun pairProof(code: String, id: String, label: String, nonce: String): String =
-        hex(hmac(bytes(code), "GameLingo PCPAIR2 PAIR\t$id\t$label\t$nonce"))
-    fun sessionKey(code: String, id: String, label: String, nonce: String): String =
-        hex(hkdf(bytes(code), bytes(nonce), "GameLingo PCPAIR2 session\t$id\t$label"))
-    fun replyProof(secret: String, id: String, label: String, nonce: String): String =
-        hex(hmac(bytes(secret), "GameLingo PCPAIR2 OK\t$id\t$label\t$nonce"))
-    private fun textKey(secret: String) = hkdf(bytes(secret), ByteArray(32), "GameLingo PCPAIR2 text phone-to-TV")
-    private fun aad(id: String) = "GameLingo PCPAIR2 TEXT\t$id".toByteArray(Charsets.UTF_8)
-    fun seal(secret: String, payload: ByteArray, id: String): String {
-        require(payload.size <= 8192)
-        val nonce = ByteArray(12).also(random::nextBytes)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(textKey(secret), "AES"), GCMParameterSpec(128, nonce))
-        cipher.updateAAD(aad(id))
-        return Base64.encodeToString(nonce + cipher.doFinal(payload), Base64.NO_WRAP)
-    }
-    fun open(secret: String, encoded: String, id: String): String? = runCatching {
-        require(encoded.length < 11100)
-        val combined = Base64.decode(encoded, Base64.NO_WRAP)
-        require(combined.size in 28..8220)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(textKey(secret), "AES"),
-            GCMParameterSpec(128, combined.copyOfRange(0, 12)))
-        cipher.updateAAD(aad(id))
-        String(cipher.doFinal(combined.copyOfRange(12, combined.size)), Charsets.UTF_8)
-    }.getOrNull()
 }
