@@ -233,6 +233,7 @@ struct GameLingoLanguageSettingsView: View {
 }
 
 struct GameLingoLicenseView: View {
+    @State private var showNotices = false
     var body: some View {
         GLScreen(title: "O aplikaci", help:
             "GameLingo je nezávislá aplikace pro překlad her. Funkční základy a jejich licence jsou zachovány.") {
@@ -258,6 +259,8 @@ struct GameLingoLicenseView: View {
                     .foregroundStyle(GLNeon.mist)
             }
             GLCard {
+                GLHeader(title: "Licenční texty v aplikaci")
+                Button("Licence třetích stran · bez internetu") { showNotices = true }
                 GLHeader(title: "Zdrojové kódy")
                 Link("GameLingo na GitHubu",
                      destination: URL(string: "https://github.com/CaseyCZ/GameLingo")!)
@@ -265,6 +268,24 @@ struct GameLingoLicenseView: View {
                      destination: URL(string: "https://github.com/AdamRuzick4/PlayCaption-app")!)
                 Link("Chiaki / TP Play",
                      destination: URL(string: "https://github.com/mB14ck22/tp-play")!)
+            }
+        }
+        .sheet(isPresented: $showNotices) {
+            NavigationStack {
+                ScrollView {
+                    Text(Bundle.main.url(forResource: "GameLingoNotices", withExtension: "txt")
+                        .flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+                        ?? "Licenční soubor není v tomto sestavení dostupný.")
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .padding()
+                }
+                .navigationTitle("Licence třetích stran")
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Hotovo") { showNotices = false }
+                    }
+                }
             }
         }
     }
