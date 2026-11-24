@@ -380,6 +380,8 @@ object GameLingoTVUi {
         }))
         page.addView(title(a, "Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon.",
             14f, muted = true))
+        page.addView(title(a, "Přímý překlad na TV potřebuje internet nebo uložený překlad. Z telefonu lze přijímat i offline překlady.",
+            14f, muted = true))
 
         section("ZOBRAZENÍ")
         val overlay = settingsTile("▣", "Titulky přes obraz hry",

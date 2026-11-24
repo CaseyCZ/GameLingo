@@ -6,6 +6,7 @@ Remote Play, subtitle placement, OAuth, Sony credentials or TV transport.
 """
 from pathlib import Path
 import sys
+from tv_translation_policy import tv_variant, tv_translator, finalize_tv
 
 SRC = Path("app/src/main/java/cz/titulky/tv")
 
@@ -302,6 +303,9 @@ def main():
         return''', translator.name)
     if any(name in t for name in ("googlePauzaDo", "edgePauzaDo", "myMemoryPauzaDo")):
         raise RuntimeError("Old per-provider pause bypass remains")
+    root = Path(sys.argv[1])
+    if tv_variant(root):
+        t = tv_translator(t)
     translator.write_text(t, encoding="utf8")
 
     service = folder / "RemotePlayService.kt"
@@ -638,6 +642,7 @@ def main():
             GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), corrected.joinToString("\\n"))
             Propojeni.Vysilac.nastavVolby(corrected, volbyVybrana)''', service.name)
     service.write_text(s, encoding="utf8")
+    finalize_tv(root, folder)
     print("GameLingo source and target languages connected to real Android translation")
 
 

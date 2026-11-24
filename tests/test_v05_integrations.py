@@ -642,6 +642,44 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('gamelingo_glossary_v1', store)
         self.assertIn("GameLingoGlossaryStore.activate(activity, name)", code(TOOLS/"GameLingoProfiles.kt"))
 
+    def test_tv_translation_sdk_is_removed_at_build_and_binary_levels(self):
+        policy = code(TOOLS/"tv_translation_policy.py")
+        brand = code(TOOLS/"brand_android.py")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        verify = code(TOOLS/"verify_gamelingo.py")
+        workflow = code(ROOT/".github/workflows/build-gamelingo.yml")
+        self.assertIn("strip_dependency(gradle.read_text", brand)
+        self.assertIn("t = tv_translator(t)", wiring)
+        self.assertIn("finalize_tv(root, folder)", wiring)
+        self.assertIn("assert_tv_source(root)", verify)
+        self.assertIn("resolutionStrategy.eachDependency", policy)
+        self.assertIn("skipGoogle = true", policy)
+        self.assertIn("Rychlý náhled není v paměti", policy)
+        self.assertIn('verify_tv_translation_apk.py tv "$APK"', workflow)
+        self.assertIn('verify_tv_translation_apk.py mobile "$APK"', workflow)
+
+    def test_translation_sdk_apk_gate_detects_multidex_references(self):
+        import tempfile
+        import zipfile
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("apk_policy", TOOLS/"verify_tv_translation_apk.py")
+        gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate)
+        with tempfile.TemporaryDirectory() as tmp:
+            apk = Path(tmp)/"candidate.apk"
+            def make(*parts):
+                with zipfile.ZipFile(apk, "w") as out:
+                    for i, part in enumerate(parts):
+                        out.writestr("classes.dex" if i == 0 else f"classes{i+1}.dex", b"dex\\n035\\x00"+part)
+            make(b"Lcom/google/mlkit/vision/text/TextRecognition;")
+            gate.verify(apk, "tv")
+            with self.assertRaises(AssertionError):
+                gate.verify(apk, "mobile")
+            make(b"normal", gate.MOBILE_MARKER)
+            gate.verify(apk, "mobile")
+            with self.assertRaises(AssertionError):
+                gate.verify(apk, "tv")
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

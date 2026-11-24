@@ -180,6 +180,7 @@ jobs:
           APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.mobile'"
+          python kit/tools/verify_tv_translation_apk.py mobile "$APK"
           cp "$APK" GameLingo-Android-v0.5.0-dev-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
@@ -261,6 +262,7 @@ jobs:
           APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'"
+          python kit/tools/verify_tv_translation_apk.py tv "$APK"
           cp "$APK" GameLingo-GoogleTV-v0.5.0-dev-TEST.apk
       - uses: actions/upload-artifact@v4
         with:

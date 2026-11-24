@@ -45,3 +45,6 @@ Vývojový základ: `feature/gamelingo-v05-platform-rebuild`; aktuální audit: 
 - [ ] Ověřeny podmínky, soukromí a atribuce online providerů a ostatních SDK, odpovídající AGPL zdroj a notices. Stabilní release podpis, identita, aktualizace a kontrolní součty.
 - [ ] Fyzická kontrola HMAC/replay, QR/Keystore, více telefonů, odpárování, port fallback, story ACK a účtové cesty. Neuvádět šifrované titulky; rozhodnout o riziku plaintext pairing v důvěryhodné LAN před širší distribucí.
 - [ ] Fyzická kontrola všech P1/P2 implementovaných funkcí na téže revizi, doplněné případy v [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md). Auditní P2.4 CI 45379906749 PASS, hardware čeká. Návrhy P2.2/P2.5/P3 nejsou vydávané funkce.
+
+### Aktualizace — TV Translation SDK
+- [ ] Dodatečná náprava v auditní větvi: odstraněna TV ML Kit Translation deklarace a lokální kód, zaveden build/DEX guard. Ověřit plný CI včetně skutečného TV a mobilního APK a zapsat výsledek do REPORT.md. Po CI zůstává kontrola dalších SDK, práv a HW; žádný veřejný release automaticky.

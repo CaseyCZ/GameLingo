@@ -7,6 +7,7 @@ Xbox and PS4/PS5 authentication and video must additionally pass physical tests.
 from pathlib import Path
 import argparse
 import sys
+from tv_translation_policy import assert_tv_source
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -112,6 +113,7 @@ def android(root: Path, mode: str):
         contains(base / "OverlayService.kt", "val vstup = PrijemService.bezi ||")
         contains(base / "Propojeni.kt", "IPhoneTVPairing.verify")
         contains(base / "OverlayService.kt", "EXTRA_VYSTUP_VOLEB")
+        assert_tv_source(root)
 
 
 if __name__ == "__main__":

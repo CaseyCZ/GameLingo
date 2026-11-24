@@ -63,3 +63,5 @@ Větev `feature/audit-0.5`, poslední nativní build `0eb2538cdf64ea252632912c54
 | AUD-08 | Historie off/on/clear/limit, restart, dva profily s různými slovníky, jazyky | RAM historie bez duplicit, profilové korekce jen po success, raw cache beze změny; story omezení dokumentováno | NEOTESTOVÁNO |
 | AUD-09 | iOS/Android kamera odmítnuta, QR chybný/použitý, D-pad na TV | Ruční PIN stále funguje, žádné auto-pair, potvrzení cíle | NEOTESTOVÁNO |
 | AUD-10 | TV overlay HDMI Xbox/PS4/PS5, oranžový náhled, barvy/font, čtyři ROI, originální vstup | Zachovat native HDMI a nezávislé oblasti, žádný záměrný přechod na app video; HDR/VRR podle konkrétního testu | NEOTESTOVÁNO |
+
+| AUD-11 | TV přímý překlad online / cache hit / odpojený WAN a nový text, quick a story; Android mobil offline model, telefon→TV LAN | TV bez ML Kit Translation SDK a bez downloadu modelu, TV cache hit funguje, při cache miss bez sítě explicitní chyba, online fallback a story deadline, mobilní offline záloha zachována, receiver overlay funguje | NEOTESTOVÁNO |
