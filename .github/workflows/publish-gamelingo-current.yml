@@ -21,7 +21,7 @@ jobs:
   release:
     if: github.repository == 'CaseyCZ/GameLingo' && github.ref == 'refs/heads/Master'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - name: Record publication link
         env:
@@ -36,9 +36,16 @@ jobs:
           set -euo pipefail
           REPO="$GITHUB_REPOSITORY"
           SOURCE="$GITHUB_SHA"
-          RUN="$(gh api "repos/$REPO/actions/workflows/audit-0.5-ci.yml/runs?branch=Master&status=success&per_page=1" --jq '.workflow_runs[0].id // empty')"
+          RUN="$(gh api "repos/$REPO/actions/workflows/audit-0.5-ci.yml/runs?branch=Master&per_page=1" --jq '.workflow_runs[0].id // empty')"
           test -n "$RUN"
           BUILD_SOURCE="$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.head_sha')"
+          # Never fall back to an earlier successful build while the new candidate is running.
+          for attempt in $(seq 1 70); do
+            status="$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.status')"
+            if [ "$status" = completed ]; then break; fi
+            echo "Waiting for candidate build $RUN ($status)"
+            sleep 30
+          done
           test "$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.conclusion')" = success
           test "$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.head_branch')" = Master
           TAG="v0.5.0-test-${BUILD_SOURCE:0:8}-r$RUN"
@@ -65,6 +72,8 @@ jobs:
           - iOS (nepodepsaná IPA), Android a Google TV (testovací APK).
           - TV: kompaktní párování, QR, mřížka nastavení, profily a čtyři oblasti.
           - Samostatná TV: text titulků + OCR, bez zvuku a mikrofonu.
+          - TV: trvalý testovací titulek přes foreground službu, diagnostika překryvu a snímků bez ADB.
+          - TV: kompaktní volba zařízení a jazyků, výraznější D-pad fokus a snímání jen se souhlasem.
           - Online překlad a lokální paměť; chráněný obsah není ověřen.
           - Automatické kontroly prošly; fyzické testování a licenční audit zůstávají otevřené.
           Zdroj sestavení: https://github.com/$REPO/tree/$BUILD_SOURCE
