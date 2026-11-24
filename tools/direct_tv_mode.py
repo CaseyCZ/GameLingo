@@ -30,7 +30,7 @@ def patch_direct_tv(folder):
     one("                platnostPrekladu.zrus()\n                TelefonTitulky.nastav(\"\", 0)\n                ui.removeCallbacks(schovatCesky)",
         "                platnostPrekladu.zrus()\n                if (telefon) TelefonTitulky.nastav(\"\", 0) else ukazLokalne(\"\", 0, null, 1, null)\n                ui.removeCallbacks(schovatCesky)")
     one("        if (chcePribeh() && (Propojeni.Vysilac.cilIp == null || pribehZacal)) return\n        if (telefon) { TelefonTitulky.nastav(text, doba, barvyJmen); return }\n        val i = Intent(this, OverlayService::class.java)",
-        """        if (chcePribeh() && (Propojeni.Vysilac.cilIp == null || pribehZacal)) return
+        """        if (bezi && chcePribeh() && (Propojeni.Vysilac.cilIp == null || pribehZacal)) return
         if (telefon) { TelefonTitulky.nastav(text, doba, barvyJmen); return }
         ukazLokalne(text, doba, box, radku, barvyJmen)
     }
@@ -132,6 +132,8 @@ def patch_direct_tv(folder):
             ukazLokalne("", 0, null, 1, null)
         }
         stav = zprava""")
+    one("        ui.removeCallbacks(pribehHlidac)\n        zrusPribeh()",
+        "        ui.removeCallbacks(pribehHlidac)\n        zrusPribeh()\n        if (!telefon) zobrazHerniText(emptyList(), -1)")
     # Receiver overlay uses explicit local green output when configured; otherwise
     # retain original automatic box positioning.
     one("        if (box != null) {\n            i.putExtra(OverlayService.EXTRA_BOX, box)",
