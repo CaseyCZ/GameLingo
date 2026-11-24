@@ -35,7 +35,11 @@ class GameLingoScreenConsentActivity : Activity() {
             finish(); return
         }
         try {
-            startActivityForResult(getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(), 9231)
+            val manager = getSystemService(MediaProjectionManager::class.java)
+            val request = if (Build.VERSION.SDK_INT >= 34)
+                manager.createScreenCaptureIntent(android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay())
+            else manager.createScreenCaptureIntent()
+            startActivityForResult(request, 9231)
         } catch (_: Exception) {
             Toast.makeText(this, "Televize nepodporuje snímání obrazovky.", Toast.LENGTH_LONG).show(); finish()
         }
@@ -219,7 +223,10 @@ class GameLingoScreenTranslationService : Service() {
         fun open(a: Activity) {
             if (running) {
                 AlertDialog.Builder(a).setTitle("Samostatná TV").setMessage("Překlad obrazovky je spuštěný.")
-                    .setPositiveButton("Zastavit") { _,_ -> stop(a) }.setNegativeButton("Zpět",null).show()
+                    .setPositiveButton("Zastavit") { _,_ -> stop(a) }
+                    .setNeutralButton("Pozastavit / pokračovat") { _,_ ->
+                        if (running) a.startService(Intent(a,GameLingoScreenTranslationService::class.java).setAction(PAUSE))
+                    }.setNegativeButton("Zpět",null).show()
             } else AlertDialog.Builder(a).setTitle("Samostatná TV – test")
                 .setMessage("Překlad viditelných titulků přes OCR. Vyžaduje souhlas se snímáním celé obrazovky. Chráněný obraz může být černý; jeho ochranu aplikace neobchází.")
                 .setPositiveButton("Spustit") { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java)) }
