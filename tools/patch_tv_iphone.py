@@ -508,7 +508,8 @@ def main() -> None:
          '                                            !decoded.startsWith("PCV1\\t")) continue\n'
          '                                        casti = decoded.split("\\t")\n',
          '                                        val inner = decoded.split("\\t")\n'
-         '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1")) continue\n'
+         '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")) continue\n'
+         '                                        if (inner.firstOrNull() == "PCS1" && inner.getOrNull(1) in listOf("ZADOST", "KOD")) continue\n'
          '                                        casti = inner\n'
          '                                        if (inner.firstOrNull() == "PCQ1") {\n'
          '                                            if (!IPhoneTVPairing.permitsStoryReadiness(id)) continue\n'
@@ -519,7 +520,7 @@ def main() -> None:
     once(networking,
          '                        if (pribeh.zpracuj(p)) {\n',
          '                        // Account transfer is disabled even in legacy subtitle mode.\n'
-         '                        if (casti.firstOrNull() == "PCS1") {\n'
+         '                        if (casti.firstOrNull() == "PCS1" && casti.getOrNull(1) in listOf("ZADOST", "KOD")) {\n'
          '                            odpovez(s, p, "PCS1\\tCHYBA\\tzakazano")\n'
          '                            continue\n'
          '                        }\n'
