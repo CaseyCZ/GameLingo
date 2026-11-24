@@ -293,7 +293,7 @@ def redesign_tv(s: str) -> str:
         logo.addView(text("TV", 16f, fialova, tucne = true))
         vrsek.addView(logo)
         vrsek.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        vrsek.addView(text("Google TV / Android TV", 17f,
+        vrsek.addView(text(packageManager.getPackageInfo(packageName, 0).versionName ?: "GameLingo TV", 14f,
             Color.parseColor("#94A3B8")))
 
         val levá = modraKarta()
@@ -511,7 +511,7 @@ def redesign_tv(s: str) -> str:
             addView(statusy, odsazeni(bottom = 6))
             addView(paticka, odsazeni(bottom = 8))
         }
-        nastavObsah(obsah, sirka = ViewGroup.LayoutParams.MATCH_PARENT)
+        setContentView(GameLingoTVFit(this, obsah))
         akce.getChildAt(0)?.requestFocus()
 
         val obnovaPrijmu = object : Runnable {
