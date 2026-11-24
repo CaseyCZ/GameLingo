@@ -170,7 +170,7 @@ def patch_direct_tv(folder):
 
     # Install all TV-only screens and services in the actual generated workspace.
     for name in ("GameLingoTVSettings.kt", "GameLingoTVProfiles.kt",
-                 "GameLingoScreenTranslationService.kt"):
+                 "GameLingoScreenTranslationService.kt", "GameLingoTVFit.kt"):
         (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
 
     main = folder / "MainActivity.kt"
@@ -185,7 +185,7 @@ def patch_direct_tv(folder):
         """GameLingoTVSettings.show(this,
                     onDevices = {
                         GameLingoDeviceCenter.show(this, onXbox = { ukazPripojeniXbox() },
-                            onPlayStation = { ukazPripojeni() }, onTV = { ukazPrijem() },
+                            onPlayStation = { ukazPripojeni() }, onTV = { hratSTelefonem() },
                             onUpdated = { ukazHlavni() })
                     }, onUpdate = { ukazHlavni() })""")
     patch_main('else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()',
