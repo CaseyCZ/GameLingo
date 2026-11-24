@@ -380,7 +380,7 @@ object GameLingoTVUi {
         }))
         page.addView(title(a, "Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon.",
             14f, muted = true))
-        page.addView(title(a, "Přímý překlad na TV potřebuje internet nebo uložený překlad. Z telefonu lze přijímat i offline překlady.",
+        page.addView(title(a, "Přímý překlad i překlad z telefonu používají internet nebo dříve uložené překlady.",
             14f, muted = true))
 
         section("ZOBRAZENÍ")
