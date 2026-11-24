@@ -255,7 +255,8 @@ final class PlayCaptionTV: ObservableObject {
                     Task { @MainActor in
                         guard let self else { return }
                         if let data {
-                            self.handlePairingReply(data, from: target)
+                            guard self.pairingConnection === connection, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target else { connection.cancel(); return }
+                            self.handlePairingReply(data, from: target, expectingData: command.hasPrefix("KOD\t"))
                         } else {
                             self.pairingStatus = "Televize neodpověděla: \(error?.localizedDescription ?? "ověř IP a síť")."
                         }
@@ -277,7 +278,7 @@ final class PlayCaptionTV: ObservableObject {
         connection.start(queue: queue)
     }
 
-    private func handlePairingReply(_ data: Data, from target: String) {
+    private func handlePairingReply(_ data: Data, from target: String, expectingData: Bool) {
         guard let value = String(data: data, encoding: .utf8) else {
             pairingStatus = "Neplatná odpověď televize."
             return
@@ -291,6 +292,7 @@ final class PlayCaptionTV: ObservableObject {
         case "KOD":
             pairingStatus = "Na televizi se ukázal čtyřmístný kód. Opiš ho níže."
         case "DATA":
+            guard expectingData else { pairingStatus = "Neočekávaný přenos účtu odmítnut."; return }
             // The reference TV may include Xbox refresh credentials here.
             // Never log, display, or persist the raw pairing response.
             onPairingData?(fields)
@@ -299,6 +301,10 @@ final class PlayCaptionTV: ObservableObject {
             pairingStatus = "Televize úspěšně spárována."
         case "CHYBA":
             let reason = fields.dropFirst(2).first ?? ""
+            if reason == "lokalni_souhlas" {
+                pairingStatus = "Přenos účtu musíš výslovně povolit na TV. Doporučujeme samostatné přihlášení."
+                return
+            }
             pairingStatus = reason == "kod" ? "Nesprávný nebo prošlý kód." :
                 reason == "nesparovano" ? "Televize zatím není spárována s konzolí." :
                 "Televize párování odmítla."
