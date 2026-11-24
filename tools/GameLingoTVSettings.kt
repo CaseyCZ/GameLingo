@@ -21,7 +21,7 @@ object GameLingoTVSettings {
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(a)
-            setPadding(d(a, 18), d(a, 10), d(a, 18), d(a, 10))
+            setPadding(d(a, 38), d(a, 24), d(a, 38), d(a, 24))
         }
         val header = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(GameLingoTVUi.title(a, "Nastavení GameLingo TV", 25f),
@@ -34,7 +34,9 @@ object GameLingoTVSettings {
         fun tile(symbol: String, label: String, detail: String, action: () -> Unit) {
             val card = GameLingoTVUi.tile(a, symbol, label, detail, action).apply {
                 minimumHeight = 0
-                setPadding(d(a, 8), d(a, 4), d(a, 8), d(a, 4))
+                setPadding(d(a, 15), d(a, 7), d(a, 15), d(a, 7))
+                background = compactPanel(a, false)
+                setOnFocusChangeListener { v, focused -> v.background = compactPanel(a, focused) }
                 id = View.generateViewId()
                 (getChildAt(0) as? TextView)?.textSize = 14f
                 (getChildAt(1) as? TextView)?.textSize = 15f
@@ -60,14 +62,14 @@ object GameLingoTVSettings {
             val row = LinearLayout(a).apply { clipChildren = false }
             group.forEachIndexed { index, card ->
                 row.addView(card, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
-                    if (index < 2) rightMargin = d(a, 7)
+                    if (index < 2) rightMargin = d(a, 16)
                 })
             }
-            rows.addView(row, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f).apply {
-                topMargin = d(a, 6)
+            rows.addView(row, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, d(a, 110)).apply {
+                topMargin = d(a, 12)
             })
         }
-        root.addView(rows, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        root.addView(android.widget.ScrollView(a).apply { addView(rows); isFillViewport = false }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         cards.forEachIndexed { i, card ->
             card.nextFocusLeftId = cards[if (i % 3 > 0) i-1 else i].id
             card.nextFocusRightId = cards[if (i % 3 < 2) i+1 else i].id
@@ -81,6 +83,11 @@ object GameLingoTVSettings {
         cards.first().requestFocus()
     }
     private fun d(a: Activity, v: Int) = GameLingoTVUi.dp(a, v)
+    private fun compactPanel(a: Activity, focused: Boolean) = android.graphics.drawable.GradientDrawable().apply {
+        setColor(Color.parseColor(if (focused) "#203B55" else "#142033"))
+        cornerRadius = d(a, 13).toFloat()
+        setStroke(d(a, if (focused) 4 else 1).coerceAtLeast(1), Color.parseColor(if (focused) "#00D6FF" else "#34445D"))
+    }
     private fun busy(a: Activity): Boolean {
         if (!RemotePlayService.aktivni && !PrijemService.bezi && !GameLingoScreenTranslationService.running) return false
         AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show()
@@ -146,7 +153,7 @@ object GameLingoTVSettings {
         val info = PrijemService.statistikaPrijmu() + "\n\nVerze: " +
             a.packageManager.getPackageInfo(a.packageName, 0).versionName +
             "\nSamostatná TV: " + GameLingoScreenTranslationService.status +
-            "\nPřístup k textu: " + if (GameLingoSubtitleAccessibility.connected()) "Povolen" else "Nepovolen"
+            "\nOCR obrazovky: pouze MediaProjection"
         AlertDialog.Builder(a).setTitle("Diagnostika TV").setMessage(info +
             "\nPřekryv: " + if (Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen")
             .setNeutralButton("Povolit překryv") { _, _ -> a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + a.packageName))) }
@@ -163,6 +170,6 @@ object GameLingoTVSettings {
                                 if (!busy(a)) listOf("titulky.log","titulky-private-v2.log").forEach { java.io.File(a.filesDir,it).delete() }
                             }.show()
                     }.setNegativeButton("Zpět", null).show()
-            }.setPositiveButton("Zpět", null).show()
+            }.setPositiveButton("Test OCR") { _,_ -> GameLingoScreenTranslationService.diagnostics(a) }.show()
     }
 }

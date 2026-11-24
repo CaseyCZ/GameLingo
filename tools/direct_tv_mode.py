@@ -170,8 +170,7 @@ def patch_direct_tv(folder):
 
     # Install all TV-only screens and services in the actual generated workspace.
     for name in ("GameLingoTVSettings.kt", "GameLingoTVProfiles.kt",
-                 "GameLingoScreenTranslationService.kt", "GameLingoTVFit.kt",
-                 "GameLingoSubtitleAccessibility.kt"):
+                 "GameLingoScreenTranslationService.kt", "GameLingoTVFit.kt"):
         (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
 
     main = folder / "MainActivity.kt"
@@ -282,39 +281,9 @@ def patch_direct_tv(folder):
     xml = manifest.read_text(encoding="utf8")
     if xml.count("</application>") != 1:
         raise RuntimeError("TV manifest application anchor changed")
-    players = ("com.google.android.youtube.tv", "com.netflix.ninja", "com.disney.disneyplus",
-               "com.amazon.amazonvideo.livingroom", "com.wbd.stream", "com.max",
-               "org.videolan.vlc", "org.xbmc.kodi", "com.stremio.one", "com.plexapp.android",
-               "org.smarttube.stable", "com.liskovsoft.smarttubetv.beta", "com.liskovsoft.videomanager.tv")
-    queries = "\n".join(f'        <package android:name="{name}"/>' for name in players)
-    if "</queries>" in xml:
-        xml = xml.replace("</queries>", queries + "\n    </queries>", 1)
-    else:
-        xml = xml.replace("<application", "<queries>\n" + queries + "\n    </queries>\n    <application", 1)
-    resources = manifest.parent / "res" / "xml"
-    resources.mkdir(parents=True, exist_ok=True)
-    (resources / "gamelingo_subtitle_accessibility.xml").write_text("""<?xml version="1.0" encoding="utf-8"?>
-<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
-    android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagReportViewIds"
-    android:notificationTimeout="250"
-    android:canRetrieveWindowContent="true"
-    android:canTakeScreenshot="false"/>
-""", encoding="utf8")
     xml = xml.replace("</application>", """    <activity android:name=".GameLingoScreenConsentActivity" android:exported="false"/>
         <service android:name=".GameLingoScreenTranslationService" android:exported="false"
-            android:foregroundServiceType="mediaProjection|specialUse">
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-started translation of visible subtitle text in selected TV player"/>
-        </service>
-        <service android:name=".GameLingoSubtitleAccessibility" android:exported="true"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:label="GameLingo – text titulků">
-            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter>
-            <meta-data android:name="android.accessibilityservice"
-                android:resource="@xml/gamelingo_subtitle_accessibility"/>
-        </service>
+            android:foregroundServiceType="mediaProjection"/>
     </application>""", 1)
     manifest.write_text(xml, encoding="utf8")
     # Standalone captions must not be hidden by the console-only foreground filter.

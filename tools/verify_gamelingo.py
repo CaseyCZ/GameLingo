@@ -123,16 +123,12 @@ def android(root: Path, mode: str):
         contains(base / "GameLingoScreenTranslationService.kt", "createScreenCaptureIntent",
                  "registerCallback", "createVirtualDisplay", "prectiVse")
         contains(root / "app/src/main/AndroidManifest.xml", ".GameLingoScreenConsentActivity",
-                 ".GameLingoScreenTranslationService", 'android:foregroundServiceType="mediaProjection|specialUse"',
-                 ".GameLingoSubtitleAccessibility", "android.permission.BIND_ACCESSIBILITY_SERVICE",
-                 "@xml/gamelingo_subtitle_accessibility")
-        contains(base / "GameLingoSubtitleAccessibility.kt", "rootInActiveWindow", "node.isPassword", "node.isEditable",
-                 "root.packageName", "GameLingoScreenTranslationService.running")
-        contains(base / "GameLingoScreenTranslationService.kt", "GameLingoSubtitleAccessibility.read(player, roi)",
-                 "Text titulků", "Pouze text titulků", "Pouze OCR obrazovky")
+                 ".GameLingoScreenTranslationService", 'android:foregroundServiceType="mediaProjection"')
+        contains(base / "GameLingoScreenTranslationService.kt", "HandlerThread", "setOnImageAvailableListener",
+                 "Spustit překlad TV", "Diagnostika samostatného OCR")
+        if "GameLingoSubtitleAccessibility" in (root / "app/src/main/AndroidManifest.xml").read_text(encoding="utf8"):
+            raise RuntimeError("Unexpected accessibility service in TV manifest")
         contains(base / "OverlayService.kt", "GameLingoScreenTranslationService.running ||")
-        contains(root / "app/src/main/res/xml/gamelingo_subtitle_accessibility.xml",
-                 'android:canRetrieveWindowContent="true"', 'android:canTakeScreenshot="false"')
         contains(base / "PrijemService.kt", "explicit receiver mode, same as standard captions")
         contains(base / "OverlayService.kt", "val vstup = PrijemService.bezi ||")
         contains(base / "Propojeni.kt", "IPhoneTVPairing.verify")

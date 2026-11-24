@@ -20,6 +20,10 @@ import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.HandlerThread
+import android.os.SystemClock
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import android.os.Looper
 import android.os.IBinder
 import android.provider.Settings
@@ -30,53 +34,46 @@ class GameLingoScreenConsentActivity : Activity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         if (state != null) return
-        val player = intent.getStringExtra("player").orEmpty()
-        if (player.isNotEmpty() && (player !in GameLingoSubtitleAccessibility.players || !GameLingoSubtitleAccessibility.connected())) { finish(); return }
         if (!Settings.canDrawOverlays(this) || RemotePlayService.aktivni || PrijemService.bezi) {
             Toast.makeText(this, "Zastav ostatní režimy a povol překryv.", Toast.LENGTH_LONG).show()
             finish(); return
         }
-        if (intent.getBooleanExtra("textOnly", false)) {
-            startSession(null)
-            return
-        }
+        GameLingoScreenTranslationService.resetDiagnostics()
+        GameLingoScreenTranslationService.status = "Čekám na systémový souhlas"
         try {
             val manager = getSystemService(MediaProjectionManager::class.java)
             val request = if (Build.VERSION.SDK_INT >= 34)
                 manager.createScreenCaptureIntent(android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay())
             else manager.createScreenCaptureIntent()
             startActivityForResult(request, 9231)
-        } catch (_: Exception) {
-            if (player.isNotEmpty()) startSession(null)
-            else { Toast.makeText(this, "Televize nepodporuje snímání obrazovky.", Toast.LENGTH_LONG).show(); finish() }
+        } catch (e: Exception) {
+            GameLingoScreenTranslationService.status = "Dialog snímání: " + e.javaClass.simpleName
+            Toast.makeText(this, "Snímání nelze spustit.", Toast.LENGTH_LONG).show()
+            finish()
         }
     }
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != 9231) { finish(); return }
         if (resultCode == RESULT_OK && data != null) startSession(data)
-        else if (intent.getStringExtra("player").orEmpty().isNotEmpty()) {
-            AlertDialog.Builder(this).setMessage("Snímání nebylo povoleno. Pokračovat pouze s dostupným textem titulků?")
-                .setPositiveButton("Pouze text") { _, _ -> startSession(null) }
-                .setNegativeButton("Zrušit") { _, _ -> finish() }
-                .setOnCancelListener { finish() }.show()
-        } else finish()
+        else {
+            GameLingoScreenTranslationService.status = "Snímání nebylo povoleno"
+            finish()
+        }
     }
-    private fun startSession(consent: Intent?) {
-        val player = intent.getStringExtra("player").orEmpty()
-        if (consent == null && (player.isEmpty() || !GameLingoSubtitleAccessibility.connected())) { finish(); return }
+    private fun startSession(consent: Intent) {
+        GameLingoScreenTranslationService.status = "Souhlas udělen"
         val request = Intent(this, GameLingoScreenTranslationService::class.java)
-            .putExtra("player", player)
-            .putExtra("result", if (consent != null) RESULT_OK else RESULT_CANCELED)
-        if (consent != null) request.putExtra("consent", consent)
+            .putExtra("result", RESULT_OK).putExtra("consent", consent)
+            .putExtra("diagnostic", intent.getBooleanExtra("diagnostic", false))
         runCatching {
+            OverlayService.spust(this)
             startForegroundService(request)
-            if (player.isNotEmpty()) {
-                val launch = packageManager.getLeanbackLaunchIntentForPackage(player)
-                    ?: packageManager.getLaunchIntentForPackage(player)
-                if (launch != null) startActivity(launch) else moveTaskToBack(true)
-            } else moveTaskToBack(true)
-        }.onFailure { Toast.makeText(this, "Překlad se nepodařilo spustit.", Toast.LENGTH_LONG).show() }
+            moveTaskToBack(true)
+        }.onFailure {
+            GameLingoScreenTranslationService.status = "Start služby: " + it.javaClass.simpleName
+            Toast.makeText(this, "Překlad se nepodařilo spustit.", Toast.LENGTH_LONG).show()
+        }
         finish()
     }
 }
@@ -91,12 +88,13 @@ class GameLingoScreenTranslationService : Service() {
     private var translator: Prekladac? = null
     private var active = false
     private var paused = false
-    private var player = ""
-    private var source = "Čekám na titulky"
-    private var inPlayer = false
-    private var hasProjection = false
-    private var latestTextAt = 0L
-    private var latestAccessible = ""
+    private var source = "Čekám na první snímek"
+    private var worker: HandlerThread? = null
+    private var frameHandler: Handler? = null
+    private val wantFrame = AtomicBoolean(false)
+    private var startedAt = 0L
+    private var diagnostic = false
+    private var lastTextAt = 0L
     private var translatedText = ""
     private var lastRenderAt = 0L
     private var blankSince = 0L
@@ -106,7 +104,7 @@ class GameLingoScreenTranslationService : Service() {
     private var shown = ""
     private var blankFrames = 0
     private var darkFrames = 0
-    private var width = 960
+    private var width = 1280
     private var height = 540
     private var roi = floatArrayOf(.05f,.68f,.95f,.98f)
     private var output = floatArrayOf(.5f,.32f,.78f,1f)
@@ -114,7 +112,12 @@ class GameLingoScreenTranslationService : Service() {
         override fun run() {
             if (!active) return
             if (RemotePlayService.aktivni || PrijemService.bezi) { stopSelf(); return }
-            runCatching { sample() }.onFailure { /* A later frame may be readable. */ }
+            if (!paused && !busy) wantFrame.set(true)
+            if (!paused && received.get() == 0L && SystemClock.elapsedRealtime() - startedAt > 5000L)
+                setSource("MediaProjection běží, ale nedorazil žádný snímek")
+            if (!paused && translatedText.isNotEmpty() && SystemClock.elapsedRealtime() - lastTextAt > 5000L) {
+                resetText(); render("")
+            }
             if (active) ui.postDelayed(this, GameLingoOCRConfig.tvIntervalMs(false).coerceIn(500L, 1500L))
         }
     }
@@ -128,14 +131,13 @@ class GameLingoScreenTranslationService : Service() {
             return START_NOT_STICKY
         }
         if (active) return START_NOT_STICKY
-        player = intent?.getStringExtra("player").orEmpty()
+        diagnostic = intent?.getBooleanExtra("diagnostic", false) == true
         val result = intent?.getIntExtra("result", Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
         val consent: Intent? = if (Build.VERSION.SDK_INT >= 33) intent?.getParcelableExtra("consent", Intent::class.java)
             else @Suppress("DEPRECATION") intent?.getParcelableExtra("consent")
-        hasProjection = result == Activity.RESULT_OK && consent != null
-        val textAvailable = player in GameLingoSubtitleAccessibility.players && GameLingoSubtitleAccessibility.connected()
-        if (!hasProjection && !textAvailable || player.isNotEmpty() && !textAvailable ||
+        if (result != Activity.RESULT_OK || consent == null ||
             !Settings.canDrawOverlays(this) || RemotePlayService.aktivni || PrijemService.bezi) {
+            status = "Chybí souhlas nebo překryv, případně běží jiný režim"
             stopSelf(); return START_NOT_STICKY
         }
         try {
@@ -152,40 +154,52 @@ class GameLingoScreenTranslationService : Service() {
                 else -> throw IllegalArgumentException("Nastav modrou oblast do horní nebo dolní části obrazu.")
             }
             val savedOutput = GameLingoDirectTVLayout.green(this)
-            // Text-only mode reads nodes, not pixels, so a user-selected output may overlap the original.
-            if (!hasProjection && savedOutput != null) output = savedOutput
-            else if (savedOutput != null) {
+            if (savedOutput != null) {
                 val safeAbove = savedOutput[1] <= roi[1] - .05f
                 val safeBelow = savedOutput[1] - .22f * savedOutput[3] >= roi[3] + .03f
                 if (safeAbove || safeBelow) output = savedOutput
             }
             val metrics = resources.displayMetrics
-            width = minOf(960, metrics.widthPixels).coerceAtLeast(320)
-            height = (width.toDouble() * metrics.heightPixels / metrics.widthPixels).toInt().coerceAtLeast(180)
-            if (hasProjection && consent != null) {
+            width = minOf(1280, metrics.widthPixels).coerceAtLeast(320)
+            height = (width.toDouble() * metrics.heightPixels / metrics.widthPixels.coerceAtLeast(1)).toInt().coerceAtLeast(180)
+            resolution = "${width} × ${height}"
             val p = getSystemService(MediaProjectionManager::class.java).getMediaProjection(result, consent)
                 ?: throw IllegalStateException("Snímání nebylo povoleno.")
             projection = p
-            p.registerCallback(object : MediaProjection.Callback() { override fun onStop() { stopSelf() } }, ui)
+            projectionState = "Povoleno"
+            p.registerCallback(object : MediaProjection.Callback() {
+                override fun onStop() { status = "Systém ukončil snímání"; stopSelf() }
+                override fun onCapturedContentResize(width: Int, height: Int) {
+                    capturedSize = "${width} × ${height}"
+                }
+            }, ui)
+            val thread = HandlerThread("GameLingo-TV-frames").apply { start() }
+            worker = thread
+            val handler = Handler(thread.looper)
+            frameHandler = handler
             val images = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
             reader = images
-            display = p.createVirtualDisplay("GameLingo-screen", width, height, metrics.densityDpi,
+            images.setOnImageAvailableListener({ source -> receive(source) }, handler)
+            display = p.createVirtualDisplay("GameLingo-screen", width, height, metrics.densityDpi.coerceAtLeast(1),
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, images.surface, null, ui)
+                ?: throw IllegalStateException("VirtualDisplay nebyl vytvořen")
+            displayState = "Vytvořen"
             ocr = Ctecka()
-            }
+            startedAt = SystemClock.elapsedRealtime()
             translator = Prekladac(this, GameLingoLanguages.target(this), GameLingoLanguages.game(this))
             active = true; running = true; status = source
             OverlayService.spust(this)
             ui.post(tick)
-        } catch (_: Exception) {
-            Toast.makeText(this, "Snímání nelze spustit. Ověř oprávnění a modrou oblast.", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            status = "Start snímání: " + e.javaClass.simpleName + " · " + (e.message ?: "").take(120)
+            Toast.makeText(this, status, Toast.LENGTH_LONG).show()
             stopSelf()
         }
         return START_NOT_STICKY
     }
     private fun resetText() {
-        epoch++; candidate = ""; shown = ""; translatedText = ""; latestAccessible = ""
-        latestTextAt = 0; blankFrames = 0; blankSince = 0
+        epoch++; candidate = ""; shown = ""; translatedText = ""
+        lastTextAt = 0; blankFrames = 0; blankSince = 0
     }
     private fun setSource(value: String) {
         if (source != value) {
@@ -194,91 +208,80 @@ class GameLingoScreenTranslationService : Service() {
             notification()
         }
     }
-    private fun currentPlayer(): Boolean =
-        player.isEmpty() || GameLingoSubtitleAccessibility.read(player, roi).inPlayer
-
-    private fun sample() {
-        if (paused) { reader?.acquireLatestImage()?.close(); return }
-        if (player.isNotEmpty()) {
-            if (!GameLingoSubtitleAccessibility.connected()) {
-                Toast.makeText(this, "Přístup k titulkům byl odpojen.", Toast.LENGTH_LONG).show()
-                stopSelf(); return
-            }
-            val reading = GameLingoSubtitleAccessibility.read(player, roi)
-            if (!reading.inPlayer) {
-                reader?.acquireLatestImage()?.close()
-                if (inPlayer) { inPlayer = false; resetText(); render("") }
-                setSource("Čekám na vybranou aplikaci")
-                return
-            }
-            inPlayer = true
-            val now = android.os.SystemClock.elapsedRealtime()
-            if (reading.text.isNotBlank()) {
-                if (reading.text != latestAccessible) {
-                    epoch++; candidate = ""; latestAccessible = reading.text
+    // Acquire and close every Image on the dedicated frame thread. Copy just
+    // the ROI, accounting for row stride and the unmapped last-row padding.
+    private fun receive(images: ImageReader) {
+        try {
+            val image = images.acquireLatestImage() ?: return
+            val bitmap = try {
+                received.incrementAndGet()
+                if (!wantFrame.compareAndSet(true, false)) return
+                val plane = image.planes[0]
+                val buffer = plane.buffer.duplicate()
+                val w = image.width; val h = image.height
+                require(plane.pixelStride == 4 && plane.rowStride >= w * 4)
+                val x = (roi[0] * w).toInt().coerceIn(0,w-1)
+                val y = (roi[1] * h).toInt().coerceIn(0,h-1)
+                val right = (roi[2] * w).toInt().coerceIn(x+1,w)
+                val bottom = (roi[3] * h).toInt().coerceIn(y+1,h)
+                val cw = right-x; val ch = bottom-y
+                val pixels = IntArray(cw * ch)
+                for (row in 0 until ch) {
+                    val offset = (y+row)*plane.rowStride+x*4
+                    require(offset >= 0 && offset + cw*4 <= buffer.limit())
+                    for (col in 0 until cw) {
+                        val p = offset+col*4
+                        val r = buffer.get(p).toInt() and 255
+                        val g = buffer.get(p+1).toInt() and 255
+                        val b = buffer.get(p+2).toInt() and 255
+                        pixels[row*cw+col] = (255 shl 24) or (r shl 16) or (g shl 8) or b
+                    }
                 }
-                latestTextAt = now
-                reader?.acquireLatestImage()?.close()
-                setSource("Text titulků")
-                if (!busy) accept(reading.text)
-                return
+                Bitmap.createBitmap(pixels,cw,ch,Bitmap.Config.ARGB_8888)
+            } finally { image.close() }
+            decoded.incrementAndGet()
+            ui.post {
+                if (!active || paused || busy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
+                else process(bitmap)
             }
-            if (latestAccessible.isNotEmpty() && now - latestTextAt < 1200L) {
-                reader?.acquireLatestImage()?.close(); return
-            }
-            if (latestAccessible.isNotEmpty()) { resetText(); render("") }
-            if (!hasProjection) {
-                setSource("Text titulků není dostupný")
-                return
-            }
-        }
-        val image = reader?.acquireLatestImage() ?: return
-        if (busy || RemotePlayService.aktivni || PrijemService.bezi) { image.close(); return }
-        val full = try {
-            val p = image.planes[0]
-            val rowWidth = p.rowStride / p.pixelStride
-            if (p.pixelStride != 4 || rowWidth < width) return
-            Bitmap.createBitmap(rowWidth, height, Bitmap.Config.ARGB_8888).apply { copyPixelsFromBuffer(p.buffer) }
-        } finally { image.close() }
+        } catch (e: Exception) { frameError = e.javaClass.simpleName + ": " + (e.message ?: "").take(120) }
+    }
+
+    private fun process(cropped: Bitmap) {
         var light = 0
-        // Inspect the input area rather than the whole frame: our output overlay
-        // or player chrome may otherwise make a protected/black region look readable.
-        val left = (roi[0] * width).toInt().coerceIn(0,width-1)
-        val top = (roi[1] * height).toInt().coerceIn(0,height-1)
-        val right = (roi[2] * width).toInt().coerceIn(left+1,width)
-        val bottom = (roi[3] * height).toInt().coerceIn(top+1,height)
-        for (y in top until bottom step 12) for (x in left until right step 12) {
-            val pixel = full.getPixel(x,y)
+        for (y in 0 until cropped.height step 8) for (x in 0 until cropped.width step 8) {
+            val pixel = cropped.getPixel(x,y)
             if ((pixel shr 16 and 255) + (pixel shr 8 and 255) + (pixel and 255) > 24) light++
         }
         darkFrames = if (light == 0) darkFrames + 1 else 0
-        if (darkFrames >= 6) {
-            full.recycle()
-            resetText(); render("")
-            setSource(if (player.isNotEmpty()) "Oblast obrazu je tmavá nebo nedostupná · čekám na text"
-                else "Oblast obrazu je tmavá nebo nedostupná")
-            // A black scene is not proof of DRM. Keep waiting; do not bypass protection.
+        // Explicit opt-in, one delayed ROI preview in RAM only.
+        if (diagnostic && preview == null && SystemClock.elapsedRealtime() - startedAt >= 10000L)
+            preview = cropped.copy(Bitmap.Config.ARGB_8888, false)
+        if (darkFrames >= 3) {
+            cropped.recycle(); resetText(); render("")
+            setSource("Oblast obrazu je tmavá nebo nedostupná")
             return
         }
         setSource("OCR titulků")
-        val x = (roi[0]*width).toInt().coerceIn(0,width-2)
-        val y = (roi[1]*height).toInt().coerceIn(0,height-2)
-        val w = ((roi[2]-roi[0])*width).toInt().coerceIn(1,width-x)
-        val h = ((roi[3]-roi[1])*height).toInt().coerceIn(1,height-y)
-        val cropped = Bitmap.createBitmap(full,x,y,w,h)
-        if (cropped !== full) full.recycle()
         busy = true
         val ticket = epoch
         val read = ocr ?: run { cropped.recycle(); busy=false; return }
-        read.prectiVse(cropped, { raw ->
-            cropped.recycle()
-            ui.post {
-                if (!active || paused || ticket != epoch) { busy=false; return@post }
-                busy = false
-                if (!currentPlayer()) { resetText(); render(""); return@post }
-                accept(raw)
-            }
-        }, { cropped.recycle(); ui.post { busy=false } })
+        try {
+            read.prectiVse(cropped, { raw ->
+                cropped.recycle()
+                ui.post {
+                    busy = false
+                    if (!active || paused || ticket != epoch) return@post
+                    ocrCalls.incrementAndGet()
+                    if (raw.isNotBlank()) ocrHits.incrementAndGet()
+                    ocrState = if (raw.isBlank()) "Bez textu" else "Text rozpoznán"
+                    if (diagnostic && raw.isNotBlank()) lastRaw = raw.take(300)
+                    accept(raw)
+                }
+            }, { cropped.recycle(); ui.post { busy=false; ocrState = "Chyba OCR" } })
+        } catch (e: Exception) {
+            cropped.recycle(); busy=false; ocrState = "Chyba OCR: " + e.javaClass.simpleName
+        }
     }
     private fun accept(raw: String) {
         val value = raw.trim().take(500)
@@ -289,23 +292,26 @@ class GameLingoScreenTranslationService : Service() {
             }
             return
         }
-        blankFrames = 0; blankSince = 0
+        blankFrames = 0; blankSince = 0; lastTextAt = now
         if (value == shown && translatedText.isNotEmpty()) {
             if (now - lastRenderAt >= 2500L) render(translatedText)
             return
         }
-        if (value != candidate) { candidate = value; if (shown.isNotEmpty()) { shown = ""; translatedText = ""; render("") }; return }
+        candidate = value
         val p = translator ?: return
         val ticket = epoch
         busy = true
+        translationState = "Překládám"
         try { p.preloz(value, { translated ->
             ui.post {
-                if (active && !paused && ticket == epoch && currentPlayer() && translated.isNotBlank()) {
+                if (active && !paused && ticket == epoch && translated.isNotBlank()) {
+                    translationState = "Přeloženo"; translationHits.incrementAndGet()
+                    if (diagnostic) lastTranslated = translated.take(300)
                     shown = value; translatedText = translated; render(translated)
                 }
                 busy = false
             }
-        }, { ui.post { if (active && ticket == epoch) render(""); busy = false } }) } catch (_: Exception) { busy = false }
+        }, { ui.post { if (active && ticket == epoch) { translationState = "Chyba překladu"; render("") }; busy = false } }) } catch (e: Exception) { translationState = "Chyba: " + e.javaClass.simpleName; busy = false }
     }
     private fun render(text: String) {
         lastRenderAt = android.os.SystemClock.elapsedRealtime()
@@ -322,18 +328,22 @@ class GameLingoScreenTranslationService : Service() {
             .setContentText(if (paused) "Pozastaveno" else source).setSmallIcon(android.R.drawable.ic_menu_camera)
             .addAction(android.R.drawable.ic_media_pause, if (paused) "Pokračovat" else "Pozastavit", action(PAUSE,1))
             .addAction(android.R.drawable.ic_menu_close_clear_cancel,"Zastavit",action(STOP,2)).setOngoing(true).build()
-        if (Build.VERSION.SDK_INT >= 34) startForeground(9231,n,
-            if (hasProjection) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION else ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        else if (Build.VERSION.SDK_INT >= 29) startForeground(9231,n,
-            if (hasProjection) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION else 0)
+        if (Build.VERSION.SDK_INT >= 29) startForeground(9231,n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
         else startForeground(9231,n)
     }
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onDestroy() {
-        active=false; running=false; status = "Zastaveno"; epoch++; ui.removeCallbacks(tick)
-        render("")
+        val wasActive = active
+        active=false; running=false; wantFrame.set(false); epoch++; ui.removeCallbacks(tick)
+        if (wasActive && !status.startsWith("Systém ukončil")) status = "Zastaveno · poslední stav: " + source
+        if (wasActive) render("")
         runCatching { display?.release() }; display=null
-        runCatching { reader?.close() }; reader=null
+        val oldReader = reader; reader=null
+        val handler = frameHandler; frameHandler=null
+        val thread = worker; worker=null
+        if (handler != null) {
+            handler.post { runCatching { oldReader?.setOnImageAvailableListener(null,null); oldReader?.close() }; thread?.quitSafely() }
+        } else runCatching { oldReader?.close() }
         runCatching { projection?.stop() }; projection=null
         runCatching { ocr?.zavri() }; ocr=null
         runCatching { translator?.zavri() }; translator=null
@@ -343,47 +353,69 @@ class GameLingoScreenTranslationService : Service() {
         @Volatile var running = false
             private set
         @Volatile var status = "Zastaveno"
-            private set
+            internal set
+        private val received = AtomicLong()
+        private val decoded = AtomicLong()
+        private val ocrCalls = AtomicLong()
+        private val ocrHits = AtomicLong()
+        private val translationHits = AtomicLong()
+        @Volatile private var projectionState = "Nezahájeno"
+        @Volatile private var displayState = "Nevytvořen"
+        @Volatile private var resolution = "—"
+        @Volatile private var capturedSize = "—"
+        @Volatile private var frameError = "—"
+        @Volatile private var ocrState = "Čeká"
+        @Volatile private var translationState = "Čeká"
+        @Volatile private var lastRaw = ""
+        @Volatile private var lastTranslated = ""
+        @Volatile private var preview: Bitmap? = null
         private const val STOP = "gamelingo.screen.STOP"
         private const val PAUSE = "gamelingo.screen.PAUSE"
+        internal fun resetDiagnostics() {
+            received.set(0); decoded.set(0); ocrCalls.set(0); ocrHits.set(0); translationHits.set(0)
+            projectionState="Nezahájeno"; displayState="Nevytvořen"; resolution="—"; capturedSize="—"
+            frameError="—"; ocrState="Čeká"; translationState="Čeká"; clearPreview()
+        }
+        private fun clearPreview() { preview=null; lastRaw=""; lastTranslated="" }
+        fun report(): String = "Stav: $status\nSouhlas / projekce: $projectionState\nVirtualDisplay: $displayState" +
+            "\nSnímání: $resolution · zdroj: $capturedSize\nPřijaté snímky: ${received.get()} · výřezy: ${decoded.get()}" +
+            "\nChyba snímku: $frameError\nOCR: $ocrState (${ocrHits.get()}/${ocrCalls.get()})" +
+            "\nPřekladač: $translationState (${translationHits.get()})" +
+            "\nPřekryv: " + (if (OverlayService.chyba != null) "hlášená chyba" else "bez hlášené chyby") +
+            (if (lastRaw.isNotBlank()) "\nOCR: $lastRaw" else "") +
+            (if (lastTranslated.isNotBlank()) "\nPřeklad: $lastTranslated" else "")
         fun stop(c: Context) { c.stopService(Intent(c,GameLingoScreenTranslationService::class.java)) }
         fun open(a: Activity) {
             if (running) {
-                AlertDialog.Builder(a).setTitle("Samostatná TV").setMessage("Překlad je spuštěný. Zdroj: " + status)
+                AlertDialog.Builder(a).setTitle("Samostatná TV").setMessage("Překlad je spuštěný. " + status)
                     .setPositiveButton("Zastavit") { _,_ -> stop(a) }
                     .setNeutralButton("Pozastavit / pokračovat") { _,_ ->
                         if (running) a.startService(Intent(a,GameLingoScreenTranslationService::class.java).setAction(PAUSE))
                     }.setNegativeButton("Zpět",null).show()
-            } else AlertDialog.Builder(a).setTitle("Samostatná TV – test")
-                .setItems(arrayOf("Automaticky · text + OCR", "Pouze text titulků", "Pouze OCR obrazovky")) { _, index ->
-                    if (index == 2) AlertDialog.Builder(a)
-                        .setMessage("Překlad viditelných titulků ve vybrané oblasti. Vyžaduje souhlas se snímáním obrazovky. Chráněný obraz může být nedostupný.")
-                        .setPositiveButton("Spustit") { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java)) }
-                        .setNegativeButton("Zrušit",null).show()
-                    else choosePlayer(a, index == 1)
-                }.setNegativeButton("Zrušit",null).show()
+            } else AlertDialog.Builder(a).setTitle("Samostatná TV")
+                .setMessage("OCR viditelných titulků ve vybrané oblasti. Po povolení snímání otevři video. Překlad běží do zastavení. Chráněný obraz může být nedostupný.")
+                .setPositiveButton("Spustit překlad TV") { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java)) }
+                .setNegativeButton("Zrušit",null).show()
         }
-        private fun choosePlayer(a: Activity, textOnly: Boolean) {
-            if (!GameLingoSubtitleAccessibility.connected()) {
-                AlertDialog.Builder(a).setTitle("Přístup k textu titulků")
-                    .setMessage("Pro čtení zpřístupněných titulků povol službu GameLingo v nastavení zpřístupnění. Čte pouze označené titulky vybraného přehrávače při spuštěném překladu. Nepoužívá zvuk, mikrofon ani ovládání aplikací.")
-                    .setPositiveButton("Otevřít nastavení") { _,_ ->
-                        runCatching { a.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-                            .onFailure { Toast.makeText(a, "Otevři Nastavení TV → Zpřístupnění.", Toast.LENGTH_LONG).show() }
-                    }.setNegativeButton("Zpět",null).show()
-                return
+        fun diagnostics(a: Activity) {
+            if (running) stop(a)
+            val panel = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(20,8,20,8) }
+            panel.addView(android.widget.TextView(a).apply { text = report(); textSize = 15f })
+            preview?.let { bmp ->
+                panel.addView(android.widget.ImageView(a).apply {
+                    setImageBitmap(bmp); adjustViewBounds=true; contentDescription="Diagnostický výřez OCR"
+                    maxHeight = (a.resources.displayMetrics.heightPixels * .22f).toInt()
+                })
             }
-            val apps = GameLingoSubtitleAccessibility.available(a).entries.toList()
-            if (apps.isEmpty()) {
-                AlertDialog.Builder(a).setMessage("Nenalezen podporovaný přehrávač. Můžeš použít režim pouze OCR.")
-                    .setPositiveButton("OK",null).show()
-                return
-            }
-            AlertDialog.Builder(a).setTitle("Vyber aplikaci s titulky")
-                .setItems(apps.map { it.value }.toTypedArray()) { _, index ->
-                    a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java)
-                        .putExtra("player", apps[index].key).putExtra("textOnly",textOnly))
-                }.setNegativeButton("Zpět",null).show()
+            val dialog = AlertDialog.Builder(a).setTitle("Diagnostika samostatného OCR")
+                .setView(android.widget.ScrollView(a).apply { addView(panel) })
+                .setPositiveButton("Test snímání") { _,_ ->
+                    AlertDialog.Builder(a).setMessage("Po souhlasu otevři video do 10 sekund. Výřez a poslední rozpoznaný text zůstanou pouze v paměti do vymazání nebo nové relace. Po návratu sem se snímání zastaví.")
+                        .setPositiveButton("Spustit test") { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java).putExtra("diagnostic",true)) }
+                        .setNegativeButton("Zrušit",null).show()
+                }.setNeutralButton("Vymazat náhled") { _,_ -> clearPreview(); diagnostics(a) }
+                .setNegativeButton("Zpět",null).show()
+            dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .72f).toInt(), android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
         }
     }
 }

@@ -11,10 +11,9 @@ REQUIRED = (
     "Lcz/titulky/tv/GameLingoTVProfiles;",
     "Lcz/titulky/tv/GameLingoScreenConsentActivity;",
     "Lcz/titulky/tv/GameLingoScreenTranslationService;",
-    "Lcz/titulky/tv/GameLingoSubtitleAccessibility;",
-    "Automaticky · text + OCR",
-    "Pouze text titulků",
-    "Pouze OCR obrazovky",
+    "Spustit překlad TV",
+    "Diagnostika samostatného OCR",
+    "GameLingo-TV-frames",
     "Párovací QR kód",
     "Spárované telefony",
     "Vyber zdroj překladu",
@@ -29,6 +28,8 @@ def verify(apk: Path):
         if not files:
             raise AssertionError("TV APK contains no DEX")
         data = b"".join(archive.read(n) for n in files)
+        if b"Lcz/titulky/tv/GameLingoSubtitleAccessibility;" in data:
+            raise AssertionError("Obsolete accessibility implementation included")
         missing = [value for value in REQUIRED if value.encode("utf8") not in data]
         if missing:
             raise AssertionError("TV APK missing new UI markers: " + ", ".join(missing))
