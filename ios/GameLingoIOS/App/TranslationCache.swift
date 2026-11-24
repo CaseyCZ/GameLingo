@@ -5,6 +5,39 @@ import SQLite3
 /// without occupying the Vision OCR actor while a cache lookup is pending.
 actor GLTranslationCache {
     private var db: OpaquePointer?
+    private var generation: UInt64 = 0
+    private var enabled = !UserDefaults.standard.bool(forKey: "translationCacheDisabled")
+
+    func revision() -> UInt64 { generation }
+    func setEnabled(_ value: Bool) {
+        generation &+= 1
+        enabled = value
+        UserDefaults.standard.set(!value, forKey: "translationCacheDisabled")
+        if !value { close() }
+    }
+
+    /// Logical removal of the local regenerable database and SQLite sidecars.
+    /// Never delete a profile, history or credential store.
+    func purge() -> Bool {
+        generation &+= 1
+        close()
+        do {
+            let location: URL
+            if let url { location = url }
+            else {
+                location = try FileManager.default.url(for: .applicationSupportDirectory,
+                    in: .userDomainMask, appropriateFor: nil, create: false)
+                    .appendingPathComponent("GameLingoTranslationCache/translations-v1.sqlite")
+            }
+            for suffix in ["", "-wal", "-shm", "-journal"] {
+                let file = URL(fileURLWithPath: location.path + suffix)
+                if FileManager.default.fileExists(atPath: file.path) {
+                    try FileManager.default.removeItem(at: file)
+                }
+            }
+            return true
+        } catch { return false }
+    }
     private let url: URL?
     private let capacity: Int
     private let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
@@ -25,6 +58,7 @@ actor GLTranslationCache {
     }
 
     private func open() -> OpaquePointer? {
+        guard enabled else { return nil }
         if let db { return db }
         do {
             let location: URL
@@ -37,6 +71,7 @@ actor GLTranslationCache {
                 var values = URLResourceValues()
                 values.isExcludedFromBackup = true
                 try dir.setResourceValues(values)
+                try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: dir.path)
                 location = dir.appendingPathComponent("translations-v1.sqlite")
             }
             var handle: OpaquePointer?
@@ -107,7 +142,8 @@ actor GLTranslationCache {
         return result
     }
 
-    func remember(engine: String, source: String, target: String, original: String, result: String) {
+    func remember(engine: String, source: String, target: String, original: String, result: String, revision: UInt64? = nil) {
+        guard enabled, revision == nil || revision == generation else { return }
         guard let bindings = key(engine, source, target, original),
               valid(result, limit: 8192), let db = open(),
               execute(db, "BEGIN IMMEDIATE") else { return }
