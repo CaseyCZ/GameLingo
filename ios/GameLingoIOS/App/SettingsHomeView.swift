@@ -534,6 +534,9 @@ private struct GameLingoDiagnosticsView: View {
                 GLHeader(title: "Stav")
                 status("Xbox", model.isRunning ? "Překládá" : "Neaktivní")
                 status("Snímky", "\(model.frameCount)")
+                Text(model.performanceSummary)
+                    .font(.caption2.monospaced()).foregroundStyle(GLStyle.muted)
+                    .textSelection(.enabled)
                 status("Google TV", model.tv.ip.isEmpty ? "Nepřipojeno" : model.tv.ip)
                 Text(model.status).font(.caption).foregroundStyle(GLStyle.muted)
             }

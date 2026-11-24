@@ -393,6 +393,94 @@ def main():
         ukazanoKdy = 0L
         if (zbyva <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, zbyva)''', service.name)
     # The old story and game-text timers intentionally stay independent.
+    # P1.7: bounded rolling performance statistics in the existing local log.
+    (folder/"GameLingoPerformance.kt").write_text(
+        Path(__file__).with_name("GameLingoPerformance.kt").read_text(encoding="utf8"),encoding="utf8")
+    unit_dir=folder.parents[4]/"test/java/cz/titulky/tv"
+    (unit_dir/"GameLingoPerformanceWindowTest.kt").write_text(
+        Path(__file__).with_name("GameLingoPerformanceWindowTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    s=once(s, '    private var stOd = 0L',
+        '    private val performance = GameLingoPerformance()\n    private var stOd = 0L', service.name)
+    s=once(s, '        ui.post { zapis(zprava) }\n        stCteni = 0;',
+        '        val performanceText = performance.summary()\n'
+        '        val deviceText = performance.device(this)\n'
+        '        ui.post { zapis(zprava); zapis(performanceText); zapis(deviceText) }\n        stCteni = 0;', service.name)
+    s=once(s, '                if (!aktivni) obrazStav.zacni()\n                automat = true',
+        '''                if (!aktivni) {
+                    obrazStav.zacni()
+                    if (performance.begin(this)) zapis("[Diagnostika: předchozí relace nebyla řádně uzavřena; příčina neznámá]")
+                }
+                automat = true''', service.name)
+    s=once(s, '    override fun onDestroy() {\n        zanikla = true',
+        '    override fun onDestroy() {\n        zapis(performance.summary())\n        performance.end(this)\n        zanikla = true', service.name)
+    s=once(s, '        val otiskObrazu = OtiskOcr.sedy(vyrez.jas, vyrez.w, vyrez.h)',
+        '        val perfToken = performance.token()\n        val perfOcrStart = performance.now()\n'
+        '        val otiskObrazu = OtiskOcr.sedy(vyrez.jas, vyrez.w, vyrez.h)', service.name)
+    s=once(s, '                // Dialog nenalezen, ale je tu nápověda',
+        '                performance.record(perfToken, "Dialog OCR", performance.now() - perfOcrStart)\n'
+        '                // Dialog nenalezen, ale je tu nápověda', service.name)
+    s=once(s, '        var dobryHotov = false\n        fun ukazJestli',
+        '        val perfToken = performance.token()\n        val perfStart = performance.now()\n'
+        '        val perfOcrMs = casCteni.coerceAtLeast(0L)\n        var dobryHotov = false\n        fun ukazJestli', service.name)
+    s=once(s, '            ukazCesky(cesky, box, radku, barvyJmen)',
+        '            performance.record(perfToken, "Dialog celkem k výstupu", perfOcrMs + performance.now() - perfStart)\n'
+        '            ukazCesky(cesky, box, radku, barvyJmen)', service.name)
+    s=once(s, '        val vysledky = arrayOfNulls<String>(repliky.size)',
+        '        val perfToken = performance.token()\n        val perfStart = performance.now()\n'
+        '        val vysledky = arrayOfNulls<String>(repliky.size)', service.name)
+    s=once(s, '            if (zbyva == 0) {\n                if (selhalo) {',
+        '            if (zbyva == 0) {\n'
+        '                performance.record(perfToken, if (pribeh) "Story překlad" else "Dialog překlad", performance.now() - perfStart)\n'
+        '                if (selhalo) performance.failure(perfToken)\n'
+        '                if (selhalo) {', service.name)
+    s=once(s, '        cteckaVoleb.prectiVolby(bmp, { radky ->',
+        '        val perfToken = performance.token()\n        val perfOcrStart = performance.now()\n'
+        '        cteckaVoleb.prectiVolby(bmp, { radky ->', service.name)
+    s=once(s, '            volbyCtu = false\n            val boxy = radky.map',
+        '            volbyCtu = false\n            performance.record(perfToken, "Herní text OCR", performance.now() - perfOcrStart)\n'
+        '            val boxy = radky.map', service.name)
+    s=once(s, '        prekladac.preloz(text, { cesky ->',
+        '        val perfToken = performance.token()\n        val perfStart = performance.now()\n'
+        '        prekladac.preloz(text, { cesky ->\n'
+        '            performance.record(perfToken, "Herní text překlad", performance.now() - perfStart)', service.name)
+    s=once(s, '        }, { _ ->\n            ui.post {\n                if (bezi && relace == relaceCteni.get() && Volby.zapnuto && Volby.rezimText',
+        '        }, { _ ->\n            performance.failure(perfToken)\n            ui.post {\n'
+        '                if (bezi && relace == relaceCteni.get() && Volby.zapnuto && Volby.rezimText', service.name)
+    s=once(s, '        var zbyva = chybi.size\n        for (v in chybi) {',
+        '        val perfToken = performance.token()\n        val perfStart = performance.now()\n'
+        '        var zbyva = chybi.size\n        for (v in chybi) {', service.name)
+    s=once(s, '                    if (--zbyva == 0) posli()',
+        '                    if (--zbyva == 0) {\n'
+        '                        performance.record(perfToken, "Herní text překlad", performance.now() - perfStart)\n'
+        '                        posli()\n                    }', service.name)
+    s=once(s, '                ui.post { if (--zbyva == 0) posli() }',
+        '                performance.failure(perfToken)\n'
+        '                ui.post { if (--zbyva == 0) {\n'
+        '                    performance.record(perfToken, "Herní text překlad", performance.now() - perfStart)\n'
+        '                    posli()\n                } }', service.name)
+    # Propagate the yellow-area OCR timestamp and generation into the
+    # existing callback paths so total latency is tied to the actual read.
+    s=once(s, 'if (rezimText) zpracujText(radky.map { it.first }, otiskTextu) else zpracujVolby(radky.map { it.first }, vybrana)',
+        'if (rezimText) zpracujText(radky.map { it.first }, otiskTextu, perfToken, perfOcrStart) '
+        'else zpracujVolby(radky.map { it.first }, vybrana, perfToken, perfOcrStart)', service.name)
+    s=once(s, 'private fun zpracujText(radky: List<String>, otiskObrazu: String?)',
+        'private fun zpracujText(radky: List<String>, otiskObrazu: String?, readToken: Long, readStarted: Long)', service.name)
+    s=once(s, 'private fun zpracujVolby(surove: List<String>, vybrana: Int)',
+        'private fun zpracujVolby(surove: List<String>, vybrana: Int, readToken: Long, readStarted: Long)', service.name)
+    s=once(s, '        prekladyVoleb[text]?.let { Propojeni.Vysilac.nastavVolby(listOf(it), Volby.VYBRANA_TEXT); return }',
+        '''        prekladyVoleb[text]?.let {
+            Propojeni.Vysilac.nastavVolby(listOf(it), Volby.VYBRANA_TEXT)
+            performance.record(readToken, "Herní text celkem k výstupu", performance.now() - readStarted)
+            return
+        }''', service.name)
+    s=once(s, '''                    Volby.revize == revize && textVRamecku.text == text)
+                    Propojeni.Vysilac.nastavVolby(listOf(cesky), Volby.VYBRANA_TEXT)''', '''                    Volby.revize == revize && textVRamecku.text == text) {
+                    Propojeni.Vysilac.nastavVolby(listOf(cesky), Volby.VYBRANA_TEXT)
+                    performance.record(readToken, "Herní text celkem k výstupu", performance.now() - readStarted)
+                }''', service.name)
+    s=once(s, '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)',
+        '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)\n'
+        '            performance.record(readToken, "Herní text celkem k výstupu", performance.now() - readStarted)', service.name)
     service.write_text(s, encoding="utf8")
     print("GameLingo source and target languages connected to real Android translation")
 

@@ -76,6 +76,8 @@ struct RecognizedCaption {
     let english: String
     let revision: Int
     let capturedAt: Date
+    let ocrStartedAt: TimeInterval
+    let ocrMilliseconds: Double
 }
 
 /// OCR of a configurable bottom-center band. Only changed subtitle text is sent.
@@ -191,12 +193,14 @@ actor CaptionPipeline {
                 lastText = ""
                 dialogueRetryAt = nil
                 revision += 1
-                return RecognizedCaption(english: "", revision: revision, capturedAt: now)
+                return RecognizedCaption(english: "", revision: revision, capturedAt: now,
+                    ocrStartedAt: imageTime, ocrMilliseconds: (ProcessInfo.processInfo.systemUptime - imageTime) * 1000)
             case .accept(let stable):
                 dialogueRetryAt = nil
                 lastText = stable
                 revision += 1
-                return RecognizedCaption(english: stable, revision: revision, capturedAt: now)
+                return RecognizedCaption(english: stable, revision: revision, capturedAt: now,
+                    ocrStartedAt: imageTime, ocrMilliseconds: (ProcessInfo.processInfo.systemUptime - imageTime) * 1000)
             }
         } catch {
             return nil

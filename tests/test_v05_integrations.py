@@ -541,6 +541,27 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("guardedProvider(myMemoryBreaker)", wiring)
         self.assertIn("GameLingoCircuitBreakerTest.kt", wiring)
 
+    def test_p1_7_local_performance_diagnostics_are_bounded(self):
+        swift = code(IOS/"PerformanceWindow.swift")
+        device = code(IOS/"LocalDeviceDiagnostics.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        android = code(TOOLS/"GameLingoPerformance.kt")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("capacity: Int = 128", swift)
+        self.assertIn("samples[cursor] = value", swift)
+        self.assertIn("0.95", swift)
+        self.assertIn("MACH_TASK_BASIC_INFO", device)
+        self.assertIn("thermalState", device)
+        self.assertIn("beginPerformanceSession(currentSession:", model)
+        self.assertIn("recordPerformance", model)
+        self.assertIn("removeObject(forKey: sessionMarker)", model)
+        self.assertIn("Debug.getPss()", android)
+        self.assertIn("currentThermalStatus", android)
+        self.assertIn("session_open", android)
+        self.assertIn("performance.begin(this)", wiring)
+        self.assertIn("performance.end(this)", wiring)
+        self.assertIn("performance.record(perfToken", wiring)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

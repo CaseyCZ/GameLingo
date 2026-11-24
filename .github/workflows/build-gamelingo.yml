@@ -237,6 +237,9 @@ jobs:
       - name: Run Android circuit breaker unit tests
         working-directory: upstream
         run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoCircuitBreakerTest' --no-daemon --stacktrace
+      - name: Test Android bounded diagnostic performance window
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoPerformanceWindowTest' --no-daemon --stacktrace
       - name: Compile receiver Keystore device tests
         working-directory: upstream
         run: ./gradlew :app:assembleDebugAndroidTest --no-daemon --stacktrace

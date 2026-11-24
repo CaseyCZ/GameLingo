@@ -220,6 +220,11 @@ final class CaptionAppModel: ObservableObject {
 
     @Published var lastChoices = ""
     @Published var logLines: [String] = []
+    @Published private(set) var performanceSummary = "Zatím bez měření"
+    private var performance: [String: PerformanceWindow] = [:]
+    private var performanceTimer: Task<Void, Never>?
+    private var translationFailures = 0
+    private let sessionMarker = "gamelingo_diagnostics_session_open_v1"
     @Published var gameProfiles: [GameSubtitleProfile] = {
         guard let data = UserDefaults.standard.data(forKey: "gameProfiles"),
               let saved = try? JSONDecoder().decode([GameSubtitleProfile].self, from: data)
@@ -265,6 +270,10 @@ final class CaptionAppModel: ObservableObject {
     private var lastChoicesSentAt: Date?
 
     init() {
+        if UserDefaults.standard.bool(forKey: sessionMarker) {
+            write("Diagnostika: předchozí překladová relace nebyla řádně uzavřena (příčina neznámá).")
+            UserDefaults.standard.removeObject(forKey: sessionMarker)
+        }
         tv.onPairingData = { [weak self] fields in
             guard let self else { return }
             if self.xbox.importPairedXbox(fields) {
@@ -380,6 +389,35 @@ final class CaptionAppModel: ObservableObject {
         if logLines.count > 250 { logLines.removeFirst(logLines.count - 250) }
     }
 
+    private func recordPerformance(_ name: String, milliseconds: Double) {
+        performance[name, default: PerformanceWindow()].record(milliseconds: milliseconds)
+    }
+
+    private func refreshPerformance() {
+        let names = ["Dialog OCR", "Dialog překlad", "Dialog celkem k výstupu",
+                     "Herní text OCR", "Herní text překlad", "Herní text celkem k výstupu"]
+        let lines = names.map { "\($0): \(performance[$0]?.summary ?? "–")" }
+        performanceSummary = (["Průměr / P95 (posledních 128 vzorků)"] + lines +
+            ["Chyby překladu: \(translationFailures)", LocalDeviceDiagnostics.sample()]).joined(separator: "\n")
+    }
+
+    private func beginPerformanceSession(currentSession: Int) {
+        performanceTimer?.cancel()
+        performance.removeAll()
+        translationFailures = 0
+        UserDefaults.standard.set(true, forKey: sessionMarker)
+        refreshPerformance()
+        performanceTimer = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                do { try await Task.sleep(nanoseconds: 30_000_000_000) }
+                catch { return }
+                guard let self, self.isRunning, self.sessionRevision == currentSession else { return }
+                self.refreshPerformance()
+                self.write("Diagnostika: " + self.performanceSummary.replacingOccurrences(of: "\n", with: " | "))
+            }
+        }
+    }
+
     func start(_ console: XboxConsole) {
         guard !isRunning else { return }
         frameCount = 0
@@ -390,6 +428,7 @@ final class CaptionAppModel: ObservableObject {
         isRunning = true
         sessionRevision += 1
         let currentSession = sessionRevision
+        beginPerformanceSession(currentSession: currentSession)
         processingOCR = false
         processingChoices = false
         lastTranslatedChoiceItems = []
@@ -482,12 +521,15 @@ final class CaptionAppModel: ObservableObject {
                 self.processingChoices = false
             }
         }
+        let optionsStarted = ProcessInfo.processInfo.systemUptime
         guard let englishChoices = await self.pipeline.recognizeOptions(
             buffer, area: area, asText: asText,
             gameLanguage: activeGameLanguage
         ), self.isRunning,
            self.sessionRevision == currentSession,
            self.choicesEnabled else { return }
+        let optionsTranslateStarted = ProcessInfo.processInfo.systemUptime
+        recordPerformance("Herní text OCR", milliseconds: (optionsTranslateStarted - optionsStarted) * 1000)
         var translated = [String]()
         for option in englishChoices {
             let outcome = await self.pipeline.translate(
@@ -516,6 +558,8 @@ final class CaptionAppModel: ObservableObject {
                                             outputFont: self.choicesOutputFont)
                     }
                 }
+                self.translationFailures += 1
+                self.recordPerformance("Herní text překlad", milliseconds: (ProcessInfo.processInfo.systemUptime - optionsTranslateStarted) * 1000)
                 self.write("Volby: chyba překladu (\(error.diagnostic))")
                 await self.pipeline.optionsTranslationFailed(englishChoices,
                     area: area, asText: asText, gameLanguage: activeGameLanguage)
@@ -529,6 +573,7 @@ final class CaptionAppModel: ObservableObject {
               self.choicesTextMode == asText,
               self.gameLanguage == activeGameLanguage,
               self.targetLanguage == activeTargetLanguage else { return }
+        self.recordPerformance("Herní text překlad", milliseconds: (ProcessInfo.processInfo.systemUptime - optionsTranslateStarted) * 1000)
         self.lastChoices = translated.joined(separator: " · ")
         self.lastTranslatedChoiceItems = translated
         self.lastTranslatedChoiceIsText = asText
@@ -540,6 +585,9 @@ final class CaptionAppModel: ObservableObject {
                                     outputArea: self.choicesOutputArea,
                                     outputFont: self.choicesOutputFont)
             }
+        }
+        if !translated.isEmpty && (self.devices.subtitleOutput == .phone || self.verifiedTelevisionOutput) {
+            self.recordPerformance("Herní text celkem k výstupu", milliseconds: (ProcessInfo.processInfo.systemUptime - optionsStarted) * 1000)
         }
         self.write("Volby: \(translated.count) rozpoznaných položek")
     }
@@ -594,6 +642,7 @@ final class CaptionAppModel: ObservableObject {
             }
             if let reading, self.isRunning,
                self.sessionRevision == currentSession {
+                self.recordPerformance("Dialog OCR", milliseconds: reading.ocrMilliseconds)
                 self.lastEnglish = reading.english
                 if reading.english.isEmpty {
                     self.clearDialogueOutput()
@@ -602,9 +651,15 @@ final class CaptionAppModel: ObservableObject {
                 self.write("OCR: \(reading.english)")
                 Task { @MainActor [weak self] in
                     guard let self else { return }
+                    let translateStarted = ProcessInfo.processInfo.systemUptime
                     let outcome = await self.pipeline.translate(
                         reading.english, from: activeGameLanguage,
                         to: activeTargetLanguage)
+                    let translateMs = (ProcessInfo.processInfo.systemUptime - translateStarted) * 1000
+                    if self.sessionRevision == currentSession {
+                        self.recordPerformance("Dialog překlad", milliseconds: translateMs)
+                        if case .failure = outcome { self.translationFailures += 1 }
+                    }
                     let isLatest = await self.pipeline.isCurrent(revision: reading.revision)
                     guard self.isRunning,
                           self.sessionRevision == currentSession,
@@ -640,6 +695,9 @@ final class CaptionAppModel: ObservableObject {
                                                  duration: Int(displaySeconds * 1000))
                         }
                     }
+                    if self.devices.subtitleOutput == .phone || self.verifiedTelevisionOutput {
+                        self.recordPerformance("Dialog celkem k výstupu", milliseconds: (ProcessInfo.processInfo.systemUptime - reading.ocrStartedAt) * 1000)
+                    }
                     self.write("Překlad (\(activeTargetLanguage.rawValue)): \(czech)")
                 }
             }
@@ -656,6 +714,7 @@ final class CaptionAppModel: ObservableObject {
         isRunning = true
         sessionRevision += 1
         let currentSession = sessionRevision
+        beginPerformanceSession(currentSession: currentSession)
         processingOCR = false
         processingChoices = false
         lastTranslatedChoiceItems = []
@@ -704,6 +763,10 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func stop() {
+        performanceTimer?.cancel()
+        performanceTimer = nil
+        if isRunning { refreshPerformance(); write("Diagnostika: " + performanceSummary.replacingOccurrences(of: "\n", with: " | ")) }
+        UserDefaults.standard.removeObject(forKey: sessionMarker)
         sessionRevision += 1
         dialogueExpiry?.cancel()
         dialogueExpiry = nil
@@ -731,7 +794,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func shareLogs() -> String {
-        (["GameLingo iOS 0.5.0", "Stav: \(status)"] + logLines).joined(separator: "\n")
+        (["GameLingo iOS 0.5.0", "Stav: \(status)", performanceSummary] + logLines).joined(separator: "\n")
     }
 }
 
