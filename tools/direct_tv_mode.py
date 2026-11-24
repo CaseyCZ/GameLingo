@@ -209,11 +209,18 @@ def patch_direct_tv(folder):
     }
 
     private fun spustPrimyZdroj(xbox: Boolean) {
-        GameLingoScreenTranslationService.stop(this)
-        getSharedPreferences("gamelingo", MODE_PRIVATE).edit()
-            .putString("directPlatform", if (xbox) "xbox" else "ps").apply()
-        RemotePlayService.prepni(this, xbox)
-        if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
+        if (GameLingoScreenTranslationService.running || PrijemService.bezi) {
+            android.app.AlertDialog.Builder(this).setMessage("Nejdříve zastav stávající překlad.")
+                .setPositiveButton("OK",null).show()
+            return
+        }
+        GameLingoTVProfiles.chooseForStart(this) {
+            GameLingoScreenTranslationService.stop(this)
+            getSharedPreferences("gamelingo", MODE_PRIVATE).edit()
+                .putString("directPlatform", if (xbox) "xbox" else "ps").apply()
+            RemotePlayService.prepni(this, xbox)
+            if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
+        }
     }
 
     private fun vyberPrimouPS() {
@@ -310,10 +317,10 @@ def patch_direct_tv(folder):
                     kotlin.math.abs((box.left + box.right) / 2f - center) <= obraz.width * .18f
                 }.sortedBy { it.second.top }
                 // A menu/grid typically has several independent columns or rows.
-                if (centered.isEmpty() || (filterMenu && (lines.size > 3 || centered.size != lines.size || centered.size > 2))) {
+                if (filterMenu && (centered.isEmpty() || lines.size > 3 || centered.size != lines.size || centered.size > 2)) {
                     hotovo(""); return@outer
                 }
-                val chosen = centered.takeLast(2)
+                val chosen = (if (filterMenu) centered else lines.sortedBy { it.second.top }).takeLast(2)
                 if (chosen.size == 2) {
                     val first = chosen[0].second; val second = chosen[1].second
                     val gap = second.top - first.bottom

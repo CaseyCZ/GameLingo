@@ -99,9 +99,7 @@ object GameLingoDirectTVLayout {
                 }
                 area(blue,Color.parseColor("#4FB3FF"),"OCR dialogů")
                 area(yellow,Color.parseColor("#FFD54A"),"OCR herních textů")
-                val half = green[2]/2f
-                val left = (green[0]-half).coerceIn(0f,1f-green[2])
-                area(floatArrayOf(left,(green[1]-.12f*green[3]).coerceAtLeast(0f),left+green[2],green[1]),
+                area(GameLingoDirectTVLayout.greenBounds(green),
                     Color.parseColor("#3CFF6E"),"Přeložené dialogy")
                 area(orange,Color.parseColor("#FF9E34"),"Přeložené herní texty")
                 canvas.restore()

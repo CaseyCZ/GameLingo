@@ -135,7 +135,7 @@ class GameLingoScreenTranslationService : Service() {
     private var source = "Čekám na první snímek"
     private var worker: HandlerThread? = null
     private var frameHandler: Handler? = null
-    private val wantFrame = AtomicBoolean(false)
+    private val wantFrame = java.util.concurrent.atomic.AtomicInteger(0)
     private var startedAt = 0L
     private var diagnostic = false
     private var lastTextAt = 0L
@@ -162,7 +162,7 @@ class GameLingoScreenTranslationService : Service() {
     private var yellowRoi = floatArrayOf(.1f,.1f,.9f,.5f)
     private var orangeOutput = floatArrayOf(.07f,.43f,.50f,.60f,1f)
     private var nextYellow = false
-    @Volatile private var captureYellow = false
+    private var yellowEpoch = 0L
     private var yellowCandidate = emptyList<String>()
     private var yellowShown = emptyList<String>()
     private var yellowSelected = -1
@@ -174,10 +174,9 @@ class GameLingoScreenTranslationService : Service() {
         override fun run() {
             if (!active) return
             if (RemotePlayService.aktivni || PrijemService.bezi) { stopSelf(); return }
-            if (!paused && !ocrBusy && !wantFrame.get()) {
-                captureYellow = yellowEnabled && (!dialogueEnabled || nextYellow)
-                if (dialogueEnabled && yellowEnabled) nextYellow = !nextYellow
-                wantFrame.set(true)
+            if (!paused && !ocrBusy && wantFrame.get() == 0) {
+                val region = if (yellowEnabled && (!dialogueEnabled || nextYellow)) 2 else 1
+                if (wantFrame.compareAndSet(0, region) && dialogueEnabled && yellowEnabled) nextYellow = !nextYellow
             }
             if (!paused && yellowLastAt != 0L && SystemClock.elapsedRealtime() - yellowLastAt > 1800L) {
                 clearYellow()
@@ -302,8 +301,7 @@ class GameLingoScreenTranslationService : Service() {
             frameHandler = handler
             val images = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
             reader = images
-            captureYellow = !dialogueEnabled && yellowEnabled
-            wantFrame.set(true)
+            wantFrame.set(if (!dialogueEnabled && yellowEnabled) 2 else 1)
             images.setOnImageAvailableListener({ source -> receive(source) }, handler)
             display = p.createVirtualDisplay("GameLingo-screen", width, height, metrics.densityDpi.coerceAtLeast(1),
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, images.surface, null, ui)
@@ -348,8 +346,9 @@ class GameLingoScreenTranslationService : Service() {
             var yellow = false
             val bitmap = try {
                 received.incrementAndGet()
-                if (!wantFrame.compareAndSet(true, false)) return
-                yellow = captureYellow
+                val requested = wantFrame.getAndSet(0)
+                if (requested == 0) return
+                yellow = requested == 2
                 val region = if (yellow) yellowRoi else roi
                 val plane = image.planes[0]
                 val buffer = plane.buffer.duplicate()
@@ -477,6 +476,7 @@ class GameLingoScreenTranslationService : Service() {
         catch (e: Exception) { completed(null) }
     }
     private fun clearYellow() {
+        yellowEpoch++
         yellowCandidate = emptyList(); yellowShown = emptyList(); yellowSelected = -1
         yellowLastAt = 0L; yellowLastAttempt = emptyList(); yellowAttemptAt = 0L
         renderYellow(emptyList(), -1)
@@ -494,7 +494,7 @@ class GameLingoScreenTranslationService : Service() {
     private fun processYellow(cropped: Bitmap) {
         val read = ocr ?: run { cropped.recycle(); return }
         ocrBusy = true
-        val ticket = epoch
+        val ticket = yellowEpoch
         try {
             read.prectiVolby(cropped, { lines ->
                 val cleaned = lines.filter { it.first.count { c -> c.isLetter() } >= 2 }.take(8)
@@ -504,7 +504,7 @@ class GameLingoScreenTranslationService : Service() {
                 cropped.recycle()
                 ui.post {
                     ocrBusy = false
-                    if (!active || paused || ticket != epoch) return@post
+                    if (!active || paused || ticket != yellowEpoch) return@post
                     if (words.isEmpty() || (!yellowTextMode && selected < 0 && words != yellowCandidate)) return@post
                     yellowLastAt = SystemClock.elapsedRealtime()
                     if (words != yellowCandidate) { yellowCandidate = words; yellowShown = emptyList(); renderYellow(emptyList(),-1) }
@@ -535,10 +535,10 @@ class GameLingoScreenTranslationService : Service() {
         if (!active || paused || yellowRequest || value.isEmpty() || now-yellowLastAt > 1800L ||
             (value == yellowLastAttempt && now-yellowAttemptAt < 1000L)) return
         val p = translator ?: return
-        val ticket = epoch
+        val ticket = yellowEpoch
         yellowRequest = true; yellowLastAttempt = value; yellowAttemptAt = now
         val results = mutableListOf<String>()
-        fun current() = active && !paused && ticket == epoch && value == yellowCandidate &&
+        fun current() = active && !paused && ticket == yellowEpoch && value == yellowCandidate &&
             SystemClock.elapsedRealtime()-yellowLastAt <= 1800L
         fun finish() {
             yellowRequest=false
@@ -586,7 +586,7 @@ class GameLingoScreenTranslationService : Service() {
         if (starting) startupFailed = true
         starting = false
         pendingStart?.let { ui.removeCallbacks(it) }; pendingStart = null
-        active=false; running=false; wantFrame.set(false); epoch++; ui.removeCallbacks(tick)
+        active=false; running=false; wantFrame.set(0); epoch++; ui.removeCallbacks(tick)
         if (wasActive && !status.startsWith("Systém ukončil")) status = "Zastaveno · poslední stav: " + source
         if (wasActive) { render(""); clearYellow() }
         runCatching { display?.release() }; display=null

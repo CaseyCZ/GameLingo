@@ -814,7 +814,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")
         self.assertIn("prectiSamostatnyTitulek(cropped, sourceLanguage, GameLingoOCRConfig.filterMenuText", capture)
-        self.assertIn("if (!paused && !ocrBusy && !wantFrame.get())", capture)
+        self.assertIn("if (!paused && !ocrBusy && wantFrame.get() == 0)", capture)
         self.assertIn("translationBusy", capture)
         self.assertIn("value == candidate", capture)
         self.assertIn("Starý výsledek zahozen", capture)
@@ -836,6 +836,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(marker, capture)
         self.assertIn("restore(a, items.getJSONObject(names[index-1]))", profiles)
         self.assertIn("fun greenBounds", layout)
+        self.assertIn("wantFrame.getAndSet(0)", capture)
+        self.assertIn("yellowEpoch", capture)
+        self.assertIn("GameLingoTVProfiles.chooseForStart(this)", code(TOOLS/"direct_tv_mode.py"))
         self.assertIn("Zelený výstup zasahuje", capture)
 
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
