@@ -1,22 +1,13 @@
 name: GameLingo • quick regression checks
 
 on:
-  push:
-    branches:
-      - feature/gamelingo-v05-platform-rebuild
-    paths:
-      - "ios/**"
-      - "tools/**"
-      - "tests/**"
-      - ".github/workflows/fast-gamelingo-checks.yml"
   pull_request:
-    branches:
-      - feature/gamelingo-v04-all-screens
+    branches: [Master]
     paths:
-      - "ios/**"
-      - "tools/**"
-      - "tests/**"
-      - ".github/workflows/fast-gamelingo-checks.yml"
+      - 'ios/**'
+      - 'tools/**'
+      - 'tests/**'
+      - 'shared/**'
   workflow_dispatch:
   workflow_call:
 
