@@ -260,14 +260,20 @@ object GameLingoTVPairing {
                         reply.data.copyOfRange(reply.offset, reply.offset + reply.length))
                 }
             }.getOrDefault(false)
-            if (result) {
-                lastVerifiedIp = tv.ip
-                lastVerifiedAt = SystemClock.elapsedRealtime()
-            } else if (lastVerifiedIp == tv.ip) {
-                lastVerifiedIp = ""
-                lastVerifiedAt = 0L
+            main.post {
+                // A late reply must not restore connected state after local forget
+                // or re-pairing with a different secret.
+                val stillPaired = token(activity, tv.ip) == secret
+                val verified = result && stillPaired
+                if (verified) {
+                    lastVerifiedIp = tv.ip
+                    lastVerifiedAt = SystemClock.elapsedRealtime()
+                } else if (lastVerifiedIp == tv.ip && stillPaired) {
+                    lastVerifiedIp = ""
+                    lastVerifiedAt = 0L
+                }
+                if (!activity.isFinishing) onResult(verified)
             }
-            main.post { if (!activity.isFinishing) onResult(result) }
         }.apply { name = "gamelingo-tv-ping"; isDaemon = true }.start()
     }
 
