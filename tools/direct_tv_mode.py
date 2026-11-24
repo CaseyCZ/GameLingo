@@ -373,7 +373,7 @@ def patch_direct_tv(folder):
             showText("")
             recordOverlayTest("Test ukončen: jiný režim")
         }''')
-    overlay_one('        pripravena = false\\n        ui.removeCallbacks(hideRunnable)',
+    overlay_one('        pripravena = false\n        ui.removeCallbacks(hideRunnable)',
         '''        if (overlayTestActive) recordOverlayTest("Test ukončen: služba zastavena")
         overlayTestActive = false
         pripravena = false
