@@ -322,6 +322,42 @@ def main():
                 "orange editor in existing regions screen")
             phone.write_text(phone_code, encoding="utf-8")
 
+        # SEC-02: never generate an account-transfer PIN from a remote packet.
+        # Keep the existing local "add device" flow, but only while its user-
+        # opened window is active. This is a containment measure, not encryption.
+        prefix=one(prefix,
+            'val k = (1000..9999).random().toString()',
+            'val k = (java.security.SecureRandom().nextInt(9000) + 1000).toString()',
+            "secure random local legacy PIN")
+        prefix=one(prefix,
+            'private fun sparovani(s: DatagramSocket, p: DatagramPacket, casti: List<String>) {\n            val u = RemotePlayUdaje(c)',
+            '''private fun sparovani(s: DatagramSocket, p: DatagramPacket, casti: List<String>) {
+            if (!Pridani.platny()) {
+                odpovez(s, p, "$SPAROVANI\\tCHYBA\\tlokalni_souhlas")
+                return
+            }
+            val u = RemotePlayUdaje(c)''',
+            "require local consent for account transfer")
+        # Delete the remotely generated PIN fallback, not the local import feature.
+        start = prefix.index('                    // nový kód jen když starý už neplatí')
+        end = prefix.index('\n                }\n                "KOD" ->', start)
+        prefix = prefix[:start] + '                    odpovez(s, p, "$SPAROVANI\\tCHYBA\\tlokalni_souhlas")' + prefix[end:]
+        start = prefix.index('                    val kod = kodSparovani')
+        end = prefix.index('\n                }\n            }\n        }', start)
+        prefix = prefix[:start] + '                    odpovez(s, p, "$SPAROVANI\\tCHYBA\\tlokalni_souhlas")' + prefix[end:]
+        # The source-side UI must warn before issuing its local PIN.
+        code=one(code,
+            '    private fun pridatZarizeni() {',
+            '''    private fun pridatZarizeni() {
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Starý přenos konzolového účtu")
+            .setMessage("Přenos účtu používá nešifrovanou místní síť. Doporučujeme přihlásit konzoli samostatně. Pro běžné titulky použij šestímístné párování GameLingo TV.")
+            .setNegativeButton("Zrušit", null)
+            .setPositiveButton("Přesto pokračovat") { _, _ -> otevriStarePredani() }.show()
+    }
+
+    private fun otevriStarePredani() {''',
+            "warn before local account transfer")
         transport.write_text(prefix + sender_marker + sender, encoding="utf-8")
 
         registration=folder/"RemotePlay.kt"
