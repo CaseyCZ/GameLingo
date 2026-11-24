@@ -216,7 +216,7 @@ internal object GameLingoMobileDownloads {
                     link.text=target
                     open.isEnabled=true;again.isEnabled=true
                 }
-            }.apply{name="gamelingo-mobile-release";isDaemon=true}.start()
+            }.apply{this.name="gamelingo-mobile-release";isDaemon=true}.start()
         }
         again.setOnClickListener{resolve()}
         resolve()
