@@ -113,7 +113,7 @@ def android(root: Path, mode: str):
         contains(base / "OverlayService.kt", "val vstup = PrijemService.bezi ||")
         contains(base / "Propojeni.kt", "IPhoneTVPairing.verify")
         contains(base / "OverlayService.kt", "EXTRA_VYSTUP_VOLEB")
-        assert_tv_source(root)
+    assert_tv_source(root)
 
 
 if __name__ == "__main__":
