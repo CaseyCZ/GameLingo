@@ -36,7 +36,7 @@ Datum: 2026-11-24. Stav: fáze 0, statická kontrola; žádné změny aplikačn�
 - [x] F0 — průzkum a checkpoint
 - [x] Založit auditní větev přímo z poslední vývojové revize 0.5 a ověřit push triggery publikace.
 - [x] Baseline build/test na auditní větvi: run 45343148434, všechny tři nativní buildy, kontroly a balíčky success.
-- [ ] P0.1 povinné HMAC všech typů titulků, legacy opt-in default off
+- [x] P0.1 povinné HMAC všech typů titulků, legacy opt-in default off — CI success (45344083071), HW čeká.
 - [ ] P0.2 ochrana proti replay (podepsaná sekvence/nonce, restart relace a ochrana pořadí)
 - [ ] P0.3 Keystore na TV, bezpečná migrace nebo nové párování
 - [ ] P0.4 více telefonů a jednotlivé odpojení
@@ -88,3 +88,9 @@ Ověřit čtyři oblasti, oranžový náhled, profily, barvy, přepnutí HDMI, r
 - Přidán regresní kontrakt do test_v05_integrations.py; plný build/test spustí auditní CI. P0.1 zatím čeká na výsledek; nepovažovat za HW ověřené. P0.2 replay, P0.3 TV Keystore a P0.4 více telefonů zůstávají otevřené. P0.1 zajišťuje podpis herních dat, ne důvěrnost, ani autentizaci potvrzení přijímače.
 
 - P0.1 commit `b2fe43209049a386fcbdb6c712707358e20686e3`; [CI run 45344083071](https://github.com/CaseyCZ/GameLingo/actions/runs/45344083071). Stav při poslední kontrole: quick / verify: success; native / GameLingo · integration contracts: success; native / Android phone · PS5 / PS4 foundation: in_progress; native / Google TV · Orange V5 receiver: in_progress; native / iPhone · unsigned IPA: queued. Před P0.2 ověřit dokončení všech jobů; pokud P0.1 neprojde, opravit nebo revertovat podle pravidel. Fyzický test podepsaných dialogů, voleb, preview, story, clear, legacy off/on a port fallback stále čeká.
+
+## P0.2 — ochrana proti replay
+- P0.1 run 45344083071 dokončen success: quick, contracts, iPhone, Android mobil, Google TV, balíčky/SHA-256. HW dosud neověřeno.
+- P0.2 samostatný commit: TEXT/STYLE/PING podepisují i timestamp v ms a rostoucí wire sequence; přijímač kontroluje stáří ±120 s, HMAC a per-lane high-water (dialog, volby, OCR, story, styl, ping). Ukládá sequence synchronně před vykonáním, odmítne opakování i po restartu; při novém spárování resetuje high-water spolu s rotací klíče. Každý legitimní retransmit je nově podepsán s vyšším číslem. PONG je podepsaný a vázaný na čerstvý jednorázový nonce, iOS jej spotřebuje. Starší verze podepsaného protokolu bez freshness jsou odmítnuty; kompatibilita unsigned pouze explicitním legacy na TV.
+- Rizika: požaduje přibližně synchronní hodiny (automatický čas); při velkém posunu dozadu může být nutné nové párování. Synchronní zápisy vyžadují zátěžové měření (P1.7). Legacy záměrně obchází replay; bez TLS není důvěrnost. Potvrzení story/PCA1 dosud nejsou kryptograficky ověřená, stará aplikace může nepřijmout nový protokol. P1.9 řeší aplikačně zastaralý obsah, nejen síťové přehrání.
+- Přidán statický regresní test; CI po commitu. Ruční test zachyceného opakovaného paketu, prohozeného pořadí, restartu TV, nové relace, UDP opakování, story a odchylky hodin čeká. P0.3 teprve po výsledku tohoto runu.

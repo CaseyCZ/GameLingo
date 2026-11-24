@@ -345,6 +345,25 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('p.setData(decoded.toByteArray(Charsets.UTF_8))', receiver)
         self.assertIn("GameLingoTVPairing.setLegacyEnabled(a, it)", tv)
 
+    def test_p0_2_replay_guard_and_signed_pong(self):
+        ios = code(IOS/"PlayCaptionTV.swift")
+        android = code(TOOLS/"GameLingoTVPairing.kt")
+        receiver = code(TOOLS/"IPhoneTVPairing.kt")
+        patch = code(TOOLS/"patch_tv_iphone.py")
+        self.assertIn("lastWireSequence = max(lastWireSequence + 1, now * 1000)", ios)
+        self.assertIn("lastWireSequence = maxOf(lastWireSequence + 1, now * 1000L)", android)
+        self.assertIn('private const val FRESHNESS_MS = 120_000L', receiver)
+        self.assertIn("timestamp < now - FRESHNESS_MS || timestamp > now + FRESHNESS_MS", receiver)
+        self.assertIn('val slot = "wire_sequence_" + lane', receiver)
+        self.assertIn("sequence <= p.getLong(slot, 0L)", receiver)
+        self.assertIn("if (!p.edit().putLong(slot, sequence).commit())", receiver)
+        self.assertEqual(patch.count("IPhoneTVPairing.verifyFresh(c, id,"), 3)
+        self.assertIn("IPhoneTVPairing.textLane(encoded)", patch)
+        self.assertIn("fields[2] == self.pendingPingNonce", ios)
+        self.assertIn("self.pendingPingNonce = nil", ios)
+        self.assertIn("IPhoneTVPairing.pongSignature(c, id, nonce)", patch)
+        self.assertIn("MessageDigest.isEqual(", android)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

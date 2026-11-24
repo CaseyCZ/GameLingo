@@ -40,6 +40,14 @@ object GameLingoTVPairing {
     private const val KEY_ALIAS = "cz.caseycz.gamelingo.receiver.v1"
     private const val PORT = 41989
     @Volatile private var appContext: Context? = null
+    private var lastWireSequence = 0L
+
+    @Synchronized
+    private fun freshBody(body: String): String {
+        val now = System.currentTimeMillis()
+        lastWireSequence = maxOf(lastWireSequence + 1, now * 1000L)
+        return "$body\t$now\t$lastWireSequence"
+    }
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -61,7 +69,7 @@ object GameLingoTVPairing {
         val encoded = Base64.encodeToString(payload, Base64.NO_WRAP)
         require(encoded.length < 11000) { "Příliš dlouhá TV zpráva" }
         val clientId = pairingId(context)
-        val body = "TEXT\t$clientId\t$encoded"
+        val body = freshBody("TEXT\t$clientId\t$encoded")
         return ("PCPAIR1\t$body\t" + sign(secret, body)).toByteArray(Charsets.UTF_8)
     }
 
@@ -236,7 +244,7 @@ object GameLingoTVPairing {
         Thread {
             val result = runCatching {
                 val nonce = UUID.randomUUID().toString()
-                val message = "PING\t$clientId\t$nonce"
+                val message = freshBody("PING\t$clientId\t$nonce")
                 val packetText = "PCPAIR1\t$message\t" + sign(secret, message)
                 DatagramSocket().use { socket ->
                     socket.soTimeout = 3_000
@@ -246,8 +254,10 @@ object GameLingoTVPairing {
                     val buf = ByteArray(2048)
                     val reply = DatagramPacket(buf, buf.size)
                     socket.receive(reply)
-                    reply.address == address && String(reply.data, 0, reply.length,
-                        Charsets.UTF_8) == "PCPAIR1\tPONG\t$nonce"
+                    val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
+                    reply.address == address && MessageDigest.isEqual(
+                        expected.toByteArray(Charsets.UTF_8),
+                        reply.data.copyOfRange(reply.offset, reply.offset + reply.length))
                 }
             }.getOrDefault(false)
             if (result) {

@@ -86,6 +86,8 @@ final class PlayCaptionTV: ObservableObject {
     private var liveReceiverReady = false
     private var liveReceiverTarget = ""
     private var lastPong: Date?
+    private var pendingPingNonce: String?
+    private var lastWireSequence: Int64 = 0
     private var portCheckAt: Date?
 
     var receiverPaired: Bool {
@@ -449,6 +451,13 @@ final class PlayCaptionTV: ObservableObject {
         return mac.map { String(format: "%02x", $0) }.joined()
     }
 
+    /// A new envelope for every send, including a deliberate UDP retransmit.
+    private func freshBody(_ body: String) -> String {
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        lastWireSequence = max(lastWireSequence + 1, now * 1000)
+        return "\(body)\t\(now)\t\(lastWireSequence)"
+    }
+
     private func startReceiverHeartbeat() {
         receiverHeartbeatTask?.cancel()
         liveReceiver?.cancel()
@@ -456,6 +465,7 @@ final class PlayCaptionTV: ObservableObject {
         liveReceiverReady = false
         receiverConnected = false
         lastPong = nil
+        pendingPingNonce = nil
         lastCaptionAcknowledgement = ""
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !target.isEmpty, ReceiverSecretStore.load(target) != nil else {
@@ -477,6 +487,7 @@ final class PlayCaptionTV: ObservableObject {
         receiverHeartbeatTask?.cancel()
         receiverConnected = false
         lastPong = nil
+        pendingPingNonce = nil
         portCheckAt = Date()
         receiverStatus = "Připojuji se k TV na UDP \(port)…"
         let conn = NWConnection(host: .init(target),
@@ -502,7 +513,8 @@ final class PlayCaptionTV: ObservableObject {
                             guard let self, let token = ReceiverSecretStore.load(target),
                                   self.liveReceiver === conn else { break }
                             let nonce = UUID().uuidString
-                            let body = "PING\t\(self.receiverID)\t\(nonce)"
+                            self.pendingPingNonce = nonce
+                            let body = self.freshBody("PING\t\(self.receiverID)\t\(nonce)")
                             if let mac = self.signature(body, tokenHex: token) {
                                 conn.send(content: Data("PCPAIR1\t\(body)\t\(mac)".utf8),
                                           completion: .contentProcessed { _ in })
@@ -554,7 +566,12 @@ final class PlayCaptionTV: ObservableObject {
                 guard let self, self.liveReceiver === conn, self.ip == target else { return }
                 if let data, let raw = String(data: data, encoding: .utf8) {
                     let fields = raw.components(separatedBy: "\t")
-                    if fields.count >= 3 && fields[0] == "PCPAIR1" && fields[1] == "PONG" {
+                    if fields.count == 4 && fields[0] == "PCPAIR1" && fields[1] == "PONG",
+                       fields[2] == self.pendingPingNonce,
+                       let token = ReceiverSecretStore.load(target),
+                       let expected = self.signature("PONG\t\(self.receiverID)\t\(fields[2])", tokenHex: token),
+                       fields[3] == expected {
+                        self.pendingPingNonce = nil
                         self.lastPong = Date()
                         self.receiverConnected = true
                         self.receiverStatus = "TV spárovaná · spojení aktivní"
@@ -577,7 +594,7 @@ final class PlayCaptionTV: ObservableObject {
         guard let token = ReceiverSecretStore.load(target) else { return false }
         let encoded = canonicalPayload.base64EncodedString()
         guard encoded.utf8.count < 11000 else { return false }
-        let body = "TEXT\t\(receiverID)\t\(encoded)"
+        let body = freshBody("TEXT\t\(receiverID)\t\(encoded)")
         guard let mac = signature(body, tokenHex: token) else { return false }
         let packet = Data("PCPAIR1\t\(body)\t\(mac)".utf8)
         if !forceDatagram, liveReceiverReady,
@@ -608,8 +625,9 @@ final class PlayCaptionTV: ObservableObject {
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !target.isEmpty, let token = ReceiverSecretStore.load(target) else { return }
         let body = "STYLE\t\(receiverID)\t\(color)\t\(background)"
-        guard let mac = signature(body, tokenHex: token) else { return }
-        let packet = Data("PCPAIR1\t\(body)\t\(mac)".utf8)
+        let fresh = freshBody(body)
+        guard let mac = signature(fresh, tokenHex: token) else { return }
+        let packet = Data("PCPAIR1\t\(fresh)\t\(mac)".utf8)
         if liveReceiverReady, liveReceiverTarget == target,
            let conn = liveReceiver {
             conn.send(content: packet, completion: .contentProcessed { _ in })

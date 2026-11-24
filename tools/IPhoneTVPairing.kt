@@ -27,6 +27,8 @@ object IPhoneTVPairing {
     private var lastSuccessToken: String? = null
     private var lastSuccessAtMs = 0L
     private const val REPLY_RETRY_WINDOW_MS = 15_000L
+    private const val FRESHNESS_MS = 120_000L
+    private val replayLanes = setOf("PCT1", "PCV1", "PCO1", "STORY", "STYLE", "PING")
     @Volatile var lastAuthenticatedMs = 0L
         private set
 
@@ -70,8 +72,10 @@ object IPhoneTVPairing {
         }
         val bytes = ByteArray(32).also(random::nextBytes)
         val token = bytes.joinToString("") { "%02x".format(it) }
-        prefs(ctx).edit().putString("phone_id", phoneId)
-            .putString("token", token).apply()
+        val editor = prefs(ctx).edit().putString("phone_id", phoneId)
+            .putString("token", token)
+        replayLanes.forEach { editor.remove("wire_sequence_" + it) }
+        if (!editor.commit()) return@synchronized null
         lastSuccessPin = input
         lastSuccessPhoneId = phoneId
         lastSuccessToken = token
@@ -98,7 +102,51 @@ object IPhoneTVPairing {
         lastSuccessAtMs = 0L
     }
 
-    fun verify(ctx: Context, phoneId: String, content: String, signatureHex: String): Boolean {
+    /** A separate high-water mark per renderer lane avoids dropping a clear
+     *  just because a different lane's datagram arrived first. */
+    fun textLane(encoded: String): String? = runCatching {
+        if (encoded.length >= 11000) return null
+        val inner = String(android.util.Base64.decode(encoded, android.util.Base64.DEFAULT), Charsets.UTF_8)
+        when (val kind = inner.substringBefore('\t')) {
+            "PCT1", "PCV1", "PCO1" -> kind
+            "PCQ1", "PCS1" -> "STORY"
+            else -> null
+        }
+    }.getOrNull()
+
+    fun verifyFresh(ctx: Context, phoneId: String, content: String,
+                    timestampText: String?, sequenceText: String?,
+                    signatureHex: String, lane: String): Boolean = synchronized(lock) {
+        if (lane !in replayLanes) return@synchronized false
+        val timestamp = timestampText?.toLongOrNull() ?: return@synchronized false
+        val sequence = sequenceText?.toLongOrNull() ?: return@synchronized false
+        val now = System.currentTimeMillis()
+        if (timestamp < now - FRESHNESS_MS || timestamp > now + FRESHNESS_MS || sequence <= 0)
+            return@synchronized false
+        val p = prefs(ctx)
+        val slot = "wire_sequence_" + lane
+        if (sequence <= p.getLong(slot, 0L)) return@synchronized false
+        val signed = "$content\t$timestampText\t$sequenceText"
+        if (!verify(ctx, phoneId, signed, signatureHex)) return@synchronized false
+        // Persist before dispatch, so captured traffic cannot be reused after
+        // a receiver restart. A failed write is fail-closed.
+        if (!p.edit().putLong(slot, sequence).commit()) return@synchronized false
+        lastAuthenticatedMs = SystemClock.elapsedRealtime()
+        true
+    }
+
+    fun pongSignature(ctx: Context, phoneId: String, nonce: String): String? = synchronized(lock) {
+        val p = prefs(ctx)
+        if (p.getString("phone_id", "") != phoneId) return@synchronized null
+        val key = hexBytes(p.getString("token", null) ?: return@synchronized null) ?: return@synchronized null
+        Mac.getInstance("HmacSHA256").run {
+            init(SecretKeySpec(key, "HmacSHA256"))
+            doFinal("PONG\t$phoneId\t$nonce".toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
+        }
+    }
+
+    private fun verify(ctx: Context, phoneId: String, content: String, signatureHex: String): Boolean {
         val p = prefs(ctx)
         if (p.getString("phone_id", "") != phoneId ||
             phoneId.isBlank() || signatureHex.length != 64) return false
@@ -109,9 +157,7 @@ object IPhoneTVPairing {
             doFinal(content.toByteArray(Charsets.UTF_8))
         }
         val received = hexBytes(signatureHex) ?: return false
-        val ok = MessageDigest.isEqual(expected, received)
-        if (ok) lastAuthenticatedMs = SystemClock.elapsedRealtime()
-        return ok
+        return MessageDigest.isEqual(expected, received)
     }
 
     fun connectedRecently(): Boolean =
