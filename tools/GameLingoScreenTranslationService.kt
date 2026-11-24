@@ -180,6 +180,7 @@ class GameLingoScreenTranslationService : Service() {
     private var sampleGeneration = 0L
     private var currentBox: FloatArray? = null
     private var currentRows = 1
+    private var candidateAt = 0L
     private var shownAt = 0L
     private var shownUntil = 0L
     private var storySequence = 0L
@@ -187,7 +188,14 @@ class GameLingoScreenTranslationService : Service() {
     private val story = PribehovaRelace({ lines, ok, fail ->
         val p = translator
         if (p == null) fail()
-        else p.prelozPribeh(lines.joinToString("\n"), { result -> ui.post { ok(result) } }, { ui.post { fail() } })
+        else {
+            val original=lines.joinToString("\n")
+            val source=sourceLanguage
+            val target=GameLingoLanguages.target(this)
+            p.prelozPribeh(original, { result -> ui.post {
+                ok(GameLingoGlossaryStore.apply(this,original,result,source,target))
+            } }, { ui.post { fail() } })
+        }
     }, { translationState = it })
     private var yellowEnabled = false
     private var yellowTextMode = false
@@ -311,7 +319,7 @@ class GameLingoScreenTranslationService : Service() {
             // Same saved regions and automatic dialogue crop as Remote Play.
             roi = if (OblastTitulku.rucne) GameLingoDirectTVLayout.blue(this)
                 else if (GameLingoOCRConfig.expandSearch && GameLingoOCRConfig.mode != "classic") floatArrayOf(0f,.50f,1f,1f)
-                else floatArrayOf(.05f,.70f,.95f,1f)
+                else GameLingoOCRConfig.preset(this) ?: floatArrayOf(.05f,.70f,.95f,1f)
             yellowRoi = GameLingoDirectTVLayout.yellow(this)
             orangeOutput = GameLingoDirectTVLayout.orange(this)
             val inputs = listOfNotNull(roi.takeIf { dialogueEnabled }, yellowRoi.takeIf { yellowEnabled })
@@ -378,7 +386,7 @@ class GameLingoScreenTranslationService : Service() {
     }
     private fun resetText() {
         epoch++; candidate = ""; shown = ""; translatedText = ""
-        shownAt = 0L; shownUntil = 0L; currentBox = null; currentRows = 1
+        candidateAt = 0L; shownAt = 0L; shownUntil = 0L; currentBox = null; currentRows = 1
         story.reset(); storyPage = null
         lastAttempt = ""; lastAttemptAt = 0L
         lastTextAt = 0; blankFrames = 0; blankSince = 0
@@ -530,6 +538,7 @@ class GameLingoScreenTranslationService : Service() {
             return
         }
         if (value != candidate) {
+            candidateAt = now
             candidate = value
             if (shown != value && translatedText.isNotEmpty()) {
                 shown = ""; translatedText = ""; render("")
@@ -547,6 +556,8 @@ class GameLingoScreenTranslationService : Service() {
         if (candidate == lastAttempt && now - lastAttemptAt < 1000L) return
         val p = translator ?: return
         val value = candidate
+        val started = candidateAt
+        if (GameLingoOCRConfig.expired(this,now-started)) return
         val ticket = epoch
         lastAttempt = value; lastAttemptAt = now
         translationBusy = true
@@ -557,16 +568,18 @@ class GameLingoScreenTranslationService : Service() {
                 lastTranslationMs = SystemClock.elapsedRealtime() - now
                 val current = active && !paused && ticket == epoch && value == candidate &&
                     lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt <= 1800L
-                if (current && !translated.isNullOrBlank()) {
+                if (current && !translated.isNullOrBlank() && !GameLingoOCRConfig.expired(this@GameLingoScreenTranslationService,SystemClock.elapsedRealtime()-started)) {
                     translationState = "Přeloženo"; translationHits.incrementAndGet()
-                    if (diagnostic) lastTranslated = translated.take(300)
-                    shown = value; translatedText = translated
+                    val corrected=GameLingoGlossaryStore.apply(this@GameLingoScreenTranslationService,value,translated,sourceLanguage,GameLingoLanguages.target(this@GameLingoScreenTranslationService))
+                    GameLingoTranslationHistory.append("Dialog",sourceLanguage,GameLingoLanguages.target(this@GameLingoScreenTranslationService),value,corrected)
+                    if (diagnostic) lastTranslated = corrected.take(300)
+                    shown = value; translatedText = corrected
                     shownAt = SystemClock.elapsedRealtime()
-                    val duration = ((1800L+60L*translated.length)*durationPercent/100L).coerceIn(800L,15000L)
+                    val duration = GameLingoOCRConfig.displayMs(this@GameLingoScreenTranslationService,((1800L+60L*corrected.length)*durationPercent/100L).coerceIn(800L,15000L))
                     shownUntil = shownAt + duration
-                    render(translated, duration)
+                    render(corrected, duration)
                 } else if (current) {
-                    translationState = "Chyba překladu"; render("")
+                    translationState = if(GameLingoOCRConfig.expired(this@GameLingoScreenTranslationService,SystemClock.elapsedRealtime()-started)) "Starý výsledek zahozen" else "Chyba překladu"; render("")
                 } else {
                     translationState = "Starý výsledek zahozen"
                 }

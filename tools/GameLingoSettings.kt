@@ -132,6 +132,32 @@ object GameLingoSettings {
             })
         })
         add(sliderCard)
+        if(television) {
+            add(row(activity,"Pevná doba titulku","Nastavení v sekundách jako na iOS; příběhová fronta zachovává vlastní časování.",
+                GameLingoOCRConfig.fixedTiming(activity)) { GameLingoOCRConfig.saveTiming(activity,fixed=it) })
+            fun timingSlider(title:String,min:Int,max:Int,value:Int,save:(Int)->Unit) {
+                val panel=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL; background=rounded(card);setPadding(17,14,17,16) }
+                val caption=TextView(activity).apply { textSize=16f;setTextColor(Color.WHITE);text="$title: $value s" }
+                panel.addView(caption)
+                panel.addView(SeekBar(activity).apply {
+                    this.max=max-min;progress=value-min;keyProgressIncrement=1;isFocusable=true
+                    GameLingoTVUi.controlFocus(activity,this)
+                    setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener {
+                        override fun onProgressChanged(bar:SeekBar, v:Int, fromUser:Boolean) {
+                            caption.text="$title: "+(v+min)+" s"
+                            if(fromUser) save(v+min)
+                        }
+                        override fun onStartTrackingTouch(bar:SeekBar){}
+                        override fun onStopTrackingTouch(bar:SeekBar){}
+                    })
+                })
+                add(panel)
+            }
+            timingSlider("Doba titulku",3,10,GameLingoOCRConfig.seconds(activity)){GameLingoOCRConfig.saveTiming(activity,duration=it)}
+            add(row(activity,"Přeskočit starý překlad","Zahodí výsledek, který překročil maximální stáří.",
+                GameLingoOCRConfig.skipOld(activity)){GameLingoOCRConfig.saveTiming(activity,skip=it)})
+            timingSlider("Maximální stáří",2,8,GameLingoOCRConfig.maxAge(activity)){GameLingoOCRConfig.saveTiming(activity,age=it)}
+        }
 
         fun button(title: String, action: () -> Unit) {
             content.addView(TextView(activity).apply {

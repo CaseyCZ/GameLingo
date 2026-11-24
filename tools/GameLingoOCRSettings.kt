@@ -157,6 +157,16 @@ object GameLingoOCRSettings {
             dialog.dismiss()
             show(activity, onAreas)
         }
+        if(GameLingoTVUi.isTV(activity)) {
+            action("Výchozí oblast",GameLingoOCRConfig.regionLabels[GameLingoOCRConfig.regionKeys.indexOf(GameLingoOCRConfig.region(activity))],
+                canEdit && !OblastTitulku.rucne) {
+                GameLingoTVUi.select(activity,"Výchozí oblast",GameLingoOCRConfig.regionLabels,
+                    GameLingoOCRConfig.regionKeys.indexOf(GameLingoOCRConfig.region(activity))) { i ->
+                    GameLingoOCRConfig.setRegion(activity,GameLingoOCRConfig.regionKeys[i])
+                    dialog.dismiss();show(activity,onAreas)
+                }
+            }
+        }
         action("Oblasti obrazovky",
             "Upravit modrý, zelený, žlutý a oranžový rámeček.") {
             dialog.dismiss()
@@ -166,6 +176,7 @@ object GameLingoOCRSettings {
             "Obnovit původní režim, filtrování a automatické čtení.",
             canEdit) {
             GameLingoOCRConfig.reset(activity)
+            if(GameLingoTVUi.isTV(activity)) GameLingoOCRConfig.setRegion(activity,"legacy")
             OblastTitulku.rucne = false
             OblastTitulku.oblast = OblastTitulku.VYCHOZI.copyOf()
             OblastTitulku.uloz(activity)

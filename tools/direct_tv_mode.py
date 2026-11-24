@@ -44,7 +44,14 @@ def patch_direct_tv(folder):
         """if (OblastTitulku.rucne) OblastTitulku.oblast.copyOf().takeIf {
             it.size == 4 && it.all { value -> value.isFinite() && value in 0f..1f } &&
                 it[2] > it[0] + 0.10f && it[3] > it[1] + 0.05f
-        } else null""")
+        } else if (!telefon) GameLingoOCRConfig.preset(this) else null""")
+    # Optional iOS timing in the console path, without changing the verified default.
+    one("        ukaz(cesky, 15000, box, radku, barvyJmen)",
+        "        ukaz(cesky, if (telefon) 15000 else GameLingoOCRConfig.displayMs(this,15000L), box, radku, barvyJmen)")
+    one("        val minDoba = 1800L + 60L * ukazanaDelka",
+        "        val minDoba = if (telefon) 1800L + 60L * ukazanaDelka else GameLingoOCRConfig.displayMs(this,1800L + 60L * ukazanaDelka)")
+    one("            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika",
+        "            if (!telefon && GameLingoOCRConfig.expired(this,System.currentTimeMillis()-zacatekPrekladu)) return\n            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika")
     one("        ui.post(pribehHlidac)\n        Pady.hlidej(this)",
         "        if (!telefon) { Volby.nacti(this); OblastTitulku.nacti(this) }\n        ui.post(pribehHlidac)\n        Pady.hlidej(this)")
     # YUV PS decoder uses aligned crop just like GL and I420.
@@ -167,6 +174,12 @@ def patch_direct_tv(folder):
             }
         }))''', 1)
     tv_ui.write_text(text, encoding="utf8")
+
+    glossary_ui = folder / "GameLingoGlossaryUi.kt"
+    glossary_source = glossary_ui.read_text(encoding="utf8")
+    glossary_source = glossary_source.replace("!RemotePlayService.aktivni && !PrijemService.bezi",
+        "!RemotePlayService.aktivni && !PrijemService.bezi && !GameLingoScreenTranslationService.running")
+    glossary_ui.write_text(glossary_source,encoding="utf8")
 
     # Install all TV-only screens and services in the actual generated workspace.
     for name in ("GameLingoTVSettings.kt", "GameLingoTVProfiles.kt",

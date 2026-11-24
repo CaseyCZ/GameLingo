@@ -57,6 +57,11 @@ object GameLingoDirectTVLayout {
         val left = (r[0] - r[2]/2f).coerceIn(0f, 1f-r[2])
         return floatArrayOf(left,(r[1]-.24f*r[3]).coerceAtLeast(0f),left+r[2],r[1])
     }
+    internal fun saveGreen(c: Context, values: FloatArray) {
+        val e=prefs(c).edit().putBoolean("directGreenEnabled",true)
+        values.forEachIndexed { i,v->e.putFloat("directGreen"+i,v) }
+        e.apply()
+    }
     internal fun locked(c: Context, region: String): Boolean = prefs(c).getBoolean("directLock"+region, false)
     private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
 

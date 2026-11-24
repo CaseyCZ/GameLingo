@@ -928,6 +928,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Active phone reception stays in the background",wiring)
         self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
 
+    def test_tv_ios_parity_settings_are_persisted_and_used(self):
+        config=code(TOOLS/"GameLingoOCRConfig.kt")
+        capture=code(TOOLS/"GameLingoScreenTranslationService.kt")
+        profile=code(TOOLS/"GameLingoTVProfiles.kt")
+        for key in ("autoRegion","fixedTiming","seconds","skipOld","maxAge"):
+            self.assertIn(key,profile)
+        self.assertIn("GameLingoOCRConfig.preset(this)",capture)
+        self.assertIn("GameLingoOCRConfig.displayMs",capture)
+        self.assertIn("GameLingoOCRConfig.expired",capture)
+        self.assertIn("GameLingoGlossaryStore.apply",capture)
+        self.assertIn("activateGlossary",profile)
+        self.assertIn("GameLingoOCRConfig.displayMs",code(TOOLS/"direct_tv_mode.py"))
+        self.assertIn("Náhled na TV",code(TOOLS/"GameLingoTVCaptionStyle.kt"))
+
     def test_tv_review_fixes_focus_opacity_and_profile_editing(self):
         style=code(TOOLS/"GameLingoTVCaptionStyle.kt")
         self.assertIn("opacityBar.progress=percent",style)

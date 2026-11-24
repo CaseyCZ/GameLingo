@@ -78,6 +78,7 @@ object GameLingoTVCaptionStyle {
             val percent = (p.getInt("opacity",230).coerceIn(0,255)*100+127)/255
             label.text = "Neprůhlednost pozadí: $percent %"
             if(opacityBar.progress != percent) opacityBar.progress=percent
+            preview.textSize=24f*GameLingoDirectTVLayout.storedGreen(a)[3]
             preview.setTextColor(textColor(a)); preview.setBackgroundColor(background(a))
         }
         root.addView(preview)
@@ -105,7 +106,43 @@ object GameLingoTVCaptionStyle {
                 override fun onStopTrackingTouch(bar: android.widget.SeekBar) {}
             })
         })
-        root.addView(GameLingoTVUi.action(a, "Velikost a poloha titulků") { GameLingoDirectTVLayout.show(a) {} })
+        fun geometry(labelText:String,index:Int,min:Int,max:Int) {
+            val title=android.widget.TextView(a).apply {setTextColor(Color.WHITE)}
+            val bar=android.widget.SeekBar(a).apply {
+                this.max=max-min;keyProgressIncrement=5;isFocusable=true
+                progress=(GameLingoDirectTVLayout.storedGreen(a)[index]*100).toInt().coerceIn(min,max)-min
+                isEnabled=!GameLingoDirectTVLayout.locked(a,"Green")
+                GameLingoTVUi.controlFocus(a,this)
+            }
+            title.text=labelText+": "+(bar.progress+min)+" %"
+            bar.setOnSeekBarChangeListener(object:android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(b:android.widget.SeekBar,v:Int,fromUser:Boolean){
+                    title.text=labelText+": "+(v+min)+" %"
+                    if(fromUser && !GameLingoDirectTVLayout.locked(a,"Green")){
+                        val r=GameLingoDirectTVLayout.storedGreen(a);r[index]=(v+min)/100f
+                        if(index==2)r[0]=r[0].coerceIn(r[2]/2f,1f-r[2]/2f)
+                        GameLingoDirectTVLayout.saveGreen(a,r);refresh()
+                    }
+                }
+                override fun onStartTrackingTouch(b:android.widget.SeekBar){}
+                override fun onStopTrackingTouch(b:android.widget.SeekBar){}
+            })
+            root.addView(title);root.addView(bar)
+        }
+        geometry("Velikost písma",3,60,200)
+        geometry("Šířka titulků",2,20,100)
+        root.addView(GameLingoTVUi.action(a,"Náhled na TV"){
+            if(RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running || OverlayService.overlayTestActive) return@action
+            if(!android.provider.Settings.canDrawOverlays(a)) {
+                android.widget.Toast.makeText(a,"Povol překryv v nastavení TV.",android.widget.Toast.LENGTH_LONG).show()
+                return@action
+            }
+            OverlayService.posli(a,android.content.Intent(a,OverlayService::class.java)
+                .setAction(OverlayService.ACTION_SET_TEXT).putExtra(OverlayService.EXTRA_TEXT,"Ukázka přeložených titulků")
+                .putExtra(OverlayService.EXTRA_DOBA,6000L).putExtra(OverlayService.EXTRA_VLASTNI,GameLingoDirectTVLayout.storedGreen(a)))
+            a.moveTaskToBack(true)
+        })
+        root.addView(GameLingoTVUi.action(a, "Velikost a poloha titulků") { GameLingoDirectTVLayout.show(a) {refresh()} })
         refresh()
         GameLingoTVUi.page(a,"Vzhled titulků",root,helpTopic="appearance")
     }

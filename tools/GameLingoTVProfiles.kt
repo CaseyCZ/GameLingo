@@ -21,6 +21,9 @@ object GameLingoTVProfiles {
             put("source", GameLingoLanguages.game(a)); put("target", GameLingoLanguages.target(a))
             put("ocr", GameLingoOCRConfig.mode); put("filter", GameLingoOCRConfig.filterMenuText); put("expand", GameLingoOCRConfig.expandSearch)
             put("dialogues", n.dialogy); put("hints", n.napovedy); put("cover", n.prekryvat); put("story", n.pribehovy); put("duration", n.casPribehuProcenta)
+            put("autoRegion",GameLingoOCRConfig.region(a))
+            put("fixedTiming",GameLingoOCRConfig.fixedTiming(a));put("seconds",GameLingoOCRConfig.seconds(a))
+            put("skipOld",GameLingoOCRConfig.skipOld(a));put("maxAge",GameLingoOCRConfig.maxAge(a))
             put("manual", OblastTitulku.rucne); put("blue", array(OblastTitulku.oblast))
             put("blueLocked", OblastTitulku.zamceno); put("yellowLocked", Volby.zamceno)
             put("greenLocked", GameLingoDirectTVLayout.locked(a,"Green")); put("orangeLocked", GameLingoDirectTVLayout.locked(a,"Orange"))
@@ -51,6 +54,8 @@ object GameLingoTVProfiles {
         if (mode in setOf("classic", "automatic", "street")) GameLingoOCRConfig.setMode(a, mode)
         GameLingoOCRConfig.setFilterMenu(a, p.optBoolean("filter", true))
         GameLingoOCRConfig.setExpandSearch(a, p.optBoolean("expand", false))
+        GameLingoOCRConfig.setRegion(a,p.optString("autoRegion","legacy").takeIf { it in GameLingoOCRConfig.regionKeys } ?: "legacy")
+        GameLingoOCRConfig.saveTiming(a,p.optBoolean("fixedTiming"),p.optInt("seconds",6),p.optBoolean("skipOld"),p.optInt("maxAge",5))
         Nastaveni(a).apply { dialogy = p.optBoolean("dialogues", true); napovedy = p.optBoolean("hints", true); prekryvat = p.optBoolean("cover"); pribehovy = p.optBoolean("story"); casPribehuProcenta = p.optInt("duration", casPribehuProcenta).coerceIn(CasovaniPribehu.MIN_PROCENT, CasovaniPribehu.MAX_PROCENT) }
         OblastTitulku.zamceno = p.optBoolean("blueLocked"); Volby.zamceno = p.optBoolean("yellowLocked")
         OblastTitulku.rucne = p.optBoolean("manual"); OblastTitulku.oblast = blue; OblastTitulku.uloz(a)
@@ -75,6 +80,7 @@ object GameLingoTVProfiles {
             if (index == 0) onChosen()
             else if (restore(a, items.getJSONObject(names[index-1]))) {
                 store(a).edit().putString("activeProfile", names[index-1]).apply()
+                activateGlossary(a,names[index-1])
                 onChosen()
             } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_LONG).show()
         }
@@ -96,7 +102,7 @@ object GameLingoTVProfiles {
         }
         AlertDialog.Builder(a).setTitle("Uložit profil").setView(input).setNegativeButton("Zrušit",null)
             .setPositiveButton("Uložit") { _,_ ->
-                val name=input.text.toString().trim().take(80)
+                val name=input.text.toString().trim().take(64)
                 if (name.isEmpty()) {
                     android.widget.Toast.makeText(a,"Zadej název profilu.",android.widget.Toast.LENGTH_SHORT).show()
                 } else if (all(a).has(name)) {
@@ -104,6 +110,9 @@ object GameLingoTVProfiles {
                         .setNegativeButton("Zrušit",null).setPositiveButton("Přepsat"){_,_->persist(name)}.show()
                 } else persist(name)
             }.show()
+    }
+    private fun activateGlossary(a: Activity,name: String) {
+        GameLingoGlossaryStore.activate(a,name.takeIf { GameLingoGlossaryStore.read(a,it)!=null })
     }
     private fun editSettings(a: Activity, name: String, openLayout: Boolean = false) {
         if(busy()) return
@@ -115,6 +124,7 @@ object GameLingoTVProfiles {
         add("Překlad"){GameLingoSettings.showTranslation(a,Nastaveni(a),{GameLingoDirectTVLayout.show(a){}},{GameLingoLanguages.show(a)})}
         add("Rozložení"){GameLingoDirectTVLayout.show(a){}}
         add("Vzhled titulků"){GameLingoTVCaptionStyle.show(a)}
+        add("Herní slovník"){GameLingoGlossaryUi.edit(a,name){activateGlossary(a,name)}}
         var page:android.app.Dialog?=null
         add("Uložit změny do profilu"){
             if(!busy()) {
@@ -141,6 +151,7 @@ object GameLingoTVProfiles {
                         0,1 -> {
                             if(restore(a,all(a).getJSONObject(name))) {
                                 store(a).edit().putString("activeProfile",name).apply()
+                                activateGlossary(a,name)
                                 if(action==1) editSettings(a,name,openLayout=true)
                                 else android.widget.Toast.makeText(a,"Profil načten",android.widget.Toast.LENGTH_SHORT).show()
                             } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_SHORT).show()
@@ -148,6 +159,7 @@ object GameLingoTVProfiles {
                         3 -> {
                             if(restore(a,all(a).getJSONObject(name))) {
                                 store(a).edit().putString("activeProfile",name).apply()
+                                activateGlossary(a,name)
                                 editSettings(a,name)
                             }
                         }

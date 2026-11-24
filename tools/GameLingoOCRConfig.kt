@@ -16,6 +16,32 @@ object GameLingoOCRConfig {
     @Volatile var expandSearch: Boolean = false
         private set
 
+    private fun tv(context: Context) = context.getSharedPreferences("gamelingo_tv_parity", Context.MODE_PRIVATE)
+    val regionKeys = arrayOf("legacy","narrow","center","wide")
+    val regionLabels = arrayOf("Původní automatika","Úzká – pouze titulky","Střed – doporučeno","Široká – původní")
+    fun region(context: Context) = tv(context).getString("region","legacy")?.takeIf { it in regionKeys } ?: "legacy"
+    fun setRegion(context: Context, key: String) { require(key in regionKeys); tv(context).edit().putString("region",key).apply() }
+    // iOS Vision rectangles use a bottom-left origin; Android uses top-left.
+    fun preset(context: Context): FloatArray? = when(region(context)) {
+        "narrow" -> floatArrayOf(.23f,.73f,.77f,.90f)
+        "center" -> floatArrayOf(.15f,.70f,.85f,.93f)
+        "wide" -> floatArrayOf(.04f,.63f,.96f,.97f)
+        else -> null
+    }
+    fun fixedTiming(context: Context) = tv(context).getBoolean("fixedTiming",false)
+    fun seconds(context: Context) = tv(context).getInt("seconds",6).coerceIn(3,10)
+    fun skipOld(context: Context) = tv(context).getBoolean("skipOld",false)
+    fun maxAge(context: Context) = tv(context).getInt("maxAge",5).coerceIn(2,8)
+    fun saveTiming(context: Context, fixed: Boolean = fixedTiming(context), duration: Int = seconds(context),
+                   skip: Boolean = skipOld(context), age: Int = maxAge(context)) {
+        tv(context).edit().putBoolean("fixedTiming",fixed).putInt("seconds",duration.coerceIn(3,10))
+            .putBoolean("skipOld",skip).putInt("maxAge",age.coerceIn(2,8)).apply()
+    }
+    // Existing games keep their original time unless fixed timing is selected.
+    fun displayMs(context: Context, original: Long): Long =
+        if(fixedTiming(context)) seconds(context)*1000L else original
+    fun expired(context: Context, ageMs: Long): Boolean = skipOld(context) && ageMs > maxAge(context)*1000L
+
     fun load(context: Context) {
         val store = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         mode = store.getString("mode", "classic")
