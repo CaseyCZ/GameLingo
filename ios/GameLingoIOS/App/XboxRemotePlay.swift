@@ -102,8 +102,7 @@ final class XboxRemotePlay: NSObject {
         guard let path = session["sessionPath"] as? String else {
             throw XboxError.message("Xbox nevrátil sessionPath")
         }
-        let createdURL = path.hasPrefix("https://") ? path :
-            "\(access.baseURL)/\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))"
+        let createdURL = try XboxEndpointPolicy.sessionURL(base: access.baseURL, path: path)
         guard registerSession(createdURL, access: access) else {
             deleteSession(createdURL, access: access)
             return
