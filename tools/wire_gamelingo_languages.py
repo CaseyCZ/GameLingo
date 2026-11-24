@@ -229,6 +229,79 @@ def main():
             .getJSONObject(0).opt("text") as? String)?.trim()?.ifEmpty { null }''', translator.name)
     t=once(t, '''        val preklad = json.getJSONObject("responseData").optString("translatedText").trim()''', '''        val preklad = (json.getJSONObject("responseData").opt("translatedText") as? String)?.trim()
             ?: return null''', translator.name)
+    # P1.6: same two-failure / 30-second / one-probe policy on all
+    # online providers, shared between standard and story requests.
+    (folder/"GameLingoCircuitBreaker.kt").write_text(
+        Path(__file__).with_name("GameLingoCircuitBreaker.kt").read_text(encoding="utf8"),encoding="utf8")
+    unit_dir=folder.parents[4]/"test/java/cz/titulky/tv"
+    unit_dir.mkdir(parents=True, exist_ok=True)
+    (unit_dir/"GameLingoCircuitBreakerTest.kt").write_text(
+        Path(__file__).with_name("GameLingoCircuitBreakerTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    t=once(t, '''    @Volatile private var googlePauzaDo = 0L
+    @Volatile private var edgePauzaDo = 0L
+    @Volatile private var myMemoryPauzaDo = 0L''', '''    private val googleBreaker = GameLingoCircuitBreaker()
+    private val edgeBreaker = GameLingoCircuitBreaker()
+    private val myMemoryBreaker = GameLingoCircuitBreaker()
+
+    private fun guardedProvider(breaker: GameLingoCircuitBreaker, call: () -> String?): String? {
+        val ticket = breaker.acquire(android.os.SystemClock.elapsedRealtime()) ?: return null
+        var success: Boolean? = null
+        try {
+            val result = runCatching { call() }.getOrNull()?.takeIf { it.isNotBlank() }
+            success = result != null
+            return result
+        } finally {
+            breaker.complete(ticket, success, android.os.SystemClock.elapsedRealtime())
+        }
+    }
+
+    private fun guardedGoogle(text: String, target: String, source: String): String? =
+        guardedProvider(googleBreaker) {
+            val result = runCatching { google(text, target, source) }.getOrNull()
+            if (result.isNullOrBlank()) chybGooglu++
+            result
+        }''', translator.name)
+    t=once(t, 'try { runCatching { google(t, jazyk, source) }.getOrNull() }',
+        'try { guardedGoogle(t, jazyk, source) }', translator.name)
+    t=once(t, '''            val ted = System.currentTimeMillis()
+            var vysledek: String? = null
+            var odkud = ""
+            // 1) Google – 2 pokusy (udržované spojení mohl Google mezitím zavřít)
+            if (ted >= googlePauzaDo) {
+                vysledek = runCatching { google(vstup, target, source) }.getOrNull() ?: runCatching { google(vstup, target, source) }.getOrNull()
+                if (vysledek.isNullOrBlank()) { googlePauzaDo = ted + 30_000L; chybGooglu++ } else odkud = "google"
+            }
+            // 2) Microsoft (překladač z prohlížeče Edge) – bez registrace
+            if (vysledek.isNullOrBlank() && ted >= edgePauzaDo) {
+                vysledek = runCatching { edge(vstup, target, source) }.getOrNull() ?: runCatching { edgeToken = null; edge(vstup, target, source) }.getOrNull()
+                if (vysledek.isNullOrBlank()) edgePauzaDo = ted + 60_000L else odkud = "microsoft"
+            }
+            // 3) MyMemory – veřejná služba zdarma, bez registrace (denní limit)
+            if (vysledek.isNullOrBlank() && ted >= myMemoryPauzaDo) {
+                vysledek = runCatching { myMemory(vstup, target, source) }.getOrNull()
+                if (vysledek.isNullOrBlank()) myMemoryPauzaDo = ted + 5 * 60_000L else odkud = "mymemory"
+            }''', '''            var vysledek = guardedGoogle(vstup, target, source)
+            var odkud = if (vysledek != null) "google" else ""
+            if (vysledek.isNullOrBlank()) {
+                vysledek = guardedProvider(edgeBreaker) {
+                    val result = runCatching { edge(vstup, target, source) }.getOrNull()
+                    if (result.isNullOrBlank()) edgeToken = null
+                    result
+                }
+                if (!vysledek.isNullOrBlank()) odkud = "microsoft"
+            }
+            if (vysledek.isNullOrBlank() && vstup.toByteArray(Charsets.UTF_8).size <= 500) {
+                vysledek = guardedProvider(myMemoryBreaker) { myMemory(vstup, target, source) }
+                if (!vysledek.isNullOrBlank()) odkud = "mymemory"
+            }''', translator.name)
+    # Synthetic warmup must not consume the only probe or reset real failures.
+    t=once(t, '''        if (System.currentTimeMillis() < googlePauzaDo) return
+        if (zavreno) return
+        runCatching { sit.execute { runCatching { google("ok") } } }''', '''        // The real next caption is the only half-open probe.
+        // Avoid synthetic requests that would reset real failure counts.
+        return''', translator.name)
+    if any(name in t for name in ("googlePauzaDo", "edgePauzaDo", "myMemoryPauzaDo")):
+        raise RuntimeError("Old per-provider pause bypass remains")
     translator.write_text(t, encoding="utf8")
 
     service = folder / "RemotePlayService.kt"

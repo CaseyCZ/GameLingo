@@ -521,6 +521,26 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("ukaz(cesky, 4000, box, radku, barvyJmen)", wiring)
         self.assertIn("coerceIn(0L, 800L)", wiring)
 
+    def test_p1_6_translation_breakers_and_fallback(self):
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        swift = code(IOS/"TranslationCircuitBreaker.swift")
+        kotlin = code(TOOLS/"GameLingoCircuitBreaker.kt")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("failures >= 2", swift)
+        self.assertIn("now + 30", swift)
+        self.assertIn("!probing", swift)
+        self.assertIn("ticket.generation == generation", swift)
+        self.assertIn("failures >= 2", kotlin)
+        self.assertIn("now + 30_000L", kotlin)
+        self.assertIn("@Synchronized fun acquire", kotlin)
+        self.assertIn('["google-gtx-v1", "mymemory-v1"]', pipeline)
+        self.assertIn("providerBreakers[engine", pipeline)
+        self.assertIn("GLTranslationOutcome.myMemoryResponse", pipeline)
+        self.assertIn("guardedGoogle(t, jazyk, source)", wiring)
+        self.assertIn("guardedProvider(edgeBreaker)", wiring)
+        self.assertIn("guardedProvider(myMemoryBreaker)", wiring)
+        self.assertIn("GameLingoCircuitBreakerTest.kt", wiring)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

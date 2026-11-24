@@ -9,6 +9,7 @@ enum GLTranslationFailure: Error, Equatable {
     case timeout
     case cancelled
     case network
+    case providerUnavailable
 
     var diagnostic: String {
         switch self {
@@ -19,6 +20,7 @@ enum GLTranslationFailure: Error, Equatable {
         case .timeout: return "časový limit"
         case .cancelled: return "zrušeno"
         case .network: return "nedostupná síť nebo služba"
+        case .providerUnavailable: return "překladové služby mají dočasnou pauzu"
         }
     }
 
@@ -33,6 +35,21 @@ enum GLTranslationFailure: Error, Equatable {
 }
 
 enum GLTranslationOutcome {
+    static func myMemoryResponse(_ data: Data, statusCode: Int?) -> Result<String, GLTranslationFailure> {
+        guard let statusCode else { return .failure(.invalidResponse) }
+        guard statusCode == 200 else { return .failure(.httpStatus(statusCode)) }
+        guard let response = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let serviceStatus = response["responseStatus"] as? Int else { return .failure(.invalidResponse) }
+        guard serviceStatus == 200 else { return .failure(.httpStatus(serviceStatus)) }
+        guard let payload = response["responseData"] as? [String: Any],
+              let translated = payload["translatedText"] as? String else { return .failure(.invalidResponse) }
+        let text = translated.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !text.uppercased().hasPrefix("MYMEMORY WARNING") else {
+            return .failure(.invalidResponse)
+        }
+        return .success(text)
+    }
+
     static func googleResponse(_ data: Data, statusCode: Int?) -> Result<String, GLTranslationFailure> {
         guard let statusCode else { return .failure(.invalidResponse) }
         guard statusCode == 200 else { return .failure(.httpStatus(statusCode)) }

@@ -86,6 +86,7 @@ actor CaptionPipeline {
     private var lastRead = Date.distantPast
     private var lastSeen = Date.distantPast
     private let translationCache = GLTranslationCache()
+    private var providerBreakers: [String: TranslationCircuitBreaker] = [:]
     private var lastSettings = ""
     private var emptyReads = 0
     private var revision = 0
@@ -305,31 +306,67 @@ actor CaptionPipeline {
         }
         if Task.isCancelled { return .failure(.cancelled) }
         if source.rawValue == target.rawValue { return .success(original) }
-        let engine = "google-gtx-v1"
-        if let cached = await translationCache.lookup(engine: engine, source: source.rawValue,
-            target: target.rawValue, original: original) { return .success(cached) }
-        // Preserve the previous translation service; language codes are now configurable.
-        var components = URLComponents(string: "https://translate.googleapis.com/translate_a/single")
-        components?.queryItems = [
+        // Cache hits do not consume a provider probe. Prefer Google results.
+        let engines = ["google-gtx-v1", "mymemory-v1"]
+        for engine in engines {
+            if let cached = await translationCache.lookup(engine: engine, source: source.rawValue,
+                target: target.rawValue, original: original) { return .success(cached) }
+        }
+        var lastFailure: GLTranslationFailure = .providerUnavailable
+        for engine in engines {
+            if Task.isCancelled { return .failure(.cancelled) }
+            // MyMemory has a small per-query size limit; do not truncate text.
+            if engine == "mymemory-v1" && original.utf8.count > 500 { continue }
+            let now = ProcessInfo.processInfo.systemUptime
+            guard let ticket = providerBreakers[engine, default: TranslationCircuitBreaker()]
+                .acquire(now: now) else { continue }
+            let outcome = await requestTranslation(engine: engine, original: original,
+                source: source.rawValue, target: target.rawValue)
+            let success: Bool?
+            switch outcome {
+            case .success: success = true
+            case .failure(.cancelled), .failure(.invalidRequest), .failure(.emptyInput): success = nil
+            case .failure: success = false
+            }
+            providerBreakers[engine, default: TranslationCircuitBreaker()]
+                .complete(ticket, success: success, now: ProcessInfo.processInfo.systemUptime)
+            switch outcome {
+            case .success(let translated):
+                await translationCache.remember(engine: engine, source: source.rawValue,
+                    target: target.rawValue, original: original, result: translated)
+                return outcome
+            case .failure(.cancelled): return outcome
+            case .failure(let failure): lastFailure = failure
+            }
+        }
+        return .failure(lastFailure)
+    }
+
+    private func requestTranslation(engine: String, original: String,
+                                    source: String, target: String) async -> Result<String, GLTranslationFailure> {
+        let google = engine == "google-gtx-v1"
+        var components = URLComponents(string: google
+            ? "https://translate.googleapis.com/translate_a/single"
+            : "https://api.mymemory.translated.net/get")
+        components?.queryItems = google ? [
             URLQueryItem(name: "client", value: "gtx"),
-            URLQueryItem(name: "sl", value: source.rawValue),
-            URLQueryItem(name: "tl", value: target.rawValue),
+            URLQueryItem(name: "sl", value: source),
+            URLQueryItem(name: "tl", value: target),
             URLQueryItem(name: "dt", value: "t"),
+            URLQueryItem(name: "q", value: original)
+        ] : [
+            URLQueryItem(name: "langpair", value: source + "|" + target),
             URLQueryItem(name: "q", value: original)
         ]
         guard let url = components?.url else { return .failure(.invalidRequest) }
         do {
             var req = URLRequest(url: url)
-            req.timeoutInterval = 5
+            req.timeoutInterval = google ? 5 : 3
             let (data, response) = try await URLSession.shared.data(for: req)
             if Task.isCancelled { return .failure(.cancelled) }
-            let outcome = GLTranslationOutcome.googleResponse(data,
-                statusCode: (response as? HTTPURLResponse)?.statusCode)
-            if case .success(let translated) = outcome {
-                await translationCache.remember(engine: engine, source: source.rawValue,
-                    target: target.rawValue, original: original, result: translated)
-            }
-            return outcome
+            let status = (response as? HTTPURLResponse)?.statusCode
+            return google ? GLTranslationOutcome.googleResponse(data, statusCode: status)
+                : GLTranslationOutcome.myMemoryResponse(data, statusCode: status)
         } catch {
             return .failure(GLTranslationFailure.classify(error))
         }
