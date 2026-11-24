@@ -1,0 +1,92 @@
+package cz.titulky.tv
+
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
+import android.widget.EditText
+import org.json.JSONObject
+import org.json.JSONArray
+
+/** TV-only profiles. Never store console credentials or pairing secrets. */
+object GameLingoTVProfiles {
+    private fun store(a: Context) = a.getSharedPreferences("gamelingo_tv_profiles", Context.MODE_PRIVATE)
+    private fun all(a: Context) = runCatching { JSONObject(store(a).getString("profiles", "{}") ?: "{}") }.getOrDefault(JSONObject())
+    private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
+    private fun array(r: FloatArray) = JSONArray().apply { r.forEach { put(it.toDouble()) } }
+    private fun snapshot(a: Activity): JSONObject {
+        OblastTitulku.nacti(a); Volby.nacti(a); GameLingoOCRConfig.load(a)
+        val n = Nastaveni(a)
+        val style = a.getSharedPreferences("gamelingo_tv_local_style", Context.MODE_PRIVATE)
+        return JSONObject().apply {
+            put("source", GameLingoLanguages.game(a)); put("target", GameLingoLanguages.target(a))
+            put("ocr", GameLingoOCRConfig.mode); put("filter", GameLingoOCRConfig.filterMenuText); put("expand", GameLingoOCRConfig.expandSearch)
+            put("dialogues", n.dialogy); put("hints", n.napovedy); put("cover", n.prekryvat); put("story", n.pribehovy)
+            put("manual", OblastTitulku.rucne); put("blue", array(OblastTitulku.oblast))
+            put("yellowEnabled", Volby.zapnuto); put("yellowText", Volby.rezimText); put("yellow", array(Volby.oblast))
+            put("orange", array(GameLingoDirectTVLayout.orange(a)))
+            val green = GameLingoDirectTVLayout.green(a)
+            put("greenEnabled", green != null)
+            if (green != null) put("green", array(green))
+            put("color", style.getString("color", "white")); put("opacity", style.getInt("opacity", 230))
+        }
+    }
+    private fun restore(a: Activity, p: JSONObject): Boolean {
+        if (busy()) return false
+        fun read(key: String, size: Int): FloatArray? {
+            val v = p.optJSONArray(key) ?: return null
+            if (v.length() != size) return null
+            return FloatArray(size) { v.optDouble(it, Double.NaN).toFloat() }.takeIf { r -> r.all { it.isFinite() } }
+        }
+        fun rect(r: FloatArray) = r.take(4).all { it in 0f..1f } && r[2] > r[0]+0.1f && r[3] > r[1]+0.05f
+        val blue = read("blue", 4)?.takeIf(::rect) ?: return false
+        val yellow = read("yellow", 4)?.takeIf(::rect) ?: return false
+        val orange = read("orange", 5)?.takeIf { rect(it) && it[4] in 0.6f..2f } ?: return false
+        val greenEnabled = p.optBoolean("greenEnabled")
+        val green = read("green", 4)?.takeIf { it[0] in 0f..1f && it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0.6f..2f }
+        if (greenEnabled && green == null) return false
+        GameLingoLanguages.restoreProfile(a, p.optString("source"), p.optString("target"))
+        val mode = p.optString("ocr")
+        if (mode in setOf("classic", "automatic", "street")) GameLingoOCRConfig.setMode(a, mode)
+        GameLingoOCRConfig.setFilterMenu(a, p.optBoolean("filter", true))
+        GameLingoOCRConfig.setExpandSearch(a, p.optBoolean("expand", false))
+        Nastaveni(a).apply { dialogy = p.optBoolean("dialogues", true); napovedy = p.optBoolean("hints", true); prekryvat = p.optBoolean("cover"); pribehovy = p.optBoolean("story") }
+        OblastTitulku.rucne = p.optBoolean("manual"); OblastTitulku.oblast = blue; OblastTitulku.uloz(a)
+        Volby.zapnuto = p.optBoolean("yellowEnabled"); Volby.rezimText = p.optBoolean("yellowText"); Volby.oblast = yellow; Volby.uloz(a)
+        val editor = a.getSharedPreferences("gamelingo", Context.MODE_PRIVATE).edit().putBoolean("directGreenEnabled", greenEnabled)
+        orange.forEachIndexed { i, v -> editor.putFloat("directOrange"+i, v) }
+        green?.forEachIndexed { i, v -> editor.putFloat("directGreen"+i, v) }
+        editor.apply()
+        val color = p.optString("color", "white").takeIf { it in setOf("white", "yellow", "cyan", "green", "purple") } ?: "white"
+        a.getSharedPreferences("gamelingo_tv_local_style", Context.MODE_PRIVATE).edit().putString("color", color).putInt("opacity", p.optInt("opacity",230).coerceIn(0,255)).apply()
+        return true
+    }
+    fun show(a: Activity) {
+        if (busy()) { AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show(); return }
+        val items = all(a)
+        val names = items.keys().asSequence().sorted().toList()
+        AlertDialog.Builder(a).setTitle("Profily her")
+            .setItems((listOf("+ Uložit aktuální nastavení") + names).toTypedArray()) { _, i ->
+                if (i == 0) {
+                    val input = EditText(a).apply { hint = "Název hry"; setSingleLine(true) }
+                    AlertDialog.Builder(a).setTitle("Uložit profil").setView(input).setNegativeButton("Zrušit", null)
+                        .setPositiveButton("Uložit") { _, _ ->
+                            val name = input.text.toString().trim().take(80)
+                            if (name.isNotEmpty() && !busy()) {
+                                if (items.has(name)) AlertDialog.Builder(a).setMessage("Přepsat profil $name?").setNegativeButton("Zrušit", null)
+                                    .setPositiveButton("Přepsat") { _, _ -> if (!busy()) { items.put(name, snapshot(a)); store(a).edit().putString("profiles", items.toString()).apply() }; show(a) }.show()
+                                else { items.put(name, snapshot(a)); store(a).edit().putString("profiles", items.toString()).apply(); show(a) }
+                            }
+                        }.show()
+                } else {
+                    val name = names[i-1]
+                    AlertDialog.Builder(a).setTitle(name).setItems(arrayOf("Použít", "Smazat")) { _, action ->
+                        if (action == 0) {
+                            if (restore(a, items.getJSONObject(name))) android.widget.Toast.makeText(a, "Profil načten", android.widget.Toast.LENGTH_SHORT).show()
+                            else android.widget.Toast.makeText(a, "Profil nelze načíst", android.widget.Toast.LENGTH_SHORT).show()
+                        } else AlertDialog.Builder(a).setMessage("Smazat profil $name?").setNegativeButton("Zrušit", null)
+                            .setPositiveButton("Smazat") { _, _ -> if (!busy()) { items.remove(name); store(a).edit().putString("profiles", items.toString()).apply() }; show(a) }.show()
+                    }.setNegativeButton("Zpět", null).show()
+                }
+            }.setNegativeButton("Zpět", null).show()
+    }
+}
