@@ -2,7 +2,7 @@
 
 **Stav všech případů: NEOTESTOVÁNO NA HARDWARU.** CI ani sestavení IPA/APK tyto případy nenahrazují. Nepoužívej skutečné přihlašovací PINy, tokeny, PSN Account ID ani identifikátory konzolí v veřejných komentářích nebo diagnostice.
 
-Pracovní větev: `feature/gamelingo-v05-platform-rebuild`, [PR #5](https://github.com/CaseyCZ/GameLingo/pull/5). Zapisuj pro každý test datum, zařízení, sestavení / SHA, výsledek **PASS / FAIL / BLOCKED** a případně odkaz na redigovaný snímek obrazovky. Po jakékoli změně kódu zkontroluj, zda test nevyžaduje opakování.
+Pracovní větev: `feature/audit-0.5`; původní vývojový základ `feature/gamelingo-v05-platform-rebuild` ([PR #5](https://github.com/CaseyCZ/GameLingo/pull/5)). Zapisuj pro každý test datum, zařízení, sestavení / SHA, výsledek **PASS / FAIL / BLOCKED** a případně odkaz na redigovaný snímek obrazovky. Po jakékoli změně kódu zkontroluj, zda test nevyžaduje opakování.
 
 ## P0: rozhraní, průvodce, zařízení
 
@@ -11,7 +11,7 @@ Pracovní větev: `feature/gamelingo-v05-platform-rebuild`, [PR #5](https://gith
 | UI-01 | Čistá instalace iPhone a Android; otevři aplikaci | Průvodce Xbox/PlayStation → Telefon/Google TV → párování; vlastní GameLingo grafika, žádné původní nabídky | NEOTESTOVÁNO |
 | UI-02 | V průvodci zvol „Nastavit později“, ukonči a spusť aplikaci znovu | Průvodce se neopakuje, Domů ukazuje nenastavená zařízení a nabídku Přidat | NEOTESTOVÁNO |
 | UI-03 | Přihlas účet, přidej konzoli, ukonči a spusť aplikaci znovu | Výchozí konzole i výstup se zachovají, ale „Nastaveno“ není předstírané „Připojeno“ | NEOTESTOVÁNO |
-| UI-04 | Projdi všech pět záložek na iPhone a Android | Domů, Oblasti, Profily, Zařízení, O aplikaci ve stejném pořadí; tlačítka vedou do skutečných obrazovek | NEOTESTOVÁNO |
+| UI-04 | Projdi všech pět záložek na iPhone a Android | Domů, Obrazovka, Konzole, Nastavení, O aplikaci ve stejném pořadí; tlačítka vedou do skutečných obrazovek | NEOTESTOVÁNO |
 | DEV-01 | Přidej dva Xboxy a vyber druhý | Home i Remote Play používá **druhý** Xbox, nikoli první ve výpisu; výběr přetrvá restart | NEOTESTOVÁNO |
 | DEV-02 | Přidej dvě PlayStation; vyber jednu, odeber druhou, obnov | Odebraná se neobjeví znovu, klíče odstraněné PS se nedají znovu použít, novou lze explicitně znovu spárovat | NEOTESTOVÁNO |
 | DEV-03 | Přidej dvě Google TV, vyber druhou, odeber první, restartuj | Zvolená TV zůstává; odstraněná se nevrátí ze staré uložené IP | NEOTESTOVÁNO |
@@ -49,7 +49,7 @@ Příklad: `TV-02 | FAIL | TCL C835 / HDMI 2 | v0.5.0-dev / SHA ... | 6místné 
 **Release gate:** žádné „hotovo“, žádný merge do Master, žádné stabilní vydání, dokud povinné případy nejsou PASS nebo explicitně dokumentovaná nepodporovaná konfigurace. Ověření pouze skriptem označit `CI PASS / HW NEOTESTOVÁNO`.
 
 ## Dodatek F0–P3 auditu — aktuální auditní větev
-Větev `feature/audit-0.5`, poslední nativní build `0eb2538cdf64ea252632912c54f5cd385dcd1ba7`, [CI PASS](https://github.com/CaseyCZ/GameLingo/actions/runs/45379906749). Tato revize nebyla na HW ověřena. TV ML Kit licenční blocker vyřešit před distribucí a před navazujícím TV QA s novou opravenou revizí. Původní případy výše a C01–C15/H01–H10 v REPORT zůstávají povinné. Návrhy P2.2/P2.5/P3 netestovat jako hotové funkce.
+Větev `feature/audit-0.5`, poslední nativní build `f34348b1cd721c83074bae2590e6047b0a076303`, [CI PASS](https://github.com/CaseyCZ/GameLingo/actions/runs/45384321662). TV ML Kit Translation odstraněna a build/DEX guard ověřen; další licence otevřené, HW neověřen. Původní případy výše a C01–C15/H01–H10 v REPORT zůstávají povinné. Návrhy P2.2/P2.5/P3 netestovat jako hotové funkce.
 
 | ID | Případ | Očekávání | Stav |
 |---|---|---|---|
@@ -65,3 +65,15 @@ Větev `feature/audit-0.5`, poslední nativní build `0eb2538cdf64ea252632912c54
 | AUD-10 | TV overlay HDMI Xbox/PS4/PS5, oranžový náhled, barvy/font, čtyři ROI, originální vstup | Zachovat native HDMI a nezávislé oblasti, žádný záměrný přechod na app video; HDR/VRR podle konkrétního testu | NEOTESTOVÁNO |
 
 | AUD-11 | TV přímý překlad online / cache hit / odpojený WAN a nový text, quick a story; Android mobil offline model, telefon→TV LAN | TV bez ML Kit Translation SDK a bez downloadu modelu, TV cache hit funguje, při cache miss bez sítě explicitní chyba, online fallback a story deadline, mobilní offline záloha zachována, receiver overlay funguje | NEOTESTOVÁNO |
+
+## Doplnění po auditech 2–4
+| ID | Případ | Očekávání | Stav |
+|---|---|---|---|
+| AUD-12 | Stop během navazování Xbox relace | Žádná osiřelá relace ani stale callback po stop | NEOTESTOVÁNO |
+| AUD-13 | Android profily a nezávislá oranžová geometrie do TV | Úplná obnova podporovaných parametrů; žlutá OCR oblast beze změny | NEOTESTOVÁNO |
+| AUD-14 | Přímý TV story/modrá oblast, dlouhé volby a stejný zdroj/cíl | Respektování režimů, omezené požadavky, žádný zbytečný překlad | NEOTESTOVÁNO |
+| AUD-15 | Vlastní izolovaná LAN, syntetické credentials, replay/ACK a account transfer | Evidovat SEC-01–03 a SEC-06; neoznačovat plaintext za bezpečný | NEOTESTOVÁNO |
+| AUD-16 | Cache, historie, log export, permissions, revoke | Evidovat skutečné uložení a přenos; žádná citlivá data v exportu po opravách | NEOTESTOVÁNO |
+| AUD-17 | APK/IPA inventář, SBOM, notices, podpis, zděděné assets | Ověřit skutečný obsah, identitu a shodnou revizi | NEOTESTOVÁNO |
+
+Podrobnosti: [audit kódu](CODE-AUDIT-0.5.md), [bezpečnost](SECURITY-PRIVACY-AUDIT-0.5.md), [úklid](CLEANUP-AUDIT-0.5.md).
