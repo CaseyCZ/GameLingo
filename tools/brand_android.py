@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Rebrand the pinned Android/TV PlayCaption build without altering protocols."""
 import pathlib
+import os
 import re
 import sys
 from tv_translation_policy import strip_dependency
@@ -33,9 +34,14 @@ def main():
                     'versionNameSuffix = "-tv"')
         exactly_one(strings,">PlayCaption iPhone TV TEST</string>",">GameLingo TV</string>")
     gradle.write_text(strip_dependency(gradle.read_text(encoding="utf8")), encoding="utf8")
+    # One immutable version per CI run, including reruns; visible in the APK.
+    run = int(os.environ.get("GITHUB_RUN_NUMBER", "0"))
+    attempt = int(os.environ.get("GITHUB_RUN_ATTEMPT", "1"))
+    revision = os.environ.get("GITHUB_SHA", "local")[:8]
+    version_code = 100000 + run * 100 + attempt
     exactly_one(gradle,'versionName = "0.22"',
-                'versionName = "0.5.0-dev"')
-    exactly_one(gradle, "versionCode = 35", "versionCode = 505")
+                f'versionName = "0.5.0-dev.{version_code}-{revision}"')
+    exactly_one(gradle, "versionCode = 35", f"versionCode = {version_code}")
     original=main.read_text(encoding="utf8")
     branded=original.replace('"PlayCaption"', '"GameLingo"')
     branded=branded.replace("PlayCaption – hlavní obrazovka", "GameLingo – hlavní obrazovka")
