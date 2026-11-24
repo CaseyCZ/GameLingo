@@ -67,4 +67,16 @@ enum GLTranslationOutcome {
         // Identical text can be a valid translation of a name, code or loanword.
         return .success(text)
     }
+    static func edgeResponse(_ data: Data, statusCode: Int?, target: String) -> Result<String, GLTranslationFailure> {
+        guard let statusCode else { return .failure(.invalidResponse) }
+        guard statusCode == 200 else { return .failure(.httpStatus(statusCode)) }
+        guard let rows = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]],
+              rows.count == 1, let translations = rows[0]["translations"] as? [[String: Any]],
+              let translation = translations.first(where: {
+                  ($0["to"] as? String)?.caseInsensitiveCompare(target) == .orderedSame
+              }), let raw = translation["text"] as? String else { return .failure(.invalidResponse) }
+        let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? .failure(.invalidResponse) : .success(text)
+    }
+
 }
