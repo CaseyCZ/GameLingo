@@ -243,6 +243,9 @@ jobs:
       - name: Test Android OCR mode cadence
         working-directory: upstream
         run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoOCRCadenceTest' --no-daemon --stacktrace
+      - name: Test QR payload and real QR round trip
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoPairingQRTest' --no-daemon --stacktrace
       - name: Compile receiver Keystore device tests
         working-directory: upstream
         run: ./gradlew :app:assembleDebugAndroidTest --no-daemon --stacktrace

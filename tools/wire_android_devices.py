@@ -42,6 +42,26 @@ def main():
     # anchor inside the Google TV branch.
     mobile_dashboard = 'GameLingoVisualKit.brandHeader(this)' in code
     tv_dashboard = '"Překlad z telefonu"' in code and '"Přímo na TV"' in code
+    # P2.1 QR parser shared; scanner dependency restricted to mobile.
+    (folder/"GameLingoPairingQR.kt").write_text(Path(__file__).with_name("GameLingoPairingQR.kt").read_text(encoding="utf8"),encoding="utf8")
+    scanner = "GameLingoQRScanner.kt" if mobile_dashboard else "GameLingoQRScannerTV.kt"
+    (folder/"GameLingoQRScanner.kt").write_text(Path(__file__).with_name(scanner).read_text(encoding="utf8"),encoding="utf8")
+    if tv_dashboard and not mobile_dashboard:
+        (folder/"GameLingoQRDisplay.kt").write_text(Path(__file__).with_name("GameLingoQRDisplay.kt").read_text(encoding="utf8"),encoding="utf8")
+    if mobile_dashboard:
+        gradle=upstream/"app/build.gradle.kts"
+        g=gradle.read_text(encoding="utf8")
+        g=one(g,'dependencies {','dependencies {\n    implementation("com.journeyapps:zxing-android-embedded:4.3.0")',"mobile QR scanner dependency")
+        gradle.write_text(g,encoding="utf8")
+        code=one(code,'class MainActivity : Activity() {', '''class MainActivity : Activity() {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        if (GameLingoQRScanner.result(this, requestCode, resultCode, data)) return
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+''',"mobile QR activity result")
+    unit_dir=folder.parents[4]/"test/java/cz/titulky/tv"
+    unit_dir.mkdir(parents=True,exist_ok=True)
+    (unit_dir/"GameLingoPairingQRTest.kt").write_text(Path(__file__).with_name("GameLingoPairingQRTest.kt").read_text(encoding="utf8"),encoding="utf8")
     if mobile_dashboard:
         code=one(
             code,

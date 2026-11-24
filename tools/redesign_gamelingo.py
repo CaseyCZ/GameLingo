@@ -350,6 +350,15 @@ def redesign_tv(s: str) -> str:
             }
         }
         pravá.addView(kodRadek, odsazeni(top = 10, bottom = 12))
+        pravá.addView(GameLingoTVUi.action(this, "Zobrazit QR kód") {
+            val pin = IPhoneTVPairing.activeCode()
+            val address = cm.activeNetwork?.let { cm.getLinkProperties(it) }
+                ?.linkAddresses?.firstOrNull { it.address is java.net.Inet4Address }?.address?.hostAddress
+            if (pin != null && address != null) GameLingoQRDisplay.show(this, address, pin)
+            else android.app.AlertDialog.Builder(this)
+                .setMessage("Vygeneruj nový PIN a ověř připojení k místní síti.")
+                .setPositiveButton("OK", null).show()
+        }, odsazeni(bottom = 4))
 
         val stavParovani = text("", 18f, Color.parseColor("#94A3B8"))
         pravá.addView(stavParovani, odsazeni(top = 12))

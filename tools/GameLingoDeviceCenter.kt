@@ -300,6 +300,20 @@ object GameLingoDeviceCenter {
         val mobile = (c.resources.configuration.uiMode and
             android.content.res.Configuration.UI_MODE_TYPE_MASK) !=
             android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
+        if (mobile) add(root, line(c, "Načíst QR kód z TV", "Párování v domácí síti") {
+            if (RemotePlayService.aktivni) {
+                AlertDialog.Builder(c).setMessage("Nejdřív zastav probíhající překlad.")
+                    .setPositiveButton("OK", null).show()
+            } else GameLingoQRScanner.scan(c) { qr ->
+                val existing = tvStore.seznam().firstOrNull { it.ip == qr.ip && !it.platforma.jenZobrazovac }
+                val candidate = existing ?: TvProfil("qr:" + qr.ip, "Google TV", qr.ip, TvPlatforma.ANDROID_TV)
+                GameLingoTVPairing.show(c, candidate, initialPin = qr.pin) {
+                    if (existing == null) tvStore.zapamatuj(candidate.id, candidate.jmeno, candidate.ip, candidate.platforma)
+                    onDismiss()
+                    onUpdated()
+                }
+            }
+        })
         tvs.forEach { tv ->
             // The six-digit GameLingo PIN protocol belongs to Android TV,
             // not legacy LG webOS or Samsung display-only receivers.

@@ -293,12 +293,13 @@ object GameLingoTVPairing {
         }
     }
 
-    fun show(activity: Activity, tv: TvProfil, onPaired: () -> Unit = {}) {
+    fun show(activity: Activity, tv: TvProfil, initialPin: String = "", onPaired: () -> Unit = {}) {
         if (activity.isFinishing) return
         val pinInput = EditText(activity).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
             filters = arrayOf(InputFilter.LengthFilter(6))
             hint = "000000"
+            setText(initialPin.takeIf { it.matches(Regex("[0-9]{6}")) }.orEmpty())
             textSize = 26f
             gravity = Gravity.CENTER
             contentDescription = "Šestimístný kód z GameLingo TV"
@@ -306,8 +307,8 @@ object GameLingoTVPairing {
         }
         val dialog = AlertDialog.Builder(activity)
             .setTitle("Spárovat GameLingo TV")
-            .setMessage("Na TV otevři Překlad z telefonu a vygeneruj šestimístný kód. " +
-                "Zadej ho zde pro ověření této televize.")
+            .setMessage("Televize: " + tv.ip + "\nNa TV otevři Překlad z telefonu a vygeneruj šestimístný kód. " +
+                "Ověř adresu a potvrď párování.")
             .setView(pinInput)
             .setNegativeButton("Zrušit", null)
             .setPositiveButton("Spárovat", null)

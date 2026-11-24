@@ -17,3 +17,6 @@ Veškeré vizuální prvky GameLingo mají být autorské, nikoliv kopie GlossaS
 ## Stav ověření
 
 Sestavení nativního PlayStation jádra a aplikace iOS v CI **nenahrazuje** test na reálné konzoli. Před stabilním vydáním musí být ověřeno párování PS4/PS5 s vlastním účtem, VideoToolbox snímky v OCR, překlad na obrazovce telefonu a na Google TV, obnovení spojení a ukončování relace. Nativní soubory ve složce `ios/GameLingoIOS/App/PlayStation/` a [sestavovací postup](.github/workflows/build-gamelingo.yml) jsou součástí odpovídajícího zdrojového kódu.
+
+## QR knihovny
+- [ZXing](https://github.com/zxing/zxing) core 3.5.3 (již v Android upstreamu) a [JourneyApps ZXing Android Embedded 4.3.0](https://github.com/journeyapps/zxing-android-embedded/tree/v4.3.0) pouze mobilní kamerový skener. Apache-2.0, původní licence a oznámení zachovat při distribuci. iOS používá systémové VisionKit/AVFoundation.

@@ -597,6 +597,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("generation != gameTextGeneration", wiring)
         self.assertIn("changes.incrementAndGet()", languages)
 
+    def test_p2_1_qr_pairing_uses_existing_confirmation_and_pin(self):
+        tv = code(TOOLS/"GameLingoQRDisplay.kt")
+        parser = code(TOOLS/"GameLingoPairingQR.kt")
+        scanner = code(TOOLS/"GameLingoQRScanner.kt")
+        center = code(TOOLS/"GameLingoDeviceCenter.kt")
+        ios = code(IOS/"GameLingoTVSetupScreen.swift")
+        self.assertIn("GLPAIR1", parser)
+        self.assertIn("IPhoneTVPairing.activeCode() != pin", tv)
+        self.assertIn("handler.removeCallbacks(tick)", tv)
+        self.assertIn("GameLingoPairingQR.parse(it)", scanner)
+        self.assertIn("GameLingoTVPairing.show(c, candidate, initialPin = qr.pin)", center)
+        self.assertIn("tv.receiverCode = code.pin", ios)
+        self.assertIn("tv.pairReceiver()", ios)
+        self.assertNotIn("pairReceiver()", ios.split("GameLingoQRScanner(onCode:", 1)[1])
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

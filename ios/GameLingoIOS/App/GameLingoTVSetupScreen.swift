@@ -1,4 +1,6 @@
 import SwiftUI
+import VisionKit
+import AVFoundation
 
 /// Shared TV setup used by the first-run wizard and the main dashboard.
 /// Saving an IP is not the same as successfully pairing or connecting a TV.
@@ -138,6 +140,8 @@ private struct GameLingoTVPairingPanel: View {
     let isRunning: Bool
 
     @State private var showManualIP = false
+    @State private var showQRScanner = false
+    @State private var qrError = false
     @State private var showForgetConfirmation = false
     @State private var sample = "GameLingo – zkušební titulek"
 
@@ -227,7 +231,7 @@ private struct GameLingoTVPairingPanel: View {
             GLCard {
                 GLHeader(title: "Párování televize",
                          help: "Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Opiš nový šestimístný kód. Uložená IP neznamená spárování.")
-                Text("1. Na TV otevři Překlad z telefonu. 2. Opiš šestimístný kód. 3. Zvol Spárovat.")
+                Text("1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš šestimístný kód. 3. Zvol Spárovat.")
                     .font(.caption)
                     .foregroundStyle(GLNeon.mist)
                 HStack(spacing: 10) {
@@ -248,6 +252,18 @@ private struct GameLingoTVPairingPanel: View {
                         }
                     }
                     Spacer(minLength: 0)
+                }
+                GLPrimaryButton(title: "Načíst QR kód z TV", systemImage: "qrcode.viewfinder",
+                                disabled: isRunning) {
+                    guard DataScannerViewController.isSupported else { qrError = true; return }
+                    Task { @MainActor in
+                        let allowed = await AVCaptureDevice.requestAccess(for: .video)
+                        guard allowed, DataScannerViewController.isAvailable, !isRunning else {
+                            qrError = true
+                            return
+                        }
+                        showQRScanner = true
+                    }
                 }
                 TextField("Šestimístný kód z TV", text: $tv.receiverCode)
                     .keyboardType(.numberPad)
@@ -299,6 +315,31 @@ private struct GameLingoTVPairingPanel: View {
                         .foregroundStyle(GLNeon.mist)
                 }
             }
+        }
+        .sheet(isPresented: $showQRScanner) {
+            NavigationStack {
+                GameLingoQRScanner(onCode: { code in
+                    guard !isRunning else { showQRScanner = false; return }
+                    tv.ip = code.ip
+                    tv.receiverCode = code.pin
+                    showQRScanner = false
+                }, onFailure: {
+                    showQRScanner = false
+                    qrError = true
+                })
+                .navigationTitle("Načíst QR z TV")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Zrušit") { showQRScanner = false }
+                    }
+                }
+            }
+        }
+        .alert("QR skener není dostupný", isPresented: $qrError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Povol fotoaparát v nastavení iOS, nebo zadej IP a PIN ručně.")
         }
         .onAppear {
             if !isRunning { tv.discover() }

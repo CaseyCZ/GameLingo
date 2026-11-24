@@ -254,6 +254,10 @@ object IPhoneTVPairing {
         pin
     }
 
+    fun activeCode(): String? = synchronized(lock) {
+        code?.takeIf { SystemClock.elapsedRealtime() < expiresAtMs && attempts < 5 }
+    }
+
     fun remainingSeconds(): Int = synchronized(lock) {
         if (code == null) 0
         else ((expiresAtMs - SystemClock.elapsedRealtime()).coerceAtLeast(0L) / 1000L).toInt()

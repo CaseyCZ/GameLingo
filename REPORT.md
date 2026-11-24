@@ -49,7 +49,7 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P1.6 circuit breaker (2 chyby/30 s/1 pokus) — CI 45362779460 success; HW čeká.
 - [x] P1.7 latence, paměť, teplota, nečekané konce — CI 45363666595 success; HW čeká.
 - [x] P1.8 společná semantika OCR režimů a dynamická žlutá oblast — CI 45364864455 success; HW čeká.
-- [ ] P1.9 jednotná ochrana starých překladů
+- [x] P1.9 jednotná ochrana starých překladů — CI 45367664700 success; zbývající HW/race rizika uvedena níže.
 - [ ] P2.1 QR párování
 - [ ] P2.2 návrh automatické instalace TV
 - [ ] P2.3 historie
@@ -257,3 +257,9 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - Android zachována upstream PlatnostPrekladu/relace/Volby.revize. Doplňkový snapshot jazyka (revize při obou UI cestách), source/target, outputGeneration vysílače a relace; dialogová deduplikace zahrne kontext; yellow OCR zachytí kontext před čtením. Pomocná mapa herního textu klíčována source/target/text; výsledek až po kontrole kontextu, revize a generace textu/seznamu. Při změně kontextu reset game-text stavu; stejný text po chybě lze po 2 s znovu číst, pokud je stále aktuální. Story zůstává na existující upstream cestě. Známá omezení: Android dialogový snapshot se bere při překladu, ne přímo u všech OCR callbacků; přepnutí a rychlé vrácení ruční modré oblasti mezi čteními závisí na existujícím region guardu, story pipeline má vlastní kontext; fyzické závody, lokální TV preview, více telefonů a zatížení neověřeny. Při CI chybě opravit/revertovat; nepovažovat za plně HW ověřeno. P2.1 až po CI.
 
 - P1.9 commit `13e285de3e0f07d13654a5d1d04d3e6a77979db4`, [CI 45367664700](https://github.com/CaseyCZ/GameLingo/actions/runs/45367664700). Stav: quick / verify: in_progress. Před P2.1 ověřit všech šest jobů, Swift test revision a nativní build. Pokud selže, opravit nebo revertovat dle pravidel. Známé zbývající Android hranice v P1.9 výše: ověřit zachycení kontextu na vstupu modrého OCR, story a rychlé změny regionu; neopisovat jako zcela vyřešené. P2.1: QR pairing se stávajícím PIN/auth, nezavádět automatické potvrzení nebo vystavování tajného klíče, nejprve audit současných pairing UI. Žádný release/Master.
+
+## P2.1 — QR párování
+- P1.9 CI 45367664700 všech šest jobů success. Ruční Android race QA stále čeká.
+- Verzovaný lokální formát GLPAIR1|IPv4|6 ASCII číslic. Striktní délka, počet polí, kanonické IPv4 a privátní/link-local/CGNAT rozsahy; žádné URL, hostname, porty, tokeny nebo účty. Autoritativní platnost 180 s, 5 pokusů, jednorázový PIN a existující idempotentní retry ověřuje TV. QR stejně citlivý jako PIN; pouze důvěryhodná LAN. Dynamický port discovery, HMAC, Keystore a legacy beze změny; žádné šifrování navíc.
+- TV tlačítko Zobrazit QR kód u PINu, samostatný dialog se ZXing bitmapou, aktuální lokální IP, při expiraci/použití/regeneraci se skryje, handler zrušen při zavření. iOS VisionKit lokální sken předvyplní IP/PIN, explicitní Spárovat, ruční cesta při nepodporovaném zařízení/oprávnění. Android mobil Device Center QR, JourneyApps 4.3.0 pouze mobilní dependency, TV bez nové camera knihovny; předvyplněný PIN a viditelná IP, explicitní potvrzení, existující handshake a verify. Nový profil uložen až po úspěšném PINu; existující profil stejná IP zachován; uživatel vybere uloženou TV. Rotace/restart může sken zahodit, ruční cesta zachována. IPv6/veřejná LAN IP ručně. Žádný auto-pair/release.
+- Swift validace, JVM skutečný QR roundtrip přes ZXing a neplatné payloady, statické kontrakty, full CI. HW kamera, D-pad, čitelnost, expirace, port fallback, více telefonů čeká. P2.2 po CI pouze návrh automatické instalace TV.
