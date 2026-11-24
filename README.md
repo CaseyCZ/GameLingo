@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>📦 STÁHNOUT GAMELINGO</strong></a>
+  <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>📦 DOSAVADNÍ VYDÁNÍ</strong></a>
   &nbsp;·&nbsp;
   <a href="#-co-gamelingo-umí">✨ FUNKCE</a>
   &nbsp;·&nbsp;
@@ -41,10 +41,10 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 | Platforma | GameLingo |
 | :--- | :--- |
 | **Xbox Series X/S a Xbox One** | Překlad přes iPhone a Android. |
-| **PlayStation 5 a PlayStation 4** | Překlad přes Android; podpora na iPhonu je ve vývoji a testování. |
-| **iPhone** | Testovací GameLingo pro Xbox a Google TV je ke stažení. |
-| **Android telefon** | Testovací GameLingo pro Xbox a PlayStation je ke stažení. |
-| **Google TV / Android TV** | Samostatná testovací aplikace pro české titulky. |
+| **PlayStation 5 a PlayStation 4** | Vývojové implementace pro iPhone, Android a Google TV; fyzické testy čekají. |
+| **iPhone** | Vývojová IPA pro Xbox, PlayStation a výstup na TV; vyžaduje podpis. |
+| **Android telefon** | Vývojová APK pro Xbox a PlayStation; offline fallback s dostupným modelem. |
+| **Google TV / Android TV** | Vývojová APK: přijímač z telefonu nebo vlastní OCR a online překlad, bez offline modelu. |
 | **PC** | Možné rozšíření do budoucna. |
 
 ## 🚀 Jak to funguje?
@@ -57,7 +57,13 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 
 GameLingo je nový projekt s vlastním vzhledem v **modrobílém stylu CaseyCZ**. Navazujeme na funkční základ, který jsme již vyzkoušeli při skutečném hraní, a postupně připravujeme nové aplikace pro telefon i televizi.
 
-**Poslední veřejně vydaná testovací verze je GameLingo 0.4.0 Beta** pro iPhone, Android a Google TV. Nové ovládání, správa více konzolí a nativní PlayStation Remote Play pro iPhone se připravují ve vývojové verzi 0.5.0. Nejde zatím o nové veřejné vydání: plné sestavení i připojení ke skutečným konzolím a televizím musí projít ověřením. Všechny již zveřejněné testovací verze najdeš zde:
+**GameLingo 0.5 je vývojová verze.** Poslední společné automatické sestavení všech tří aplikací prošlo; fyzické testy, bezpečnostní a licenční podmínky jsou stále otevřené. Tato auditní větev není novým veřejným vydáním. Dostupnost starších veřejných verzí ověř v Releases.
+
+- [Aktuální stav a podporované funkce](docs/STATUS-0.5.md)
+- [Návod pro testery (iPhone / Android / TV)](docs/USER-GUIDE-0.5.md)
+- [Informace o soukromí – pracovní návrh](docs/PRIVACY-0.5.md)
+
+Pro překlad z telefonu na TV je potřeba kompatibilní překryv a párování v důvěryhodné domácí síti. Přenos je podepsaný, nikoli šifrovaný. TV nemá samostatný offline překladač; OCR a online překlad zůstávají. Kompatibilita chráněného přehrávání (např. Netflix) není ověřena.
 
 <p align="center">
   <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>⬇️ ZOBRAZIT VYDÁNÍ GAMELINGO</strong></a>
