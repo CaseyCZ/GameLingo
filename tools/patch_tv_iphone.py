@@ -117,7 +117,7 @@ def main() -> None:
          '                                "PAIR" -> {\n'
          '                                    val code = casti.getOrNull(2).orEmpty()\n'
          '                                    val id = casti.getOrNull(3).orEmpty()\n'
-         '                                    val secret = IPhoneTVPairing.confirm(c, code, id)\n'
+         '                                    val secret = IPhoneTVPairing.confirm(c, code, id, casti.getOrNull(4).orEmpty())\n'
          '                                    posledniParovaciStav = if (secret != null)\n'
          '                                        "kód přijat; odpověď OK odeslána" else "kód odmítnut nebo vypršel"\n'
          '                                    if (secret != null)\n'
@@ -131,7 +131,7 @@ def main() -> None:
          '                                    val signature = casti.getOrNull(7).orEmpty()\n'
          '                                    if (casti.size == 8 && IPhoneTVPairing.verifyFresh(c, id,\n'
          '                                        "STYLE\\t$id\\t$textColor\\t$background", casti.getOrNull(5), casti.getOrNull(6), signature, "STYLE") &&\n'
-         '                                        GameLingoTVCaptionStyle.save(c, textColor, background)) {\n'
+         '                                        IPhoneTVPairing.permitsStyle(id) && GameLingoTVCaptionStyle.save(c, textColor, background)) {\n'
          '                                        odpovez(s, p, "PCPAIR1\\tSTYLE_OK")\n'
          '                                    }\n'
          '                                }\n'
@@ -141,7 +141,7 @@ def main() -> None:
          '                                    val sig = casti.getOrNull(6).orEmpty()\n'
          '                                    if (casti.size == 7 && IPhoneTVPairing.verifyFresh(c, id, "PING\\t$id\\t$nonce", casti.getOrNull(4), casti.getOrNull(5), sig, "PING")) {\n'
          '                                        val pong = IPhoneTVPairing.pongSignature(c, id, nonce) ?: continue\n'
-         '                                        posledniZprava = System.currentTimeMillis()\n'
+         '                                        if (IPhoneTVPairing.permitsStyle(id)) posledniZprava = System.currentTimeMillis()\n'
          '                                        odpovez(s, p, "PCPAIR1\\tPONG\\t$nonce\\t$pong")\n'
          '                                    }\n'
          '                                }\n'
@@ -501,6 +501,8 @@ def main() -> None:
          '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")) continue\n'
          '                                        if (inner.firstOrNull() == "PCS1" && inner.getOrNull(1) in listOf("ZADOST", "KOD")) continue\n'
          '                                        casti = inner\n'
+         '                                        if (!IPhoneTVPairing.claimGameData(id)) continue\n'
+         '                                        resetSourceIfChanged()\n'
          '                                        authenticatedGameData = true\n'
          '                                        p.setData(decoded.toByteArray(Charsets.UTF_8))\n')
     once(networking,
@@ -508,7 +510,35 @@ def main() -> None:
          '                        // The old Xbox account-transfer handshake is not game data.\n'
          '                        val accountPairing = casti.firstOrNull() == "PCS1" && casti.getOrNull(1) in listOf("ZADOST", "KOD")\n'
          '                        if (!authenticatedGameData && !accountPairing && !GameLingoTVPairing.legacyEnabled(c)) continue\n'
+         '                        if (!authenticatedGameData && !accountPairing && IPhoneTVPairing.hasActiveSource()) continue\n'
          '                        if (pribeh.zpracuj(p)) {\n')
+
+    # Isolate the existing renderer's per-source deduplication and story state.
+    once(networking,
+         '                    val pribeh = PribehPrijem(priPribehu?.let { prijmi -> { titulek, ack ->\n',
+         '                    fun newStoryReceiver() = PribehPrijem(priPribehu?.let { prijmi -> { titulek, ack ->\n')
+    once(networking,
+         '                    val buf = ByteArray(16384)\n',
+         '                    var pribeh = newStoryReceiver()\n'
+         '                    var renderedSourceRevision = IPhoneTVPairing.overlayRevision()\n'
+         '                    fun resetSourceIfChanged() {\n'
+         '                        val revision = IPhoneTVPairing.overlayRevision()\n'
+         '                        if (revision == renderedSourceRevision) return\n'
+         '                        renderedSourceRevision = revision\n'
+         '                        posledniCislo = -1L\n'
+         '                        posledniCisloVoleb = -1L\n'
+         '                        pribeh = newStoryReceiver()\n'
+         '                        android.os.Handler(android.os.Looper.getMainLooper()).post {\n'
+         '                            OverlayService.posli(c, android.content.Intent(c, OverlayService::class.java).setAction(OverlayService.ACTION_ZRUS_PRIBEH))\n'
+         '                        }\n'
+         '                        priTitulku("", 0L, "", null, null)\n'
+         '                        priVolbach?.invoke(emptyList(), -1, floatArrayOf(0f, 0f, 1f, 1f), 0, null)\n'
+         '                        priOblasti?.invoke(floatArrayOf(0f, 0f, 1f, 1f), false)\n'
+         '                    }\n'
+         '                    val buf = ByteArray(16384)\n')
+    once(networking,
+         '                    while (bezi) {\n                        pribeh.odesliOdpovedi(s)\n',
+         '                    while (bezi) {\n                        resetSourceIfChanged()\n                        pribeh.odesliOdpovedi(s)\n')
 
     print("iPhone TV PCV1 output geometry enabled: yellow OCR and orange output independent.")
     print("PlayCaption iPhone-only TV receiver + six-digit device pairing ready.")

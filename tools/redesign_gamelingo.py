@@ -335,7 +335,7 @@ def redesign_tv(s: str) -> str:
             19f, Color.parseColor("#CBD5E1")), odsazeni(top = 9, bottom = 13))
 
         // Always show a fresh six-digit code when opening the receiver.
-        // Existing pairing remains valid until a new phone confirms this code.
+        // Existing phones remain paired when another phone confirms a new code.
         var shownCode: String? = IPhoneTVPairing.startCode()
         val kodRadek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
         val policka = (0 until 6).map {
@@ -362,16 +362,33 @@ def redesign_tv(s: str) -> str:
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             .apply { rightMargin = dp(9) })
         akce.addView(GameLingoTVUi.action(
-            this, "Zrušit spárování") {
-            android.app.AlertDialog.Builder(this)
-                .setTitle("Zrušit párování?")
-                .setMessage("Telefon bude nutné spárovat znovu.")
-                .setPositiveButton("Zrušit párování") { _, _ ->
-                    IPhoneTVPairing.clear(this)
-                    shownCode = IPhoneTVPairing.startCode()
-                }
-                .setNegativeButton("Zpět", null)
-                .show()
+            this, "Spárované telefony") {
+            val phones = IPhoneTVPairing.phones(this)
+            if (phones.isEmpty()) {
+                android.app.AlertDialog.Builder(this)
+                    .setTitle("Spárované telefony")
+                    .setMessage("Zatím žádný telefon.")
+                    .setPositiveButton("OK", null).show()
+            } else {
+                val labels = phones.map { it.label + if (it.connected) " · připojen" else " · uložen" }.toTypedArray()
+                android.app.AlertDialog.Builder(this)
+                    .setTitle("Spárované telefony")
+                    .setItems(labels) { _, index ->
+                        val phone = phones[index]
+                        android.app.AlertDialog.Builder(this)
+                            .setTitle("Odpárovat " + phone.label + "?")
+                            .setMessage("Ostatní telefony zůstanou spárované.")
+                            .setPositiveButton("Odpárovat") { _, _ ->
+                                if (!IPhoneTVPairing.unpair(this, phone.id)) {
+                                    android.app.AlertDialog.Builder(this)
+                                        .setMessage("Odpárování se nepodařilo uložit.")
+                                        .setPositiveButton("OK", null).show()
+                                }
+                            }
+                            .setNegativeButton("Zpět", null).show()
+                    }
+                    .setNegativeButton("Zpět", null).show()
+            }
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         pravá.addView(akce, odsazeni(top = 17))
 
@@ -488,7 +505,9 @@ def redesign_tv(s: str) -> str:
                 policka.forEachIndexed { index, policko ->
                     policko.text = code?.getOrNull(index)?.toString() ?: "•"
                 }
-                val spojeno = IPhoneTVPairing.connectedRecently()
+                val phones = IPhoneTVPairing.phones(this@MainActivity)
+                val connectedCount = phones.count { it.connected }
+                val spojeno = connectedCount > 0
                 val networkReady = ipTv != "Adresa se zjišťuje"
                 val receiverInfo = PrijemService.statistikaPrijmu()
                 val receiverError = receiverInfo.startsWith("Chyba UDP")
@@ -511,10 +530,9 @@ def redesign_tv(s: str) -> str:
                     zelena else Color.parseColor("#94A3B8"))
                 stavParovani.text = when {
                     receiverError -> "Nelze přijímat: všechny UDP porty 41989–41993 jsou obsazené"
-                    spojeno && receiverReady -> "✓ Telefon je spárovaný a připojený"
-                    code != null -> "Kód platí ještě $zbyva s"
-                    IPhoneTVPairing.paired(this@MainActivity) ->
-                        "Telefon je spárovaný · čekám na spojení"
+                    code != null -> "Kód platí ještě $zbyva s · spárováno: "+phones.size
+                    spojeno && receiverReady -> "✓ Připojeno: $connectedCount / "+phones.size
+                    phones.isNotEmpty() -> "Spárováno: "+phones.size+" · čekám na spojení"
                     else -> "Zvol Nový párovací kód"
                 }
                 // Show bind failures immediately: the user should not have to

@@ -19,6 +19,8 @@ class IPhoneTVPairingKeystoreTest {
     private val prefs get() = ctx.getSharedPreferences("playcaption_iphone_receiver", Context.MODE_PRIVATE)
     private val id = "audit-test-phone"
     private val legacy = "ab".repeat(32)
+    private fun tokenSlot(id: String) = "token_v2_" + IPhoneTVPairing.phoneSlot(id)
+    private fun sequenceSlot(id: String, lane: String) = "wire_sequence_v2_" + IPhoneTVPairing.phoneSlot(id) + "_" + lane
 
     @Before fun reset() { IPhoneTVPairing.clear(ctx) }
     @After fun cleanup() { IPhoneTVPairing.clear(ctx) }
@@ -36,10 +38,10 @@ class IPhoneTVPairingKeystoreTest {
             .putLong("wire_sequence_PING", 100L).commit())
         IPhoneTVPairing.initialize(ctx)
         assertFalse(prefs.contains("token"))
-        assertTrue(prefs.contains("token_v1"))
-        assertNotEquals(legacy, prefs.getString("token_v1", null))
+        assertTrue(prefs.contains(tokenSlot(id)))
+        assertNotEquals(legacy, prefs.getString(tokenSlot(id), null))
         assertTrue(IPhoneTVPairing.paired(ctx))
-        assertEquals(100L, prefs.getLong("wire_sequence_PING", 0L))
+        assertEquals(100L, prefs.getLong(sequenceSlot(id, "PING"), 0L))
         val now = System.currentTimeMillis().toString()
         val body = "PING\t$id\ttest-nonce"
         assertFalse(IPhoneTVPairing.verifyFresh(ctx, id, body, now, "100",
@@ -54,11 +56,46 @@ class IPhoneTVPairingKeystoreTest {
         assertTrue(prefs.edit().putString("phone_id", id).putString("token", legacy).commit())
         IPhoneTVPairing.initialize(ctx)
         assertTrue(IPhoneTVPairing.paired(ctx))
-        assertTrue(prefs.edit().putString("token_v1", "corrupted")
-            .putString("token", legacy).commit())
+        assertTrue(prefs.edit().putString(tokenSlot(id), "corrupted")
+            .putString("phone_id", id).putString("token", legacy).commit())
         assertFalse(IPhoneTVPairing.paired(ctx))
         assertFalse(prefs.contains("token"))
         assertNull(IPhoneTVPairing.pongSignature(ctx, id, "test-nonce"))
+    }
+
+    @Test fun twoPhonesKeepIndependentKeysReplayAndRevocation() {
+        val second = "audit-test-android"
+        val firstPin = IPhoneTVPairing.startCode()
+        val firstKey = requireNotNull(IPhoneTVPairing.confirm(ctx, firstPin, id, "iPhone"))
+        val secondPin = IPhoneTVPairing.startCode()
+        val secondKey = requireNotNull(IPhoneTVPairing.confirm(ctx, secondPin, second, "Android"))
+        assertNotEquals(firstKey, secondKey)
+        assertEquals(setOf(id, second), IPhoneTVPairing.phones(ctx).map { it.id }.toSet())
+        val now = System.currentTimeMillis().toString()
+        fun verify(phone: String, key: String, n: String): Boolean {
+            val body = "TEXT\t$phone\tpayload"
+            return IPhoneTVPairing.verifyFresh(ctx, phone, body, now, n,
+                mac(key, "$body\t$now\t$n"), "PCT1")
+        }
+        assertTrue(verify(id, firstKey, "100"))
+        assertTrue(verify(second, secondKey, "100"))
+        assertFalse(verify(id, firstKey, "100"))
+        assertTrue(IPhoneTVPairing.claimGameData(id))
+        assertFalse(IPhoneTVPairing.claimGameData(second))
+        assertFalse(IPhoneTVPairing.permitsStyle(second))
+        assertTrue(IPhoneTVPairing.unpair(ctx, id))
+        assertFalse(verify(id, firstKey, "101"))
+        assertTrue(verify(second, secondKey, "101"))
+        assertTrue(IPhoneTVPairing.claimGameData(second))
+        assertEquals(listOf(second), IPhoneTVPairing.phones(ctx).map { it.id })
+        assertFalse(prefs.contains(tokenSlot(id)))
+        assertTrue(prefs.contains(tokenSlot(second)))
+        // Rotating just this phone must not invalidate any other record.
+        val replacement = requireNotNull(IPhoneTVPairing.confirm(ctx,
+            IPhoneTVPairing.startCode(), second, "Android"))
+        assertNotEquals(secondKey, replacement)
+        assertFalse(verify(second, secondKey, "102"))
+        assertTrue(verify(second, replacement, "1"))
     }
 
     @Test fun pairRetryAndClearUseEncryptedStorage() {
@@ -66,11 +103,11 @@ class IPhoneTVPairingKeystoreTest {
         val token = requireNotNull(IPhoneTVPairing.confirm(ctx, pin, id))
         assertEquals(64, token.length)
         assertFalse(prefs.contains("token"))
-        assertNotEquals(token, prefs.getString("token_v1", null))
+        assertNotEquals(token, prefs.getString(tokenSlot(id), null))
         assertEquals(token, IPhoneTVPairing.confirm(ctx, pin, id))
         IPhoneTVPairing.clear(ctx)
         assertFalse(IPhoneTVPairing.paired(ctx))
-        assertFalse(prefs.contains("token_v1"))
+        assertFalse(prefs.contains(tokenSlot(id)))
         assertNull(IPhoneTVPairing.pongSignature(ctx, id, "test-nonce"))
         assertNull(IPhoneTVPairing.confirm(ctx, pin, id))
     }

@@ -1,5 +1,5 @@
 # GameLingo 0.5 — audit a pracovní checkpoint
-Datum: 2026-11-24. Stav: P0.1/P0.2 sestaveny, P0.3 implementace čeká na CI.
+Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 
 ## Základ a pravidla
 - Na výslovné upřesnění uživatele je auditní větev založena na poslední vlastní vývojové verzi 0.5, nikoliv na Masteru. Původní dokumentační checkpoint `92026c899c3ebb2db0b1e917cb7ed29647c642d8` byl zachován obsahem v tomto souboru.
@@ -38,7 +38,7 @@ Datum: 2026-11-24. Stav: P0.1/P0.2 sestaveny, P0.3 implementace čeká na CI.
 - [x] Baseline build/test na auditní větvi: run 45343148434, všechny tři nativní buildy, kontroly a balíčky success.
 - [x] P0.1 povinné HMAC všech typů titulků, legacy opt-in default off — CI success (45344083071), HW čeká.
 - [x] P0.2 ochrana proti replay (podepsaná sekvence/nonce, restart relace a ochrana pořadí) — CI success (45345559792), HW čeká.
-- [ ] P0.3 Keystore na TV, bezpečná migrace nebo nové párování
+- [x] P0.3 Keystore na TV — CI success (45346535102), instrumentation zkompilována, runtime/HW čeká.
 - [ ] P0.4 více telefonů a jednotlivé odpojení
 - [ ] P0.5 konzole + HDMI; doplnit ruční QA matici
 - [ ] P1.1 obrazový otisk posledního OCR, periodická kontrola a krátké věty
@@ -104,3 +104,9 @@ Ověřit čtyři oblasti, oranžový náhled, profily, barvy, přepnutí HDMI, r
 - Rizika: Keystore nemusí být hardwarový, při ztrátě/poškození klíče nové párování (případně nejdříve odpárovat na TV); starší diskové kopie nelze garantovaně fyzicky vymazat. Neprovádíme šifrování síťového přenosu. Náklady dešifrování při HMAC ověřování měřit v P1.7. P0.4 až po výsledku CI tohoto commitu.
 
 - P0.3 commit `bcce7415a7950a5412e1de97a72e3f275b3b09d3`, [CI run 45346535102](https://github.com/CaseyCZ/GameLingo/actions/runs/45346535102). Poslední stav: quick / verify: success; native / GameLingo · integration contracts: queued. Další krok: ověřit všechny joby včetně kompilace androidTest, případně opravit/revertovat P0.3, následně P0.4. Runtime Keystore testy dosud neprovedeny.
+
+## P0.4 — více telefonů a jednotlivé odpárování
+- P0.3 run 45346535102 dokončen success včetně kompilace androidTest APK. Runtime testy Keystore nadále čekají na vyhrazené zařízení.
+- Samostatný commit `feat: support multiple TV phone pairings with isolated replay and revocation`: max. 32 párování, každé má vlastní 256bit tajemství, ciphertext AES-GCM vázaný AAD na ID a replay high-water pro jednotlivé lanes. Společný obalový Keystore klíč zůstává v zařízení. Migrace single-phone plaintext/v1 na v2 bez ztráty platného klíče nebo replay hodnot. Nový PIN rotuje jen klíč daného ID. Odpárování jednotlivě odstraní pouze vybraný token, replay a retry stav. Seznam v TV dialogu `Spárované telefony`, označení iPhone/Android + koncovka ID; starší migrace označena Telefon. Změna PAIR je kompatibilní volitelným polem platformy, nikoliv změna jazyka aplikace.
+- Jedna TV = jeden aktivní zdroj herního textu, automatické převzetí po 5 s bez game-data; PING jiného telefonu zdroj neobsazuje. Změna zdroje/revokace resetuje dedup dialogů/voleb, story receiver, vyčistí overlay oblasti. Legacy nesmí přepsat aktivní podepsaný zdroj. Ruční výběr zdroje není implementován, zastavení vysílání na původním telefonu uvolní lease. Připojené telefony mohou současně ověřovat PING. Platnost ověření v UI není důkaz zobrazení.
+- Přidány statické kontrakty a instrumentation test více telefonů, oddělených replay čítačů, revokace a rotace. Existující migrace/poškození testy přizpůsobeny v2. Full CI po commitu. Rizika: HW souběh iOS/Android, změna zdroje, story reset, odpárování při probíhajícím streamu, migrace a poškození Keystore čekají. V případě selhání persistence přijímač fail-closed; restart/nové párování nebo reset appky může být potřeba. P0.5 až po CI.

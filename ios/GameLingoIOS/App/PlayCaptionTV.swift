@@ -382,7 +382,7 @@ final class PlayCaptionTV: ObservableObject {
                         conn.cancel()
                     }
                 }
-                let request = Data("PCPAIR1\tPAIR\t\(code)\t\(pairingClientID)".utf8)
+                let request = Data("PCPAIR1\tPAIR\t\(code)\t\(pairingClientID)\tiPhone".utf8)
                 conn.send(content: request,
                           completion: .contentProcessed { [weak self] error in
                     if let error {

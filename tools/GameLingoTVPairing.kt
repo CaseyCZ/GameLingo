@@ -276,7 +276,7 @@ object GameLingoTVPairing {
         DatagramSocket().use { socket ->
             socket.soTimeout = 10_000
             val address = InetAddress.getByName(ip)
-            val payload = "PCPAIR1\tPAIR\t$pin\t$clientId".toByteArray(Charsets.UTF_8)
+            val payload = "PCPAIR1\tPAIR\t$pin\t$clientId\tAndroid".toByteArray(Charsets.UTF_8)
             socket.send(DatagramPacket(payload, payload.size, address, receiverPort(ip)))
             val buffer = ByteArray(2048)
             val packet = DatagramPacket(buffer, buffer.size)

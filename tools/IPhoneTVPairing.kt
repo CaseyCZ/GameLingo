@@ -35,7 +35,14 @@ object IPhoneTVPairing {
     private var lastSuccessAtMs = 0L
     private const val REPLY_RETRY_WINDOW_MS = 15_000L
     private const val KEY_ALIAS = "cz.caseycz.gamelingo.tv.pairing.v1"
-    private const val ENCRYPTED_TOKEN = "token_v1"
+    private const val ENCRYPTED_TOKEN = "token_v1" // old single-phone format
+    private const val PHONE_IDS = "phone_ids_v2"
+    private const val MAX_PHONES = 32
+    private const val SOURCE_LEASE_MS = 5000L
+    private val authenticatedAt = mutableMapOf<String, Long>()
+    private var activePhone: String? = null
+    private var activeAt = 0L
+    private var sourceRevision = 0L
     private const val FRESHNESS_MS = 120_000L
     private val replayLanes = setOf("PCT1", "PCV1", "PCO1", "STORY", "STYLE", "PING")
     @Volatile var lastAuthenticatedMs = 0L
@@ -93,24 +100,45 @@ object IPhoneTVPairing {
             .takeIf(::validToken)
     }.getOrNull()
 
-    /** Migrate the old plaintext exactly once. If encryption fails, revoke it
-     * instead of continuing to use a plaintext key. Keep replay marks intact. */
+    private fun validPhoneId(id: String): Boolean =
+        id.length in 8..90 && id.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it == '-' || it == '_' || it == '.' }
+
+    internal fun phoneSlot(id: String): String =
+        MessageDigest.getInstance("SHA-256").digest(id.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+
+    private fun ids(ctx: Context): Set<String> =
+        prefs(ctx).getStringSet(PHONE_IDS, emptySet()).orEmpty().filter(::validPhoneId).toSet()
+
+    private fun tokenSlot(id: String) = "token_v2_" + phoneSlot(id)
+    private fun labelSlot(id: String) = "label_v2_" + phoneSlot(id)
+    private fun sequenceSlot(id: String, lane: String) = "wire_sequence_v2_" + phoneSlot(id) + "_" + lane
+    private fun platformLabel(label: String): String =
+        if (label in listOf("iPhone", "Android")) label else "Telefon"
+
+    /** Atomic migration of either prior single-phone format. An encrypted
+     * record wins over a plaintext copy, including when it is corrupt. */
     private fun migrateLegacy(ctx: Context) {
         val p = prefs(ctx)
-        if (!p.contains("token")) return
-        val old = p.getString("token", null)
-        val phoneId = p.getString("phone_id", "").orEmpty()
-        val editor = p.edit().remove("token")
-        // An encrypted record always wins, even when corrupt. No downgrade.
-        if (!p.contains(ENCRYPTED_TOKEN) && old != null &&
-            phoneId.length in 8..90 && validToken(old)) {
-            val encrypted = encryptToken(phoneId, old)
-            if (encrypted != null) editor.putString(ENCRYPTED_TOKEN, encrypted)
+        if (!p.contains("token") && !p.contains(ENCRYPTED_TOKEN) && !p.contains("phone_id")) return
+        val id = p.getString("phone_id", "").orEmpty()
+        val editor = p.edit().remove("token").remove(ENCRYPTED_TOKEN).remove("phone_id")
+        val known = ids(ctx)
+        if (validPhoneId(id) && id !in known && known.size < MAX_PHONES) {
+            val encrypted = if (p.contains(ENCRYPTED_TOKEN)) p.getString(ENCRYPTED_TOKEN, null)
+                else p.getString("token", null)?.takeIf(::validToken)?.let { encryptToken(id, it) }
+            if (encrypted != null && decryptToken(id, encrypted) != null) {
+                editor.putStringSet(PHONE_IDS, known + id)
+                    .putString(tokenSlot(id), encrypted).putString(labelSlot(id), "Telefon")
+                replayLanes.forEach { lane ->
+                    val old = p.getLong("wire_sequence_" + lane, 0L)
+                    editor.putLong(sequenceSlot(id, lane), old)
+                }
+            }
         }
+        replayLanes.forEach { editor.remove("wire_sequence_" + it) }
         if (!editor.commit()) {
             lastAuthenticatedMs = 0L
-            // The in-memory preference may have changed despite a failed disk
-            // write. Do not authorize this process with that uncertain state.
             storageWriteFailed = true
         }
     }
@@ -121,11 +149,74 @@ object IPhoneTVPairing {
 
     private fun loadSecret(ctx: Context, phoneId: String): String? {
         migrateLegacy(ctx)
-        if (storageWriteFailed || phoneId.isBlank()) return null
-        val p = prefs(ctx)
-        if (p.getString("phone_id", "") != phoneId) return null
-        val encrypted = p.getString(ENCRYPTED_TOKEN, null) ?: return null
+        if (storageWriteFailed || phoneId !in ids(ctx)) return null
+        val encrypted = prefs(ctx).getString(tokenSlot(phoneId), null) ?: return null
         return decryptToken(phoneId, encrypted)
+    }
+
+    data class PairedPhone(val id: String, val label: String, val connected: Boolean)
+
+    fun phones(ctx: Context): List<PairedPhone> = synchronized(lock) {
+        migrateLegacy(ctx)
+        val now = SystemClock.elapsedRealtime()
+        ids(ctx).sorted().map { id ->
+            val label = prefs(ctx).getString(labelSlot(id), "Telefon").orEmpty()
+            PairedPhone(id, platformLabel(label) + " · " + id.takeLast(8),
+                !storageWriteFailed && authenticatedAt[id]?.let { now - it < 10_000L } == true)
+        }
+    }
+
+    private fun releaseSource(phoneId: String) {
+        if (activePhone == phoneId) {
+            activePhone = null
+            activeAt = 0L
+            sourceRevision++
+        }
+    }
+
+    /** The first authenticated game-data sender owns the overlay until idle.
+     * PING does not claim/extend the lease. A different phone's text cannot
+     * interleave with the current phone's dialogue or choices. */
+    fun claimGameData(phoneId: String): Boolean = synchronized(lock) {
+        if (storageWriteFailed || phoneId !in authenticatedAt) return@synchronized false
+        val now = SystemClock.elapsedRealtime()
+        if (activePhone != null && activePhone != phoneId && now - activeAt < SOURCE_LEASE_MS)
+            return@synchronized false
+        if (activePhone != phoneId) { activePhone = phoneId; sourceRevision++ }
+        activeAt = now
+        true
+    }
+
+    fun permitsStyle(phoneId: String): Boolean = synchronized(lock) {
+        activePhone == null || activePhone == phoneId ||
+            SystemClock.elapsedRealtime() - activeAt >= SOURCE_LEASE_MS
+    }
+
+    fun hasActiveSource(): Boolean = synchronized(lock) {
+        activePhone != null && SystemClock.elapsedRealtime() - activeAt < SOURCE_LEASE_MS
+    }
+
+    fun overlayRevision(): Long = synchronized(lock) { sourceRevision }
+
+    fun unpair(ctx: Context, phoneId: String): Boolean = synchronized(lock) {
+        migrateLegacy(ctx)
+        val known = ids(ctx)
+        if (phoneId !in known) return@synchronized false
+        val editor = prefs(ctx).edit().putStringSet(PHONE_IDS, known - phoneId)
+            .remove(tokenSlot(phoneId)).remove(labelSlot(phoneId))
+        replayLanes.forEach { editor.remove(sequenceSlot(phoneId, it)) }
+        // Revoke in-memory authorization even if persistent storage fails.
+        authenticatedAt.remove(phoneId)
+        releaseSource(phoneId)
+        if (lastSuccessPhoneId == phoneId) {
+            lastSuccessPin = null
+            lastSuccessPhoneId = null
+            lastSuccessAtMs = 0L
+        }
+        lastAuthenticatedMs = authenticatedAt.values.maxOrNull() ?: 0L
+        val saved = editor.commit()
+        if (!saved) storageWriteFailed = true
+        saved
     }
 
     fun startCode(): String = synchronized(lock) {
@@ -145,7 +236,8 @@ object IPhoneTVPairing {
     }
 
     /** Returns a 32-byte secret (hex) only after PIN succeeds. */
-    fun confirm(ctx: Context, input: String, phoneId: String): String? = synchronized(lock) {
+    fun confirm(ctx: Context, input: String, phoneId: String, label: String = "Telefon"): String? = synchronized(lock) {
+        migrateLegacy(ctx)
         val now = SystemClock.elapsedRealtime()
         if (lastSuccessAtMs > 0 && now - lastSuccessAtMs <= REPLY_RETRY_WINDOW_MS &&
             input == lastSuccessPin && phoneId == lastSuccessPhoneId) {
@@ -153,7 +245,9 @@ object IPhoneTVPairing {
             return@synchronized loadSecret(ctx, phoneId)
         }
         val valid = input.length == 6 && input.all { it.isDigit() } &&
-            phoneId.length in 8..90 &&
+            validPhoneId(phoneId) &&
+            (phoneId in ids(ctx) || ids(ctx).size < MAX_PHONES) &&
+            !storageWriteFailed &&
             code != null && SystemClock.elapsedRealtime() < expiresAtMs &&
             attempts < 5
         if (!valid) return@synchronized null
@@ -165,9 +259,9 @@ object IPhoneTVPairing {
         val bytes = ByteArray(32).also(random::nextBytes)
         val token = bytes.joinToString("") { "%02x".format(it) }
         val encrypted = encryptToken(phoneId, token) ?: return@synchronized null
-        val editor = prefs(ctx).edit().putString("phone_id", phoneId)
-            .putString(ENCRYPTED_TOKEN, encrypted).remove("token")
-        replayLanes.forEach { editor.remove("wire_sequence_" + it) }
+        val editor = prefs(ctx).edit().putStringSet(PHONE_IDS, ids(ctx) + phoneId)
+            .putString(tokenSlot(phoneId), encrypted).putString(labelSlot(phoneId), platformLabel(label))
+        replayLanes.forEach { editor.remove(sequenceSlot(phoneId, it)) }
         if (!editor.commit()) {
             storageWriteFailed = true
             lastAuthenticatedMs = 0L
@@ -182,13 +276,15 @@ object IPhoneTVPairing {
         attempts = 0
         // A successful PIN is only pairing, not an authenticated live
         // connection. Show "connected" only after a verified PING or TEXT.
-        lastAuthenticatedMs = 0L
+        authenticatedAt.remove(phoneId)
+        releaseSource(phoneId)
+        lastAuthenticatedMs = authenticatedAt.values.maxOrNull() ?: 0L
         token
     }
 
     fun paired(ctx: Context): Boolean = synchronized(lock) {
-        val phoneId = prefs(ctx).getString("phone_id", "").orEmpty()
-        loadSecret(ctx, phoneId) != null
+        migrateLegacy(ctx)
+        !storageWriteFailed && ids(ctx).any { loadSecret(ctx, it) != null }
     }
 
     fun clear(ctx: Context) = synchronized(lock) {
@@ -197,6 +293,10 @@ object IPhoneTVPairing {
         // sender. Removing it also makes an old ciphertext unusable.
         val keyDeleted = runCatching { keystore().deleteEntry(KEY_ALIAS) }.isSuccess
         storageWriteFailed = !cleared && !keyDeleted
+        authenticatedAt.clear()
+        activePhone = null
+        activeAt = 0L
+        sourceRevision++
         lastAuthenticatedMs = 0L
         code = null
         expiresAtMs = 0L
@@ -226,8 +326,9 @@ object IPhoneTVPairing {
         val now = System.currentTimeMillis()
         if (timestamp < now - FRESHNESS_MS || timestamp > now + FRESHNESS_MS || sequence <= 0)
             return@synchronized false
+        migrateLegacy(ctx)
         val p = prefs(ctx)
-        val slot = "wire_sequence_" + lane
+        val slot = sequenceSlot(phoneId, lane)
         if (sequence <= p.getLong(slot, 0L)) return@synchronized false
         val signed = "$content\t$timestampText\t$sequenceText"
         if (!verify(ctx, phoneId, signed, signatureHex)) return@synchronized false
@@ -235,6 +336,7 @@ object IPhoneTVPairing {
         // a receiver restart. A failed write is fail-closed.
         if (!p.edit().putLong(slot, sequence).commit()) return@synchronized false
         lastAuthenticatedMs = SystemClock.elapsedRealtime()
+        authenticatedAt[phoneId] = lastAuthenticatedMs
         true
     }
 

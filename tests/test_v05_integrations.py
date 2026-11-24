@@ -315,7 +315,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         # similar PIN screens that cannot communicate.
         self.assertIn("PCPAIR1\\tPAIR",ios)
         self.assertIn("PCPAIR1\\\\tOK",patch)
-        self.assertIn("IPhoneTVPairing.confirm(c, code, id)",patch)
+        self.assertIn("IPhoneTVPairing.confirm(c, code, id, casti.getOrNull(4).orEmpty())",patch)
         self.assertIn("lastSuccessPhoneId",receiver)
         self.assertIn("return@synchronized loadSecret(ctx, phoneId)",receiver)
         self.assertNotIn("lastSuccessToken",receiver)
@@ -355,7 +355,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("lastWireSequence = maxOf(lastWireSequence + 1, now * 1000L)", android)
         self.assertIn('private const val FRESHNESS_MS = 120_000L', receiver)
         self.assertIn("timestamp < now - FRESHNESS_MS || timestamp > now + FRESHNESS_MS", receiver)
-        self.assertIn('val slot = "wire_sequence_" + lane', receiver)
+        self.assertIn('val slot = sequenceSlot(phoneId, lane)', receiver)
         self.assertIn("sequence <= p.getLong(slot, 0L)", receiver)
         self.assertIn("if (!p.edit().putLong(slot, sequence).commit())", receiver)
         self.assertEqual(patch.count("IPhoneTVPairing.verifyFresh(c, id,"), 3)
@@ -374,8 +374,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('Cipher.getInstance("AES/GCM/NoPadding")', receiver)
         self.assertIn("cipher.updateAAD(aad(phoneId))", receiver)
         self.assertIn("wrappingKey(false)", receiver)
-        self.assertIn('p.edit().remove("token")', receiver)
-        self.assertIn("putString(ENCRYPTED_TOKEN, encrypted)", receiver)
+        self.assertIn('p.edit().remove("token").remove(ENCRYPTED_TOKEN).remove("phone_id")', receiver)
+        self.assertIn("putString(tokenSlot(phoneId), encrypted)", receiver)
         self.assertNotIn('putString("token", token)', receiver)
         self.assertIn("storageWriteFailed", receiver)
         self.assertIn("IPhoneTVPairing.initialize(c)", patch)
@@ -383,6 +383,22 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("legacyMigrationPreservesIdentityAndReplay", device_tests)
         self.assertIn("tamperedCiphertextCannotFallBack", device_tests)
         self.assertIn("pairRetryAndClearUseEncryptedStorage", device_tests)
+
+    def test_p0_4_independent_phone_records_and_source_isolation(self):
+        receiver = code(TOOLS/"IPhoneTVPairing.kt")
+        patch = code(TOOLS/"patch_tv_iphone.py")
+        tv = code(TOOLS/"redesign_gamelingo.py")
+        device_tests = code(TOOLS/"IPhoneTVPairingKeystoreTest.kt")
+        self.assertIn('putStringSet(PHONE_IDS, ids(ctx) + phoneId)', receiver)
+        self.assertIn('putStringSet(PHONE_IDS, known - phoneId)', receiver)
+        self.assertIn('sequenceSlot(phoneId, lane)', receiver)
+        self.assertIn('private const val SOURCE_LEASE_MS = 5000L', receiver)
+        self.assertIn('IPhoneTVPairing.claimGameData(id)', patch)
+        self.assertIn('resetSourceIfChanged()', patch)
+        self.assertIn('pribeh = newStoryReceiver()', patch)
+        self.assertIn('IPhoneTVPairing.unpair(this, phone.id)', tv)
+        self.assertNotIn('IPhoneTVPairing.clear(this)', tv)
+        self.assertIn('twoPhonesKeepIndependentKeysReplayAndRevocation', device_tests)
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
