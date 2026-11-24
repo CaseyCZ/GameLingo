@@ -408,6 +408,8 @@ object GameLingoTVUi {
             GameLingoGlossaryUi.show(a)
         }, settingsTile("◷", "Historie překladů", "Překlady zpracované přímo na TV") {
             GameLingoHistoryUi.show(a)
+        }, settingsTile("▣", "Překladová cache", "Ukládání a vymazání místních překladů") {
+            GameLingoCachePrivacyUi.show(a)
         }, settingsTile("ⓘ", "O aplikaci / Licence",
             "Původní autoři, zdrojový kód a GNU AGPLv3") {
             GameLingoAbout.show(a)
