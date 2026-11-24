@@ -13,7 +13,7 @@ Tento dokument popisuje, co patří do **GitHub Releases** projektu [GameLingo](
 | --- | --- | --- |
 | iPhone | `GameLingo-iOS-vX.Y.Z-unsigned.ipa` | Nepodepsaná IPA. Je nutné ji podepsat vlastním Apple účtem / kompatibilním nástrojem; není určena pro App Store. |
 | Android telefon | `GameLingo-Android-vX.Y.Z.apk` | Podpora Android telefonu a původních Android Remote Play režimů včetně PlayStation podle ověřené kompatibility. |
-| Google TV / Android TV | `GameLingo-GoogleTV-vX.Y.Z.apk` | Přijímač titulků z telefonu; musí podporovat překryv přes vstup HDMI. |
+| Google TV / Android TV | `GameLingo-GoogleTV-vX.Y.Z.apk` | Přijímač titulků z telefonu nebo vlastní OCR/online překlad; HDMI překryv musí být ověřen na cílové TV. Bez offline modelu. |
 | Kontrola integrity | `SHA256SUMS.txt` | SHA-256 pro **všechny** přiložené balíčky. |
 | Změny | `RELEASE_NOTES.md` či text GitHub release | Novinky, chyby, kompatibilita, instalační postup, původní upstream commit. |
 | Zdroj | GitHub automaticky přiloží ZIP a TAR.GZ tagu | U odvozeného AGPL-3.0 kódu musí být k dispozici veškerý odpovídající zdroj i reprodukovatelné úpravy. |
@@ -43,3 +43,6 @@ Poslední vyzkoušený iOS / Xbox / TV základ vznikl v [CaseyCZ/Test](https://g
 ## Web
 
 Veřejný web GameLingo se připraví až později. README v kořeni repozitáře je zatím primární informační stránka.
+
+## Aktuální pravidla 0.5 (auditní větev)
+[STATUS-0.5.md](STATUS-0.5.md) a [RELEASE_GATES_0.5.md](RELEASE_GATES_0.5.md) jsou závazný stav. QA balíčky pouze z jedné společné revize, s novými checksumy a označením dev/TEST. Nepoužívat historické hardcoded Beta2/Beta3 workflow ani automaticky mazat starší releases. Před veřejnou distribucí uzavřít bezpečnostní/licenční nálezy a fyzické testy. Release až po explicitním souhlasu. 
