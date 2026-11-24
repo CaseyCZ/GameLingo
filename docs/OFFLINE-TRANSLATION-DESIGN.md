@@ -2,10 +2,12 @@
 
 Datum: 2026-11-24. **Aktualizace rozhodnutí uživatele:** vlastní TV offline překladač definitivně mimo rozsah. Samostatné OCR, online překlad, cache a přijímač z telefonu zachovat. Níže uvedené historické TV standalone NMT alternativy jsou zrušené, ne budoucí úkol. TV ML Kit Translation odstraněn a CI 45384321662 PASS. Žádná žádost o výjimku. Offline inference zůstává tématem pouze telefonů. Návrh bez implementace; žádná nová závislost, model, build, release ani změna jazykových voleb.
 
+**Aktuální implementace:** Android mobil ML Kit fallback zachován. TV pouze OCR + online překlad + cache, bez nového offline překladu; iOS bez modelu. Historické popisy společné upstream implementace níže nejsou stavem TV APK po CI 45384321662.
+
 ## 1. Skutečný stav
 
 - iOS deployment target 17.0 (project.yml), Vision OCR, CaptionPipeline.translate: explicitní Result, SQLite cache, Google GTX a MyMemory přes HTTPS, oddělené circuit breakery. Bez lokálního překladového modelu. Offline umí jen cache hit nebo stejný zdroj/cíl; novou větu bez internetu nepřeloží.
-- Android mobil a TV: společný připnutý upstream PlayCaption Prekladac.kt, SDK TranslateLanguage, Translator, downloadModelIfNeeded v priprav a nastavJazyk, patch wire_gamelingo_languages.py doplňuje source, SQLite a breakery. Standardně cache → Google → Microsoft → MyMemory → ML Kit. Rychlý náhled a story mají vlastní ML Kit větev. Modely se dnes mohou připravovat automaticky, neexistuje jasný offline-only režim ani kompletní uživatelský správce modelů. Přítomnost SDK a úspěšný build neprokazují model v zařízení ani překlad bez internetu.
+- Historický stav před TV nápravou (Android mobil a TV): společný připnutý upstream PlayCaption Prekladac.kt, SDK TranslateLanguage, Translator, downloadModelIfNeeded v priprav a nastavJazyk, patch wire_gamelingo_languages.py doplňuje source, SQLite a breakery. Standardně cache → Google → Microsoft → MyMemory → ML Kit. Rychlý náhled a story mají vlastní ML Kit větev. Modely se dnes mohou připravovat automaticky, neexistuje jasný offline-only režim ani kompletní uživatelský správce modelů. Přítomnost SDK a úspěšný build neprokazují model v zařízení ani překlad bez internetu.
 - P2.4 slovník je lokální postprocessing úspěšného překladu. Není samostatný offline překladač a nemá měnit raw cache. Story omezení P2.4 zůstává.
 - Jazyk hry na obou platformách: en/de/fr/es/it/pt. Cíl: cs/sk/en/de/pl/fr/es/it/pt. Zachovat UI a BCP-47 kódy; offline dostupnost je vlastnost engine/páru, ne důvod skrytí jazyka.
 
