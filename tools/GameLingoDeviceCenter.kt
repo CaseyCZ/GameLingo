@@ -264,7 +264,7 @@ object GameLingoDeviceCenter {
                     list.filterNot { it.id in hiddenXboxIds }.forEach { xbox ->
                         add(consoles, line(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), "Xbox Series / One",
                                           selectedID == xbox.id) {
-                            chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), if(tenFoot) arrayOf("Použít","Připojit","Odebrat","Přejmenovat") else arrayOf("Použít","Připojit","Odebrat")) { option ->
+                            chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), if(tenFoot) arrayOf("Použít", "Připojit", "Odebrat", "Přejmenovat") else arrayOf("Použít", "Připojit", "Odebrat")) { option ->
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
                                             .setMessage("Nejdřív zastav probíhající překlad.")
