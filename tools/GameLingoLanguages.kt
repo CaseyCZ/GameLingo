@@ -51,6 +51,11 @@ object GameLingoLanguages {
             .getString("target", "cs")?.takeIf { code ->
                 targetLanguages.any { it.code == code }
             } ?: "cs"
+    /** Restore only validated, existing translation languages; never change UI language. */
+    fun restoreProfile(c: Context, source: String?, target: String?) {
+        if (source != null && gameLanguages.any { it.code == source }) setTranslationLanguage(c, "game", source)
+        if (target != null && targetLanguages.any { it.code == target }) setTranslationLanguage(c, "target", target)
+    }
     fun name(choices: List<Language>, code: String) =
         choices.firstOrNull { it.code == code }?.title ?: code
 
