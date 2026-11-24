@@ -793,6 +793,26 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GITHUB_RUN_NUMBER", code(TOOLS/"brand_android.py"))
         self.assertIn("verify_tv_ui_apk.py", code(TOOLS.parent/".github/workflows/build-gamelingo.yml"))
 
+    def test_tv_hybrid_reads_only_selected_player_subtitle_nodes(self):
+        access = code(TOOLS/"GameLingoSubtitleAccessibility.kt")
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        wiring = code(TOOLS/"direct_tv_mode.py")
+        for marker in ("rootInActiveWindow", "root.packageName", "node.isPassword", "node.isEditable",
+                       "Rect.intersects(bounds, area)", "GameLingoScreenTranslationService.running",
+                       'id.contains("subtitle")', 'id.contains("caption")'):
+            self.assertIn(marker, access)
+        for forbidden in ("takeScreenshot(", "dispatchGesture(", "performAction(", "AudioRecord", "RECORD_AUDIO"):
+            self.assertNotIn(forbidden, access)
+            self.assertNotIn(forbidden, capture)
+        for marker in ("GameLingoSubtitleAccessibility.read(player, roi)", "if (!hasProjection)",
+                       "setSource(\"Text titulků\")", "currentPlayer()", "ticket == epoch",
+                       "Pouze text titulků", "Pouze OCR obrazovky"):
+            self.assertIn(marker, capture)
+        self.assertIn("android.permission.BIND_ACCESSIBILITY_SERVICE", wiring)
+        self.assertIn('android:canTakeScreenshot="false"', wiring)
+        self.assertIn("GameLingoScreenTranslationService.running ||", wiring)
+        self.assertIn("GameLingoSubtitleAccessibility;", code(TOOLS/"verify_tv_ui_apk.py"))
+
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         for marker in (
