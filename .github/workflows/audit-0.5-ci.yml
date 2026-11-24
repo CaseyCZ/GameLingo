@@ -1,0 +1,61 @@
+name: GameLingo • audit 0.5 build and regression checks
+
+on:
+  push:
+    branches:
+      - feature/audit-0.5
+    paths:
+      - "ios/**"
+      - "tools/**"
+      - "tests/**"
+      - "shared/**"
+      - ".github/workflows/audit-0.5-ci.yml"
+      - ".github/workflows/build-gamelingo.yml"
+      - ".github/workflows/fast-gamelingo-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run_link:
+    name: Publish current build link
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Record build run on commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state=pending -f context=gamelingo/audit-0.5 \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            -f description="GameLingo candidate build started"
+
+  quick:
+    uses: ./.github/workflows/fast-gamelingo-checks.yml
+  native:
+    needs: quick
+    uses: ./.github/workflows/build-gamelingo.yml
+
+  build_status:
+    name: Report candidate build result
+    needs: [run_link, quick, native]
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Record final build state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QUICK_RESULT: ${{ needs.quick.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
+        run: |
+          state=failure
+          if [ "$QUICK_RESULT" = success ] && [ "$NATIVE_RESULT" = success ]; then state=success; fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$state" -f context=gamelingo/audit-0.5 \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            -f description="Quick: $QUICK_RESULT; native: $NATIVE_RESULT"

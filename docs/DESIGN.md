@@ -17,9 +17,10 @@ Schválená identita vychází z [CaseyCZ](https://caseycz.github.io/), [iOS-Hub
 | Akcent – světle modrá | `#38BDF8` |
 | Akce – sytě modrá | `#0284C7` |
 | Úspěch / připojeno | `#86EFAC` |
+| Značková fialová (CTA gradient) | `#884BF8` |
 
 - Zaoblené karty, přehledné rozestupy, nativní tlačítka, velké dotykové plochy a bílé nadpisy.
-- **Žádná růžovo-fialová jako výchozí barva značky.** Jiný barevný motiv lze doplnit volitelně.
+- Primární akce používá modro-fialový gradient GameLingo; běžné ovládání je modrobílé. Stav připojení vždy používá samostatnou zelenou nebo neutrální barvu.
 - Čtyři barvy oblastí OCR (modrá, zelená, žlutá a oranžová) mají **funkční význam** a nesmí se zaměňovat s vizuální identitou.
 - Na iOS používat SF / nativní typografii, na Android TV čitelnou typografii a navigaci dálkovým ovladačem.
 - Dynamické stavy spojení jsou důležitější než dekorativní efekty.
@@ -27,18 +28,21 @@ Schválená identita vychází z [CaseyCZ](https://caseycz.github.io/), [iOS-Hub
 ## Hlavní obrazovky
 
 ### iPhone / Android telefon
-1. **Domů** – stav zdroje hry, stav TV, jedno tlačítko Spustit překlad.
-2. **Zařízení** – Xbox, PlayStation dle platformy, Google TV / Android TV; lokální párování.
-3. **Oblasti** – čtení dialogů, výstup titulků, čtení herního textu, výstup herního textu.
-4. **Profily** – samostatné nastavení podle hry.
-5. **Nastavení** – OCR, překlad, vzhled titulků, diagnostika, jazyk aplikace, o aplikaci.
+Pět společných záložek na iOS a Android telefonu, ve stejném pořadí:
+1. **Domů** – aktuálně vybraná konzole, výstup, skutečný stav a jediné hlavní tlačítko Spustit překlad.
+2. **Oblasti** – čtení dialogů, výstup titulků, čtení herního textu, výstup herního textu.
+3. **Profily** – samostatné nastavení podle hry.
+4. **Zařízení** – více Xboxů, PlayStationů a Google TV / Android TV; výběr, přidání a odstranění.
+5. **O aplikaci** – aktuální verze, zdrojové kódy a právní atribuce.
+
+**Nastavení** je samostatná obrazovka dostupná z horní lišty. Pro iOS i Android platí: uložená konzole není totéž co aktivní Remote Play; během běžícího překladu nelze konzoli nenápadně zaměnit.
 
 ### Google TV / Android TV
 - GameLingo TV logo a připojovací stav, šestimístný PIN, síťová diagnostika, náhled překladu.
-- Plně ovladatelné dálkovým ovladačem s jasným zaměřením.
+- Plně ovladatelné dálkovým ovladačem, oba režimy („Překlad z telefonu“ a „Přímo na TV“) mají zřetelný stav zaměření a sousední směr navigace.
 - Překryv nepřebíjí herní obraz tam, kde to není potřeba.
 - Žádné označení testované značky televizoru v popiscích.
 
 ## Stav
 
-Toto je schválené vizuální zadání pro implementaci. Samotné nové obrazovky i balíčky budou do repozitáře přidány postupně.
+Větev `feature/gamelingo-v05-platform-rebuild` obsahuje rozpracované nové iOS/Android/TV obrazovky. Přesnou implementaci a ověřený stav všech devíti auditních bodů průběžně eviduje [WORK_CHECKPOINT_0.5.md](WORK_CHECKPOINT_0.5.md). Funkce, které dosud neprošly fyzickým testem, nejsou považovány za dokončené.

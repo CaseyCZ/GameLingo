@@ -1,0 +1,74 @@
+name: GameLingo 0.5 Android mobile compile QA
+# Final Android mobile parity QA: restrict PIN to Android TV and verify TV receiver before first-run completion.
+
+on:
+  push:
+    branches: [feature/gamelingo-v05-platform-rebuild]
+    paths: [".github/workflows/qa-android-mobile-v05.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-mobile:
+    name: Android phone - compile native GameLingo UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kit
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: AdamRuzick4/PlayCaption-app
+          ref: 633a847400b6c4bac1e7f034463e7847a53a9590
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Assemble GameLingo mobile-only modules
+        run: |
+          set -euo pipefail
+          python -m pip install pillow
+          python -m unittest discover -s kit/tests -p 'test_v05_integrations.py' -v
+          python kit/tools/brand_android.py mobile upstream
+          python kit/tools/create_brand_assets.py android upstream
+          python kit/tools/polish_gamelingo.py upstream
+          python kit/tools/redesign_gamelingo.py mobile upstream
+          python kit/tools/polish_all_screens.py mobile upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
+          python kit/tools/wire_gamelingo_languages.py upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode mobile
+          test -s upstream/app/src/main/java/cz/titulky/tv/GameLingoSubtitleAppearance.kt
+          grep -q "GameLingoSubtitleAppearance.show(activity)" upstream/app/src/main/java/cz/titulky/tv/GameLingoSettings.kt
+          grep -q "tvPismo" upstream/app/src/main/java/cz/titulky/tv/GameLingoSubtitleAppearance.kt
+          sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
+      - name: Compile Android mobile APK
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          APK=$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" |
+            grep "package: name='cz.caseycz.gamelingo.mobile'"
+      - name: Upload Android mobile TEST APK
+        run: |
+          set -euo pipefail
+          APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
+          cp "$APK" GameLingo-Android-v0.5.0-dev-TEST.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-Android-v05-mobile-compile-QA
+          path: GameLingo-Android-v0.5.0-dev-TEST.apk
+          if-no-files-found: error
+          retention-days: 14

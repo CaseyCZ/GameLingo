@@ -1,0 +1,17 @@
+package cz.titulky.tv
+
+internal object GameLingoOCRCadence {
+    fun dialogue(mode: String, phone: Boolean, lowPower: Boolean): Long {
+        if (lowPower && !phone) return 600L
+        return when (mode) {
+            "automatic" -> if (phone) 85L else 200L
+            "street" -> if (phone) 70L else 150L
+            else -> if (phone) 100L else 250L
+        }
+    }
+    fun gameText(mode: String, asText: Boolean, lowPower: Boolean, recentCostMs: Long): Long {
+        val base = when (mode) { "automatic" -> 200L; "street" -> 150L; else -> 250L }
+        val floor = maxOf(if (lowPower) 600L else 0L, if (asText) base * 5 / 4 else base)
+        return maxOf(floor, (recentCostMs.coerceIn(0L, 1000L) * 3 / 2))
+    }
+}
