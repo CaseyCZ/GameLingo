@@ -34,31 +34,23 @@ object GameLingoTVSettings {
         root.addView(header)
         val cards = mutableListOf<View>()
         fun tile(symbol: String, label: String, detail: String, action: () -> Unit) {
-            val card = GameLingoTVUi.tile(a, symbol, label, detail, action).apply {
-                minimumHeight = 0
-                setPadding(d(a, 15), d(a, 7), d(a, 15), d(a, 7))
-                background = compactPanel(a, false)
-                setOnFocusChangeListener { v, focused -> v.background = compactPanel(a, focused) }
-                id = View.generateViewId()
-                (getChildAt(0) as? TextView)?.textSize = 14f
-                (getChildAt(1) as? TextView)?.textSize = 15f
-                (getChildAt(2) as? TextView)?.apply { textSize = 12f; maxLines = 1 }
-                for (index in 1..2) (getChildAt(index).layoutParams as LinearLayout.LayoutParams).topMargin = d(a, 1)
+            val card = GameLingoVisualKit.detailRow(a,symbol,label,detail,action).apply {
+                id=View.generateViewId()
             }
             cards.add(card)
         }
         tile("◎", "Jazyky", "Aplikace, hra, překlad") { GameLingoLanguages.show(a) }
-        tile("▣", "OCR", "Režim, filtr a rozšíření") { ocr(a) }
+        tile("viewfinder", "OCR a rozpoznávání", "Režim, filtr a rozšíření") { ocr(a) }
         tile("文", "Překlad", "Dialogy, herní texty, Story") { translation(a) }
-        tile("⌗", "Rozložení", "Čtyři oblasti") { GameLingoDirectTVLayout.show(a) {} }
+        tile("rectangle.dashed", "Oblasti obrazovky", "Čtyři oblasti") { GameLingoDirectTVLayout.show(a) {} }
         tile("Aa", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }
-        tile("♧", "Profily", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a) }
+        tile("gamecontroller", "Profily her", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a) }
         tile("▭", "Zařízení", "Konzole a telefony") { dialog.dismiss(); onDevices() }
         tile("文", "Herní slovník", "Vlastní výrazy") { GameLingoGlossaryUi.show(a) }
-        tile("◷", "Historie", "Překlady na TV") { GameLingoHistoryUi.show(a) }
-        tile("▣", "Překladová paměť", "Ukládání a vymazání") { GameLingoCachePrivacyUi.show(a) }
+        tile("clock.arrow.circlepath", "Historie překladů", "Překlady na TV") { GameLingoHistoryUi.show(a) }
+        tile("internaldrive", "Překladová cache", "Ukládání a vymazání") { GameLingoCachePrivacyUi.show(a) }
         tile("≋", "Diagnostika", "Příjem, oprávnění, verze") { diagnostics(a) }
-        tile("ⓘ", "O aplikaci", "Verze a licence") { GameLingoAbout.show(a) }
+        tile("info.circle", "O aplikaci / Licence", "Verze a licence") { GameLingoAbout.show(a) }
         val rows = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; clipChildren = false }
         cards.chunked(3).forEach { group ->
             val row = LinearLayout(a).apply { clipChildren = false }

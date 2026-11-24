@@ -973,7 +973,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         for marker in (
-            '"Použít","Připojit","Odebrat","Přejmenovat"',
+            '"Použít", "Připojit", "Odebrat", "Přejmenovat"',
             '"hiddenXboxIds"',
             'filterNot { it.id in hiddenXboxIds }',
             '"Vrátit odebrané Xboxy"',

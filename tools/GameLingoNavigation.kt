@@ -56,6 +56,8 @@ object GameLingoNavigation {
                 text.typeface = if (active) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
                 text.background = appearance(index, text.isFocused)
                 text.isSelected = active
+                text.setCompoundDrawablesWithIntrinsicBounds(null,GameLingoVisualKit.iconDrawable(listOf("house.fill","rectangle.dashed","gamecontroller","slider.horizontal.3","info.circle")[index],if(active)Color.WHITE else Color.parseColor(GameLingoUIContract.Palette.muted),dp(20)),null,null)
+                text.compoundDrawablePadding=dp(4)
             }
         }
 
@@ -70,13 +72,13 @@ object GameLingoNavigation {
             }
             tabs.forEachIndexed { index, destination ->
                 val item = TextView(activity).apply {
-                    text = destination.glyph + "\n" + destination.title
+                    text = destination.title
                     contentDescription = destination.title
                     textSize = 10.5f
                     maxLines = 2
                     gravity = Gravity.CENTER
                     setPadding(dp(1), dp(10), dp(1), dp(10))
-                    minHeight = dp(58)
+                    minHeight = dp(44)
                     isFocusable = true
                     isClickable = true
                     setOnClickListener {

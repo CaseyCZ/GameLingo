@@ -76,6 +76,13 @@ object GameLingoHelp {
         isFocusable = true
         contentDescription = "Otevřít nápovědu"
         setOnClickListener { show(activity, topic) }
+        if (!GameLingoTVUi.isTV(activity)) {
+            text = ""
+            background = null
+            setPadding(0,0,0,0)
+            setCompoundDrawablesWithIntrinsicBounds(GameLingoVisualKit.iconDrawable("questionmark.circle",Color.parseColor("#02D6FF"),GameLingoVisualKit.dp(activity,23)),null,null,null)
+            minWidth=0;minHeight=0
+        }
         if (GameLingoTVUi.isTV(activity)) {
             textSize = 23f
             setPadding(0,0,0,0)
@@ -84,8 +91,15 @@ object GameLingoHelp {
             layoutParams=layout(activity)
             id=android.view.View.generateViewId()
             fun paint(focused: Boolean) {
-                background=GameLingoTVUi.panel(activity,focused)
-                setTextColor(if(focused) Color.WHITE else Color.parseColor("#02D6FF"))
+                background=GameLingoTVUi.panel(activity,focused).apply {
+                    cornerRadius=GameLingoTVUi.dp(activity,32).toFloat()
+                    if(!focused) {setColor(Color.TRANSPARENT);setStroke(0,Color.TRANSPARENT)}
+                }
+                text=""
+                val color=if(focused)Color.WHITE else Color.parseColor("#02D6FF")
+                val drawable=GameLingoVisualKit.iconDrawable("questionmark.circle",color,GameLingoTVUi.dp(activity,38))
+                setCompoundDrawablesWithIntrinsicBounds(drawable,null,null,null)
+                setPadding(GameLingoTVUi.dp(activity,13),0,0,0)
                 elevation=GameLingoTVUi.dp(activity,if(focused) 10 else 0).toFloat()
             }
             setOnFocusChangeListener { _, focused -> paint(focused) }

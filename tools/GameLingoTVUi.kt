@@ -148,7 +148,11 @@ object GameLingoTVUi {
         })
         addView(LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
-            addView(title(a, "GameLingo", 35f))
+            addView(title(a, "GameLingo", 35f).apply {
+                text=android.text.SpannableString("GameLingo").apply {
+                    setSpan(android.text.style.ForegroundColorSpan(purple),4,9,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            })
             addView(title(a, "TV · Překlad herních dialogů", 16f, muted = true))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
     }
@@ -184,10 +188,12 @@ object GameLingoTVUi {
                 adjustViewBounds = true
                 contentDescription = if (symbol == "PS") "PlayStation" else "Xbox"
             }, LinearLayout.LayoutParams(dp(a, 34), dp(a, 34)))
+        } else if(heading in setOf("Jazyk aplikace","Jazyk hry","Jazyk překladu")) {
+            // Preserve the previously approved language screen.
+            box.addView(title(a, symbol, 25f).apply { setTextColor(cyan) })
         } else {
-            box.addView(title(a, symbol, 25f).apply {
-                setTextColor(cyan)
-            })
+            box.addView(GameLingoVisualKit.iconBadge(a,GameLingoVisualKit.iconName(symbol,heading)),
+                LinearLayout.LayoutParams(dp(a,46),dp(a,46)))
         }
         box.addView(title(a, heading, 20f), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,

@@ -241,45 +241,7 @@ object GameLingoSettings {
             })
         }
         fun menu(symbol: String, title: String, sub: String, open: () -> Unit) {
-            val row = LinearLayout(activity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                background = GameLingoVisualKit.card(activity)
-                setPadding(14 * d, 11 * d, 14 * d, 11 * d)
-                isFocusable = true
-                isClickable = true
-                setOnClickListener { onDismiss(); open() }
-            }
-            row.addView(TextView(activity).apply {
-                text = symbol
-                textSize = 23f
-                gravity = Gravity.CENTER
-                setTextColor(Color.parseColor("#02D6FF"))
-                background = GameLingoVisualKit.primary(activity)
-            }, LinearLayout.LayoutParams(45 * d, 45 * d).apply {
-                rightMargin = 13 * d
-            })
-            row.addView(LinearLayout(activity).apply {
-                orientation = LinearLayout.VERTICAL
-                addView(TextView(activity).apply {
-                    text = title
-                    textSize = 16.5f
-                    setTypeface(null, Typeface.BOLD)
-                    setTextColor(Color.WHITE)
-                })
-                addView(TextView(activity).apply {
-                    text = sub
-                    textSize = 12f
-                    setTextColor(Color.parseColor("#92A4C7"))
-                    setPadding(0, 4 * d, 0, 0)
-                })
-            }, LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            row.addView(TextView(activity).apply {
-                text = "›"
-                textSize = 24f
-                setTextColor(Color.parseColor("#92A4C7"))
-            })
+            val row = GameLingoVisualKit.detailRow(activity,symbol,title,sub) { onDismiss();open() }
             page.addView(row, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply {

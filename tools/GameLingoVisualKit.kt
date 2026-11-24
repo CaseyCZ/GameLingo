@@ -27,6 +27,102 @@ object GameLingoVisualKit {
     private val panel = Color.parseColor(GameLingoUIContract.Palette.panel)
     private val muted = Color.parseColor(GameLingoUIContract.Palette.muted)
 
+    // Symbol identifiers follow GameLingoVisualSystem.swift and SettingsHomeView.swift.
+    // Native vector equivalents; SF Symbols themselves are not Android assets.
+    fun iconName(symbol: String, title: String = ""): String = when {
+        title.startsWith("Jazyk") -> "globe"
+        title.startsWith("OCR") -> "viewfinder"
+        title.startsWith("Překladová") -> "internaldrive"
+        title.startsWith("Překlad z telefonu") -> "smartphone"
+        title.startsWith("Přímo na TV") -> "tv"
+        title.startsWith("Překlad") || title.startsWith("Herní slovník") -> "character.book.closed.fill"
+        title.startsWith("Oblasti") || title=="Rozložení" -> "rectangle.dashed"
+        title.startsWith("Vzhled") -> "text.bubble"
+        title.startsWith("Profily") || title=="Konzole" -> "gamecontroller"
+        title.startsWith("Zařízení") -> "display.2"
+        title.startsWith("Historie") -> "clock.arrow.circlepath"
+        title.startsWith("Diagnostika") -> "waveform.path.ecg"
+        title.startsWith("O aplikaci") -> "info.circle"
+        title.startsWith("Nastavení") -> "slider.horizontal.3"
+        else -> symbol
+    }
+    fun iconDrawable(name: String, tint: Int = Color.WHITE, size: Int = 24): Drawable =
+        object : Drawable() {
+            private val p=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color=tint; style=android.graphics.Paint.Style.STROKE
+                strokeWidth=1.8f;strokeCap=android.graphics.Paint.Cap.ROUND;strokeJoin=android.graphics.Paint.Join.ROUND
+            }
+            override fun getIntrinsicWidth()=size
+            override fun getIntrinsicHeight()=size
+            override fun draw(canvas:android.graphics.Canvas) {
+                canvas.save()
+                canvas.translate(bounds.left.toFloat(),bounds.top.toFloat())
+                canvas.scale(bounds.width()/24f,bounds.height()/24f)
+                fun line(x:Float,y:Float,x2:Float,y2:Float)=canvas.drawLine(x,y,x2,y2,p)
+                fun circle(x:Float,y:Float,r:Float)=canvas.drawCircle(x,y,r,p)
+                fun rect(x:Float,y:Float,x2:Float,y2:Float,r:Float=2f)=canvas.drawRoundRect(x,y,x2,y2,r,r,p)
+                fun path(vararg points:Float) {
+                    val path=android.graphics.Path();path.moveTo(points[0],points[1])
+                    for(i in 2 until points.size step 2)path.lineTo(points[i],points[i+1])
+                    canvas.drawPath(path,p)
+                }
+                when(name) {
+                    "house.fill" -> {path(3f,11f,12f,3f,21f,11f);path(5f,10f,5f,21f,10f,21f,10f,15f,14f,15f,14f,21f,19f,21f,19f,10f)}
+                    "globe" -> {circle(12f,12f,9f);canvas.drawOval(8f,3f,16f,21f,p);line(3f,12f,21f,12f);line(5f,7f,19f,7f);line(5f,17f,19f,17f)}
+                    "viewfinder" -> {path(3f,9f,3f,3f,9f,3f);path(15f,3f,21f,3f,21f,9f);path(21f,15f,21f,21f,15f,21f);path(9f,21f,3f,21f,3f,15f);circle(12f,12f,2f)}
+                    "rectangle.dashed" -> {p.pathEffect=android.graphics.DashPathEffect(floatArrayOf(3f,2f),0f);rect(3f,5f,21f,19f);p.pathEffect=null}
+                    "character.book.closed.fill" -> {rect(5f,3f,20f,21f);line(8f,3f,8f,21f);path(11f,15f,14f,8f,17f,15f);line(12f,12f,16f,12f)}
+                    "text.bubble" -> {rect(3f,4f,21f,17f,4f);path(7f,17f,7f,21f,12f,17f);line(7f,8f,17f,8f);line(7f,12f,15f,12f)}
+                    "gamecontroller","gamecontroller.fill" -> {path(7f,7f,17f,7f,20f,9f,22f,17f,20f,19f,16f,15f,8f,15f,4f,19f,2f,17f,4f,9f,7f,7f);line(6f,10f,10f,10f);line(8f,8f,8f,12f);circle(17f,10f,.8f);circle(19f,12f,.8f)}
+                    "display.2","tv" -> {rect(3f,4f,21f,16f);line(12f,16f,12f,20f);line(7f,20f,17f,20f);if(name=="display.2")rect(16f,12f,22f,22f)}
+                    "smartphone" -> {rect(6f,2f,18f,22f,3f);line(10f,19f,14f,19f)}
+                    "clock.arrow.circlepath" -> {circle(12f,12f,9f);path(12f,6f,12f,12f,16f,14f);path(3f,4f,3f,9f,8f,9f)}
+                    "internaldrive" -> {rect(3f,6f,21f,18f);line(3f,13f,21f,13f);circle(17f,15.5f,.7f)}
+                    "waveform.path.ecg","waveform" -> path(2f,12f,6f,12f,9f,5f,12f,19f,15f,8f,18f,12f,22f,12f)
+                    "slider.horizontal.3","gearshape.fill" -> {line(3f,6f,21f,6f);line(3f,12f,21f,12f);line(3f,18f,21f,18f);circle(8f,6f,2f);circle(16f,12f,2f);circle(10f,18f,2f)}
+                    "info.circle" -> {circle(12f,12f,9f);line(12f,11f,12f,17f);circle(12f,7f,.6f)}
+                    "questionmark.circle" -> {circle(12f,12f,9f);canvas.drawArc(8f,6f,16f,13f,180f,200f,false,p);path(15f,11f,12f,14f,12f,15f);circle(12f,18f,.55f)}
+                    "chevron.right" -> path(9f,6f,15f,12f,9f,18f)
+                    "arrow.right" -> {line(4f,12f,20f,12f);path(14f,6f,20f,12f,14f,18f)}
+                    "play.fill" -> path(7f,4f,20f,12f,7f,20f,7f,4f)
+                    "plus.circle" -> {circle(12f,12f,9f);line(7f,12f,17f,12f);line(12f,7f,12f,17f)}
+                    else -> {circle(12f,12f,9f);line(7f,12f,17f,12f)}
+                }
+                canvas.restore()
+            }
+            override fun setAlpha(alpha:Int){p.alpha=alpha;invalidateSelf()}
+            override fun setColorFilter(filter:android.graphics.ColorFilter?){p.colorFilter=filter;invalidateSelf()}
+            @Suppress("DEPRECATION") override fun getOpacity()=android.graphics.PixelFormat.TRANSLUCENT
+        }
+    fun icon(activity: Activity, name:String, tint:Int=Color.WHITE): ImageView = ImageView(activity).apply {
+        setImageDrawable(iconDrawable(name,tint,dp(activity,24)))
+        scaleType=ImageView.ScaleType.FIT_CENTER
+        importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+    fun iconBadge(activity:Activity,name:String): View = FrameLayout(activity).apply {
+        background=GradientDrawable(GradientDrawable.Orientation.TL_BR,intArrayOf(
+            Color.argb(184,2,214,255),Color.argb(199,163,41,250))).apply { cornerRadius=dp(activity,13).toFloat() }
+        addView(icon(activity,name),FrameLayout.LayoutParams(dp(activity,21),dp(activity,21),Gravity.CENTER))
+    }
+    // GLDetailRow: 42pt icon, 13pt icon radius, 11pt content inset, chevron.
+    fun detailRow(activity:Activity,symbol:String,title:String,detail:String,onClick:()->Unit):LinearLayout =
+        LinearLayout(activity).apply {
+            orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+            val tv=GameLingoTVUi.isTV(activity)
+            background=if(tv)GameLingoTVUi.panel(activity) else card(activity)
+            setPadding(dp(activity,11),dp(activity,11),dp(activity,11),dp(activity,11))
+            isFocusable=true;isClickable=true
+            addView(iconBadge(activity,iconName(symbol,title)),LinearLayout.LayoutParams(dp(activity,42),dp(activity,42)).apply{marginEnd=dp(activity,10)})
+            addView(LinearLayout(activity).apply {
+                orientation=LinearLayout.VERTICAL
+                addView(TextView(activity).apply{ text=title;textSize=16f;setTextColor(Color.WHITE);typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL) })
+                addView(TextView(activity).apply{ text=detail;textSize=12f;setTextColor(muted);setPadding(0,dp(activity,4),0,0) })
+            },LinearLayout.LayoutParams(0,-2,1f))
+            addView(icon(activity,"chevron.right",muted),LinearLayout.LayoutParams(dp(activity,16),dp(activity,16)))
+            setOnClickListener{onClick()}
+            if(tv)GameLingoTVUi.controlFocus(activity,this)
+        }
+
     fun dp(c: Context, value: Int): Int =
         (c.resources.displayMetrics.density * value + 0.5f).toInt()
 
@@ -160,8 +256,11 @@ object GameLingoVisualKit {
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        bar.addView(GameLingoHelp.button(activity,"home"),GameLingoHelp.layout(activity,dp(activity,36),dp(activity,44)))
         bar.addView(TextView(activity).apply {
-            text = "⚙"
+            text = ""
+            setCompoundDrawablesWithIntrinsicBounds(iconDrawable("gearshape.fill",Color.WHITE,dp(activity,21)),null,null,null)
+            setPadding(dp(activity,12),0,0,0)
             contentDescription = "Nastavení"
             gravity = Gravity.CENTER
             textSize = 26f
@@ -316,12 +415,8 @@ object GameLingoVisualKit {
                 dp(activity, 7), dp(activity, 11))
             setOnClickListener { onClick() }
         }
-        item.addView(TextView(activity).apply {
-            text = symbol
-            textSize = 27f
-            setTextColor(cyan)
-            gravity = Gravity.CENTER
-        })
+        item.addView(icon(activity,iconName(symbol,title),cyan),
+            LinearLayout.LayoutParams(dp(activity,28),dp(activity,28)))
         item.addView(TextView(activity).apply {
             text = title
             textSize = 13.5f
@@ -336,7 +431,10 @@ object GameLingoVisualKit {
 
     fun cta(activity: Activity, title: String,
             onClick: () -> Unit): TextView = TextView(activity).apply {
-        text = "▶   " + title
+        text = title
+        setCompoundDrawablesWithIntrinsicBounds(iconDrawable("play.fill",Color.WHITE,dp(activity,22)),null,
+            iconDrawable("arrow.right",Color.WHITE,dp(activity,17)),null)
+        setPadding(dp(activity,17),0,dp(activity,17),0)
         textSize = 20f
         setTextColor(Color.WHITE)
         setTypeface(null, Typeface.BOLD)
