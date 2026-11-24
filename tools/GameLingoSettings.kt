@@ -276,6 +276,10 @@ object GameLingoSettings {
         section(GameLingoUIContract.settingsSections[3])
         menu("▭", "Zařízení",
              "Xbox, PlayStation a Google TV") { onDevices() }
+        menu("◷", "Historie překladů",
+             "Poslední dialogy a herní texty · volitelné") {
+            GameLingoHistoryUi.show(activity)
+        }
         menu("≋", "Diagnostika",
              "Stav relace a uložených zařízení") {
             GameLingoDiagnostics.show(activity)

@@ -109,11 +109,18 @@ struct GameLingoSettingsOverview: View {
             }
             .buttonStyle(.plain)
             NavigationLink {
+                GameLingoHistoryView(model: model)
+            } label: {
+                GLDetailRow(icon: "clock.arrow.circlepath", title: "Historie překladů",
+                            detail: model.translationHistory.enabled ? "Poslední dialogy a herní texty" : "Vypnuto")
+            }
+            .buttonStyle(.plain)
+            NavigationLink {
                 GameLingoDiagnosticsView(model: model)
             } label: {
                 GLDetailRow(icon: "waveform.path.ecg",
                             title: "Diagnostika",
-                            detail: "Stav připojení a historie překladu")
+                            detail: "Stav připojení a technický log")
             }
             .buttonStyle(.plain)
             NavigationLink {
@@ -517,6 +524,44 @@ struct GameLingoProfilesScreen: View {
                             .disabled(model.isRunning)
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+private struct GameLingoHistoryView: View {
+    @ObservedObject var model: CaptionAppModel
+    @State private var confirmClear = false
+    var body: some View {
+        GLScreen(title: "Historie překladů", help:
+            "Volitelná historie posledních 200 úspěšných překladů na tomto zařízení. Ukládá se pouze v paměti aplikace do jejího ukončení. Vypnutí historii vymaže; překladová cache a technický log jsou oddělené.") {
+            GLCard {
+                Toggle("Uchovávat historii", isOn: Binding(
+                    get: { model.translationHistory.enabled },
+                    set: { model.setHistoryEnabled($0) }))
+                Text("Pouze v paměti do ukončení aplikace · max. 200 položek · bez synchronizace")
+                    .font(.caption).foregroundStyle(GLStyle.muted)
+                Button("Vymazat historii", role: .destructive) { confirmClear = true }
+                    .disabled(model.translationHistory.entries.isEmpty)
+                    .confirmationDialog("Vymazat celou historii překladů?", isPresented: $confirmClear) {
+                        Button("Vymazat", role: .destructive) { model.clearHistory() }
+                    }
+            }
+            if model.translationHistory.entries.isEmpty {
+                GLCard {
+                    Text(model.translationHistory.enabled ? "Zatím žádné překlady." : "Historie je vypnutá.")
+                        .foregroundStyle(GLStyle.muted)
+                }
+            }
+            ForEach(Array(model.translationHistory.entries.reversed())) { entry in
+                GLCard {
+                    Text(entry.kind + " · " + entry.source + " → " + entry.target + " · " +
+                         entry.date.formatted(date: .omitted, time: .standard))
+                        .font(.caption).foregroundStyle(GLStyle.muted)
+                    Text(entry.translated).font(.headline).textSelection(.enabled)
+                    Text(entry.original).font(.subheadline).foregroundStyle(GLStyle.muted)
+                        .textSelection(.enabled)
                 }
             }
         }

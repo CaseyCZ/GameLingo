@@ -67,6 +67,10 @@ jobs:
         run: |
           swiftc ios/GameLingoIOS/App/PairingQRCode.swift tests/PairingQRCodeTests.swift -o "$RUNNER_TEMP/pairing-qr-tests"
           "$RUNNER_TEMP/pairing-qr-tests"
+      - name: Test bounded opt-in translation history
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationHistory.swift tests/TranslationHistoryTests.swift -o "$RUNNER_TEMP/translation-history-tests"
+          "$RUNNER_TEMP/translation-history-tests"
       - name: Parse every iOS Swift source
         shell: bash
         run: |

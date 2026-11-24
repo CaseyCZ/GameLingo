@@ -235,6 +235,10 @@ final class CaptionAppModel: ObservableObject {
 
     @Published var lastChoices = ""
     @Published var logLines: [String] = []
+    @Published private(set) var translationHistory = TranslationHistory()
+
+    func setHistoryEnabled(_ enabled: Bool) { translationHistory.setEnabled(enabled) }
+    func clearHistory() { translationHistory.clear() }
     @Published private(set) var performanceSummary = "Zatím bez měření"
     private var performance: [String: PerformanceWindow] = [:]
     private var performanceTimer: Task<Void, Never>?
@@ -661,6 +665,9 @@ final class CaptionAppModel: ObservableObject {
         self.recordPerformance("Herní text překlad", milliseconds: (ProcessInfo.processInfo.systemUptime - optionsTranslateStarted) * 1000)
         self.lastChoices = translated.joined(separator: " · ")
         self.lastTranslatedChoiceItems = translated
+        self.translationHistory.append(kind: asText ? "Herní text" : "Volby",
+            source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue,
+            original: englishChoices.joined(separator: "\n"), translated: translated.joined(separator: "\n"))
         self.lastTranslatedChoiceIsText = asText
         self.lastChoicesSentAt = Date()
         if self.devices.subtitleOutput == .googleTV {
@@ -782,6 +789,9 @@ final class CaptionAppModel: ObservableObject {
                     let requested = self.subtitleDuration.isFinite ? self.subtitleDuration : 4
                     let displaySeconds = min(4.0, max(0.1, requested))
                     self.lastCzech = czech
+                    self.translationHistory.append(kind: "Dialog",
+                        source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue,
+                        original: reading.english, translated: czech)
                     self.scheduleDialogueExpiry(seconds: displaySeconds, currentSession: currentSession)
                     if self.devices.subtitleOutput == .phone {
                         self.phoneSubtitle = czech

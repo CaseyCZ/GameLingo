@@ -612,6 +612,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("tv.pairReceiver()", ios)
         self.assertNotIn("pairReceiver()", ios.split("GameLingoQRScanner(onCode:", 1)[1])
 
+    def test_p2_3_history_is_opt_in_bounded_and_separate(self):
+        swift = code(IOS/"TranslationHistory.swift")
+        kotlin = code(TOOLS/"GameLingoTranslationHistory.kt")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("enabled = false", swift)
+        self.assertIn("limit = 200", swift)
+        self.assertIn("if !value { clear() }", swift)
+        self.assertIn("recording = false", kotlin)
+        self.assertIn("LIMIT = 200", kotlin)
+        self.assertIn("if (!value) entries.clear()", kotlin)
+        self.assertIn("self.translationHistory.append", model)
+        self.assertIn("if (dobry) GameLingoTranslationHistory.append", wiring)
+        self.assertIn("GameLingoTranslationHistory.append", wiring)
+        self.assertIn("GameLingoHistoryUi.show", code(TOOLS/"GameLingoSettings.kt"))
+        self.assertIn("GameLingoHistoryUi.show", code(TOOLS/"GameLingoTVUi.kt"))
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

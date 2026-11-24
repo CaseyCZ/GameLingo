@@ -586,6 +586,23 @@ def main():
                         Volby.revize != revize || !Volby.zapnuto || Volby.rezimText ||
                         volbyPosledni != volby) return@post
                     prekladyVoleb[gameTextKey(context, v)] = opraveno''', service.name)
+    # P2.3: local opt-in process history; only accepted current results.
+    for name in ("GameLingoTranslationHistory.kt", "GameLingoHistoryUi.kt"):
+        (folder/name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"),encoding="utf8")
+    (unit_dir/"GameLingoTranslationHistoryTest.kt").write_text(
+        Path(__file__).with_name("GameLingoTranslationHistoryTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    s=once(s, '            ukazCesky(cesky, box, radku, barvyJmen)',
+        '            if (dobry) GameLingoTranslationHistory.append("Dialog", translationContext.source, translationContext.target, repliky.joinToString("\\n"), cesky)\n'
+        '            ukazCesky(cesky, box, radku, barvyJmen)', service.name)
+    s=once(s, '            Propojeni.Vysilac.nastavVolby(listOf(it), Volby.VYBRANA_TEXT)',
+        '            GameLingoTranslationHistory.append("Herní text", context.source, context.target, text, it)\n'
+        '            Propojeni.Vysilac.nastavVolby(listOf(it), Volby.VYBRANA_TEXT)', service.name)
+    s=once(s, '                    prekladyVoleb[cacheKey] = cesky',
+        '                    prekladyVoleb[cacheKey] = cesky\n'
+        '                    GameLingoTranslationHistory.append("Herní text", context.source, context.target, text, cesky)', service.name)
+    s=once(s, '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)',
+        '            GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), prelozene.joinToString("\\n"))\n'
+        '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)', service.name)
     service.write_text(s, encoding="utf8")
     print("GameLingo source and target languages connected to real Android translation")
 
