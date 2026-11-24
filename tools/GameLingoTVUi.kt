@@ -235,7 +235,7 @@ object GameLingoTVUi {
     fun showSettings(a: Activity, onUpdate: () -> Unit) {
         if (a.isFinishing) return
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
-        val page = LinearLayout(a).apply {
+        val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(a, 26), dp(a, 17), dp(a, 26), dp(a, 18))
             background = GameLingoVisualKit.pageBackground(a)
@@ -247,86 +247,121 @@ object GameLingoTVUi {
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
         val close = action(a, "Zpět") { dialog.dismiss(); onUpdate() }
+        close.id = View.generateViewId()
         header.addView(close)
-        page.addView(header)
-        page.addView(title(a, "JAZYKY", 16f).apply {
-            setTextColor(cyan)
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(a, 16)
-            bottomMargin = dp(a, 9)
-        })
+        root.addView(header)
 
-        fun languageRow(name: String, choices: List<GameLingoLanguages.Language>,
-                        kind: GameLingoLanguages.Kind,
-                        selected: () -> String) {
-            val row = tile(a, "◎", name,
-                GameLingoLanguages.name(choices, selected())) {
+        val page = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            clipChildren = false
+            clipToPadding = false
+            setPadding(dp(a, 4), 0, dp(a, 4), dp(a, 6))
+        }
+        // Every section uses the same three columns. Empty slots are layout
+        // spacers, never focusable actions. A fixed header remains accessible.
+        val columns = 3
+        val focusRows = mutableListOf<List<LinearLayout>>()
+        fun section(label: String) {
+            page.addView(title(a, label, 16f).apply {
+                setTextColor(cyan)
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = dp(a, 13)
+                bottomMargin = dp(a, 8)
+            })
+        }
+        fun settingsTile(symbol: String, heading: String, detail: String,
+                         onActivate: () -> Unit): LinearLayout =
+            tile(a, symbol, heading, detail, onActivate).apply {
+                setPadding(dp(a, 13), dp(a, 8), dp(a, 13), dp(a, 8))
+                minimumHeight = dp(a, 92)
+                (getChildAt(0) as? TextView)?.textSize = 20f * TV_SCALE
+                (getChildAt(1) as TextView).apply {
+                    textSize = 19f * TV_SCALE
+                    (layoutParams as LinearLayout.LayoutParams).topMargin = dp(a, 3)
+                }
+                (getChildAt(2) as TextView).apply {
+                    (layoutParams as LinearLayout.LayoutParams).topMargin = dp(a, 3)
+                }
+            }
+
+        fun addGrid(tiles: List<LinearLayout>) {
+            tiles.chunked(columns).forEach { cards ->
+                val row = LinearLayout(a).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    clipChildren = false
+                    clipToPadding = false
+                }
+                repeat(columns) { column ->
+                    val cell: View = cards.getOrNull(column)?.apply {
+                        id = View.generateViewId()
+                    } ?: View(a).apply { isFocusable = false }
+                    row.addView(cell, LinearLayout.LayoutParams(
+                        0, ViewGroup.LayoutParams.MATCH_PARENT, 1f).apply {
+                        if (column < columns - 1) rightMargin = dp(a, 10)
+                    })
+                }
+                page.addView(row, LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin = dp(a, 8)
+                })
+                focusRows.add(cards)
+            }
+        }
+
+        fun languageTile(name: String, choices: List<GameLingoLanguages.Language>,
+                         kind: GameLingoLanguages.Kind,
+                         selected: () -> String): LinearLayout =
+            settingsTile("◎", name, GameLingoLanguages.name(choices, selected())) {
                 GameLingoLanguages.choose(a, kind) {
                     dialog.dismiss()
                     onUpdate()
                 }
             }
-            page.addView(row, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = dp(a, 7)
-            })
-            if (kind == GameLingoLanguages.Kind.APP) row.requestFocus()
-        }
-        languageRow("Jazyk aplikace", GameLingoLanguages.appLanguages,
-            GameLingoLanguages.Kind.APP) { GameLingoLanguages.app(a) }
-        languageRow("Jazyk hry", GameLingoLanguages.gameLanguages,
-            GameLingoLanguages.Kind.GAME) { GameLingoLanguages.game(a) }
-        languageRow("Jazyk překladu", GameLingoLanguages.targetLanguages,
-            GameLingoLanguages.Kind.TARGET) { GameLingoLanguages.target(a) }
 
-        page.addView(title(a, "PŘEKLAD HRY", 16f).apply {
-            setTextColor(cyan)
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(a, 14)
-            bottomMargin = dp(a, 8)
-        })
+        section("JAZYKY")
+        addGrid(listOf(
+            languageTile("Jazyk aplikace", GameLingoLanguages.appLanguages,
+                GameLingoLanguages.Kind.APP) { GameLingoLanguages.app(a) },
+            languageTile("Jazyk hry", GameLingoLanguages.gameLanguages,
+                GameLingoLanguages.Kind.GAME) { GameLingoLanguages.game(a) },
+            languageTile("Jazyk překladu", GameLingoLanguages.targetLanguages,
+                GameLingoLanguages.Kind.TARGET) { GameLingoLanguages.target(a) }
+        ))
 
+        section("PŘEKLAD HRY")
         val userSettings = Nastaveni(a)
         fun toggle(title: String, detail: String,
-                   get: () -> Boolean, set: (Boolean) -> Unit) {
+                   get: () -> Boolean, set: (Boolean) -> Unit): LinearLayout {
             lateinit var choice: LinearLayout
             fun summary(): String = detail + "  ·  " +
                 if (get()) "Zapnuto" else "Vypnuto"
-            choice = tile(a, "◎", title, summary()) {
+            choice = settingsTile("◎", title, summary()) {
                 set(!get())
                 (choice.getChildAt(2) as TextView).text = summary()
+                choice.contentDescription = title + ". " + summary()
             }
-            page.addView(choice, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = dp(a, 7)
-            })
+            return choice
         }
-        toggle("Dialogy", "Překlad mluvených dialogů",
-            { userSettings.dialogy }, { userSettings.dialogy = it })
-        toggle("Herní texty", "Nápověda a úkoly v herním obraze",
-            { userSettings.napovedy }, { userSettings.napovedy = it })
-        toggle("Překrýt původní titulky", "Přeložený text přímo přes originál",
-            { userSettings.prekryvat }, { userSettings.prekryvat = it })
-        toggle("Příběhový režim", "Postupné čtení delších dialogů",
-            { userSettings.pribehovy }, { userSettings.pribehovy = it })
+        addGrid(listOf(
+            toggle("Dialogy", "Překlad mluvených dialogů",
+                { userSettings.dialogy }, { userSettings.dialogy = it }),
+            toggle("Herní texty", "Nápověda a úkoly v herním obraze",
+                { userSettings.napovedy }, { userSettings.napovedy = it }),
+            toggle("Překrýt původní titulky", "Přeložený text přímo přes originál",
+                { userSettings.prekryvat }, { userSettings.prekryvat = it }),
+            toggle("Příběhový režim", "Postupné čtení delších dialogů",
+                { userSettings.pribehovy }, { userSettings.pribehovy = it })
+        ))
         if (RemotePlayService.aktivni) {
             page.addView(title(a,
                 "Změny nastavení překladu se projeví po novém spuštění.",
                 14f, muted = true))
         }
 
-        page.addView(title(a, "ZOBRAZENÍ", 16f).apply {
-            setTextColor(cyan)
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(a, 15)
-            bottomMargin = dp(a, 12)
-        })
-        val overlay = tile(a, "▣", "Titulky přes obraz hry",
+        section("ZOBRAZENÍ")
+        val overlay = settingsTile("▣", "Titulky přes obraz hry",
             if (Settings.canDrawOverlays(a)) "Povoleno" else
                 "Vyžaduje povolení překryvu") {
             if (!Settings.canDrawOverlays(a)) {
@@ -334,34 +369,48 @@ object GameLingoTVUi {
                     Uri.parse("package:" + a.packageName)))
             }
         }
-        page.addView(overlay)
+        addGrid(listOf(overlay))
         page.addView(title(a,
             "Pro čtení her přímo v TV potřebuje aplikace povolení překryvu.",
-            14f, muted = true), LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(a, 11)
-        })
-        page.addView(title(a, "DALŠÍ", 16f).apply {
-            setTextColor(cyan)
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(a, 20)
-            bottomMargin = dp(a, 12)
-        })
-        page.addView(tile(a, "ⓘ", "O aplikaci / Licence",
+            14f, muted = true))
+
+        section("DALŠÍ")
+        addGrid(listOf(settingsTile("ⓘ", "O aplikaci / Licence",
             "Původní autoři, zdrojový kód a GNU AGPLv3") {
             GameLingoAbout.show(a)
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT))
+        }))
+
+        // Explicit D-pad destinations also handle incomplete rows and
+        // prevent focus from moving into a spacer or leaving the dialog.
+        focusRows.forEachIndexed { rowIndex, cards ->
+            cards.forEachIndexed { column, card ->
+                card.nextFocusLeftId = cards.getOrNull(column - 1)?.id ?: card.id
+                card.nextFocusRightId = cards.getOrNull(column + 1)?.id ?: card.id
+                val above = focusRows.getOrNull(rowIndex - 1)
+                val below = focusRows.getOrNull(rowIndex + 1)
+                card.nextFocusUpId = above?.get(column.coerceAtMost(above.lastIndex))?.id
+                    ?: close.id
+                card.nextFocusDownId = below?.get(column.coerceAtMost(below.lastIndex))?.id
+                    ?: card.id
+            }
+        }
+        close.nextFocusDownId = focusRows.first().last().id
+        close.nextFocusUpId = close.id
+        close.nextFocusLeftId = close.id
+        close.nextFocusRightId = close.id
+
         val scroll = ScrollView(a).apply {
             isFillViewport = true
+            clipChildren = false
+            clipToPadding = false
             addView(page)
         }
-        dialog.setContentView(scroll)
+        root.addView(scroll, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        dialog.setContentView(root)
         dialog.show()
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT)
-        page.post { close.requestFocus() }
+        page.post { focusRows.first().first().requestFocus() }
     }
 }
