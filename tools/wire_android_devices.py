@@ -339,6 +339,24 @@ def main():
         for forbidden in ('Propojeni.Pridani', 'sparovaniDotaz(', 'XboxUcet.prevezmi(', 'XboxUcet.proPredani('):
             if forbidden in prefix or forbidden in code:
                 raise RuntimeError("Legacy account transfer remains: " + forbidden)
+        # The old exporter/importer is not merely unreachable: remove it.
+        xbox = folder / "XboxUcet.kt"
+        xbox_source = xbox.read_text(encoding="utf-8")
+        start = xbox_source.index('    /**\n     * Pro „Vyhledat televizi“ v telefonu:')
+        end = xbox_source.index('    fun ulozKonzoli(', start)
+        xbox_source = xbox_source[:start] + xbox_source[end:]
+        if 'fun proPredani(' in xbox_source or 'fun prevezmi(' in xbox_source:
+            raise RuntimeError("Obsolete Xbox account migration remains")
+        xbox.write_text(xbox_source, encoding="utf-8")
+
+        # In the inherited fallback home screen this code used to hide the
+        # only independent PS sign-in when a paired TV was discovered.
+        # It is redundant now that accounts are device-local.
+        begin = '// telefon: najít televizi a převzít od ní spárování s PS5'
+        if begin in code:
+            start = code.index(begin)
+            end = code.index('// ---------- co překládat', start)
+            code = code[:start] + code[end:]
         transport.write_text(prefix + sender_marker + sender, encoding="utf-8")
 
         registration=folder/"RemotePlay.kt"
