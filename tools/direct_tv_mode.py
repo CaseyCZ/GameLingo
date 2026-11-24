@@ -264,6 +264,7 @@ def patch_direct_tv(folder):
         GameLingoScreenTranslationService.stop(this)""")
     patch_main('private fun hratSTelefonem() {',
                'private fun hratSTelefonem() {\n        GameLingoScreenTranslationService.stop(this)')
+    patch_main("private val SKALA = 0.72f", "private val SKALA = 0.66f")
     main.write_text(m, encoding="utf8")
 
     # Respect explicit TV platform choice; never silently fall back to the other console.
