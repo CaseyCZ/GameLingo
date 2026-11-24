@@ -3,6 +3,7 @@ name: GameLingo • audit 0.5 build and regression checks
 on:
   push:
     branches:
+      - Master
       - feature/audit-0.5
     paths:
       - "ios/**"
