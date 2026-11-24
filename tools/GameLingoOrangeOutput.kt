@@ -52,7 +52,7 @@ object GameLingoOrangeOutput {
             setPadding(dp(12), dp(12), dp(12), dp(12))
         }
         val r = read(c)
-        var locked = locked(c)
+        var isLocked = locked(c)
         val orange = Color.parseColor("#FF9E34")
         fun text(label: String) = TextView(c).apply {
             this.text = label
@@ -89,9 +89,26 @@ object GameLingoOrangeOutput {
             sample.textSize = (10f*r[4]).coerceIn(6f, 20f)
         }
         preview.addOnLayoutChangeListener { _, l, t, right, b, ol, ot, oright, ob ->
-            if (right-l != oright-ol || b-t != ob-ot) draw()
+            val width = right-l
+            if (width > 0 && preview.layoutParams.height != width*9/16) {
+                preview.layoutParams = preview.layoutParams.apply { height = width*9/16 }
+            }
+            if (width != oright-ol || b-t != ob-ot) draw()
         }
-        fun persist() { save(c, r, locked); publish(c); draw(); onChanged() }
+        val receiverID = TvProfily.aktivniId
+        val publishPending = Runnable {
+            if (panel.isAttachedToWindow && TvProfily.aktivniId == receiverID) publish(c)
+        }
+        fun persist(immediate: Boolean = true) {
+            if (TvProfily.aktivniId != receiverID) return
+            save(c, r, isLocked); draw(); onChanged()
+            panel.removeCallbacks(publishPending)
+            if (immediate) publish(c) else panel.postDelayed(publishPending, 180)
+        }
+        panel.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(view: android.view.View) {}
+            override fun onViewDetachedFromWindow(view: android.view.View) { panel.removeCallbacks(publishPending) }
+        })
         val sliders = mutableListOf<SeekBar>()
         fun slider(label: String, min: Int, max: Int, value: () -> Int, change: (Int) -> Unit) {
             val title = text("")
@@ -101,17 +118,17 @@ object GameLingoOrangeOutput {
             val bar = SeekBar(c).apply {
                 this.max = max-min
                 progress = (value()-min).coerceIn(0, this.max)
-                isEnabled = !locked
+                isEnabled = !isLocked
                 progressTintList = android.content.res.ColorStateList.valueOf(orange)
                 thumbTintList = android.content.res.ColorStateList.valueOf(orange)
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                     override fun onProgressChanged(seek: SeekBar, progress: Int, fromUser: Boolean) {
-                        if (!fromUser || locked) return
+                        if (!fromUser || isLocked) return
                         change(progress+min)
-                        refresh(); draw()
+                        refresh(); persist(immediate = false)
                     }
                     override fun onStartTrackingTouch(seek: SeekBar) {}
-                    override fun onStopTrackingTouch(seek: SeekBar) { if (!locked) persist() }
+                    override fun onStopTrackingTouch(seek: SeekBar) { if (!isLocked) persist() }
                 })
             }
             sliders.add(bar)
@@ -135,12 +152,12 @@ object GameLingoOrangeOutput {
             r[1] = r[1].coerceAtMost(1f-height); r[3] = r[1]+height
         }
         slider("Velikost písma", 60, 200, { pct(r[4]) }) { r[4] = it/100f }
-        panel.addView(text(if (locked) "🔒 Zamčeno" else "🔓 Odemčeno").apply {
+        panel.addView(text(if (isLocked) "🔒 Zamčeno" else "🔓 Odemčeno").apply {
             isFocusable = true
             setOnClickListener {
-                locked = !locked
-                text = if (locked) "🔒 Zamčeno" else "🔓 Odemčeno"
-                sliders.forEach { it.isEnabled = !locked }
+                isLocked = !isLocked
+                text = if (isLocked) "🔒 Zamčeno" else "🔓 Odemčeno"
+                sliders.forEach { it.isEnabled = !isLocked }
                 persist()
             }
         })
@@ -150,6 +167,7 @@ object GameLingoOrangeOutput {
             minHeight = dp(48)
             isFocusable = true
             setOnClickListener {
+                if (TvProfily.aktivniId != receiverID) return@setOnClickListener
                 if (Propojeni.Vysilac.cilIp == null) {
                     android.widget.Toast.makeText(c, "Nejdříve připoj televizi.", android.widget.Toast.LENGTH_SHORT).show()
                 } else {
