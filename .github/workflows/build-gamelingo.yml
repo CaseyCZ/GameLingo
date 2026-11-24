@@ -1,11 +1,6 @@
 name: GameLingo • iOS / Android / Google TV
 
 on:
-  push:
-    branches:
-      - feature/gamelingo-v05-platform-rebuild
-    paths:
-      - ".github/workflows/build-gamelingo.yml"
   workflow_dispatch:
   workflow_call:
 
