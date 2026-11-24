@@ -76,6 +76,15 @@ object GameLingoProfiles {
         put("pribehovy", settings.pribehovy)
         put("cas", settings.casPribehuProcenta)
         put("prekryvat", settings.prekryvat)
+        put("gameLanguage", GameLingoLanguages.game(c))
+        put("targetLanguage", GameLingoLanguages.target(c))
+        GameLingoOCRConfig.load(c)
+        put("ocrMode", GameLingoOCRConfig.mode)
+        put("ocrFilter", GameLingoOCRConfig.filterMenuText)
+        put("ocrExpand", GameLingoOCRConfig.expandSearch)
+        put("phoneScale", GameLingoPhoneSubtitleStyle.scale(c).toDouble())
+        put("phoneColor", GameLingoPhoneSubtitleStyle.color(c))
+        put("phoneBackground", GameLingoPhoneSubtitleStyle.background(c))
         put("volbyZap", Volby.zapnuto)
         put("volbyText", Volby.rezimText)
         put("volbyZamek", Volby.zamceno)
@@ -96,6 +105,18 @@ object GameLingoProfiles {
         settings.pribehovy = data.optBoolean("pribehovy", settings.pribehovy)
         settings.casPribehuProcenta = data.optInt("cas", settings.casPribehuProcenta)
         settings.prekryvat = data.optBoolean("prekryvat", settings.prekryvat)
+        // Old profiles omit these keys: retain the current setting in that case.
+        GameLingoLanguages.restoreProfile(c, data.optString("gameLanguage", ""), data.optString("targetLanguage", ""))
+        val mode = data.optString("ocrMode", "")
+        if (mode in setOf("classic", "automatic", "street")) GameLingoOCRConfig.setMode(c, mode)
+        if (data.has("ocrFilter")) GameLingoOCRConfig.setFilterMenu(c, data.optBoolean("ocrFilter", GameLingoOCRConfig.filterMenuText))
+        if (data.has("ocrExpand")) GameLingoOCRConfig.setExpandSearch(c, data.optBoolean("ocrExpand", GameLingoOCRConfig.expandSearch))
+        val phoneScale = data.optDouble("phoneScale", Double.NaN).toFloat()
+        if (phoneScale.isFinite() && phoneScale in 0.70f..1.80f) GameLingoPhoneSubtitleStyle.setScale(c, phoneScale)
+        val phoneColor = data.optString("phoneColor", "")
+        if (phoneColor in GameLingoPhoneSubtitleStyle.colors) GameLingoPhoneSubtitleStyle.setColor(c, phoneColor)
+        val phoneBackground = data.optString("phoneBackground", "")
+        if (phoneBackground in GameLingoPhoneSubtitleStyle.backgrounds) GameLingoPhoneSubtitleStyle.setBackground(c, phoneBackground)
 
         Volby.nacti(c)
         Volby.zapnuto = data.optBoolean("volbyZap", Volby.zapnuto)
@@ -121,14 +142,17 @@ object GameLingoProfiles {
         output.apply()
     }
 
+    private fun canChangeProfile(activity: Activity): Boolean {
+        if (!RemotePlayService.aktivni) return true
+        AlertDialog.Builder(activity)
+            .setMessage("Profil hry změň před spuštěním překladu.")
+            .setPositiveButton("Rozumím", null).show()
+        return false
+    }
+
     fun show(activity: Activity, settings: Nastaveni, onApplied: () -> Unit) {
-        // Profiles change configuration; never interrupt running Remote Play.
-        if (RemotePlayService.aktivni && !RemotePlayService.pozastaveno) {
-            AlertDialog.Builder(activity)
-                .setMessage("Profil hry změň před spuštěním překladu.")
-                .setPositiveButton("Rozumím", null).show()
-            return
-        }
+        // A paused session still owns its configuration and translation context.
+        if (!canChangeProfile(activity)) return
         val saved = prefs(activity)
         val outer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -160,6 +184,7 @@ object GameLingoProfiles {
             row.addView(text(activity, name, 16f, Color.WHITE, true),
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             row.addView(button(activity, "Použít") {
+                if (!canChangeProfile(activity)) return@button
                 val encoded = saved.getString(name, null)
                 val data = runCatching { JSONObject(encoded ?: "") }.getOrNull()
                 if (data != null) {
@@ -176,6 +201,7 @@ object GameLingoProfiles {
                 AlertDialog.Builder(activity)
                     .setMessage("Smazat profil „$name“?")
                     .setPositiveButton("Smazat") { _: DialogInterface, _: Int ->
+                        if (!canChangeProfile(activity)) return@setPositiveButton
                         saved.edit().remove(name).apply()
                         GameLingoGlossaryStore.remove(activity, name)
                         dialog.dismiss()
@@ -192,7 +218,7 @@ object GameLingoProfiles {
             outer.addView(text(activity, "Zatím nemáš uložený žádný profil.", 14f, muted))
         }
         outer.addView(button(activity, "Bez herního slovníku") {
-            if (!RemotePlayService.aktivni) GameLingoGlossaryStore.activate(activity, null)
+            if (canChangeProfile(activity)) GameLingoGlossaryStore.activate(activity, null)
         })
         outer.addView(button(activity, "＋  Uložit aktuální nastavení") {
             val input = EditText(activity).apply {
@@ -209,6 +235,7 @@ object GameLingoProfiles {
                 .setTitle("Uložit profil hry")
                 .setView(container)
                 .setPositiveButton("Uložit") { _, _ ->
+                    if (!canChangeProfile(activity)) return@setPositiveButton
                     val name = input.text.toString().trim()
                     if (name.isNotEmpty() && name.length <= 64) {
                         // Objects are loaded from the active TV profile, not
