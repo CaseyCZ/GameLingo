@@ -64,9 +64,18 @@ def bound_choices(text, folder):
                 ui.post {
                     if (!choiceFlights.finish(flightKey, ticket, cesky.isNotBlank())) return@post
                     if (cesky.isBlank()) return@post""")
-    s = once(s, "                    if (--zbyva == 0) posli()",
-        """                    if (volby.all { gameTextKey(context, it) in prekladyVoleb }) posli()""")
-    s = once(s, "                ui.post { if (--zbyva == 0) posli() }",
+    s = once(s, """                    if (--zbyva == 0) {
+                        performance.record(perfToken, "Herní text překlad", performance.now() - perfStart)
+                        posli()
+                    }""",
+        """                    if (volby.all { gameTextKey(context, it) in prekladyVoleb }) {
+                        performance.record(perfToken, "Herní text překlad", performance.now() - perfStart)
+                        posli()
+                    }""")
+    s = once(s, """                ui.post { if (--zbyva == 0) {
+                    performance.record(perfToken, "Herní text překlad", performance.now() - perfStart)
+                    posli()
+                } }""",
         """                ui.post {
                     choiceFlights.finish(flightKey, ticket, false)
                 }""")
