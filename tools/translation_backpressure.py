@@ -16,8 +16,9 @@ def bound_translator(text):
     text = once(text, """        if (runCatching { sit.execute {
             if (!currentPair(source, target)) { ui.post { chyba("Změna jazyka nebo relace") }; return@execute }""",
         """        val queuedAt = android.os.SystemClock.elapsedRealtime()
+        val queuedLanguageRevision = GameLingoLanguages.revision
         if (runCatching { sit.execute {
-            if (android.os.SystemClock.elapsedRealtime() - queuedAt > 5000L) {
+            if (queuedLanguageRevision != GameLingoLanguages.revision || android.os.SystemClock.elapsedRealtime() - queuedAt > 5000L) {
                 ui.post { chyba("Překlad čekal příliš dlouho") }
                 return@execute
             }
@@ -49,7 +50,7 @@ def bound_choices(text, folder):
             val previous = lastChoiceOutput
             if (output == previous) return
             lastChoiceOutput = output
-            if (previous?.generation != generation || previous.revision != revize || previous.items != corrected)
+            if (previous == null || previous.generation != generation || previous.revision != revize || previous.items != corrected)
                 GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), corrected.joinToString("\\n"))
             Propojeni.Vysilac.nastavVolby(corrected, volbyVybrana)""")
     s = once(s, """        var zbyva = chybi.size
