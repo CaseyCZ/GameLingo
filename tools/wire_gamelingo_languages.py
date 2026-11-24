@@ -6,7 +6,7 @@ Remote Play, subtitle placement, OAuth, Sony credentials or TV transport.
 """
 from pathlib import Path
 import sys
-from tv_translation_policy import tv_variant, tv_translator, finalize_tv
+from tv_translation_policy import tv_variant, strip_offline_translator, tv_translator, finalize_tv
 from direct_tv_mode import patch_direct_tv
 from translation_backpressure import bound_translator, bound_choices
 from translation_privacy import protect_cache_writes, restrict_service_log, restrict_provider_transport
@@ -26,7 +26,7 @@ def main():
         raise SystemExit("Usage: wire_gamelingo_languages.py <upstream-checkout>")
     folder = Path(sys.argv[1]) / SRC
     translator = folder / "Prekladac.kt"
-    t = translator.read_text(encoding="utf8")
+    t = strip_offline_translator(translator.read_text(encoding="utf8"))
     patch = [
         (
             'class Prekladac(context: android.content.Context? = null, cilovy: String = "cs") {',
@@ -38,24 +38,6 @@ def main():
             '    @Volatile var zdrojovyJazyk: String = zdrojovy\n        private set\n\n'
             '    private fun upravVstup(text: String): String =\n'
             '        if (zdrojovyJazyk == "en" && zdrojovyJazyk != cil) upravSlang(text.trim()) else text.trim()'
-        ),
-        (
-            '.setSourceLanguage(TranslateLanguage.ENGLISH)',
-            '.setSourceLanguage(TranslateLanguage.fromLanguageTag(zdrojovyJazyk) ?: TranslateLanguage.ENGLISH)'
-        ),
-        (
-            '    /** Přepne cílový jazyk (např. po změně v aplikaci). */',
-            '    /** Changes the real source of every online and offline translation. */\n'
-            '    fun nastavZdroj(kod: String) {\n'
-            '        if (kod == zdrojovyJazyk) return\n'
-            '        val stary = translator\n'
-            '        zdrojovyJazyk = kod\n'
-            '        translator = novyTranslator(cil)\n'
-            '        cache.evictAll()\n'
-            '        runCatching { stary.close() }\n'
-            '        translator.downloadModelIfNeeded(DownloadConditions.Builder().build())\n'
-            '    }\n\n'
-            '    /** Přepne cílový jazyk (např. po změně v aplikaci). */'
         ),
         (
             'val vstup = upravSlang(text.trim())',
@@ -91,9 +73,6 @@ def main():
     (test_dir/"GameLingoTranslationCacheTest.kt").write_text(
         Path(__file__).with_name("GameLingoTranslationCacheTest.kt").read_text(encoding="utf8"),encoding="utf8")
     t=t.replace("import android.util.LruCache\n","")
-    if t.count("        cache.evictAll()\n") != 2:
-        raise RuntimeError("Expected two old language-cache resets")
-    t=t.replace("        cache.evictAll()\n","")
     t=once(t, '    private val cache = LruCache<String, String>(500)', '''    private val cacheContext = context?.applicationContext
 
     private fun currentPair(source: String, target: String) =
@@ -134,7 +113,7 @@ def main():
     t=once(t, 'if (!vysledek.isNullOrBlank() && cil == jazyk && !zavreno) cache.put(t, vysledek)\n                        callback(vysledek)', '''if (!currentPair(source, jazyk)) { callback(null); return@post }
                         if (!vysledek.isNullOrBlank()) remember("google-gtx-v1", source, jazyk, t, vysledek)
                         callback(vysledek)''',translator.name)
-    t=once(t,'prelozVTelevizi(t, ok, { err() })','prelozVTelevizi(t, source, jazyk, ok, { err() })',translator.name)
+    t=once(t,'prelozOnlineMiss(t, ok, { err() })','prelozOnlineMiss(t, source, jazyk, ok, { err() }, skipGoogle = true)',translator.name)
     t=once(t,'if (zavreno || cil != jazyk) chyba("Změna jazyka nebo relace")','if (!currentPair(source, jazyk)) chyba("Změna jazyka nebo relace")',translator.name)
     t=once(t, '''        cache.get(vstup)?.let { zdroj = "paměť"; hotovo(it); return }
         // služba mezitím skončila (překladač zavřený) → nic nedělat, hlavně nespadnout
@@ -168,39 +147,12 @@ def main():
                     }
                     remember(engine, source, target, vstup, hotovyText)
                     hotovo(hotovyText)''',translator.name)
-    t=once(t,"prelozZalozne(vstup, hotovo, chyba)","prelozZalozne(vstup, source, target, hotovo, chyba)",translator.name)
-    t=once(t,'''        // když už Google tuhle větu znal, vrátit rovnou dobrý překlad
-        cache.get(vstup)?.let { hotovo(it); return }
-        if (zavreno) { chyba("překladač zavřený"); return }
-        runCatching {
-            translator.translate(vstup)
-                .addOnSuccessListener { hotovo(it) }
-                .addOnFailureListener { chyba(it.message ?: "Neznámá chyba") }
-        }.onFailure { chyba(it.message ?: "překladač zavřený") }''','''        val source = zdrojovyJazyk
+    t=once(t,'''        cache.get(vstup)?.let { hotovo(it); return }
+        chyba("Rychlý náhled není v paměti; čeká se na online překlad")''','''        val source = zdrojovyJazyk
         val target = cil
         cachedOrRun(vstup, source, target, hotovo, chyba) {
-            prelozVTelevizi(vstup, source, target, hotovo, chyba)
+            chyba("Rychlý náhled není v paměti; čeká se na online překlad")
         }''',translator.name)
-    t=once(t,'''    private fun prelozZalozne(vstup: String, hotovo: (String) -> Unit, chyba: (String) -> Unit) =
-        prelozVTelevizi(vstup, hotovo, chyba)''','''    private fun prelozZalozne(vstup: String, source: String, target: String,
-                               hotovo: (String) -> Unit, chyba: (String) -> Unit) =
-        prelozVTelevizi(vstup, source, target, hotovo, chyba)''',translator.name)
-    t=once(t,'private fun prelozVTelevizi(vstup: String, hotovo: (String) -> Unit, chyba: (String) -> Unit)', 'private fun prelozVTelevizi(vstup: String, source: String, target: String, hotovo: (String) -> Unit, chyba: (String) -> Unit)',translator.name)
-    t=once(t,'''        if (zavreno) { chyba("překladač zavřený"); return }
-        runCatching {
-            translator.translate(vstup)
-                .addOnSuccessListener { cesky -> zdroj = "tv"; hotovo(cesky) }''','''        if (!currentPair(source, target)) { chyba("Změna jazyka nebo relace"); return }
-        val activeTranslator = translator
-        runCatching {
-            activeTranslator.translate(vstup)
-                .addOnSuccessListener { cesky ->
-                    if (!currentPair(source, target)) chyba("Změna jazyka nebo relace")
-                    else {
-                        zdroj = "tv"
-                        remember("mlkit-v1", source, target, vstup, cesky)
-                        hotovo(cesky)
-                    }
-                }''',translator.name)
     t=once(t,'private fun google(text: String, cilJazyk: String = cil)', 'private fun google(text: String, cilJazyk: String = cil, sourceJazyk: String = zdrojovyJazyk)',translator.name)
     t=once(t,'&sl=$zdrojovyJazyk&tl=$cilJazyk','&sl=$sourceJazyk&tl=$cilJazyk',translator.name)
     t=once(t,'private fun edge(text: String)', 'private fun edge(text: String, target: String, source: String)',translator.name)
@@ -220,12 +172,6 @@ def main():
         val jazyk = cil
         val source = zdrojovyJazyk
         cachedOrRun''', translator.name)
-    t=once(t, '''                    else {
-                        zdroj = "tv"
-                        remember("mlkit-v1", source, target, vstup, cesky)''', '''                    else if (cesky.isBlank()) chyba("Prázdná odpověď překladače")
-                    else {
-                        zdroj = "tv"
-                        remember("mlkit-v1", source, target, vstup, cesky)''', translator.name)
     t=once(t, '''                val kus = kusy.optJSONArray(i) ?: continue
                 sb.append(kus.optString(0, ""))''', '''                val kus = kusy.optJSONArray(i) ?: return null
                 val segment = kus.opt(0) as? String ?: return null
@@ -312,7 +258,7 @@ def main():
     tv_variant(root)
     t = tv_translator(t)
     t = bound_translator(t)
-    t = protect_cache_writes(t, True)
+    t = protect_cache_writes(t)
     t = restrict_provider_transport(t)
     translator.write_text(t, encoding="utf8")
 
