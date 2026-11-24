@@ -310,7 +310,7 @@ def main():
                 "restore per-TV orange geometry")
             phone_code = one(phone_code,
                 '        // televize musí znát polohu rámečku voleb (český seznam ukazuje vedle něj)',
-                '        GameLingoOrangeOutput.publish(this)\n        // televize musí znát polohu rámečku voleb (český seznam ukazuje vedle něj)',
+                '        if (Propojeni.Vysilac.cilIp == null || savedInstanceState != null) GameLingoOrangeOutput.publish(this)\n        // televize musí znát polohu rámečku voleb (český seznam ukazuje vedle něj)',
                 "restore initial orange geometry")
             phone_code = one(phone_code,
                 '        // ---- volby odpovědí: vypínač + zámeček + velikost žlutého rámečku',
@@ -402,6 +402,10 @@ def main():
 
 '''
     text=one(text,"    fun vyber(id: String) {",insert+"    fun vyber(id: String) {","TvProfily device removal")
+    if mobile_dashboard:
+        text=one(text, 'private val KLICE = setOf("tvX",',
+            'private val KLICE = setOf("orangeL", "orangeT", "orangeR", "orangeB", "orangeFont", "orangeLocked", "tvX",',
+            "migrate first receiver orange preferences")
     profiles.write_text(text,encoding="utf-8")
     print("GameLingo Android/TV: independent device center + secure multi-PS5 saved console switching installed")
 
