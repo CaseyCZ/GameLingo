@@ -410,6 +410,10 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("live || now < upravaDo", wire)
         self.assertIn("live || now < volbyUpravaDo", wire)
         self.assertIn("emptyPacketsAndReadinessDoNotClaimSource", device_tests)
+        patch = code(TOOLS/"patch_tv_iphone.py")
+        self.assertIn("fun permitsStoryReadiness(phoneId: String)", receiver)
+        self.assertIn("IPhoneTVPairing.permitsStoryReadiness(id)", patch)
+        self.assertIn("assertEquals(revision, IPhoneTVPairing.overlayRevision())", device_tests)
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""

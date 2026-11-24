@@ -203,6 +203,14 @@ object IPhoneTVPairing {
         true
     }
 
+    /** A readiness probe is not a rendering command and must never take
+     * ownership. Let a new authenticated story sender probe after expiry. */
+    fun permitsStoryReadiness(phoneId: String): Boolean = synchronized(lock) {
+        !storageWriteFailed && phoneId in authenticatedAt &&
+            (activePhone == null || activePhone == phoneId ||
+                SystemClock.elapsedRealtime() - activeAt >= SOURCE_LEASE_MS)
+    }
+
     fun permitsStyle(phoneId: String): Boolean = synchronized(lock) {
         activePhone == null || activePhone == phoneId ||
             SystemClock.elapsedRealtime() - activeAt >= SOURCE_LEASE_MS

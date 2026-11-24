@@ -123,6 +123,16 @@ class IPhoneTVPairingKeystoreTest {
         assertTrue(IPhoneTVPairing.claimGameData(second))
         assertFalse(IPhoneTVPairing.claimGameData(id, false))
         assertTrue(IPhoneTVPairing.claimGameData(second, false))
+        assertFalse(IPhoneTVPairing.permitsStoryReadiness(id))
+        assertTrue(IPhoneTVPairing.permitsStoryReadiness(second))
+        android.os.SystemClock.sleep(5100)
+        val revision = IPhoneTVPairing.overlayRevision()
+        assertTrue(IPhoneTVPairing.permitsStoryReadiness(id))
+        assertFalse(IPhoneTVPairing.hasActiveSource())
+        assertEquals(revision, IPhoneTVPairing.overlayRevision())
+        assertFalse(IPhoneTVPairing.claimGameData(id, false))
+        assertTrue(IPhoneTVPairing.claimGameData(id, true))
+        assertFalse(IPhoneTVPairing.permitsStoryReadiness(second))
     }
 
     @Test fun pairRetryAndClearUseEncryptedStorage() {
