@@ -31,13 +31,13 @@ class GameLingoSubtitleAccessibility : AccessibilityService() {
                 val id = node.viewIdResourceName.orEmpty().substringAfterLast('/').lowercase()
                 val klass = node.className?.toString().orEmpty().lowercase()
                 // A generic TextView, title, menu, description or button is not evidence of a subtitle.
-                val controls = node.isClickable || node.isCheckable || node.isFocusable ||
-                    listOf("button","menu","setting","toggle","option","control","selector","track","language","list")
-                        .any { id.contains(it) || klass.contains(it) }
-                if (controls) return
+                val controls = listOf("button","menu","setting","toggle","option","control","selector","track","language","list")
+                    .any { id.contains(it) || klass.contains(it) }
+                // Never prune a generic focusable root; only reject interactive text itself.
+                if (controls && depth > 0) return
                 val marked = inherited || id.contains("subtitle") || id.contains("caption") ||
                     klass.endsWith("subtitleview") || klass.endsWith("captionview")
-                if (marked) {
+                if (marked && !node.isClickable && !node.isCheckable && !node.isFocusable) {
                     val bounds = Rect()
                     node.getBoundsInScreen(bounds)
                     val raw = node.text?.toString()?.trim().orEmpty()
