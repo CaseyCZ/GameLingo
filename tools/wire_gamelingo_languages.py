@@ -500,6 +500,92 @@ def main():
     s=s.replace('text.length < 4', 'text.length < GameLingoOCRConfig.minimumDialogueLength()')
     (unit_dir/"GameLingoOCRCadenceTest.kt").write_text(
         Path(__file__).with_name("GameLingoOCRCadenceTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    # P1.9: context snapshots at OCR/translation boundaries. The old
+    # text-only game-choice map must never mix source or target languages.
+    transport = folder/"Propojeni.kt"
+    p = transport.read_text(encoding="utf8")
+    p = once(p, '        @Volatile private var generace = 0L',
+        '        @Volatile private var generace = 0L\n        fun outputGeneration(): Long = generace', transport.name)
+    transport.write_text(p, encoding="utf8")
+    s=once(s, '    private val prekladyVoleb = HashMap<String, String>()',
+        '''    private data class TranslationContext(val language: Long, val source: String, val target: String,
+                                              val output: Long, val session: Long)
+    private fun translationContext() = TranslationContext(GameLingoLanguages.revision,
+        GameLingoLanguages.game(this), GameLingoLanguages.target(this),
+        Propojeni.Vysilac.outputGeneration(), relaceCteni.get())
+    private fun currentTranslation(context: TranslationContext) =
+        bezi && context == translationContext()
+    private data class GameTextKey(val source: String, val target: String, val text: String)
+    private fun gameTextKey(context: TranslationContext, text: String) =
+        GameTextKey(context.source, context.target, text)
+    private val prekladyVoleb = HashMap<GameTextKey, String>()
+    private var gameTextContext: TranslationContext? = null
+    private var gameTextGeneration = 0L
+    private fun updateGameTextContext(context: TranslationContext) {
+        if (gameTextContext == context) return
+        gameTextContext = context
+        gameTextGeneration++
+        textVRamecku.reset()
+        volbyPosledni = emptyList()
+        Propojeni.Vysilac.nastavVolby(emptyList(), -1)
+    }''', service.name)
+    s=once(s, '        val token = platnostPrekladu.novy()\n        val oblast =',
+        '        val translationContext = translationContext()\n        val token = platnostPrekladu.novy()\n        val oblast =', service.name)
+    s=once(s, '            if (!bezi || !nast.dialogy || !platnostPrekladu.plati(token)) return',
+        '            if (!currentTranslation(translationContext) || !nast.dialogy || !platnostPrekladu.plati(token)) return', service.name)
+    s=once(s, '        val klic = rucni?.joinToString(",") ?: "auto"',
+        '        val klic = (rucni?.joinToString(",") ?: "auto") + "|" + translationContext().toString()', service.name)
+    # Capture the language/output/session before the yellow OCR begins.
+    s=once(s, '        val rezimText = Volby.rezimText\n        val o = Volby.oblast.copyOf()',
+        '        val context = translationContext()\n        val rezimText = Volby.rezimText\n        val o = Volby.oblast.copyOf()', service.name)
+    s=once(s, 'Volby.revize != revize || relace != relaceCteni.get()) return@post\n                if (rezimText)',
+        'Volby.revize != revize || relace != relaceCteni.get() || !currentTranslation(context)) return@post\n'
+        '                updateGameTextContext(context)\n                if (rezimText)', service.name)
+    s=once(s, 'zpracujText(radky.map { it.first }, otiskTextu, perfToken, perfOcrStart)',
+        'zpracujText(radky.map { it.first }, otiskTextu, perfToken, perfOcrStart, context)', service.name)
+    s=once(s, 'zpracujVolby(radky.map { it.first }, vybrana, perfToken, perfOcrStart)',
+        'zpracujVolby(radky.map { it.first }, vybrana, perfToken, perfOcrStart, context)', service.name)
+    s=once(s, 'private fun zpracujText(radky: List<String>, otiskObrazu: String?, readToken: Long, readStarted: Long)',
+        'private fun zpracujText(radky: List<String>, otiskObrazu: String?, readToken: Long, readStarted: Long, context: TranslationContext)', service.name)
+    s=once(s, 'private fun zpracujVolby(surove: List<String>, vybrana: Int, readToken: Long, readStarted: Long)',
+        'private fun zpracujVolby(surove: List<String>, vybrana: Int, readToken: Long, readStarted: Long, context: TranslationContext)', service.name)
+    s=once(s, '        if (text.isEmpty()) {\n            volbyPosledni = emptyList()',
+        '        val generation = ++gameTextGeneration\n        if (text.isEmpty()) {\n            volbyPosledni = emptyList()', service.name)
+    s=once(s, '        prekladyVoleb[text]?.let {',
+        '        val cacheKey = gameTextKey(context, text)\n        prekladyVoleb[cacheKey]?.let {', service.name)
+    s=once(s, '''                prekladyVoleb[text] = cesky
+                if (bezi && relace == relaceCteni.get() && Volby.zapnuto && Volby.rezimText &&
+                    Volby.revize == revize && textVRamecku.text == text) {''', '''                if (currentTranslation(context) && generation == gameTextGeneration &&
+                    relace == relaceCteni.get() && Volby.zapnuto && Volby.rezimText &&
+                    Volby.revize == revize && textVRamecku.text == text) {
+                    prekladyVoleb[cacheKey] = cesky''', service.name)
+    s=once(s, '''                if (bezi && relace == relaceCteni.get() && Volby.zapnuto && Volby.rezimText &&
+                    Volby.revize == revize && textVRamecku.text == text) {
+                    Propojeni.Vysilac.nastavVolby(emptyList(), -1)
+                    zapis("[text: chyba překladu]")''', '''                if (currentTranslation(context) && generation == gameTextGeneration &&
+                    relace == relaceCteni.get() && Volby.zapnuto && Volby.rezimText &&
+                    Volby.revize == revize && textVRamecku.text == text) {
+                    Propojeni.Vysilac.nastavVolby(emptyList(), -1)
+                    zapis("[text: chyba překladu]")
+                    ui.postDelayed({
+                        if (currentTranslation(context) && generation == gameTextGeneration &&
+                            Volby.revize == revize && textVRamecku.text == text) textVRamecku.reset()
+                    }, 2000L)''', service.name)
+    s=once(s, '                    volbyPosledni = emptyList()\n                    Propojeni.Vysilac.nastavVolby(emptyList(), -1)',
+        '                    gameTextGeneration++\n                    volbyPosledni = emptyList()\n                    Propojeni.Vysilac.nastavVolby(emptyList(), -1)', service.name)
+    s=once(s, '        val novy = volby != volbyPosledni\n        volbyPosledni = volby',
+        '        val novy = volby != volbyPosledni\n        if (novy) gameTextGeneration++\n        val generation = gameTextGeneration\n        volbyPosledni = volby', service.name)
+    s=once(s, '        val chybi = volby.filter { it !in prekladyVoleb }',
+        '        val chybi = volby.filter { gameTextKey(context, it) !in prekladyVoleb }', service.name)
+    s=once(s, '            if (!bezi || relace != relaceCteni.get() || !Volby.zapnuto || Volby.rezimText ||',
+        '            if (!currentTranslation(context) || generation != gameTextGeneration || relace != relaceCteni.get() || !Volby.zapnuto || Volby.rezimText ||', service.name)
+    s=once(s, 'volby.mapNotNull { prekladyVoleb[it]?.takeIf',
+        'volby.mapNotNull { prekladyVoleb[gameTextKey(context, it)]?.takeIf', service.name)
+    s=once(s, '                    prekladyVoleb[v] = opraveno',
+        '''                    if (!currentTranslation(context) || generation != gameTextGeneration ||
+                        Volby.revize != revize || !Volby.zapnuto || Volby.rezimText ||
+                        volbyPosledni != volby) return@post
+                    prekladyVoleb[gameTextKey(context, v)] = opraveno''', service.name)
     service.write_text(s, encoding="utf8")
     print("GameLingo source and target languages connected to real Android translation")
 

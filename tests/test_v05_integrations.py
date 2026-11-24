@@ -581,6 +581,22 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoOCRConfig.gameTextIntervalMs", wiring)
         self.assertIn("gameTextOcrCostMs", wiring)
 
+    def test_p1_9_translation_generation_invalidates_old_results(self):
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        devices = code(IOS/"GameLingoDevices.swift")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        languages = code(TOOLS/"GameLingoLanguages.kt")
+        self.assertIn("dialogueRevision.accepts(readingRevision)", model)
+        self.assertIn("optionsRevision.accepts(readingRevision)", model)
+        self.assertIn("optionsTranslation?.cancel()", model)
+        self.assertIn("dialogueTranslation?.cancel()", model)
+        self.assertIn("devices.onOutputChanged", model)
+        self.assertIn("onOutputChanged?()", devices)
+        self.assertIn("GameTextKey(context.source, context.target, text)", wiring)
+        self.assertIn("currentTranslation(context)", wiring)
+        self.assertIn("generation != gameTextGeneration", wiring)
+        self.assertIn("changes.incrementAndGet()", languages)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

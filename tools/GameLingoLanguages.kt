@@ -31,6 +31,15 @@ object GameLingoLanguages {
         Language("pt", "Portugalština"))
 
     private const val PREFS = "gamelingo_languages"
+    private val changes = java.util.concurrent.atomic.AtomicLong()
+    val revision: Long get() = changes.get()
+
+    private fun setTranslationLanguage(c: Context, key: String, code: String) {
+        val old = if (key == "game") game(c) else target(c)
+        if (old == code) return
+        c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(key, code).apply()
+        changes.incrementAndGet()
+    }
     fun app(c: Context) = Nastaveni(c).jazykNeboCs
     fun game(c: Context): String =
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -72,10 +81,8 @@ object GameLingoLanguages {
                 val selected = choices[choice].code
                 when (kind) {
                     Kind.APP -> Nastaveni(activity).jazyk = selected
-                    Kind.GAME -> activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                        .edit().putString("game", selected).apply()
-                    Kind.TARGET -> activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                        .edit().putString("target", selected).apply()
+                    Kind.GAME -> setTranslationLanguage(activity, "game", selected)
+                    Kind.TARGET -> setTranslationLanguage(activity, "target", selected)
                 }
                 picker.dismiss()
                 onChanged()
@@ -150,13 +157,11 @@ object GameLingoLanguages {
         }
         addPicker("Jazyk hry", "Původní jazyk dialogů a herního textu",
             gameLanguages, { game(activity) }) { code ->
-            activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit().putString("game", code).apply()
+            setTranslationLanguage(activity, "game", code)
         }
         addPicker("Jazyk překladu", "Do jakého jazyka překládat",
             targetLanguages, { target(activity) }) { code ->
-            activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit().putString("target", code).apply()
+            setTranslationLanguage(activity, "target", code)
         }
         parent.show()
         parent.window?.setBackgroundDrawableResource(android.R.color.background_dark)

@@ -53,11 +53,18 @@ final class GameLingoDevices: ObservableObject {
     @Published var preferredConsoleID: String? {
         didSet { persist(); syncLegacyXboxID() }
     }
+    var onOutputChanged: (() -> Void)?
     @Published var preferredTelevisionID: String? {
-        didSet { persist() }
+        didSet {
+            persist()
+            if oldValue != preferredTelevisionID { onOutputChanged?() }
+        }
     }
     @Published var subtitleOutput: GLSubtitleOutput = .googleTV {
-        didSet { persist() }
+        didSet {
+            persist()
+            if oldValue != subtitleOutput { onOutputChanged?() }
+        }
     }
     @Published var completedSetup = false {
         didSet { persist() }

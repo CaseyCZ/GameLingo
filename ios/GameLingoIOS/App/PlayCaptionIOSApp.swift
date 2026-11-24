@@ -42,7 +42,7 @@ final class CaptionAppModel: ObservableObject {
     ) ?? .english {
         didSet {
             UserDefaults.standard.set(gameLanguage.rawValue, forKey: "gamelingo.gameLanguage")
-            Task { await pipeline.resetDialogue(); await pipeline.resetOptions() }
+            if oldValue != gameLanguage { invalidateDialogue(); invalidateOptions() }
         }
     }
     @Published var targetLanguage: GLTargetLanguage = GLTargetLanguage(
@@ -50,16 +50,22 @@ final class CaptionAppModel: ObservableObject {
     ) ?? .czech {
         didSet {
             UserDefaults.standard.set(targetLanguage.rawValue, forKey: "gamelingo.targetLanguage")
-            Task { await pipeline.resetDialogue(); await pipeline.resetOptions() }
+            if oldValue != targetLanguage { invalidateDialogue(); invalidateOptions() }
         }
     }
     @Published var ocrMode: OCRMode = OCRMode(
         rawValue: UserDefaults.standard.string(forKey: "ocrMode") ?? ""
     ) ?? .classic {
-        didSet { UserDefaults.standard.set(ocrMode.rawValue, forKey: "ocrMode") }
+        didSet {
+            UserDefaults.standard.set(ocrMode.rawValue, forKey: "ocrMode")
+            if oldValue != ocrMode { invalidateDialogue(); invalidateOptions() }
+        }
     }
     @Published var expandOnEmpty = UserDefaults.standard.bool(forKey: "expandOnEmpty") {
-        didSet { UserDefaults.standard.set(expandOnEmpty, forKey: "expandOnEmpty") }
+        didSet {
+            UserDefaults.standard.set(expandOnEmpty, forKey: "expandOnEmpty")
+            if oldValue != expandOnEmpty { invalidateDialogue() }
+        }
     }
     @Published var subtitleDuration: Double =
         (UserDefaults.standard.object(forKey: "subtitleDuration") as? Double) ?? 6 {
@@ -75,15 +81,24 @@ final class CaptionAppModel: ObservableObject {
     @Published var subtitleRegion: SubtitleRegion = SubtitleRegion(
         rawValue: UserDefaults.standard.string(forKey: "subtitleRegion") ?? ""
     ) ?? .center {
-        didSet { UserDefaults.standard.set(subtitleRegion.rawValue, forKey: "subtitleRegion") }
+        didSet {
+            UserDefaults.standard.set(subtitleRegion.rawValue, forKey: "subtitleRegion")
+            if oldValue != subtitleRegion { invalidateDialogue() }
+        }
     }
     @Published var filterMenuText = (UserDefaults.standard.object(forKey: "filterMenuText") as? Bool) ?? true {
-        didSet { UserDefaults.standard.set(filterMenuText, forKey: "filterMenuText") }
+        didSet {
+            UserDefaults.standard.set(filterMenuText, forKey: "filterMenuText")
+            if oldValue != filterMenuText { invalidateDialogue() }
+        }
     }
     // Android-compatible manual OCR rectangle (normalized coordinates with
     // top-left origin). The default matches OblastTitulku.VYCHOZI.
     @Published var manualOCR = UserDefaults.standard.bool(forKey: "manualOCR") {
-        didSet { UserDefaults.standard.set(manualOCR, forKey: "manualOCR") }
+        didSet {
+            UserDefaults.standard.set(manualOCR, forKey: "manualOCR")
+            if oldValue != manualOCR { invalidateDialogue() }
+        }
     }
     @Published var manualOCRLocked = UserDefaults.standard.bool(forKey: "manualOCRLocked") {
         didSet { UserDefaults.standard.set(manualOCRLocked, forKey: "manualOCRLocked") }
@@ -101,6 +116,7 @@ final class CaptionAppModel: ObservableObject {
             if let data = try? JSONEncoder().encode(manualOCRBox) {
                 UserDefaults.standard.set(data, forKey: "manualOCRBox")
             }
+            if oldValue != manualOCRBox { invalidateDialogue() }
         }
     }
     @Published var outputX: Double = (UserDefaults.standard.object(forKey: "outputX") as? Double) ?? 0.5 {
@@ -158,16 +174,14 @@ final class CaptionAppModel: ObservableObject {
         didSet {
             UserDefaults.standard.set(choicesEnabled, forKey: "choicesEnabled")
             optionsFrames?.setEnabled(choicesEnabled)
-            Task { await pipeline.resetOptions() }
-            if !choicesEnabled {
-                lastTranslatedChoiceItems = []
-                lastChoicesSentAt = nil
-                tv.sendChoices([], area: choicesArea, outputArea: choicesOutputArea)
-            }
+            if oldValue != choicesEnabled { invalidateOptions() }
         }
     }
     @Published var choicesTextMode = UserDefaults.standard.bool(forKey: "choicesTextMode") {
-        didSet { UserDefaults.standard.set(choicesTextMode, forKey: "choicesTextMode") }
+        didSet {
+            UserDefaults.standard.set(choicesTextMode, forKey: "choicesTextMode")
+            if oldValue != choicesTextMode { invalidateOptions() }
+        }
     }
     @Published var choicesLocked = UserDefaults.standard.bool(forKey: "choicesLocked") {
         didSet { UserDefaults.standard.set(choicesLocked, forKey: "choicesLocked") }
@@ -186,6 +200,7 @@ final class CaptionAppModel: ObservableObject {
             if let data = try? JSONEncoder().encode(choicesArea) {
                 UserDefaults.standard.set(data, forKey: "choicesArea")
             }
+            if oldValue != choicesArea { invalidateOptions() }
         }
     }
     /// Output rectangle for text recognized in the yellow region.
@@ -259,6 +274,12 @@ final class CaptionAppModel: ObservableObject {
     private var processingChoices = false
     private var processingOCR = false
     private var sessionRevision = 0
+    private var dialogueRevision = TranslationRevision()
+    private var optionsRevision = TranslationRevision()
+    private var dialogueReset: Task<Void, Never>?
+    private var optionsReset: Task<Void, Never>?
+    private var dialogueTranslation: Task<Void, Never>?
+    private var optionsTranslation: Task<Void, Never>?
     private var dialogueExpiry: Task<Void, Never>?
     private var dialogueDisplayRevision = 0
     private var dialogueFrames: LatestFrameMailbox<CVPixelBuffer>?
@@ -270,6 +291,13 @@ final class CaptionAppModel: ObservableObject {
     private var lastChoicesSentAt: Date?
 
     init() {
+        devices.onOutputChanged = { [weak self] in
+            guard let self else { return }
+            // Clear the former receiver, not the newly selected television.
+            self.tv.clearOverlays(at: self.tv.ip)
+            self.invalidateDialogue(clearTV: false)
+            self.invalidateOptions(clearTV: false)
+        }
         if UserDefaults.standard.bool(forKey: sessionMarker) {
             write("Diagnostika: předchozí překladová relace nebyla řádně uzavřena (příčina neznámá).")
             UserDefaults.standard.removeObject(forKey: sessionMarker)
@@ -508,10 +536,46 @@ final class CaptionAppModel: ObservableObject {
 
     /// Independent yellow-area drain. A slow options translation cannot block
     /// dialogue OCR or enqueue a backlog of decoded images.
+    private func invalidateDialogue(clearTV: Bool = true) {
+        dialogueRevision.advance()
+        dialogueTranslation?.cancel()
+        dialogueTranslation = nil
+        dialogueExpiry?.cancel()
+        dialogueExpiry = nil
+        dialogueDisplayRevision &+= 1
+        lastEnglish = ""
+        lastCzech = ""
+        phoneSubtitle = ""
+        if clearTV, isRunning, verifiedTelevisionOutput { tv.sendSubtitle("", duration: 0) }
+        let previous = dialogueReset
+        dialogueReset = Task { [pipeline] in
+            await previous?.value
+            await pipeline.resetDialogue()
+        }
+    }
+
+    private func invalidateOptions(clearTV: Bool = true) {
+        optionsRevision.advance()
+        optionsTranslation?.cancel()
+        optionsTranslation = nil
+        lastChoices = ""
+        lastTranslatedChoiceItems = []
+        lastChoicesSentAt = nil
+        if clearTV, isRunning, verifiedTelevisionOutput {
+            tv.sendChoices([], area: choicesArea, outputArea: choicesOutputArea)
+        }
+        let previous = optionsReset
+        optionsReset = Task { [pipeline] in
+            await previous?.value
+            await pipeline.resetOptions()
+        }
+    }
+
     private func processChoicesFrame(_ buffer: CVPixelBuffer, currentSession: Int) async {
         guard isRunning, sessionRevision == currentSession, choicesEnabled,
               !processingChoices else { return }
         processingChoices = true
+        let contextRevision = optionsRevision.value
         let area = choicesArea
         let asText = choicesTextMode
         let activeGameLanguage = gameLanguage
@@ -521,13 +585,32 @@ final class CaptionAppModel: ObservableObject {
                 self.processingChoices = false
             }
         }
+        await optionsReset?.value
+        guard optionsRevision.accepts(contextRevision),
+              sessionRevision == currentSession, isRunning else { return }
         let optionsStarted = ProcessInfo.processInfo.systemUptime
         guard let englishChoices = await self.pipeline.recognizeOptions(
             buffer, area: area, asText: asText,
             gameLanguage: activeGameLanguage, mode: self.ocrMode
         ), self.isRunning,
            self.sessionRevision == currentSession,
-           self.choicesEnabled else { return }
+           self.choicesEnabled,
+           self.optionsRevision.accepts(contextRevision) else { return }
+        optionsRevision.advance()
+        let readingRevision = optionsRevision.value
+        optionsTranslation?.cancel()
+        optionsTranslation = Task { @MainActor [weak self] in
+            guard let self, !Task.isCancelled,
+                  self.optionsRevision.accepts(readingRevision) else { return }
+            await self.translateOptions(englishChoices, area: area, asText: asText,
+                activeGameLanguage: activeGameLanguage, activeTargetLanguage: activeTargetLanguage,
+                currentSession: currentSession, readingRevision: readingRevision, optionsStarted: optionsStarted)
+        }
+    }
+
+    private func translateOptions(_ englishChoices: [String], area: CGRect, asText: Bool,
+                                  activeGameLanguage: GLGameLanguage, activeTargetLanguage: GLTargetLanguage,
+                                  currentSession: Int, readingRevision: UInt64, optionsStarted: TimeInterval) async {
         let optionsTranslateStarted = ProcessInfo.processInfo.systemUptime
         recordPerformance("Herní text OCR", milliseconds: (optionsTranslateStarted - optionsStarted) * 1000)
         var translated = [String]()
@@ -538,6 +621,7 @@ final class CaptionAppModel: ObservableObject {
             guard self.isRunning,
                   self.sessionRevision == currentSession,
                   self.choicesEnabled,
+                  !Task.isCancelled, self.optionsRevision.accepts(readingRevision),
                   self.choicesArea == area, self.choicesTextMode == asText,
                   self.gameLanguage == activeGameLanguage,
                   self.targetLanguage == activeTargetLanguage else { return }
@@ -569,6 +653,7 @@ final class CaptionAppModel: ObservableObject {
         guard self.isRunning,
               self.sessionRevision == currentSession,
               self.choicesEnabled,
+              !Task.isCancelled, self.optionsRevision.accepts(readingRevision),
               self.choicesArea == area,
               self.choicesTextMode == asText,
               self.gameLanguage == activeGameLanguage,
@@ -624,11 +709,17 @@ final class CaptionAppModel: ObservableObject {
         self.frameCount += 1
         let activeGameLanguage = self.gameLanguage
         let activeTargetLanguage = self.targetLanguage
+        let contextRevision = dialogueRevision.value
 
         // Keep recognition independent of network translation: a slow
         // request must not block OCR of the next short street dialogue.
         if !self.processingOCR {
             self.processingOCR = true
+            await dialogueReset?.value
+            guard dialogueRevision.accepts(contextRevision), sessionRevision == currentSession, isRunning else {
+                if sessionRevision == currentSession { processingOCR = false }
+                return
+            }
             let reading = await self.pipeline.recognize(
                 buffer, region: self.subtitleRegion,
                 manualArea: self.manualOCR ? self.manualOCRBox : nil,
@@ -641,7 +732,11 @@ final class CaptionAppModel: ObservableObject {
                 self.processingOCR = false
             }
             if let reading, self.isRunning,
-               self.sessionRevision == currentSession {
+               self.sessionRevision == currentSession,
+               self.dialogueRevision.accepts(contextRevision) {
+                dialogueRevision.advance()
+                let readingRevision = dialogueRevision.value
+                dialogueTranslation?.cancel()
                 self.recordPerformance("Dialog OCR", milliseconds: reading.ocrMilliseconds)
                 self.lastEnglish = reading.english
                 if reading.english.isEmpty {
@@ -649,8 +744,9 @@ final class CaptionAppModel: ObservableObject {
                     return
                 }
                 self.write("OCR: \(reading.english)")
-                Task { @MainActor [weak self] in
-                    guard let self else { return }
+                dialogueTranslation = Task { @MainActor [weak self] in
+                    guard let self, !Task.isCancelled,
+                          self.dialogueRevision.accepts(readingRevision) else { return }
                     let translateStarted = ProcessInfo.processInfo.systemUptime
                     let outcome = await self.pipeline.translate(
                         reading.english, from: activeGameLanguage,
@@ -663,11 +759,12 @@ final class CaptionAppModel: ObservableObject {
                     let isLatest = await self.pipeline.isCurrent(revision: reading.revision)
                     guard self.isRunning,
                           self.sessionRevision == currentSession,
-                          isLatest,
+                          isLatest, !Task.isCancelled,
+                          self.dialogueRevision.accepts(readingRevision),
                           self.gameLanguage == activeGameLanguage,
                           self.targetLanguage == activeTargetLanguage else { return }
                     if self.skipOldTranslations &&
-                       Date().timeIntervalSince(reading.capturedAt) > self.maxTranslationAge {
+                       ProcessInfo.processInfo.systemUptime - reading.ocrStartedAt > self.maxTranslationAge {
                         self.write("Příliš starý překlad byl přeskočen.")
                         return
                     }
@@ -763,6 +860,12 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func stop() {
+        dialogueRevision.advance()
+        optionsRevision.advance()
+        dialogueTranslation?.cancel()
+        optionsTranslation?.cancel()
+        dialogueTranslation = nil
+        optionsTranslation = nil
         performanceTimer?.cancel()
         performanceTimer = nil
         if isRunning { refreshPerformance(); write("Diagnostika: " + performanceSummary.replacingOccurrences(of: "\n", with: " | ")) }

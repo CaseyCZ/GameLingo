@@ -59,6 +59,10 @@ jobs:
         run: |
           swiftc ios/GameLingoIOS/App/OCRCadence.swift tests/OCRCadenceTests.swift -o "$RUNNER_TEMP/ocr-cadence-tests"
           "$RUNNER_TEMP/ocr-cadence-tests"
+      - name: Test independent translation generations
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationRevision.swift tests/TranslationRevisionTests.swift -o "$RUNNER_TEMP/translation-revision-tests"
+          "$RUNNER_TEMP/translation-revision-tests"
       - name: Parse every iOS Swift source
         shell: bash
         run: |
