@@ -32,7 +32,7 @@ def main():
         exactly_one(gradle,'versionNameSuffix = "-iphone-tv-test"',
                     'versionNameSuffix = "-tv"')
         exactly_one(strings,">PlayCaption iPhone TV TEST</string>",">GameLingo TV</string>")
-        gradle.write_text(strip_dependency(gradle.read_text(encoding="utf8")), encoding="utf8")
+    gradle.write_text(strip_dependency(gradle.read_text(encoding="utf8")), encoding="utf8")
     exactly_one(gradle,'versionName = "0.22"',
                 'versionName = "0.5.0-dev"')
     exactly_one(gradle, "versionCode = 35", "versionCode = 505")
