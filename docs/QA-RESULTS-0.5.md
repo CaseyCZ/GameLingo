@@ -1,6 +1,6 @@
 # GameLingo 0.5 — protokol praktického testování (bod 7)
 
-Datum založení: 2026-11-24. Stav: **BLOCKED — čeká na testera a fyzická zařízení**, nikoli potvrzený PASS. Neexistuje přístup k reálnému iPhone, Androidu, TCL nebo herní konzoli v tomto běhu. Dřívější testy PlayCaption/CaseyCZ/Test či jiné beta verze nelze přenést na aktuální revizi.
+Datum založení: 2026-11-24. **Rozhodnutí uživatele: fyzické testování i checklist až po opravách a novém společném sestavení.** Níže f34348b1 je historická výchozí revize; před zahájením testů aktualizovat SHA a checksumy nového kandidáta. Stav: **BLOCKED — čeká na testera a fyzická zařízení**, nikoli potvrzený PASS. Neexistuje přístup k reálnému iPhone, Androidu, TCL nebo herní konzoli v tomto běhu. Dřívější testy PlayCaption/CaseyCZ/Test či jiné beta verze nelze přenést na aktuální revizi.
 
 ## Testovaná revize
 
@@ -62,7 +62,7 @@ Redigovaná příloha:
 Související CODE/SEC/CLEAN:
 ```
 
-PASS = skutečně provedený test a splněná kritéria; FAIL = skutečně pozorovaný nesoulad; BLOCKED = chybějící hardware, podpis, kompatibilita nebo neuzavřená předpokladová kontrola; NOT RUN = nezahájeno. Nedostupný důkaz nepřevádět na PASS. Chyby přenést do bodu 8 s vazbou na existující auditní ID, po opravě nový build a opakovaná QA. Neoznačovat bod 7 jako dokončený před skutečnými výsledky. Bod 8 může řešit již prokázané statické nálezy nezávisle, pokud uživatel schválí tento postup; fyzická QA zůstane otevřená. Žádný merge/release před splněním release gates.
+PASS = skutečně provedený test a splněná kritéria; FAIL = skutečně pozorovaný nesoulad; BLOCKED = chybějící hardware, podpis, kompatibilita nebo neuzavřená předpokladová kontrola; NOT RUN = nezahájeno. Nedostupný důkaz nepřevádět na PASS. Chyby přenést do bodu 8 s vazbou na existující auditní ID, po opravě nový build a opakovaná QA. Neoznačovat bod 7 jako dokončený před skutečnými výsledky. Uživatel schválil pokračování bodem 8 před fyzickým testováním. Fyzická QA zůstává otevřená. Žádný merge/release před splněním release gates.
 
 ## D. Stav výsledků
 K založení protokolu: 14 prioritních scénářů NOT RUN, 15 cest konzole/výstup NOT RUN. Žádný reálný FAIL ani PASS zaznamenán; známé statické nálezy jsou v [CODE-AUDIT-0.5.md](CODE-AUDIT-0.5.md), ne vymyšlené výsledky zařízení. Fyzické testy čekají.
