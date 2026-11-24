@@ -1,4 +1,12 @@
-# GameLingo 0.5.0 — ověřené sestavení kandidátů / 23. 11. 2026
+# GameLingo 0.5.0 — evidence sestavení
+
+## Aktuální auditní build — 24. 11. 2026
+
+- Zdroj: `f34348b1cd721c83074bae2590e6047b0a076303`, větev `feature/audit-0.5`.
+- [CI 45384321662](https://github.com/CaseyCZ/GameLingo/actions/runs/45384321662): šest jobů PASS, iOS/Android/TV, kontrakty, balení/SHA-256, TV DEX absence a mobilní presence ML Kit Translation.
+- Historické checksumy níže neplatí pro novější balíčky. Aktuální jednotlivé hodnoty je nutné převzít z artefaktů daného runu a ověřit v bodě 6. HW čeká, žádný nový veřejný release.
+
+## Historický build — 23. 11. 2026
 
 Toto je doklad **úspěšného sestavení**, nikoli potvrzení funkčnosti na skutečné PS5, Xboxu, Androidu nebo Google TV. Zákazníci a testeři nesmějí dostat dojem, že CI znamená funkční Remote Play, párování nebo HDMI překryv.
 
@@ -23,3 +31,5 @@ Kontrolní součty pocházejí z `Validate all packages and checksums` v uveden�
 Před označením GameLingo 0.5 jako dokončené projít scénáře v [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md): skutečný Xbox a PS4/PS5 Remote Play, více konzolí, iPhone OCR, dialogy a texty, šestímístné párování TV, HDMI overlay, vypnutí/obnovení streamu, zabezpečení a bezproblémové přepínání. Tyto scénáře jsou stále **NEOTESTOVÁNO NA HARDWARU**.
 
 **Pravidlo obnovy po přerušení:** Před pokračováním zkontroluj [WORK_CHECKPOINT_0.5.md](WORK_CHECKPOINT_0.5.md) a aktuální head větve. Bude-li od `12e0bcb` změněn zdrojový kód aplikací, tento doklad se nesmí použít jako build finálního SHA. Při čistě dokumentačních změnách zůstává zdroj sestavených binárních souborů identický.
+
+Aktuální obnovovací rozcestník: [STATUS-0.5.md](STATUS-0.5.md) a [REPORT.md](../REPORT.md).
