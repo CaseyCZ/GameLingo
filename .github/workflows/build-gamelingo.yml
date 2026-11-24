@@ -268,6 +268,8 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'"
           python kit/tools/verify_tv_translation_apk.py tv "$APK"
+          python kit/tools/verify_tv_ui_apk.py "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | head -n 1
           python kit/tools/package_license_notices.py tv --verify "$APK"
           cp "$APK" GameLingo-GoogleTV-v0.5.0-dev-TEST.apk
       - uses: actions/upload-artifact@v4
