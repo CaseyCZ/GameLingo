@@ -167,3 +167,122 @@ def patch_direct_tv(folder):
             }
         }))''', 1)
     tv_ui.write_text(text, encoding="utf8")
+
+    # Install all TV-only screens and services in the actual generated workspace.
+    for name in ("GameLingoTVSettings.kt", "GameLingoTVProfiles.kt",
+                 "GameLingoScreenTranslationService.kt"):
+        (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
+
+    main = folder / "MainActivity.kt"
+    m = main.read_text(encoding="utf8")
+    def patch_main(old, new):
+        nonlocal m
+        if m.count(old) != 1:
+            raise RuntimeError("TV main anchor changed: " + old[:90])
+        m = m.replace(old, new, 1)
+
+    patch_main("GameLingoTVUi.showSettings(this) { ukazHlavni() }",
+        """GameLingoTVSettings.show(this,
+                    onDevices = {
+                        GameLingoDeviceCenter.show(this, onXbox = { ukazPripojeniXbox() },
+                            onPlayStation = { ukazPripojeni() }, onTV = { ukazPrijem() },
+                            onUpdated = { ukazHlavni() })
+                    }, onUpdate = { ukazHlavni() })""")
+    patch_main('else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()',
+               'else vyberZdrojTelevize()')
+    patch_main('private fun hratTelevizi() {', """private fun vyberZdrojTelevize() {
+        android.app.AlertDialog.Builder(this).setTitle("Vyber zdroj překladu")
+            .setItems(arrayOf("PlayStation 4 / 5", "Xbox Series / One", "Samostatná TV")) { _, index ->
+                if (index == 2) {
+                    if (!GameLingoScreenTranslationService.running && (RemotePlayService.aktivni || PrijemService.bezi)) {
+                        android.app.AlertDialog.Builder(this).setMessage("Nejdříve zastav překlad z konzole nebo telefonu.")
+                            .setPositiveButton("OK", null).show()
+                    } else {
+                        AutoStart.nastavZapnuto(this, false)
+                        GameLingoScreenTranslationService.open(this)
+                    }
+                } else if (RemotePlayService.aktivni) {
+                    android.app.AlertDialog.Builder(this).setMessage("Nejdřív zastav probíhající překlad.")
+                        .setPositiveButton("OK", null).show()
+                } else if (index == 0) vyberPrimouPS() else vyberPrimyXbox()
+            }.setNegativeButton("Zpět", null).show()
+    }
+
+    private fun spustPrimyZdroj(xbox: Boolean) {
+        GameLingoScreenTranslationService.stop(this)
+        getSharedPreferences("gamelingo", MODE_PRIVATE).edit()
+            .putString("directPlatform", if (xbox) "xbox" else "ps").apply()
+        RemotePlayService.prepni(this, xbox)
+        if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
+    }
+
+    private fun vyberPrimouPS() {
+        val consoles = GameLingoPlayStationConsoles.list(this)
+        if (consoles.isEmpty()) {
+            if (udaje.sparovano) spustPrimyZdroj(false) else ukazPripojeni()
+            return
+        }
+        android.app.AlertDialog.Builder(this).setTitle("Vyber PlayStation")
+            .setItems((consoles.map { it.type + " · " + it.name } + "+ Přidat PlayStation").toTypedArray()) { _, index ->
+                if (index == consoles.size) ukazPripojeni()
+                else if (GameLingoPlayStationConsoles.select(this, consoles[index].ip)) spustPrimyZdroj(false)
+                else android.app.AlertDialog.Builder(this).setMessage("Konzoli se nepodařilo načíst.").setPositiveButton("OK", null).show()
+            }.setNegativeButton("Zpět", null).show()
+    }
+
+    private fun vyberPrimyXbox() {
+        if (!XboxUcet.prihlasen(this)) { ukazPripojeniXbox(); return }
+        val loading = android.app.ProgressDialog.show(this, "Xbox", "Hledám konzole…", true, true)
+        Thread {
+            val result = runCatching { XboxSpojeni.konzole(this) }
+            ui.post {
+                if (isFinishing || isDestroyed || !loading.isShowing) return@post
+                loading.dismiss()
+                if (result.isFailure) {
+                    android.app.AlertDialog.Builder(this).setMessage("Seznam Xboxů se nepodařilo načíst.")
+                        .setPositiveButton("OK", null).show()
+                    return@post
+                }
+                val prefs = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
+                val hidden = prefs.getStringSet("hiddenXboxIds", emptySet()).orEmpty()
+                val consoles = result.getOrDefault(emptyList()).filterNot { it.id in hidden }
+                android.app.AlertDialog.Builder(this).setTitle("Vyber Xbox")
+                    .setItems((consoles.map { it.jmeno } + "+ Přidat Xbox").toTypedArray()) { _, index ->
+                        if (index == consoles.size) ukazPripojeniXbox()
+                        else {
+                            val x = consoles[index]
+                            prefs.edit().putString("selectedXboxId", x.id).apply()
+                            XboxUcet.ulozKonzoli(this, x.id, x.jmeno)
+                            spustPrimyZdroj(true)
+                        }
+                    }.setNegativeButton("Zpět", null).show()
+            }
+        }.start()
+    }
+
+    private fun hratTelevizi() {
+        GameLingoScreenTranslationService.stop(this)""")
+    patch_main('private fun hratSTelefonem() {',
+               'private fun hratSTelefonem() {\n        GameLingoScreenTranslationService.stop(this)')
+    main.write_text(m, encoding="utf8")
+
+    # Respect explicit TV platform choice; never silently fall back to the other console.
+    s = service.read_text(encoding="utf8")
+    one('''        val xboxId = XboxUcet.konzole(this)?.first
+        val maPs5 = udaje.sparovano && ip != null''',
+        '''        val platform = if (telefon) null else getSharedPreferences("gamelingo", MODE_PRIVATE).getString("directPlatform", null)
+        val xboxId = if (platform == "ps") null else XboxUcet.konzole(this)?.first
+        val maPs5 = platform != "xbox" && udaje.sparovano && ip != null''')
+    service.write_text(s, encoding="utf8")
+
+    # folder = app/src/main/java/cz/titulky/tv; main is parents[3].
+    manifest = folder.parents[3] / "AndroidManifest.xml"
+    xml = manifest.read_text(encoding="utf8")
+    if xml.count("</application>") != 1:
+        raise RuntimeError("TV manifest application anchor changed")
+    xml = xml.replace("</application>", """    <activity android:name=".GameLingoScreenConsentActivity" android:exported="false"/>
+        <service android:name=".GameLingoScreenTranslationService" android:exported="false"
+            android:foregroundServiceType="mediaProjection"/>
+    </application>""", 1)
+    manifest.write_text(xml, encoding="utf8")
+
