@@ -773,6 +773,26 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(marker,receiver)
         self.assertIn("GameLingoTVUi.showWelcome(this@MainActivity)",wiring)
 
+    def test_tv_audit_followup_has_reachable_controls_and_binary_gate(self):
+        receiver = code(TOOLS/"redesign_gamelingo.py")
+        direct = code(TOOLS/"direct_tv_mode.py")
+        settings = code(TOOLS/"GameLingoTVSettings.kt")
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        fit = code(TOOLS/"GameLingoTVFit.kt")
+        for value in ("GameLingoTVFit(this, obsah)", "GameLingoQRDisplay.bitmap", "paticka.addView(prijemDiag", "versionName"):
+            self.assertIn(value, receiver)
+        self.assertIn("cards.chunked(3)", settings)
+        self.assertIn("GameLingoTVCaptionStyle.show", settings)
+        self.assertIn("GameLingoTVProfiles.show", settings)
+        self.assertIn("GameLingoTVSettings.show(this,", direct)
+        self.assertIn("GameLingoScreenTranslationService.open(this)", direct)
+        self.assertIn("createScreenCaptureIntent", capture)
+        self.assertIn("registerCallback", capture)
+        self.assertNotIn("FLAG_SECURE", capture)
+        self.assertIn("content.scaleX=factor", fit)
+        self.assertIn("GITHUB_RUN_NUMBER", code(TOOLS/"brand_android.py"))
+        self.assertIn("verify_tv_ui_apk.py", code(TOOLS.parent/".github/workflows/build-gamelingo.yml"))
+
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         for marker in (
