@@ -347,14 +347,7 @@ final class CaptionAppModel: ObservableObject {
             write("Diagnostika: předchozí překladová relace nebyla řádně uzavřena (příčina neznámá).")
             UserDefaults.standard.removeObject(forKey: sessionMarker)
         }
-        tv.onPairingData = { [weak self] fields in
-            guard let self else { return }
-            if self.xbox.importPairedXbox(fields) {
-                self.write("Xbox přihlášení převzato z TV.")
-            } else {
-                self.write("Televize spárována; Microsoft účet přihlas zvlášť.")
-            }
-        }
+
     }
 
     func saveGameProfile(named rawName: String) {
