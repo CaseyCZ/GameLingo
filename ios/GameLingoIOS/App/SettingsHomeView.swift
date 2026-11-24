@@ -501,14 +501,24 @@ struct GameLingoProfilesScreen: View {
                     Text("Zatím žádné profily").foregroundStyle(GLStyle.muted)
                 }
             } else {
+                Button("Nepoužívat herní slovník") { model.disableGameGlossary() }
+                    .disabled(model.isRunning || model.activeGlossaryProfileID == nil)
                 ForEach(model.gameProfiles) { profile in
                     GLCard {
                         HStack(spacing: 10) {
                             Image(systemName: "gamecontroller")
                                 .foregroundStyle(GLStyle.blue)
                             Text(profile.name).font(.headline)
+                            if model.activeGlossaryProfileID == profile.id {
+                                Image(systemName: "checkmark.circle.fill").foregroundStyle(GLStyle.green)
+                            }
                             Spacer()
                         }
+                        NavigationLink {
+                            GameLingoGlossaryEditor(model: model, profileID: profile.id)
+                        } label: {
+                            Label("Herní slovník", systemImage: "character.book.closed")
+                        }.disabled(model.isRunning)
                         HStack(spacing: 10) {
                             Button("Použít") { model.applyGameProfile(profile) }
                                 .buttonStyle(.borderedProminent)
@@ -516,7 +526,7 @@ struct GameLingoProfilesScreen: View {
                                 .disabled(model.isRunning)
                             Spacer()
                             Button(role: .destructive) {
-                                model.gameProfiles.removeAll { $0.id == profile.id }
+                                model.deleteGameProfile(profile.id)
                             } label: {
                                 Label("Smazat", systemImage: "trash")
                                     .font(.subheadline)
@@ -526,6 +536,56 @@ struct GameLingoProfilesScreen: View {
                     }
                 }
             }
+        }
+    }
+}
+
+private struct GameLingoGlossaryEditor: View {
+    @ObservedObject var model: CaptionAppModel
+    let profileID: UUID
+    @State private var draft = ""
+    @State private var message = ""
+    @State private var source = ""
+    @State private var target = ""
+    @State private var loaded = false
+    var body: some View {
+        GLScreen(title: "Herní slovník", help:
+            "Použij uložený profil před spuštěním hry. Jeden jazykový pár na profil, až 50 pravidel. Každý řádek: originál | chybný překlad | správný překlad. Prázdný prostřední sloupec opraví jen celý přesně shodný originál. Rozlišuje velká a malá písmena.") {
+            GLCard {
+                Text("Jazyky slovníku: " + source + " → " + target)
+                    .foregroundStyle(GLStyle.muted)
+                Text("Pro jiné jazyky změň jazyk hry a překladu, poté použij nový slovník. Změna páru nahradí předchozí slovník tohoto profilu.")
+                    .font(.caption)
+                Button("Nový slovník pro aktuální jazyky") {
+                    source = model.gameLanguage.rawValue
+                    target = model.targetLanguage.rawValue
+                    draft = ""
+                    message = "Změny se uloží až tlačítkem Uložit slovník."
+                }.disabled(model.isRunning)
+                TextEditor(text: $draft)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(minHeight: 220)
+                    .disabled(model.isRunning)
+                Text("Příklad: Arthur Morgan | Artur Morgan | Arthur Morgan")
+                    .font(.caption).foregroundStyle(GLStyle.muted)
+                Button("Uložit slovník") {
+                    guard let glossary = GameGlossary.parse(draft, source: source, target: target) else {
+                        message = "Neplatný formát, duplicita originálu nebo překročený limit."
+                        return
+                    }
+                    model.setGameGlossary(profileID: profileID, glossary: glossary)
+                    message = "Slovník uložen. Použij tento profil před hraním."
+                }.disabled(model.isRunning || !loaded)
+                Text(message).font(.caption)
+            }
+        }
+        .onAppear {
+            guard !loaded else { return }
+            let glossary = model.gameProfiles.first(where: { $0.id == profileID })?.glossary
+            draft = glossary?.editorText ?? ""
+            source = glossary?.sourceLanguage ?? model.gameLanguage.rawValue
+            target = glossary?.targetLanguage ?? model.targetLanguage.rawValue
+            loaded = true
         }
     }
 }
@@ -666,4 +726,5 @@ struct GameSubtitleProfile: Codable, Identifiable {
     /// New in Beta 4 development; optional to decode older saved profiles.
     var tvTextColor: String?
     var tvBackground: String?
+    var glossary: GameGlossary? = nil
 }

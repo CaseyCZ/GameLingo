@@ -249,6 +249,9 @@ jobs:
       - name: Test Android bounded opt-in translation history
         working-directory: upstream
         run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoTranslationHistoryTest' --no-daemon --stacktrace
+      - name: Test Android profile-local glossary rules
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoGlossaryTest' --no-daemon --stacktrace
       - name: Compile receiver Keystore device tests
         working-directory: upstream
         run: ./gradlew :app:assembleDebugAndroidTest --no-daemon --stacktrace

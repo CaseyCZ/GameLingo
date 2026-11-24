@@ -52,7 +52,7 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P1.9 jednotná ochrana starých překladů — CI 45367664700 success; zbývající HW/race rizika uvedena níže.
 - [x] P2.1 QR párování — CI 45368960470 success; HW čeká.
 - [x] P2.2 návrh automatické instalace TV — dokumentace, bez implementace.
-- [ ] P2.3 historie
+- [x] P2.3 historie — CI 45377426847 success; HW čeká.
 - [ ] P2.4 slovník a kontext profilu
 - [ ] P2.5 návrh offline překladu
 - [ ] P3 návrh AI, dabingu, Samsung/LG; žádná implementace
@@ -277,3 +277,9 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - Swift/JVM executable tests pro default off, dedup, language separation, bounded capacity/text, clear a disable; statické kontrakty. CI čeká, HW D-pad, scroll, delší text a při běžící hře neověřeny. P2.4 až po CI. Žádná změna jazykových voleb, designu oblastí nebo release.
 
 - P2.3 commit `004665c7e526c7bcfb6599c4279e27db652b8cae`. CI [45377426847](https://github.com/CaseyCZ/GameLingo/actions/runs/45377426847): quick / verify: in_progress. Před P2.4 ověřit všech šest jobů včetně Swift/JVM historie a nativní sestavení, případně opravit/revertovat. P2.4: slovník a kontext na profil hry, audit existující identifikace profilů, ruční termíny bez AI a bez zásahu do jazykových voleb; odlišit cache klíče nebo aplikovat slovník až po získání původního překladu. HW historie zatím neověřena.
+
+## P2.4 — vlastní herní slovník a kontext
+- P2.3 CI 45377426847 všech šest jobů success. HW historie čeká.
+- Lokální ruční pravidla, 50 na herní profil, 160 UTF-16 jednotek na pole, jeden konkrétní source/target pár na profil. Formát originál | chybný překlad | správný překlad. Přesný celý originál může nahradit celý úspěšný výsledek; uvnitř věty oprava pouze pokud je původní výraz v originálu a chybný výraz ve výstupu, literal Unicode hranice, case-sensitive, delší chybné výrazy mají přednost, žádné řetězení náhrad, limit 256 výskytů a 8192 jednotek. Žádný AI prompt, žádné nové síťové požadavky, žádný zápis do provider SQLite cache ani raw prekladyVoleb mapy. Při chybě překladače se slovník nepoužije jako falešný úspěch. Historie zaznamenává výsledný opravený text. Přesná pravidla nejsou univerzální kontextová AI; skloňování, jiné varianty a OCR chyby vyžadují další pravidla.
+- iOS: optional GameSubtitleProfile.glossary, kompatibilita starých JSON, zachováno při přepsání geometrického profilu. Aktivní UUID při Použít, lokálně persistováno, vypnout nebo smazat profil. Editor v existujícím Profily her; editace pouze po stop. Android: samostatný privátní store podle přesného názvu existujícího profilu, Použít aktivuje, smazání odstraní slovník, Bez slovníku deaktivuje. TV nemá mobilní geometry-profile screen, proto vlastní lokální pojmenované slovníkové kontexty s výběrem/úpravou/smazáním pro direct OCR v nastavení; receiver pouze zobrazí výstup z telefonu. Android context generation zahrnuje změnu slovníku, nepřepisuje raw cache. Standardní dialog i herní text/volby; existující zvláštní Android story režim zatím beze změny, nutno ověřit jeho samostatný async kontext před rozšířením. Výslovná volba profilu, ne automatické zjišťování hry. Žádná změna jazykových voleb, překladu provideru, layoutu čtyř oblastí nebo release.
+- Swift/JVM testy přesné fráze, podmíněné literal náhrady, neřetězení, jazyk/profil, chybné formáty; source contracts a nativní CI. HW editor, D-pad, skutečný text, změna profilu a cache čekají. P2.5 až po CI, pouze architektura offline překladu.

@@ -603,6 +603,40 @@ def main():
     s=once(s, '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)',
         '            GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), prelozene.joinToString("\\n"))\n'
         '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)', service.name)
+    # P2.4: local postprocessing, provider cache and raw choice map stay clean.
+    for name in ("GameLingoGlossary.kt", "GameLingoGlossaryStore.kt", "GameLingoGlossaryUi.kt"):
+        (folder/name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"),encoding="utf8")
+    (unit_dir/"GameLingoGlossaryTest.kt").write_text(
+        Path(__file__).with_name("GameLingoGlossaryTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    s=once(s, 'val output: Long, val session: Long)',
+        'val output: Long, val session: Long, val glossary: Long)', service.name)
+    s=once(s, 'Propojeni.Vysilac.outputGeneration(), relaceCteni.get())',
+        'Propojeni.Vysilac.outputGeneration(), relaceCteni.get(), GameLingoGlossaryStore.generation())', service.name)
+    s=once(s, '''            if (dobry) GameLingoTranslationHistory.append("Dialog", translationContext.source, translationContext.target, repliky.joinToString("\\n"), cesky)
+            ukazCesky(cesky, box, radku, barvyJmen)''',
+        '''            val original = repliky.joinToString("\\n")
+            val corrected = GameLingoGlossaryStore.apply(this, original, cesky, translationContext.source, translationContext.target)
+            if (dobry) GameLingoTranslationHistory.append("Dialog", translationContext.source, translationContext.target, original, corrected)
+            ukazCesky(corrected, box, radku, barvyJmen)''', service.name)
+    s=once(s, '''            GameLingoTranslationHistory.append("Herní text", context.source, context.target, text, it)
+            Propojeni.Vysilac.nastavVolby(listOf(it), Volby.VYBRANA_TEXT)''',
+        '''            val corrected = GameLingoGlossaryStore.apply(this, text, it, context.source, context.target)
+            GameLingoTranslationHistory.append("Herní text", context.source, context.target, text, corrected)
+            Propojeni.Vysilac.nastavVolby(listOf(corrected), Volby.VYBRANA_TEXT)''', service.name)
+    s=once(s, '''                    prekladyVoleb[cacheKey] = cesky
+                    GameLingoTranslationHistory.append("Herní text", context.source, context.target, text, cesky)
+                    Propojeni.Vysilac.nastavVolby(listOf(cesky), Volby.VYBRANA_TEXT)''',
+        '''                    prekladyVoleb[cacheKey] = cesky
+                    val corrected = GameLingoGlossaryStore.apply(this, text, cesky, context.source, context.target)
+                    GameLingoTranslationHistory.append("Herní text", context.source, context.target, text, corrected)
+                    Propojeni.Vysilac.nastavVolby(listOf(corrected), Volby.VYBRANA_TEXT)''', service.name)
+    s=once(s, '''            GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), prelozene.joinToString("\\n"))
+            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)''',
+        '''            val corrected = prelozene.mapIndexed { index, value ->
+                GameLingoGlossaryStore.apply(this, volby[index], value, context.source, context.target)
+            }
+            GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), corrected.joinToString("\\n"))
+            Propojeni.Vysilac.nastavVolby(corrected, volbyVybrana)''', service.name)
     service.write_text(s, encoding="utf8")
     print("GameLingo source and target languages connected to real Android translation")
 

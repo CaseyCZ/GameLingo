@@ -494,7 +494,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("async -> Result<String, GLTranslationFailure>", pipeline)
         self.assertNotIn("return original", pipeline)
         self.assertRegex(pipeline, r"case \.success\(let translated\):\s*await translationCache\.remember")
-        self.assertIn("guard case .success(let czech) = outcome", model)
+        self.assertIn("guard case .success(let rawTranslation) = outcome", model)
         self.assertIn("case .failure(let error):", model)
         self.assertIn("dialogueTranslationFailed(revision: reading.revision)", model)
         self.assertIn("optionsTranslationFailed(englishChoices", model)
@@ -628,6 +628,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoTranslationHistory.append", wiring)
         self.assertIn("GameLingoHistoryUi.show", code(TOOLS/"GameLingoSettings.kt"))
         self.assertIn("GameLingoHistoryUi.show", code(TOOLS/"GameLingoTVUi.kt"))
+
+    def test_p2_4_glossary_is_profile_local_and_post_translation(self):
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        profile = code(IOS/"SettingsHomeView.swift")
+        store = code(TOOLS/"GameLingoGlossaryStore.kt")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("activeGlossaryProfileID", model)
+        self.assertIn("var glossary: GameGlossary? = nil", profile)
+        self.assertIn("glossaryTranslation(original:", model)
+        self.assertIn("GameLingoGlossaryStore.generation()", wiring)
+        self.assertIn("GameLingoGlossaryStore.apply", wiring)
+        self.assertIn('gamelingo_glossary_v1', store)
+        self.assertIn("GameLingoGlossaryStore.activate(activity, name)", code(TOOLS/"GameLingoProfiles.kt"))
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""

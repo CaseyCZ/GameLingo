@@ -402,7 +402,9 @@ object GameLingoTVUi {
             { GameLingoTVPairing.setLegacyEnabled(a, it) })))
 
         section("DALŠÍ")
-        addGrid(listOf(settingsTile("◷", "Historie překladů", "Překlady zpracované přímo na TV") {
+        addGrid(listOf(settingsTile("文", "Herní slovník", "Vlastní výrazy pro přímé OCR") {
+            GameLingoGlossaryUi.show(a)
+        }, settingsTile("◷", "Historie překladů", "Překlady zpracované přímo na TV") {
             GameLingoHistoryUi.show(a)
         }, settingsTile("ⓘ", "O aplikaci / Licence",
             "Původní autoři, zdrojový kód a GNU AGPLv3") {

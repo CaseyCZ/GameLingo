@@ -244,6 +244,30 @@ final class CaptionAppModel: ObservableObject {
     private var performanceTimer: Task<Void, Never>?
     private var translationFailures = 0
     private let sessionMarker = "gamelingo_diagnostics_session_open_v1"
+    @Published private(set) var activeGlossaryProfileID: UUID? = UserDefaults.standard.string(forKey: "activeGlossaryProfileID").flatMap(UUID.init(uuidString:))
+    private func selectGlossaryProfile(_ id: UUID?) {
+        activeGlossaryProfileID = id
+        if let id { UserDefaults.standard.set(id.uuidString, forKey: "activeGlossaryProfileID") }
+        else { UserDefaults.standard.removeObject(forKey: "activeGlossaryProfileID") }
+    }
+    func setGameGlossary(profileID: UUID, glossary: GameGlossary) {
+        guard !isRunning, let index = gameProfiles.firstIndex(where: { $0.id == profileID }) else { return }
+        gameProfiles[index].glossary = glossary
+    }
+    func disableGameGlossary() {
+        guard !isRunning else { return }
+        selectGlossaryProfile(nil)
+    }
+    func deleteGameProfile(_ id: UUID) {
+        guard !isRunning else { return }
+        if activeGlossaryProfileID == id { selectGlossaryProfile(nil) }
+        gameProfiles.removeAll { $0.id == id }
+    }
+    private func glossaryTranslation(original: String, translated: String, source: String, target: String) -> String {
+        guard let id = activeGlossaryProfileID,
+              let glossary = gameProfiles.first(where: { $0.id == id })?.glossary else { return translated }
+        return glossary.apply(original: original, translated: translated, source: source, target: target)
+    }
     @Published var gameProfiles: [GameSubtitleProfile] = {
         guard let data = UserDefaults.standard.data(forKey: "gameProfiles"),
               let saved = try? JSONDecoder().decode([GameSubtitleProfile].self, from: data)
@@ -322,7 +346,7 @@ final class CaptionAppModel: ObservableObject {
         let existingIndex = gameProfiles.firstIndex {
             $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
         }
-        let profile = GameSubtitleProfile(
+        var profile = GameSubtitleProfile(
             id: existingIndex.map { gameProfiles[$0].id } ?? UUID(),
             name: name,
             region: subtitleRegion.rawValue,
@@ -356,6 +380,7 @@ final class CaptionAppModel: ObservableObject {
             tvBackground: tvBackground.rawValue
         )
         if let existingIndex {
+            profile.glossary = gameProfiles[existingIndex].glossary
             gameProfiles[existingIndex] = profile
         } else {
             gameProfiles.append(profile)
@@ -365,6 +390,7 @@ final class CaptionAppModel: ObservableObject {
 
     func applyGameProfile(_ profile: GameSubtitleProfile) {
         guard !isRunning else { return }
+        selectGlossaryProfile(profile.id)
         subtitleRegion = SubtitleRegion(rawValue: profile.region) ?? .center
         manualOCR = profile.manualOCR
         manualOCRLocked = profile.manualOCRLocked
@@ -631,7 +657,8 @@ final class CaptionAppModel: ObservableObject {
                   self.targetLanguage == activeTargetLanguage else { return }
             switch outcome {
             case .success(let item):
-                translated.append(item)
+                translated.append(self.glossaryTranslation(original: option, translated: item,
+                    source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue))
             case .failure(let error):
                 // A partial list could point to the wrong selectable option.
                 // Clear the old list without ever sending the original text.
@@ -775,7 +802,7 @@ final class CaptionAppModel: ObservableObject {
                         self.write("Příliš starý překlad byl přeskočen.")
                         return
                     }
-                    guard case .success(let czech) = outcome else {
+                    guard case .success(let rawTranslation) = outcome else {
                         if case .failure(let error) = outcome {
                             self.write("Chyba překladu (\(error.diagnostic))")
                             // Do not present an old or original line as this translation.
@@ -784,6 +811,8 @@ final class CaptionAppModel: ObservableObject {
                         }
                         return
                     }
+                    let czech = self.glossaryTranslation(original: reading.english, translated: rawTranslation,
+                        source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue)
                     // Cap an unchanged dialogue at about four seconds, while
                     // respecting a shorter user-selected display duration.
                     let requested = self.subtitleDuration.isFinite ? self.subtitleDuration : 4

@@ -164,15 +164,20 @@ object GameLingoProfiles {
                 val data = runCatching { JSONObject(encoded ?: "") }.getOrNull()
                 if (data != null) {
                     restore(activity, settings, data)
+                    GameLingoGlossaryStore.activate(activity, name)
                     dialog.dismiss()
                     onApplied()
                 }
+            })
+            row.addView(button(activity, "Slovník") {
+                GameLingoGlossaryUi.edit(activity, name)
             })
             row.addView(button(activity, "×") {
                 AlertDialog.Builder(activity)
                     .setMessage("Smazat profil „$name“?")
                     .setPositiveButton("Smazat") { _: DialogInterface, _: Int ->
                         saved.edit().remove(name).apply()
+                        GameLingoGlossaryStore.remove(activity, name)
                         dialog.dismiss()
                         show(activity, settings, onApplied)
                     }
@@ -186,6 +191,9 @@ object GameLingoProfiles {
         if (names.isEmpty()) {
             outer.addView(text(activity, "Zatím nemáš uložený žádný profil.", 14f, muted))
         }
+        outer.addView(button(activity, "Bez herního slovníku") {
+            if (!RemotePlayService.aktivni) GameLingoGlossaryStore.activate(activity, null)
+        })
         outer.addView(button(activity, "＋  Uložit aktuální nastavení") {
             val input = EditText(activity).apply {
                 hint = "Název hry"
