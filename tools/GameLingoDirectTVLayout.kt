@@ -47,7 +47,8 @@ object GameLingoDirectTVLayout {
         val blue = OblastTitulku.oblast.copyOf().takeIf(::validRect) ?: OblastTitulku.VYCHOZI
         val yellow = Volby.oblast.copyOf().takeIf(::validRect) ?: Volby.VYCHOZI
         val orange = orange(a)
-        val green = green(a) ?: greenDefault.copyOf()
+        val savedGreen = green(a)
+        val green = savedGreen ?: greenDefault.copyOf()
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(24, 12, 24, 16)
@@ -116,7 +117,7 @@ object GameLingoDirectTVLayout {
         val asText = toggle("Celý text místo seznamu voleb", Volby.rezimText)
         rect(yellow)
         heading("Zelená · výstup dialogů", Color.parseColor("#3CFF6E"))
-        val customGreen = toggle("Vlastní poloha místo automatické", green(a) != null)
+        val customGreen = toggle("Vlastní poloha místo automatické", savedGreen != null)
         val refreshGreen = mutableListOf<() -> Unit>()
         slider("Střed X", 0, 100, { green[0] }, { green[0] = it }, refreshGreen)
         slider("Spodní hrana Y", 0, 100, { green[1] }, { green[1] = it }, refreshGreen)
