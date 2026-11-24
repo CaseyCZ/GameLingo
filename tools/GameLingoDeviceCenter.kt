@@ -150,7 +150,7 @@ object GameLingoDeviceCenter {
         header.addView(label(c, "Konzole a zařízení", 25f),
             LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        header.addView(GameLingoHelp.button(c, "console"))
+        header.addView(GameLingoHelp.button(c, "console"),GameLingoHelp.layout(c))
         root.addView(header)
 
         val addDeviceButton = line(c, "＋  Přidat zařízení") {

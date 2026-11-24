@@ -101,6 +101,6 @@ object GameLingoTVCaptionStyle {
         })
         root.addView(GameLingoTVUi.action(a, "Velikost a poloha titulků") { GameLingoDirectTVLayout.show(a) {} })
         refresh()
-        GameLingoTVUi.page(a,"Vzhled titulků",root)
+        GameLingoTVUi.page(a,"Vzhled titulků",root,helpTopic="appearance")
     }
 }

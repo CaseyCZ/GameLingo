@@ -898,7 +898,7 @@ class GameLingoScreenTranslationService : Service() {
                         .setNegativeButton("Zrušit",null).show()
             })
             panel.addView(GameLingoTVUi.action(a,"Vymazat náhled"){page?.dismiss();clearPreview();diagnostics(a)})
-            page=GameLingoTVUi.page(a,"Diagnostika samostatného OCR",panel)
+            page=GameLingoTVUi.page(a,"Diagnostika samostatného OCR",panel,helpTopic="diagnostics")
         }
     }
 }

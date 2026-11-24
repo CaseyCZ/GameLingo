@@ -54,7 +54,7 @@ internal object GameLingoGlossaryUi {
                     else {page?.dismiss();onSaved()}
                 }
             })
-            page=GameLingoTVUi.page(a,"Herní slovník · "+name,body)
+            page=GameLingoTVUi.page(a,"Herní slovník · "+name,body,helpTopic="glossary")
             return
         }
         val dialog = AlertDialog.Builder(a).setTitle("Herní slovník · " + name)

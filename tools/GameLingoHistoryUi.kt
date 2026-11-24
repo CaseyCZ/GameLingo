@@ -75,7 +75,7 @@ internal object GameLingoHistoryUi {
             GameLingoTVUi.controlFocus(a,toggle)
             GameLingoTVUi.controlFocus(a,refresh)
             GameLingoTVUi.controlFocus(a,clear)
-            GameLingoTVUi.page(a,"Historie překladů",root,scroll=false)
+            GameLingoTVUi.page(a,"Historie překladů",root,scroll=false,helpTopic="history")
             toggle.requestFocus()
             return
         }

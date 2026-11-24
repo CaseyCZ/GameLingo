@@ -162,7 +162,7 @@ internal object GameLingoCachePrivacyUi {
                 android.app.AlertDialog.Builder(a).setMessage("Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže.")
                     .setNegativeButton("Zrušit",null).setPositiveButton("Vymazat"){_,_->if(!busy()){page?.dismiss();change(a,null)}}.show()
             })
-            page=GameLingoTVUi.page(a,"Překladová paměť",body)
+            page=GameLingoTVUi.page(a,"Překladová paměť",body,helpTopic="cache")
             return
         }
         android.app.AlertDialog.Builder(a)

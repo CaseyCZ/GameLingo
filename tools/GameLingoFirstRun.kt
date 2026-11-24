@@ -57,7 +57,7 @@ object GameLingoFirstRun {
         }
         headingRow.addView(heading, LinearLayout.LayoutParams(
             0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        headingRow.addView(GameLingoHelp.button(activity, "home"))
+        headingRow.addView(GameLingoHelp.button(activity, "home"),GameLingoHelp.layout(activity))
         root.addView(headingRow)
         val progress = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
