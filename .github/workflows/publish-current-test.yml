@@ -69,7 +69,6 @@ jobs:
         run: |
           set -euo pipefail
           # Keep existing tags and releases intact until the replacement is verified.
-          gh release list --limit 1000 --json tagName --jq '.[].tagName' > old-releases.txt
           cat > notes.md <<EOF
           ## GameLingo – aktuální testovací verze
 
@@ -88,19 +87,17 @@ jobs:
           EOF
           files=(GameLingo-iOS-v0.5.0-dev-unsigned.ipa GameLingo-Android-v0.5.0-dev-TEST.apk GameLingo-GoogleTV-v0.5.0-dev-TEST.apk SHA256SUMS.txt)
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --target "$BUILD_SHA" --draft --prerelease --title "GameLingo 0.5.0 TEST · ${BUILD_SHA:0:8}" --notes-file notes.md
-          fi
-          draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"
-          if [[ "$draft" == true ]]; then
-            for file in "${files[@]}"; do gh release upload "$RELEASE_TAG" "installers/$file" --clobber; done
+            uploads=()
+            for file in "${files[@]}"; do uploads+=("installers/$file"); done
+            gh release create "$RELEASE_TAG" --target "$BUILD_SHA" --prerelease --title "GameLingo 0.5.0 TEST · ${BUILD_SHA:0:8}" --notes-file notes.md "${uploads[@]}"
           fi
           mkdir verified
           gh release download "$RELEASE_TAG" --dir verified
           for file in "${files[@]}"; do cmp "installers/$file" "verified/$file"; done
           (cd verified && sha256sum --strict -c SHA256SUMS.txt)
-          if [[ "$draft" == true ]]; then gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false; fi
           gh release view "$RELEASE_TAG" --json isDraft,isPrerelease,assets,url --jq 'if .isDraft or (.assets | length != 4) then error("Release validation failed") else . end'
           # Remove release objects only; preserve every Git tag and all source history.
+          gh release list --limit 1000 --json tagName --jq '.[].tagName' > old-releases.txt
           while IFS= read -r tag; do
             [[ -n "$tag" && "$tag" != "$RELEASE_TAG" ]] || continue
             gh release delete "$tag" --yes
