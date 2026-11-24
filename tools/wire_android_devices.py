@@ -238,6 +238,84 @@ def main():
             "${b64(u.rpKey)}\" + XboxUcet.proPredani(c)",
             "${b64(u.rpKey)}\\tPS_TARGET:${u.consoleTarget.value}\" + XboxUcet.proPredani(c)",
             "transfer target via receiver PIN")
+        if mobile_dashboard:
+            # PCV1 already accepts these optional fields on GameLingo TV.
+            # Keep the legacy yellow ROI, selected item and text positions unchanged.
+            module = Path(__file__).with_name("GameLingoOrangeOutput.kt")
+            (folder/module.name).write_text(module.read_text(encoding="utf-8"), encoding="utf-8")
+            sender = one(sender,
+                '        @Volatile private var volbyUpravaDo = 0L',
+                '''        private var orangeOutput = GameLingoOrangeOutput.defaults()
+        private var orangePreview: String? = null
+        private var orangePreviewUntil = 0L
+        private val orangePreviewHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        private val clearOrangePreview = Runnable {
+            synchronized(zamek) {
+                orangePreview = null; orangePreviewUntil = 0L; cisloVoleb++
+                posliData { zpravaVoleb() }
+            }
+        }
+
+        fun nastavOranzovyVystup(rect: FloatArray, preview: String? = null) {
+            if (!GameLingoOrangeOutput.valid(rect)) return
+            synchronized(zamek) {
+                orangeOutput = rect.copyOf()
+                orangePreviewHandler.removeCallbacks(clearOrangePreview)
+                orangePreview = preview?.takeIf { cilIp != null && volbyText.isBlank() }
+                orangePreviewUntil = if (orangePreview != null) android.os.SystemClock.elapsedRealtime() + 3000 else 0L
+                cisloVoleb++
+                if (orangePreview != null) orangePreviewHandler.postDelayed(clearOrangePreview, 3000)
+                posliData { zpravaVoleb() }
+            }
+        }
+
+        @Volatile private var volbyUpravaDo = 0L''', "orange sender state")
+            sender = one(sender,
+                '                if (t == volbyText && vyb == vybrana) return',
+                '''                if (t.isNotBlank() && orangePreview != null) {
+                    orangePreviewHandler.removeCallbacks(clearOrangePreview)
+                    orangePreview = null; orangePreviewUntil = 0L
+                }
+                if (t == volbyText && vyb == vybrana) return''', "real choices take precedence")
+            sender = one(sender,
+                '            "$VOLBY\\t$cisloVoleb\\t$ramecek\\t${o[0]}\\t${o[1]}\\t${o[2]}\\t${o[3]}\\t$vybrana\\t${escapuj(volbyText)}".toByteArray(Charsets.UTF_8)',
+                '''            val preview = orangePreview?.takeIf {
+                volbyText.isBlank() && android.os.SystemClock.elapsedRealtime() < orangePreviewUntil
+            }
+            val displayText = preview ?: volbyText
+            val selection = if (preview != null) -2 else vybrana
+            val r = orangeOutput
+            val suffix = r.joinToString(separator = "\\t", prefix = "\\t")
+            "$VOLBY\\t$cisloVoleb\\t$ramecek\\t${o[0]}\\t${o[1]}\\t${o[2]}\\t${o[3]}\\t$selection\\t${escapuj(displayText)}$suffix".toByteArray(Charsets.UTF_8)''',
+                "PCV1 orange suffix")
+            reset = 'volbyText = ""; vybrana = -1; volbyUpravaDo = 0L'
+            if sender.count(reset) != 2:
+                raise RuntimeError("Expected target change and stop choice resets")
+            sender = sender.replace(reset, reset + '''
+                orangePreviewHandler.removeCallbacks(clearOrangePreview)
+                orangePreview = null; orangePreviewUntil = 0L''')
+            sender = one(sender,
+                'val repeatChoices = cisloVoleb > 0 && (live || now < volbyUpravaDo)',
+                'val repeatChoices = cisloVoleb > 0 && (live || now < volbyUpravaDo || android.os.SystemClock.elapsedRealtime() < orangePreviewUntil)',
+                "bounded orange preview repeats")
+
+            phone = folder/"TelefonActivity.kt"
+            phone_code = phone.read_text(encoding="utf-8")
+            # Reload selected receiver preferences before publishing to the new target.
+            phone_code = one(phone_code,
+                '        Propojeni.Vysilac.nastavCil(tv.ip, tv.jmeno)',
+                '        GameLingoOrangeOutput.publish(this)\n        Propojeni.Vysilac.nastavCil(tv.ip, tv.jmeno)',
+                "restore per-TV orange geometry")
+            phone_code = one(phone_code,
+                '        // ---- volby odpovědí: vypínač + zámeček + velikost žlutého rámečku',
+                '''        obal.addView(GameLingoOrangeOutput.editor(this) {},
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(14) })
+
+        // ---- volby odpovědí: vypínač + zámeček + velikost žlutého rámečku''',
+                "orange editor in existing regions screen")
+            phone.write_text(phone_code, encoding="utf-8")
+
         transport.write_text(prefix + sender_marker + sender, encoding="utf-8")
 
         registration=folder/"RemotePlay.kt"
