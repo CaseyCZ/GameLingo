@@ -146,7 +146,7 @@ def tv(s):
             val hasLegacyPS = savedPS.isEmpty() && udaje.sparovano
             val consoleCards = mutableListOf<View>()
             for (ps in savedPS) {
-                consoleCards.add(GameLingoTVUi.tile(this,"PS",ps.name,ps.type+" · uložená konzole") {
+                consoleCards.add(GameLingoTVUi.tile(this,"PS",GameLingoDeviceCenter.consoleName(this,"ps",ps.ip,ps.name),ps.type+" · uložená konzole") {
                     vyberPrimouPS()
                 })
             }
@@ -154,7 +154,7 @@ def tv(s):
                 vyberPrimouPS()
             })
             savedXbox?.let { xbox ->
-                consoleCards.add(GameLingoTVUi.tile(this,"ⓧ",xbox.second,"Xbox · uložená konzole") {
+                consoleCards.add(GameLingoTVUi.tile(this,"ⓧ",GameLingoDeviceCenter.consoleName(this,"xbox",xbox.first,xbox.second),"Xbox · uložená konzole") {
                     vyberPrimyXbox()
                 })
             }

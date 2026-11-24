@@ -112,6 +112,23 @@ object GameLingoDeviceCenter {
         ).apply { bottomMargin = 13 })
     }
 
+    // Local aliases never change console credentials or Microsoft account data.
+    fun consoleName(c: Activity, family:String, id:String, original:String): String =
+        c.getSharedPreferences("gamelingo_devices",Activity.MODE_PRIVATE)
+            .getString("alias:"+family+":"+id,null)?.takeIf{it.isNotBlank()} ?: original
+    private fun rename(c:Activity,family:String,id:String,original:String,onSaved:()->Unit) {
+        val input=android.widget.EditText(c).apply {setSingleLine(true);setText(consoleName(c,family,id,original));selectAll()}
+        AlertDialog.Builder(c).setTitle("Přejmenovat konzoli").setView(input).setNegativeButton("Zrušit",null)
+            .setPositiveButton("Uložit"){_,_->
+                if(!RemotePlayService.aktivni) {
+                    val value=input.text.toString().trim().take(64)
+                    val e=c.getSharedPreferences("gamelingo_devices",Activity.MODE_PRIVATE).edit()
+                    if(value.isBlank())e.remove("alias:"+family+":"+id) else e.putString("alias:"+family+":"+id,value)
+                    e.apply();onSaved()
+                }
+            }.show()
+    }
+
     /** TV uses the branded D-pad picker. Preserve the existing mobile presentation. */
     private fun chooseDevice(c: Activity, heading: String, options: Array<String>,
                              onSelect: (Int) -> Unit) {
@@ -192,9 +209,10 @@ object GameLingoDeviceCenter {
                 })
             } else {
                 for (ps in saved) {
-                    add(consoles, line(c, ps.name, ps.type + " · " + ps.ip,
+                    add(consoles, line(c, consoleName(c,"ps",ps.ip,ps.name), ps.type + " · " + ps.ip,
                                       ps.selected) {
-                        chooseDevice(c, ps.name, arrayOf("Použít", "Odebrat")) { option ->
+                        chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name), if(tenFoot) arrayOf("Použít", "Odebrat", "Přejmenovat") else arrayOf("Použít","Odebrat")) { option ->
+                                if(option==2) { if(!RemotePlayService.aktivni)rename(c,"ps",ps.ip,ps.name){onDismiss();onUpdated()};return@chooseDevice }
                                 if (option == 0) {
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
@@ -244,15 +262,16 @@ object GameLingoDeviceCenter {
                     val hiddenXboxIds = prefs.getStringSet("hiddenXboxIds", emptySet())
                         .orEmpty().toSet()
                     list.filterNot { it.id in hiddenXboxIds }.forEach { xbox ->
-                        add(consoles, line(c, xbox.jmeno, "Xbox Series / One",
+                        add(consoles, line(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), "Xbox Series / One",
                                           selectedID == xbox.id) {
-                            chooseDevice(c, xbox.jmeno, arrayOf("Použít", "Připojit", "Odebrat")) { option ->
+                            chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), if(tenFoot) arrayOf("Použít","Připojit","Odebrat","Přejmenovat") else arrayOf("Použít","Připojit","Odebrat")) { option ->
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
                                             .setMessage("Nejdřív zastav probíhající překlad.")
                                             .setPositiveButton("OK", null).show()
                                         return@chooseDevice
                                     }
+                                    if(option==3) { rename(c,"xbox",xbox.id,xbox.jmeno){onDismiss();onUpdated()};return@chooseDevice }
                                     if (option == 2) {
                                         AlertDialog.Builder(c)
                                             .setTitle("Odebrat Xbox?")

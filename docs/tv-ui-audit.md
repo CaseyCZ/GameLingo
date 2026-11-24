@@ -27,3 +27,7 @@ Do not change approved languages, phone UI, translation defaults, permissions, a
 ## Help and remote focus
 
 TV help buttons share fixed geometry, the standard focused panel and a full-screen help destination. The generated UI audit inventories help calls and rejects independent literal question-mark buttons outside the shared component. Existing language picker layout is preserved. Physical focus navigation and safe-area checks remain necessary.
+
+## iOS parity follow-up
+
+Added opt-in iOS-style fixed caption duration (3–10 s), age limit (2–8 s), narrow/center/wide OCR presets, profile persistence and named glossary selection, direct subtitle width/font controls and actual timed overlay preview. Existing game timing and legacy automatic crop are kept by default. Story queue retains its own reading timing. Local console aliases do not change console identities or credentials. Hardware validation remains required; the UI contract does not establish identical runtime behavior across Swift/Vision and Android/ML Kit.

@@ -167,6 +167,7 @@ object GameLingoTVProfiles {
                             .setPositiveButton("Smazat"){_,_->
                                 if(!busy()) {
                                     val latest=all(a); latest.remove(name)
+                                    GameLingoGlossaryStore.remove(a,name)
                                     val e=store(a).edit().putString("profiles",latest.toString())
                                     if(store(a).getString("activeProfile",null)==name)e.remove("activeProfile")
                                     e.apply()

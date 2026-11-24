@@ -193,7 +193,9 @@ class GameLingoScreenTranslationService : Service() {
             val source=sourceLanguage
             val target=GameLingoLanguages.target(this)
             p.prelozPribeh(original, { result -> ui.post {
-                ok(GameLingoGlossaryStore.apply(this,original,result,source,target))
+                val corrected=GameLingoGlossaryStore.apply(this,original,result,source,target)
+                if(active && !paused) GameLingoTranslationHistory.append("Dialog",source,target,original,corrected)
+                ok(corrected)
             } }, { ui.post { fail() } })
         }
     }, { translationState = it })
@@ -694,6 +696,7 @@ class GameLingoScreenTranslationService : Service() {
             if (!current()) { finish(); return }
             if (index == value.size) {
                 yellowShown = results.toList()
+                GameLingoTranslationHistory.append(if(yellowTextMode)"Herní text" else "Volby",sourceLanguage,GameLingoLanguages.target(this),value.joinToString("\n"),yellowShown.joinToString("\n"))
                 renderYellow(yellowShown, yellowSelected)
                 finish(); return
             }
@@ -701,7 +704,7 @@ class GameLingoScreenTranslationService : Service() {
                 p.preloz(value[index], { result ->
                     ui.post {
                         if (!current() || result.isBlank()) finish()
-                        else { results.add(result); next(index+1) }
+                        else { results.add(GameLingoGlossaryStore.apply(this@GameLingoScreenTranslationService,value[index],result,sourceLanguage,GameLingoLanguages.target(this@GameLingoScreenTranslationService))); next(index+1) }
                     }
                 }, { ui.post { finish() } })
             } catch (e: Exception) { finish() }
