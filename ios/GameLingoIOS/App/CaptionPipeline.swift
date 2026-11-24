@@ -98,6 +98,8 @@ actor CaptionPipeline {
     func purgeTranslationCache() async -> Bool { await translationCache.purge() }
     func setTranslationCacheEnabled(_ enabled: Bool) async { await translationCache.setEnabled(enabled) }
     private var providerBreakers: [String: TranslationCircuitBreaker] = [:]
+    private var edgeToken: String?
+    private var edgeTokenExpires: TimeInterval = 0
     private var lastSettings = ""
     private var emptyReads = 0
     private var revision = 0
@@ -337,7 +339,7 @@ actor CaptionPipeline {
         if source.rawValue == target.rawValue { return .success(original) }
         // Cache hits do not consume a provider probe. Prefer Google results.
         let cacheRevision = await translationCache.revision()
-        let engines = ["google-gtx-v1", "mymemory-v1"]
+        let engines = ["google-gtx-v1", "microsoft-edge-v1", "mymemory-v1"]
         for engine in engines {
             if let cached = await translationCache.lookup(engine: engine, source: source.rawValue,
                 target: target.rawValue, original: original) { return .success(cached) }
@@ -374,6 +376,9 @@ actor CaptionPipeline {
 
     private func requestTranslation(engine: String, original: String,
                                     source: String, target: String) async -> Result<String, GLTranslationFailure> {
+        if engine == "microsoft-edge-v1" {
+            return await requestEdge(original: original, source: source, target: target)
+        }
         guard engine == "google-gtx-v1" || engine == "mymemory-v1" else { return .failure(.invalidRequest) }
         let google = engine == "google-gtx-v1"
         var components = URLComponents(string: google
@@ -408,4 +413,55 @@ actor CaptionPipeline {
             return .failure(GLTranslationFailure.classify(error))
         }
     }
+
+    // Same secondary provider as Android. No redirects, cookies or disk cache.
+    private func requestEdge(original: String, source: String, target: String) async -> Result<String, GLTranslationFailure> {
+        do {
+            if Task.isCancelled { return .failure(.cancelled) }
+            let now = ProcessInfo.processInfo.systemUptime
+            let token: String
+            if let saved = edgeToken, now < edgeTokenExpires {
+                token = saved
+            } else {
+                var auth = URLRequest(url: URL(string: "https://edge.microsoft.com/translate/auth")!)
+                auth.timeoutInterval = 4
+                auth.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+                auth.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
+                auth.httpShouldHandleCookies = false
+                let (data, response) = try await providerSession.data(for: auth)
+                if Task.isCancelled { return .failure(.cancelled) }
+                guard let status = (response as? HTTPURLResponse)?.statusCode else { return .failure(.invalidResponse) }
+                guard status == 200 else { return .failure(.httpStatus(status)) }
+                guard let value = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                      !value.isEmpty, value.utf8.count <= 16384,
+                      value.utf8.allSatisfy({ (33...126).contains($0) }) else { return .failure(.invalidResponse) }
+                token = value
+                edgeToken = value
+                edgeTokenExpires = ProcessInfo.processInfo.systemUptime + 480
+            }
+            var endpoint = URLComponents(string: "https://api-edge.cognitive.microsofttranslator.com/translate")!
+            endpoint.queryItems = [URLQueryItem(name: "from", value: source),
+                                   URLQueryItem(name: "to", value: target),
+                                   URLQueryItem(name: "api-version", value: "3.0")]
+            guard let url = endpoint.url else { return .failure(.invalidRequest) }
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 5
+            request.httpMethod = "POST"
+            request.httpShouldHandleCookies = false
+            request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
+            request.setValue("application/json; charset=UTF-8", forHTTPHeaderField: "Content-Type")
+            request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+            request.httpBody = try JSONSerialization.data(withJSONObject: [["Text": original]])
+            let (data, response) = try await providerSession.data(for: request)
+            if Task.isCancelled { return .failure(.cancelled) }
+            let status = (response as? HTTPURLResponse)?.statusCode
+            if status == 401 || status == 403 {
+                if edgeToken == token { edgeToken = nil; edgeTokenExpires = 0 }
+            }
+            return GLTranslationOutcome.edgeResponse(data, statusCode: status, target: target)
+        } catch {
+            return .failure(GLTranslationFailure.classify(error))
+        }
+    }
+
 }
