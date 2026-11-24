@@ -311,7 +311,7 @@ def main():
         # SEC-02: remove the account migration implementation, including the
         # credential-bearing DATA response and its client. This is independent
         # of the signed subtitle receiver and of console registration/login.
-        start = prefix.index('    object Pridani {')
+        start = prefix.index('    /**\n     * „+ Přidat Android zařízení“')
         end = prefix.index('    // ================================================================ TELEVIZE', start)
         prefix = prefix[:start] + prefix[end:]
         start = prefix.index('        // převzetí spárování telefonem')
