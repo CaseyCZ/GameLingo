@@ -1,6 +1,6 @@
 # GameLingo 0.5 — společné iPhone / Android rozhraní
 
-Aktuální implementace vývojové větve `feature/gamelingo-v05-platform-rebuild` (23. 11. 2026).
+Historický snímek implementace vývojové větve `feature/gamelingo-v05-platform-rebuild` (23. 11. 2026).
 
 ## Změny realizované společně
 
@@ -20,11 +20,14 @@ Aktuální implementace vývojové větve `feature/gamelingo-v05-platform-rebuil
 ## Výjimky, které nejsou vyřešené pouhým UI refaktorem
 
 - **Jazyky rozhraní:** iOS aktuálně nabízí `cs/en/sk`, Android `cs/sk`. Seznamy jazyků nebyly změněny, protože uživatel výslovně požaduje neměnit je bez souhlasu. Jazyky hry a překladové cíle zůstaly také beze změn.
-- **Protokol Google TV:** Android mobil nově používá stejný šestimístný PIN `PCPAIR1` jako iOS a umí ověřit živou odpověď `PONG` na podepsaný `PING`. Klíč ukládá zašifrovaný v Android Keystore. Původní Android odesílání titulků však nadále používá `PCT1` UDP; podepsané iOS odesílání `PCPAIR1 TEXT` ještě není na obou platformách sjednocené. Uložený klíč není potvrzený živý přenos titulků.
-- **Důležité pro více telefonů:** současný TV přijímač uchovává jeden aktivní párovací klíč/identitu telefonu. Spárování Androidu tak může nahradit dřívější párování iPhonu (a obráceně), dokud televizní přijímač nebude podporovat více autorizovaných telefonů.
+- **Protokol Google TV (aktualizace 24. 11.):** iOS i Android používají šestímístný PIN/QR, HMAC podepsané titulky a PING/PONG, freshness/replay ochranu. Keystore/Keychain. Legacy unsigned je explicitní opt-in, výchozí off; zvláštní account-transfer výjimka zůstává rizikem. UDP není šifrované. HW čeká.
+- **Více telefonů (aktualizace 24. 11.):** přijímač podporuje až 32 identit a jednotlivou revokaci, pouze jeden aktivní zdroj. HW čeká.
+- **Funkční parita:** audit CODE-02/03/04/07 odhalil neúplné Android profily a nezávislé oranžové odesílání, přímý TV story/modrou oblast a paused profile lifecycle. Viz [audit kódu](CODE-AUDIT-0.5.md). Nejde o potvrzenou 1:1 funkční shodu.
 - **Další nastavení překladu:** Android i iOS mají odlišnou implementaci časování/starých překladů. Uvádět 1:1 bez ověřeného napojení by bylo nesprávné.
 - **Pixelová / funkční shoda:** společné tokeny a struktura nestačí k prokázání shody na všech rozměrech obrazovky. Vyžadují se odpovídající screenshoty a fyzické testy připojení Xbox/PlayStation a ověření OCR.
 
 **Udržování:** nejdříve upravit `shared/mobile-ui.json`, potom vygenerovat oba kontrakty pomocí `python3 tools/sync_mobile_ui.py`. Funkční podstránky se mění v nativních komponentách obou platforem a ověřují regresními testy a sestavením.
 
 **Zábrany:** Žádné publikování nové Release před ověřením a schválením. `Master` i televizní aplikace zůstávají nedotčené.
+
+Aktuální stav auditní větve: [STATUS-0.5.md](STATUS-0.5.md). Ostatní popis 23. 11. je historický.
