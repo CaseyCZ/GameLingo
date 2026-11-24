@@ -360,6 +360,27 @@ object GameLingoTVUi {
                 14f, muted = true))
         }
 
+        section("OCR A ROZPOZNÁVÁNÍ")
+        GameLingoOCRConfig.load(a)
+        addGrid(listOf(settingsTile("◎", "Režim OCR", GameLingoOCRConfig.title()) {
+            if (RemotePlayService.aktivni) {
+                android.app.AlertDialog.Builder(a).setMessage("Nejprve zastav překlad.")
+                    .setPositiveButton("OK", null).show()
+            } else {
+                val keys = arrayOf("classic", "automatic", "street")
+                val labels = arrayOf("Původní · stabilní", "Automatický · vyvážený", "Krátké dialogy · rychlý")
+                android.app.AlertDialog.Builder(a).setTitle("Režim OCR")
+                    .setSingleChoiceItems(labels, keys.indexOf(GameLingoOCRConfig.mode)) { picker, index ->
+                        GameLingoOCRConfig.setMode(a, keys[index])
+                        picker.dismiss()
+                        dialog.dismiss()
+                        onUpdate()
+                    }.setNegativeButton("Zrušit", null).show()
+            }
+        }))
+        page.addView(title(a, "Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon.",
+            14f, muted = true))
+
         section("ZOBRAZENÍ")
         val overlay = settingsTile("▣", "Titulky přes obraz hry",
             if (Settings.canDrawOverlays(a)) "Povoleno" else

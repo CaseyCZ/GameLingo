@@ -55,21 +55,9 @@ enum OCRMode: String, CaseIterable, Identifiable {
         }
     }
 
-    var minimumOCRInterval: TimeInterval {
-        switch self {
-        case .classic: return 0.6
-        case .automatic: return 0.42
-        case .street: return 0.28
-        }
-    }
-
-    var minimumFrameInterval: TimeInterval {
-        switch self {
-        case .classic: return 0.55
-        case .automatic: return 0.37
-        case .street: return 0.26
-        }
-    }
+    var cadence: OCRCadence { OCRCadence.preset(rawValue) }
+    var minimumOCRInterval: TimeInterval { cadence.dialogue }
+    var minimumFrameInterval: TimeInterval { cadence.frame }
 }
 
 struct RecognizedCaption {
@@ -210,14 +198,17 @@ actor CaptionPipeline {
     // Dedicated OCR lane for the optional Android-style yellow response area.
     // It never changes the standard dialogue OCR region.
     private var lastOptions = [String]()
-    private var lastOptionsRead = Date.distantPast
+    private var lastOptionsRead: TimeInterval?
+    private var optionsRecentCost: TimeInterval = 0
+    private var optionsMode: OCRMode = .classic
     private var lastOptionsSettings = ""
     private var optionsImageGate = OCRFrameGate(maximumSkip: 2.0)
 
     func resetOptions() {
         lastOptions = []
         gameTextStability.reset()
-        lastOptionsRead = .distantPast
+        lastOptionsRead = nil
+        optionsRecentCost = 0
         lastOptionsSettings = ""
         optionsImageGate.reset()
         optionsRetryAt = nil
@@ -228,22 +219,30 @@ actor CaptionPipeline {
     func recognizeOptions(_ buffer: CVPixelBuffer,
                           area: CGRect,
                           asText: Bool,
-                          gameLanguage: GLGameLanguage = .english) -> [String]? {
+                          gameLanguage: GLGameLanguage = .english,
+                          mode: OCRMode = .classic) -> [String]? {
+        if optionsMode != mode {
+            optionsMode = mode
+            lastOptionsRead = nil
+            optionsRecentCost = 0
+        }
         let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)"
         if signature != lastOptionsSettings {
             lastOptionsSettings = signature
             lastOptions = []
             gameTextStability.reset()
-            lastOptionsRead = .distantPast
+            lastOptionsRead = nil
+            optionsRecentCost = 0
             optionsImageGate.reset()
             optionsRetryAt = nil
         }
-        guard Date().timeIntervalSince(lastOptionsRead) > 1.0 else { return nil }
-        lastOptionsRead = Date()
+        let imageTime = ProcessInfo.processInfo.systemUptime
+        let interval = mode.cadence.gameTextInterval(asText: asText, recentCost: optionsRecentCost)
+        if let lastOptionsRead, imageTime - lastOptionsRead < interval { return nil }
+        lastOptionsRead = imageTime
 
         let roi = CGRect(x: area.minX, y: 1 - area.maxY,
                          width: area.width, height: area.height)
-        let imageTime = ProcessInfo.processInfo.systemUptime
         let fingerprint = OCRFrameFingerprint.read(buffer, visionROI: roi)
         guard gameTextStability.needsConfirmation || optionsImageGate.shouldRead(fingerprint, now: imageTime) else { return nil }
         let request = VNRecognizeTextRequest()
@@ -251,6 +250,11 @@ actor CaptionPipeline {
         request.recognitionLanguages = [gameLanguage.visionIdentifier]
         request.usesLanguageCorrection = true
         request.regionOfInterest = roi
+        let workStarted = ProcessInfo.processInfo.systemUptime
+        defer {
+            let cost = ProcessInfo.processInfo.systemUptime - workStarted
+            optionsRecentCost = optionsRecentCost == 0 ? cost : 0.75 * optionsRecentCost + 0.25 * cost
+        }
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])
             optionsImageGate.recordSuccessfulRead(fingerprint, now: imageTime)

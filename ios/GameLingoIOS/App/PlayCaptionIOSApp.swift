@@ -524,7 +524,7 @@ final class CaptionAppModel: ObservableObject {
         let optionsStarted = ProcessInfo.processInfo.systemUptime
         guard let englishChoices = await self.pipeline.recognizeOptions(
             buffer, area: area, asText: asText,
-            gameLanguage: activeGameLanguage
+            gameLanguage: activeGameLanguage, mode: self.ocrMode
         ), self.isRunning,
            self.sessionRevision == currentSession,
            self.choicesEnabled else { return }

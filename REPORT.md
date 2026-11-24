@@ -47,7 +47,7 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P1.4 explicitní success/error, žádný falešný překlad — CI 45359504848 success; HW čeká.
 - [x] P1.5 stabilizace, 800 ms / max ~4 s při stejném obrazu — CI 45360814692 success; HW čeká.
 - [x] P1.6 circuit breaker (2 chyby/30 s/1 pokus) — CI 45362779460 success; HW čeká.
-- [ ] P1.7 latence, paměť, teplota, nečekané konce
+- [x] P1.7 latence, paměť, teplota, nečekané konce — CI 45363666595 success; HW čeká.
 - [ ] P1.8 společná semantika OCR režimů a dynamická žlutá oblast
 - [ ] P1.9 jednotná ochrana starých překladů
 - [ ] P2.1 QR párování
@@ -241,5 +241,9 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 
 - P1.7 commit `cd5fe7b3d1bfd8ff8607f9125a91b3a5353b22ca`. CI [45363666595](https://github.com/CaseyCZ/GameLingo/actions/runs/45363666595): quick / verify: in_progress. Před P1.8 ověřit všech šest jobů včetně Swift/JVM performance testů a iOS Mach memory API kompilace; při chybě opravit/revertovat. P1.8: sjednotit semantiku OCR režimů a nezávislou dynamickou žlutou oblast, bez změny jazykových voleb. Fyzická měření stále čekají.
 
-## P1.8 – připravený kandidát, nepřipojen k auditní větvi
-- Kandidát `7cb78b9fcff9c675b4d50e8a07cf9bfad87fc356` (rodič `f6c4c878237cc0c51c273af6e6781e08fecb3ebf`) obsahuje OCRCadence Swift/Kotlin, nezávislou adaptivní žlutou oblast a TV nastavení, testy a podrobný report ve svém stromu. P1.7 CI 45363666595: quick / verify: success; native / GameLingo · integration contracts: success; native / Google TV · Orange V5 receiver: success; native / iPhone · unsigned IPA: in_progress; native / Android phone · PS5 / PS4 foundation: success. Zatím nezrušeno ani nepublikováno, žádný nový CI pro P1.8. Po úplném success P1.7 vytvořit commit ze stromu kandidáta s aktualizovaným REPORT a rodičem aktuálním HEAD auditní větve (tento dokumentační checkpoint), update_ref s expected_sha; při chybě P1.7 nejprve opravit/revertovat a rebase kandidáta. Po připojení spustit a ověřit CI, až potom P1.9. Žádný release/Master.
+## P1.8 — sjednocené OCR režimy a nezávislá adaptivní žlutá oblast
+- P1.7 CI 45363666595 všech šest jobů success před připojením P1.8.
+- Stejné klíče classic/automatic/street a názvy již existujících voleb; stabilní/častější/rychlý. iOS dialogové minimální intervaly 600/420/280 ms a Xbox frame 550/370/260 zachovány; PS dekodér předává aktuální snímek přes mailbox. iOS žlutá oblast místo pevné 1 s: vlastní minima 650/450/300 ms, pro souvislý text x1.25, EMA skutečné OCR doby x1.5 s maximem adaptivní složky 1500 ms. Monotónní hodiny, reset při nastavení a nové relaci, žádná změna OCR jazyka, přesnosti nebo ručních ROI. Interval je nejbližší možný pokus, ne garantovaná frekvence; image gate, serial Vision actor, decoder a překladové vytížení stále mohou čtení oddálit.
+- Android mobil 100/85/70 ms zachováno; direct TV 250/200/150 ms s původní 600 ms úspornou ochranou. Sdílená konfigurace i reálný reader, TV režim volitelný v existujícím D-pad nastavení pouze mimo aktivní překlad, receiver-only režim nečte OCR a řídí se telefonem. Žlutá oblast nezávisle 250/200/150 ms (+25 % souvislý text), skutečná EMA OCR doby x1.5 max 1500 ms a TV úsporné minimum 600 ms; busy/token/fingerprint brány zachovány. Fast snižuje spodní délku dialogu v reader i service na 2 znaky, stávající heuristiky věty/pozice zůstávají a mohou některé krátké nápisy odmítnout. Žádné sjednocení na identické milisekundy mezi odlišnými OCR enginy; cílem stejný význam presetů. Přidán Swift/JVM executable test pořadí, power floor, adaptivní složky a fallback; CI a hardware zatím neověřeno. P1.9 až po CI.
+
+- P1.8 kandidát `7cb78b9fcff9c675b4d50e8a07cf9bfad87fc356` byl připraven mimo větev, checkpoint `80dd3abbb57574b46878159b4918a6f51e61dd63` byl pouze dokumentační. Připojen až po potvrzení všech šesti jobů P1.7; nyní spustit a ověřit CI P1.8 před P1.9. HW čeká.

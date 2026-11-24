@@ -562,6 +562,25 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("performance.end(this)", wiring)
         self.assertIn("performance.record(perfToken", wiring)
 
+    def test_p1_8_modes_use_independent_adaptive_game_text_cadence(self):
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        config = code(TOOLS/"GameLingoOCRConfig.kt")
+        cadence = code(TOOLS/"GameLingoOCRCadence.kt")
+        redesign = code(TOOLS/"redesign_gamelingo.py")
+        tv = code(TOOLS/"GameLingoTVUi.kt")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("mode.cadence.gameTextInterval", pipeline)
+        self.assertNotIn("timeIntervalSince(lastOptionsRead) > 1.0", pipeline)
+        self.assertIn("optionsRecentCost", pipeline)
+        self.assertIn("gameLanguage: activeGameLanguage, mode: self.ocrMode", model)
+        self.assertIn("tvIntervalMs(lowPower: Boolean)", config)
+        self.assertIn("GameLingoOCRConfig.tvIntervalMs(uspora)", redesign)
+        self.assertIn('if (lowPower && !phone) return 600L', cadence)
+        self.assertIn("GameLingoOCRConfig.setMode(a, keys[index])", tv)
+        self.assertIn("GameLingoOCRConfig.gameTextIntervalMs", wiring)
+        self.assertIn("gameTextOcrCostMs", wiring)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

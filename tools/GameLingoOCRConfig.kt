@@ -3,9 +3,8 @@ package cz.titulky.tv
 import android.content.Context
 
 /**
- * Genuine mobile OCR options used by the existing RemotePlayService reader.
- * Preserves Android's proven 100 ms legacy sampling unless the user selects
- * another profile. Does not change Google TV OCR or the language catalog.
+ * OCR options for mobile and direct-on-TV readers. The receiver-only TV
+ * does not run OCR. Preserve stable defaults and the TV low-power guard.
  */
 object GameLingoOCRConfig {
     private const val PREFS = "gamelingo_ocr_v05"
@@ -28,10 +27,20 @@ object GameLingoOCRConfig {
     /** At most one OCR sampling opportunity at this interval; the existing
      * busy-reader guard still limits work under load. No fake OCR results.
      */
-    fun intervalMs(): Long = when (mode) {
-        "automatic" -> 85L
-        "street" -> 70L
-        else -> 100L
+    fun intervalMs(): Long = GameLingoOCRCadence.dialogue(mode, true, false)
+
+    fun tvIntervalMs(lowPower: Boolean): Long =
+        GameLingoOCRCadence.dialogue(mode, false, lowPower)
+
+    fun gameTextIntervalMs(asText: Boolean, lowPower: Boolean, recentCostMs: Long): Long =
+        GameLingoOCRCadence.gameText(mode, asText, lowPower, recentCostMs)
+
+    fun minimumDialogueLength(): Int = if (mode == "street") 2 else 4
+
+    fun title(): String = when (mode) {
+        "automatic" -> "Automatický · vyvážený"
+        "street" -> "Krátké dialogy · rychlý"
+        else -> "Původní · stabilní"
     }
 
     fun setMode(context: Context, selected: String) {

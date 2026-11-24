@@ -556,39 +556,41 @@ def main():
     original=p.read_text(encoding="utf8")
     transformed=redesign_mobile(original) if mode=="mobile" else redesign_tv(original)
     p.write_text(transformed,encoding="utf8")
-    if mode=="mobile":
-        # The mobile OCR settings modify the actual reader and its sampling
-        # interval. Preserve the TV decoder path and the user's languages.
-        select=base/SRC/"VyberTitulku.kt"
-        code=select.read_text(encoding="utf8")
-        before='''        }.filter { it.text.count(Char::isLetter) >= 3 }
+    # Shared direct OCR settings; never change receiver-only TV transport.
+    select=base/SRC/"VyberTitulku.kt"
+    code=select.read_text(encoding="utf8")
+    before='''        }.filter { it.text.count(Char::isLetter) >= 3 }
             .filter { (it.left + it.right) / 2f / sirka in 0.3f..0.7f }
             .filterNot { jeMenu(it.text) }'''
-        after='''        }.filter { it.text.count(Char::isLetter) >=
+    after='''        }.filter { it.text.count(Char::isLetter) >=
                 (if (GameLingoOCRConfig.mode == "street") 2 else 3) }
             .filter { (it.left + it.right) / 2f / sirka in
                 (if (GameLingoOCRConfig.expandSearch &&
                      GameLingoOCRConfig.mode != "classic")
                     0.15f..0.85f else 0.3f..0.7f) }
             .filterNot { GameLingoOCRConfig.filterMenuText && jeMenu(it.text) }'''
-        if code.count(before)!=1:
-            raise RuntimeError("Android OCR native reader source changed")
-        select.write_text(code.replace(before,after,1),encoding="utf8")
+    if code.count(before)!=1:
+        raise RuntimeError("Android OCR native reader source changed")
+    select.write_text(code.replace(before,after,1),encoding="utf8")
 
-        service=base/SRC/"RemotePlayService.kt"
-        code=service.read_text(encoding="utf8")
-        checks=(
-            ('        super.onCreate()\n        ui.post(pribehHlidac)',
-             '        super.onCreate()\n        if (telefon) GameLingoOCRConfig.load(this)\n        ui.post(pribehHlidac)'),
-            ('if (telefon) INTERVAL_MS_TELEFON else if (uspora) INTERVAL_MS_USPORA else INTERVAL_MS',
-             'if (telefon) GameLingoOCRConfig.intervalMs() else if (uspora) INTERVAL_MS_USPORA else INTERVAL_MS'),
-        )
-        for old,new in checks:
-            if code.count(old)!=1:
-                raise RuntimeError("Android OCR sampler source changed: "+old[:70])
-            code=code.replace(old,new,1)
-        service.write_text(code,encoding="utf8")
+    service=base/SRC/"RemotePlayService.kt"
+    code=service.read_text(encoding="utf8")
+    checks=(
+        ('        super.onCreate()\n        ui.post(pribehHlidac)',
+         '        super.onCreate()\n        GameLingoOCRConfig.load(this)\n        ui.post(pribehHlidac)'),
+        ('if (telefon) INTERVAL_MS_TELEFON else if (uspora) INTERVAL_MS_USPORA else INTERVAL_MS',
+         'if (telefon) GameLingoOCRConfig.intervalMs() else GameLingoOCRConfig.tvIntervalMs(uspora)'),
+    )
+    for old,new in checks:
+        if code.count(old)!=1:
+            raise RuntimeError("Android OCR sampler source changed: "+old[:70])
+        code=code.replace(old,new,1)
+    service.write_text(code,encoding="utf8")
 
+    for module in ("GameLingoOCRConfig.kt", "GameLingoOCRCadence.kt"):
+        source=Path(__file__).with_name(module)
+        (base/SRC/source.name).write_text(source.read_text(encoding="utf8"),encoding="utf8")
+    if mode=="mobile":
         # Apply the same locally selected font, foreground and background to
         # the actual in-game captions on the Android phone (not a fake preview).
         phone=base/SRC/"TelefonActivity.kt"

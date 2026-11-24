@@ -481,6 +481,25 @@ def main():
     s=once(s, '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)',
         '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)\n'
         '            performance.record(readToken, "Herní text celkem k výstupu", performance.now() - readStarted)', service.name)
+    # P1.8: independently paced yellow-area OCR; keep the busy/token gate.
+    s=once(s, '    private fun ctiVolby(sirka: Int, vyska: Int, precti: (Int, Int, Int, Int) -> IntArray) {',
+        '    @Volatile private var gameTextOcrCostMs = 0L\n\n'
+        '    private fun ctiVolby(sirka: Int, vyska: Int, precti: (Int, Int, Int, Int) -> IntArray) {', service.name)
+    s=once(s, '        volbyDalsi = ted + 250',
+        '        volbyDalsi = ted + GameLingoOCRConfig.gameTextIntervalMs(Volby.rezimText, !telefon && uspora, gameTextOcrCostMs)', service.name)
+    s=once(s, '            performance.record(perfToken, "Herní text OCR", performance.now() - perfOcrStart)',
+        '            val readCost = (performance.now() - perfOcrStart).coerceAtLeast(0L)\n'
+        '            gameTextOcrCostMs = if (gameTextOcrCostMs == 0L) readCost else (gameTextOcrCostMs * 3 + readCost) / 4\n'
+        '            performance.record(perfToken, "Herní text OCR", readCost)', service.name)
+    s=once(s, '        stabilitaTitulku.reset()\n        textVRamecku.reset()',
+        '        gameTextOcrCostMs = 0L\n        stabilitaTitulku.reset()\n        textVRamecku.reset()', service.name)
+    # Street mode must not reject a two-letter subtitle in the service after
+    # the native reader accepted it. Existing sentence/ROI checks stay active.
+    if s.count('text.length < 4') != 3:
+        raise RuntimeError("Expected three dialogue length checks")
+    s=s.replace('text.length < 4', 'text.length < GameLingoOCRConfig.minimumDialogueLength()')
+    (unit_dir/"GameLingoOCRCadenceTest.kt").write_text(
+        Path(__file__).with_name("GameLingoOCRCadenceTest.kt").read_text(encoding="utf8"),encoding="utf8")
     service.write_text(s, encoding="utf8")
     print("GameLingo source and target languages connected to real Android translation")
 
