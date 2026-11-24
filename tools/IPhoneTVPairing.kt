@@ -32,6 +32,7 @@ object IPhoneTVPairing {
     // A newly generated PIN or an explicit unpair invalidates this cache.
     private var lastSuccessPin: String? = null
     private var lastSuccessPhoneId: String? = null
+    private var lastSuccessAddress: String? = null
     private var lastSuccessAtMs = 0L
     private const val REPLY_RETRY_WINDOW_MS = 15_000L
     private const val KEY_ALIAS = "cz.caseycz.gamelingo.tv.pairing.v1"
@@ -235,6 +236,7 @@ object IPhoneTVPairing {
         if (lastSuccessPhoneId == phoneId) {
             lastSuccessPin = null
             lastSuccessPhoneId = null
+        lastSuccessAddress = null
             lastSuccessAtMs = 0L
         }
         lastAuthenticatedMs = authenticatedAt.values.maxOrNull() ?: 0L
@@ -250,6 +252,7 @@ object IPhoneTVPairing {
         attempts = 0
         lastSuccessPin = null
         lastSuccessPhoneId = null
+        lastSuccessAddress = null
         lastSuccessAtMs = 0L
         pin
     }
@@ -264,11 +267,11 @@ object IPhoneTVPairing {
     }
 
     /** Returns a 32-byte secret (hex) only after PIN succeeds. */
-    fun confirm(ctx: Context, input: String, phoneId: String, label: String = "Telefon"): String? = synchronized(lock) {
+    fun confirm(ctx: Context, input: String, phoneId: String, label: String = "Telefon", address: String = ""): String? = synchronized(lock) {
         migrateLegacy(ctx)
         val now = SystemClock.elapsedRealtime()
         if (lastSuccessAtMs > 0 && now - lastSuccessAtMs <= REPLY_RETRY_WINDOW_MS &&
-            input == lastSuccessPin && phoneId == lastSuccessPhoneId) {
+            input == lastSuccessPin && phoneId == lastSuccessPhoneId && address == lastSuccessAddress) {
             // Never consume another PIN attempt or change the pairing secret.
             return@synchronized loadSecret(ctx, phoneId)
         }
@@ -298,6 +301,7 @@ object IPhoneTVPairing {
         storageWriteFailed = false
         lastSuccessPin = input
         lastSuccessPhoneId = phoneId
+        lastSuccessAddress = address
         lastSuccessAtMs = now
         code = null
         expiresAtMs = 0
@@ -330,6 +334,7 @@ object IPhoneTVPairing {
         expiresAtMs = 0L
         lastSuccessPin = null
         lastSuccessPhoneId = null
+        lastSuccessAddress = null
         lastSuccessAtMs = 0L
     }
 
