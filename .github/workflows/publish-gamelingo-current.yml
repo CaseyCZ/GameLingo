@@ -40,6 +40,7 @@ jobs:
           test -n "$RUN"
           BUILD_SOURCE="$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.head_sha')"
           # Never fall back to an earlier successful build while the new candidate is running.
+          # Re-publish only after the corrected TV QR worker compiles.
           for attempt in $(seq 1 70); do
             status="$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.status')"
             if [ "$status" = completed ]; then break; fi
