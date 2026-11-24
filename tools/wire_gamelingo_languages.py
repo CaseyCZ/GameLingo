@@ -309,10 +309,10 @@ def main():
     if any(name in t for name in ("googlePauzaDo", "edgePauzaDo", "myMemoryPauzaDo")):
         raise RuntimeError("Old per-provider pause bypass remains")
     root = Path(sys.argv[1])
-    if tv_variant(root):
-        t = tv_translator(t)
+    tv_variant(root)
+    t = tv_translator(t)
     t = bound_translator(t)
-    t = protect_cache_writes(t, tv_variant(root))
+    t = protect_cache_writes(t, True)
     t = restrict_provider_transport(t)
     translator.write_text(t, encoding="utf8")
 
