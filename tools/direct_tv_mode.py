@@ -296,58 +296,45 @@ def patch_direct_tv(folder):
             android:foregroundServiceType="mediaProjection"/>
     </application>""", 1)
     manifest.write_text(xml, encoding="utf8")
-    # Standalone TV OCR has its own strict line geometry and source-language check.
-    # Do not alter the existing console/phone readers.
+    # Reuse the actual game dialogue reader; no second ML Kit selection pipeline.
     reader = folder / "Ctecka.kt"
     reader_text = reader.read_text(encoding="utf8")
-    reader_anchor = "    fun prectiVse(obraz: Bitmap, hotovo: (String) -> Unit, chyba: (String) -> Unit) {"
-    if reader_text.count(reader_anchor) != 1:
-        raise RuntimeError("Standalone TV OCR reader anchor changed")
-    reader_text = reader_text.replace(reader_anchor, """    fun prectiSamostatnyTitulek(obraz: Bitmap, source: String, filterMenu: Boolean,
-                                 hotovo: (String, Rect?, Int) -> Unit, chyba: (String) -> Unit) {
-        if (obraz.width < 32 || obraz.height < 32) { hotovo("", null, 0); return }
-        recognizer.process(InputImage.fromBitmap(obraz, 0))
-            .addOnSuccessListener outer@ { result ->
-                val lines = result.textBlocks.flatMap { it.lines }.mapNotNull { line ->
-                    line.boundingBox?.let { line.text.trim() to it }
-                }.filter { it.first.count { c -> c.isLetter() } >= 2 }
-                if (lines.isEmpty()) { hotovo("", null, 0); return@outer }
-                val center = obraz.width / 2f
-                val centered = lines.filter { (_, box) ->
-                    kotlin.math.abs((box.left + box.right) / 2f - center) <= obraz.width * .18f
-                }.sortedBy { it.second.top }
-                // A menu/grid typically has several independent columns or rows.
-                if (filterMenu && (centered.isEmpty() || lines.size > 3 || centered.size != lines.size || centered.size > 2)) {
-                    hotovo("", null, 0); return@outer
-                }
-                val chosen = (if (filterMenu) centered else lines.sortedBy { it.second.top }).takeLast(2)
-                if (chosen.size == 2) {
-                    val first = chosen[0].second; val second = chosen[1].second
-                    val gap = second.top - first.bottom
-                    val lineHeight = maxOf(first.height(), second.height(), 1)
-                    if (gap < -lineHeight / 3 || gap > lineHeight || kotlin.math.abs(first.centerX() - second.centerX()) > obraz.width * .16f) {
-                        hotovo("", null, 0); return@outer
-                    }
-                }
-                val text = chosen.joinToString(" ") { it.first }.trim()
-                if (text.length > 240 || (filterMenu && text.count { it.isDigit() } > text.length / 5)) {
-                    hotovo("", null, 0); return@outer
-                }
-                jazyk.identifyLanguage(text)
-                    .addOnSuccessListener { code ->
-                        val shortEnglish = source == "en" && code == "und" && text.length < 40 &&
-                            text.none { it.isLetter() && it.code > 127 } && anglickeSlovo(text)
-                        val accepted = if (code == source || shortEnglish) {
-                            if (source == "en") vycisti(text) else text
-                        } else ""
-                        val bounds = Rect(chosen.minOf { it.second.left }, chosen.minOf { it.second.top },
-                            chosen.maxOf { it.second.right }, chosen.maxOf { it.second.bottom })
-                        hotovo(accepted, bounds.takeIf { accepted.isNotBlank() }, chosen.size)
-                    }.addOnFailureListener { hotovo("", null, 0) }
-            }.addOnFailureListener { chyba(it.message ?: "Chyba OCR") }
-    }
+    def reader_one(old, new):
+        nonlocal reader_text
+        if reader_text.count(old) != 1:
+            raise RuntimeError("Shared dialogue reader anchor changed: " + old[:100])
+        reader_text = reader_text.replace(old, new, 1)
 
-""" + reader_anchor, 1)
+    reader_one("pasmaNapovedy: List<IntRange> = emptyList()\n    ) {",
+        """pasmaNapovedy: List<IntRange> = emptyList(),
+        sourceLanguage: String = "en",
+        standaloneScreen: Boolean = false
+    ) {""")
+    reader_one("                var hotoveRadky = VyberTitulku.radky(kusy, obraz.width, ::doplnJmeno)",
+        """                // Screen capture also sees unrelated application grids.
+                // Keep this guard at the source boundary; game reading is unchanged.
+                if (standaloneScreen && GameLingoOCRConfig.filterMenuText &&
+                    (kusy.size > 8 || kusy.any { k ->
+                        kusy.any { other -> other !== k &&
+                            kotlin.math.abs(k.top - other.top) < maxOf(1, (k.bottom-k.top)/2) &&
+                            (k.right < other.left - obraz.width*.08f || other.right < k.left - obraz.width*.08f)
+                        }
+                    })) {
+                    hotovo(Titulek.NIC); return@addOnSuccessListener
+                }
+                var hotoveRadky = VyberTitulku.radky(kusy, obraz.width, ::doplnJmeno)""")
+    # Preserve exact English game behavior. Other source languages use the same
+    # grouping and geometry but do not run English-only cleanup or hint heuristics.
+    reader_one('val napovedaRadek = hotoveRadky.lastOrNull()?.takeIf { r ->',
+        'val napovedaRadek = hotoveRadky.lastOrNull()?.takeIf { r ->\n                    if (sourceLanguage != "en") return@takeIf false\n                    if (standaloneScreen && !NAPOVEDA.containsMatchIn(r.text)) return@takeIf false')
+    reader_one('r === napovedaRadek || NAPOVEDA.containsMatchIn(r.text)',
+        'r === napovedaRadek || (sourceLanguage == "en" && NAPOVEDA.containsMatchIn(r.text))')
+    reader_one('val vybrane = VyberTitulku.vyber(hotoveRadky)',
+        '''val vybrane = VyberTitulku.vyber(hotoveRadky)
+                if (vybrane.isEmpty()) { hotovo(Titulek.NIC); return@addOnSuccessListener }''')
+    reader_one('if (jeNesmysl(bezJmen)) {', 'if (sourceLanguage == "en" && jeNesmysl(bezJmen)) {')
+    reader_one('if (kod == "en" || (kod != "cs" && kod != "sk" && kod != cilovyJazyk && bezDiakritiky && bezJmen.length < 40 && anglickeSlovo(bezJmen))) hotovo(Titulek(repliky.map { vycisti(it) },',
+        '''if (kod == sourceLanguage || (sourceLanguage == "en" && kod != "cs" && kod != "sk" && kod != cilovyJazyk && bezDiakritiky && bezJmen.length < 40 && anglickeSlovo(bezJmen))) hotovo(Titulek(repliky.map { if (sourceLanguage == "en") vycisti(it) else it },''')
     reader.write_text(reader_text, encoding="utf8")
 
     # Standalone captions must not be hidden by the console-only foreground filter.

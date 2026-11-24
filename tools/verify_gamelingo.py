@@ -121,7 +121,7 @@ def android(root: Path, mode: str):
         contains(base / "GameLingoTVSettings.kt", "cards.chunked(3)", "GameLingoDirectTVLayout.show",
                  "GameLingoTVCaptionStyle.show", "GameLingoTVProfiles.show")
         contains(base / "GameLingoScreenTranslationService.kt", "createScreenCaptureIntent",
-                 "registerCallback", "createVirtualDisplay", "prectiSamostatnyTitulek")
+                 "registerCallback", "createVirtualDisplay", "prectiPosledniTitulek")
         contains(root / "app/src/main/AndroidManifest.xml", ".GameLingoScreenConsentActivity",
                  ".GameLingoScreenTranslationService", 'android:foregroundServiceType="mediaProjection"')
         contains(base / "GameLingoScreenTranslationService.kt", "HandlerThread", "setOnImageAvailableListener",

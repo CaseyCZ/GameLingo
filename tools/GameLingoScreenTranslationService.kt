@@ -357,7 +357,7 @@ class GameLingoScreenTranslationService : Service() {
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, images.surface, null, ui)
                 ?: throw IllegalStateException("VirtualDisplay nebyl vytvořen")
             displayState = "Vytvořen"
-            ocr = Ctecka()
+            ocr = Ctecka().apply { cilovyJazyk = GameLingoLanguages.target(this@GameLingoScreenTranslationService) }
             startedAt = SystemClock.elapsedRealtime()
             translator = Prekladac(this, GameLingoLanguages.target(this), GameLingoLanguages.game(this))
             active = true; starting = false; status = source
@@ -477,12 +477,16 @@ class GameLingoScreenTranslationService : Service() {
         val ocrStarted = SystemClock.elapsedRealtime()
         val read = ocr ?: run { cropped.recycle(); ocrBusy=false; return }
         try {
-            read.prectiSamostatnyTitulek(cropped, sourceLanguage, GameLingoOCRConfig.filterMenuText, { raw, box, rows ->
-                val normalized = box?.let { floatArrayOf(
+            read.prectiPosledniTitulek(cropped, hotovo = { result ->
+                fun normalize(box: android.graphics.Rect?) = box?.let { floatArrayOf(
                     roi[0]+it.left.toFloat()/cropped.width*(roi[2]-roi[0]),
                     roi[1]+it.top.toFloat()/cropped.height*(roi[3]-roi[1]),
                     roi[0]+it.right.toFloat()/cropped.width*(roi[2]-roi[0]),
                     roi[1]+it.bottom.toFloat()/cropped.height*(roi[3]-roi[1])) }
+                val normalized = normalize(result.box)
+                val hintBox = normalize(result.napovedaBox)
+                val raw = result.text
+                val hint = result.napoveda
                 cropped.recycle()
                 ui.post {
                     ocrBusy = false
@@ -492,16 +496,14 @@ class GameLingoScreenTranslationService : Service() {
                     if (raw.isNotBlank()) ocrHits.incrementAndGet()
                     ocrState = if (raw.isBlank()) "Bez textu" else "Text rozpoznán"
                     if (diagnostic && raw.isNotBlank()) lastRaw = raw.take(300)
-                    val hint = sourceLanguage == "en" && Ctecka.NAPOVEDA.containsMatchIn(raw)
-                    if (hint) {
-                        if (hintsEnabled && normalized != null) acceptHint(raw,normalized)
-                        if (dialogueEnabled) accept("")
-                    } else if (dialogueEnabled) {
-                        if (raw.isNotBlank()) { currentBox = normalized; currentRows = rows.coerceAtLeast(1) }
+                    if (hintsEnabled && !hint.isNullOrBlank() && hintBox != null) acceptHint(hint,hintBox)
+                    if (dialogueEnabled) {
+                        if (raw.isNotBlank()) { currentBox = normalized; currentRows = result.radku.coerceAtLeast(1) }
                         accept(raw)
                     }
                 }
-            }, { cropped.recycle(); ui.post { ocrBusy=false; ocrState = "Chyba OCR" } })
+            }, chyba = { cropped.recycle(); ui.post { ocrBusy=false; ocrState = "Chyba OCR" } },
+                sourceLanguage = sourceLanguage, standaloneScreen = true)
         } catch (e: Exception) {
             cropped.recycle(); ocrBusy=false; ocrState = "Chyba OCR: " + e.javaClass.simpleName
         }
