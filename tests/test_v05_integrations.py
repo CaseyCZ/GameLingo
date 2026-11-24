@@ -315,7 +315,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         # similar PIN screens that cannot communicate.
         self.assertIn("PCPAIR1\\tPAIR",ios)
         self.assertIn("PCPAIR1\\\\tOK",patch)
-        self.assertIn("IPhoneTVPairing.confirm(c, code, id, casti.getOrNull(4).orEmpty())",patch)
+        self.assertIn("IPhoneTVPairing.confirm(c, code, id, casti.getOrNull(4).orEmpty(), p.address.hostAddress.orEmpty())",patch)
         self.assertIn("lastSuccessPhoneId",receiver)
         self.assertIn("return@synchronized loadSecret(ctx, phoneId)",receiver)
         self.assertNotIn("lastSuccessToken",receiver)
@@ -342,7 +342,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertEqual(wire.count("GameLingoTVPairing.sendSigned("), 4)
         self.assertEqual(wire.count("GameLingoTVPairing.signedPacket(ip, data)"), 2)
         self.assertIn("GameLingoTVPairing.initialize(this)", wire)
-        self.assertIn("!authenticatedGameData && !accountPairing && !GameLingoTVPairing.legacyEnabled(c)", receiver)
+        self.assertIn("!authenticatedGameData && !GameLingoTVPairing.legacyEnabled(c)", receiver)
         self.assertIn('p.setData(decoded.toByteArray(Charsets.UTF_8))', receiver)
         self.assertIn("GameLingoTVPairing.setLegacyEnabled(a, it)", tv)
 
