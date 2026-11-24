@@ -112,3 +112,50 @@ Ověřit čtyři oblasti, oranžový náhled, profily, barvy, přepnutí HDMI, r
 - Přidány statické kontrakty a instrumentation test více telefonů, oddělených replay čítačů, revokace a rotace. Existující migrace/poškození testy přizpůsobeny v2. Full CI po commitu. Rizika: HW souběh iOS/Android, změna zdroje, story reset, odpárování při probíhajícím streamu, migrace a poškození Keystore čekají. V případě selhání persistence přijímač fail-closed; restart/nové párování nebo reset appky může být potřeba. P0.5 až po CI.
 
 - P0.4 commit `9944475ddb2987af4b25a633efa78c102ced6829`, [CI run 45347464381](https://github.com/CaseyCZ/GameLingo/actions/runs/45347464381). Poslední stav: quick / verify: success; native / GameLingo · integration contracts: in_progress. Před P0.5 zkontrolovat všechny joby, případně opravit/revertovat. Zvláštní otevřené riziko: původní Android Vysilac může periodicky posílat i prázdný stav; ověřit uvolnění pětisekundového lease po zastavení překladu a přepnutí na druhý telefon. Pokud prázdné heartbeat drží zdroj, opravit v rámci P0.4 před P0.5 (neoznačovat automatické přepnutí za HW ověřené). Testy na zařízení stále čekají.
+
+
+## P0.5 — průzkum konzolí a HDMI (před implementací)
+- Auditovaná revize `8d3a90fafed24f0d1df3a7150e7bc0c10114283b`, upstream PlayCaption `633a847400b6c4bac1e7f034463e7847a53a9590`.
+- P0.4 CI 45347464381: quick / verify: success; native / GameLingo · integration contracts: success; native / Android phone · PS5 / PS4 foundation: success; native / iPhone · unsigned IPA: in_progress; native / Google TV · Orange V5 receiver: in_progress. P0.4 dosud neuzavírat, pokud není celý run success a riziko source lease vyřešeno.
+- P0.4 upřesnění: upstream TelefonActivity.kt 218–225 při běžném Stop volá Vysilac.zmena("",0,"") a nastavCil(null,""), takže opakování skončí. RemotePlayService.kt 224–231 (ACTION_STOP), 2232–2260 a 2363–2385 (zastav/onDestroy) však samy cilIp neresetují. Propojeni.kt 529–554 opakuje stav každou sekundu i při neaktivní službě, dokud se nezmění generace cíle. Na zastavení z jiné obrazovky/služby tak může držet P0.4 lease. Cílená oprava P0.4 po CI: zastavit periodické odesílání při neaktivní RemotePlayService mimo časově omezený explicitní náhled, po stop vyčistit výstup; zachovat uložený TV profil a bez restartu umožnit nové spuštění. Otestovat běžný Stop, stop z hlavní nabídky, pád spojení, náhled bez streamu a handover. Nepřepisovat celý sender.
+- iOS: PlayCaptionIOSApp.swift 406–423, 558 a PlayStation/GameLingoPlayStation.swift 44–94 + RemotePlaySession.swift 64–111: Xbox a PS4/PS5 mají cestu dekódovaných snímků do OCR; PS4 H.264, PS5 HEVC; fyzicky neověřeno.
+- **Oprava dosavadního auditu PS4 Android/TV:** upstream HledacPS.kt 23–52 skutečně vyhledává PS4 i PS5, ale RemotePlay.kt 66–67 registruje výhradně Target.PS5_1; RemotePlayService.kt 655 má ConnectInfo(ps5 = true). GameLingoPlayStationConsoles.kt ukládá IP, jméno a registrační údaje, nikoli typ konzole. Žádný z build patchů tyto dvě konstanty nemění. Tedy PS4 discovery ano, PS4 registrace/stream na Androidu nedokončen. Název CI jobu PS5/PS4 foundation není důkaz podpory. P0.5 implementační úkol: uchovat typ PS v registraci, aktivním profilu i při přepnutí, volit správný Target a ConnectInfo pro PS4; zkontrolovat discovery fallback a kodek. PS4 Android ani TV neslibovat jako fungující, dokud fyzicky neověřeno.
+- Xbox Android: tools/android_multi_xbox.py volí uložené selectedXboxId, upstream RemotePlayService.kt 456 čte XboxUcet.konzole. PS5 Android: připnuté Chiaki jádro. Nejde o fyzický test.
+- HDMI: upstream OverlayService.kt používá TYPE_APPLICATION_OVERLAY, žádné zachytávání/přehrávání HDMI v appce. PrijemService.kt 98–135 spouští receiver a zastavuje vlastní Remote Play. tools/patch_tv_iphone.py 222–229 již nastavuje vstup=true pro standardní titulky a volby, aby TCL neblokoval HDMI. **Nekonzistence story:** PrijemService.kt 131 a OverlayService.kt 51 dále používají Popredi.jeVstupTv(); ten může chybně vyhodnotit HDMI podle usage stats/launcher. P0.5 cílená oprava: konzistentní policy pro telefonní story a přímo na TV, nerozbít lokální režim; zkontrolovat také RemotePlayService.kt 800 (přerušení OCR na základě Popredi). Povolení overlay je nutné, nativní HDMI není zobrazováno uvnitř aplikace. Zvážit test známý HDMI balíček, neznámý stav a přepnutí vstupu; dokumentovat riziko překryvu mimo hru. Nezměnit jazykové nabídky/design.
+- Tento dokumentační checkpoint neobsahuje změnu aplikačního kódu. Po P0.4 CI a případné opravě lease navázat P0.5, samostatný commit s regresními testy a plným CI.
+
+### P0.5 — detailní ruční akceptační matice
+Všechny případy čekají na test na zařízení. Zapsat model, firmware/OS, konzoli, SHA, datum, PASS/FAIL/BLOCKED. Statický kód a build nenahrazují HW.
+
+| ID | Zařízení | Konzole | Režim / výstup | Stav |
+|---|---|---|---|---|
+| C01 | iPhone | Xbox | Remote Play → telefon | HW čeká |
+| C02 | iPhone | PS4 | Remote Play → telefon | HW čeká |
+| C03 | iPhone | PS5 | Remote Play → telefon | HW čeká |
+| C04 | iPhone + TCL C835 | Xbox | telefon → HDMI overlay | HW čeká |
+| C05 | iPhone + TCL C835 | PS4 | telefon → HDMI overlay | HW čeká |
+| C06 | iPhone + TCL C835 | PS5 | telefon → HDMI overlay | HW čeká |
+| C07 | Android mobil | Xbox | Remote Play → telefon | HW čeká |
+| C08 | Android mobil | PS4 | Remote Play → telefon | BLOCKED: PS4 registrace/stream nedokončeny |
+| C09 | Android mobil | PS5 | Remote Play → telefon | HW čeká |
+| C10 | Android mobil + TCL C835 | Xbox | telefon → HDMI overlay | HW čeká |
+| C11 | Android mobil + TCL C835 | PS4 | telefon → HDMI overlay | BLOCKED: PS4 registrace/stream nedokončeny |
+| C12 | Android mobil + TCL C835 | PS5 | telefon → HDMI overlay | HW čeká |
+| C13 | TCL C835 | Xbox | přímo na TV → HDMI overlay | HW čeká |
+| C14 | TCL C835 | PS4 | přímo na TV → HDMI overlay | BLOCKED: PS4 registrace/stream nedokončeny |
+| C15 | TCL C835 | PS5 | přímo na TV → HDMI overlay | HW čeká |
+
+| ID | Scénář | Očekávaný výsledek | Stav |
+|---|---|---|---|
+| H01 | Každá C04–C06/C10–C15: HDMI1 → HDMI2 → původní vstup | obraz hry není nahrazen appkou, překryv funguje po návratu | čeká |
+| H02 | Příběhový režim a standardní dialogy | konzistentní HDMI chování, story se nezastaví chybnou detekcí | čeká |
+| H03 | Žlutý a oranžový náhled i bez textu | správné nezávislé oblasti, viditelné i ovládání náhledu | čeká |
+| H04 | Odmítnutí/obnovení overlay oprávnění | žádný pád, pravdivý stav, po povolení funkční | čeká |
+| H05 | PlayCaption obsadí 41989, restart TV služby | GameLingo použije 41990–41993 a klient ho znovu najde | čeká |
+| H06 | iPhone + Android současně | oddělené párování, pouze jeden aktivní zdroj | čeká |
+| H07 | Stop v telefonu, hlavním menu, službě; přepnutí na druhý telefon | prázdné heartbeat nezablokuje handover; žádné staré překryvy | čeká |
+| H08 | 30+ min hry, Wi-Fi off/on, změna IP | návrat funkce nebo jasná chyba, žádné falešné potvrzení | čeká |
+| H09 | Profil, barvy, velikost, nezávislá geometrie | zachováno po restartu | čeká |
+| H10 | Přepnutí PS4 ↔ PS5 a více Xboxů | přesně vybraná konzole, správný typ a registrace | čeká; PS4 Android blokováno |
+
+Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 implementace a testy. Žádný release.
