@@ -508,8 +508,7 @@ def main() -> None:
          '                                            !decoded.startsWith("PCV1\\t")) continue\n'
          '                                        casti = decoded.split("\\t")\n',
          '                                        val inner = decoded.split("\\t")\n'
-         '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")) continue\n'
-         '                                        if (inner.firstOrNull() == "PCS1" && inner.getOrNull(1) in listOf("ZADOST", "KOD")) continue\n'
+         '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1")) continue\n'
          '                                        casti = inner\n'
          '                                        if (inner.firstOrNull() == "PCQ1") {\n'
          '                                            if (!IPhoneTVPairing.permitsStoryReadiness(id)) continue\n'
@@ -519,14 +518,13 @@ def main() -> None:
          '                                        p.setData(decoded.toByteArray(Charsets.UTF_8))\n')
     once(networking,
          '                        if (pribeh.zpracuj(p)) {\n',
-         '                        // The old Xbox account-transfer handshake is not game data.\n'
-         '                        val accountPairing = casti.firstOrNull() == "PCS1" && casti.getOrNull(1) in listOf("ZADOST", "KOD")\n'
-         '                        if (accountPairing && !Propojeni.Pridani.platny()) {\n'
-         '                            odpovez(s, p, "PCS1\\tCHYBA\\tlokalni_souhlas")\n'
+         '                        // Account transfer is disabled even in legacy subtitle mode.\n'
+         '                        if (casti.firstOrNull() == "PCS1") {\n'
+         '                            odpovez(s, p, "PCS1\\tCHYBA\\tzakazano")\n'
          '                            continue\n'
          '                        }\n'
-         '                        if (!authenticatedGameData && !accountPairing && !GameLingoTVPairing.legacyEnabled(c)) continue\n'
-         '                        if (!authenticatedGameData && !accountPairing && IPhoneTVPairing.hasActiveSource()) continue\n'
+         '                        if (!authenticatedGameData && !GameLingoTVPairing.legacyEnabled(c)) continue\n'
+         '                        if (!authenticatedGameData && IPhoneTVPairing.hasActiveSource()) continue\n'
          '                        if (pribeh.zpracuj(p)) {\n')
 
     # Isolate the existing renderer's per-source deduplication and story state.
