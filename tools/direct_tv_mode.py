@@ -289,6 +289,57 @@ def patch_direct_tv(folder):
             android:foregroundServiceType="mediaProjection"/>
     </application>""", 1)
     manifest.write_text(xml, encoding="utf8")
+    # Standalone TV OCR has its own strict line geometry and source-language check.
+    # Do not alter the existing console/phone readers.
+    reader = folder / "Ctecka.kt"
+    reader_text = reader.read_text(encoding="utf8")
+    reader_anchor = "    fun prectiVse(obraz: Bitmap, hotovo: (String) -> Unit, chyba: (String) -> Unit) {"
+    if reader_text.count(reader_anchor) != 1:
+        raise RuntimeError("Standalone TV OCR reader anchor changed")
+    reader_text = reader_text.replace(reader_anchor, """    fun prectiSamostatnyTitulek(obraz: Bitmap, source: String, filterMenu: Boolean,
+                                 hotovo: (String) -> Unit, chyba: (String) -> Unit) {
+        if (obraz.width < 32 || obraz.height < 32) { hotovo(""); return }
+        recognizer.process(InputImage.fromBitmap(obraz, 0))
+            .addOnSuccessListener outer@ { result ->
+                val lines = result.textBlocks.flatMap { it.lines }.mapNotNull { line ->
+                    line.boundingBox?.let { line.text.trim() to it }
+                }.filter { it.first.count { c -> c.isLetter() } >= 2 }
+                if (lines.isEmpty()) { hotovo(""); return@outer }
+                val center = obraz.width / 2f
+                val centered = lines.filter { (_, box) ->
+                    kotlin.math.abs((box.left + box.right) / 2f - center) <= obraz.width * .18f
+                }.sortedBy { it.second.top }
+                // A menu/grid typically has several independent columns or rows.
+                if (centered.isEmpty() || (filterMenu && (lines.size > 3 || centered.size != lines.size || centered.size > 2))) {
+                    hotovo(""); return@outer
+                }
+                val chosen = centered.takeLast(2)
+                if (chosen.size == 2) {
+                    val first = chosen[0].second; val second = chosen[1].second
+                    val gap = second.top - first.bottom
+                    val lineHeight = maxOf(first.height(), second.height(), 1)
+                    if (gap < -lineHeight / 3 || gap > lineHeight || kotlin.math.abs(first.centerX() - second.centerX()) > obraz.width * .16f) {
+                        hotovo(""); return@outer
+                    }
+                }
+                val text = chosen.joinToString(" ") { it.first }.trim()
+                if (text.length > 240 || (filterMenu && text.count { it.isDigit() } > text.length / 5)) {
+                    hotovo(""); return@outer
+                }
+                jazyk.identifyLanguage(text)
+                    .addOnSuccessListener { code ->
+                        val shortEnglish = source == "en" && code == "und" && text.length < 40 &&
+                            text.none { it.isLetter() && it.code > 127 } && anglickeSlovo(text)
+                        hotovo(if (code == source || shortEnglish) {
+                            if (source == "en") vycisti(text) else text
+                        } else "")
+                    }.addOnFailureListener { hotovo("") }
+            }.addOnFailureListener { chyba(it.message ?: "Chyba OCR") }
+    }
+
+""" + reader_anchor, 1)
+    reader.write_text(reader_text, encoding="utf8")
+
     # Standalone captions must not be hidden by the console-only foreground filter.
     overlay = folder / "OverlayService.kt"
     overlay_text = overlay.read_text(encoding="utf8")

@@ -810,6 +810,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("pendingStart?.let", service)
         self.assertIn("FOREGROUND_SERVICE_MEDIA_PROJECTION", code(TOOLS/"direct_tv_mode.py"))
 
+    def test_standalone_tv_ocr_and_translation_are_independent_and_menu_filtered(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        wiring = code(TOOLS/"direct_tv_mode.py")
+        self.assertIn("prectiSamostatnyTitulek(cropped, sourceLanguage, GameLingoOCRConfig.filterMenuText", capture)
+        self.assertIn("if (!paused && !ocrBusy) wantFrame.set(true)", capture)
+        self.assertIn("translationBusy", capture)
+        self.assertIn("value == candidate", capture)
+        self.assertIn("Starý výsledek zahozen", capture)
+        self.assertIn("roi[1] - .02f", capture)
+        self.assertIn("getRealMetrics(metrics)", capture)
+        self.assertIn("centered.size != lines.size", wiring)
+        self.assertIn("code == source || shortEnglish", wiring)
+        self.assertIn("lastOcrMs", capture)
+        self.assertIn("lastTranslationMs", capture)
+
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")

@@ -142,7 +142,10 @@ class GameLingoScreenTranslationService : Service() {
     private var translatedText = ""
     private var lastRenderAt = 0L
     private var blankSince = 0L
-    private var busy = false
+    private var ocrBusy = false
+    private var translationBusy = false
+    private var lastAttempt = ""
+    private var lastAttemptAt = 0L
     private var epoch = 0L
     private var candidate = ""
     private var shown = ""
@@ -150,19 +153,20 @@ class GameLingoScreenTranslationService : Service() {
     private var darkFrames = 0
     private var width = 1280
     private var height = 540
-    private var roi = floatArrayOf(.05f,.68f,.95f,.98f)
-    private var output = floatArrayOf(.5f,.32f,.78f,1f)
+    private var roi = floatArrayOf(.10f,.80f,.90f,.98f)
+    private var output = floatArrayOf(.5f,.78f,.78f,1f)
+    private var sourceLanguage = "en"
     private val tick = object : Runnable {
         override fun run() {
             if (!active) return
             if (RemotePlayService.aktivni || PrijemService.bezi) { stopSelf(); return }
-            if (!paused && !busy) wantFrame.set(true)
+            if (!paused && !ocrBusy) wantFrame.set(true)
             if (!paused && received.get() == 0L && SystemClock.elapsedRealtime() - startedAt > 5000L)
                 setSource("MediaProjection běží, ale nedorazil žádný snímek")
-            if (!paused && translatedText.isNotEmpty() && SystemClock.elapsedRealtime() - lastTextAt > 5000L) {
+            if (!paused && lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt > 1800L) {
                 resetText(); render("")
             }
-            if (active) ui.postDelayed(this, GameLingoOCRConfig.tvIntervalMs(false).coerceIn(500L, 1500L))
+            if (active) ui.postDelayed(this, GameLingoOCRConfig.tvIntervalMs(false).coerceIn(200L, 600L))
         }
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -220,19 +224,29 @@ class GameLingoScreenTranslationService : Service() {
                 val r = OblastTitulku.oblast.copyOf()
                 if (r.size == 4 && r.all { it.isFinite() && it in 0f..1f } && r[2]-r[0] > .1f && r[3]-r[1] > .05f) roi = r
             }
-            // Keep the output outside the OCR zone. No translation of our own overlay.
+            // Default immediately above the source ROI, not at a fixed screen height.
+            // An overlapping custom output is unsafe with MediaProjection (it would read itself).
             output = when {
-                roi[1] >= .40f -> floatArrayOf(.5f, .32f, .78f, 1f)
-                roi[3] <= .60f -> floatArrayOf(.5f, .98f, .78f, 1f)
+                roi[1] >= .30f -> floatArrayOf(.5f, roi[1] - .02f, .78f, 1f)
+                roi[3] <= .70f -> floatArrayOf(.5f, (roi[3] + .27f).coerceAtMost(.98f), .78f, 1f)
                 else -> throw IllegalArgumentException("Nastav modrou oblast do horní nebo dolní části obrazu.")
             }
             val savedOutput = GameLingoDirectTVLayout.green(this)
+            var positionNote = "Automaticky vedle modré oblasti"
             if (savedOutput != null) {
-                val safeAbove = savedOutput[1] <= roi[1] - .05f
-                val safeBelow = savedOutput[1] - .22f * savedOutput[3] >= roi[3] + .03f
-                if (safeAbove || safeBelow) output = savedOutput
+                val safeAbove = savedOutput[1] <= roi[1] - .02f
+                val safeBelow = savedOutput[1] - .24f * savedOutput[3] >= roi[3] + .02f
+                if (safeAbove || safeBelow) {
+                    output = savedOutput
+                    positionNote = "Vlastní zelená oblast"
+                } else positionNote = "Zelená oblast zasahuje do OCR; použita bezpečná automatická poloha"
             }
-            val metrics = resources.displayMetrics
+            layoutState = positionNote + " · OCR: " + roi.joinToString("/") { (it*100).toInt().toString() } +
+                " · výstup Y: " + (output[1]*100).toInt() + " %"
+            sourceLanguage = GameLingoLanguages.game(this)
+            val metrics = android.util.DisplayMetrics()
+            @Suppress("DEPRECATION")
+            getSystemService(android.view.WindowManager::class.java).defaultDisplay.getRealMetrics(metrics)
             width = minOf(1280, metrics.widthPixels).coerceAtLeast(320)
             height = (width.toDouble() * metrics.heightPixels / metrics.widthPixels.coerceAtLeast(1)).toInt().coerceAtLeast(180)
             resolution = "${width} × ${height}"
@@ -281,6 +295,7 @@ class GameLingoScreenTranslationService : Service() {
     }
     private fun resetText() {
         epoch++; candidate = ""; shown = ""; translatedText = ""
+        lastAttempt = ""; lastAttemptAt = 0L
         lastTextAt = 0; blankFrames = 0; blankSince = 0
     }
     private fun setSource(value: String) {
@@ -323,7 +338,7 @@ class GameLingoScreenTranslationService : Service() {
             } finally { image.close() }
             decoded.incrementAndGet()
             ui.post {
-                if (!active || paused || busy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
+                if (!active || paused || ocrBusy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
                 else process(bitmap)
             }
         } catch (e: Exception) { frameError = e.javaClass.simpleName + ": " + (e.message ?: "").take(120) }
@@ -345,14 +360,16 @@ class GameLingoScreenTranslationService : Service() {
             return
         }
         setSource("OCR titulků")
-        busy = true
+        ocrBusy = true
         val ticket = epoch
-        val read = ocr ?: run { cropped.recycle(); busy=false; return }
+        val ocrStarted = SystemClock.elapsedRealtime()
+        val read = ocr ?: run { cropped.recycle(); ocrBusy=false; return }
         try {
-            read.prectiVse(cropped, { raw ->
+            read.prectiSamostatnyTitulek(cropped, sourceLanguage, GameLingoOCRConfig.filterMenuText, { raw ->
                 cropped.recycle()
                 ui.post {
-                    busy = false
+                    ocrBusy = false
+                    lastOcrMs = SystemClock.elapsedRealtime() - ocrStarted
                     if (!active || paused || ticket != epoch) return@post
                     ocrCalls.incrementAndGet()
                     if (raw.isNotBlank()) ocrHits.incrementAndGet()
@@ -360,47 +377,73 @@ class GameLingoScreenTranslationService : Service() {
                     if (diagnostic && raw.isNotBlank()) lastRaw = raw.take(300)
                     accept(raw)
                 }
-            }, { cropped.recycle(); ui.post { busy=false; ocrState = "Chyba OCR" } })
+            }, { cropped.recycle(); ui.post { ocrBusy=false; ocrState = "Chyba OCR" } })
         } catch (e: Exception) {
-            cropped.recycle(); busy=false; ocrState = "Chyba OCR: " + e.javaClass.simpleName
+            cropped.recycle(); ocrBusy=false; ocrState = "Chyba OCR: " + e.javaClass.simpleName
         }
     }
     private fun accept(raw: String) {
-        val value = raw.trim().take(500)
-        val now = android.os.SystemClock.elapsedRealtime()
+        val value = raw.trim().take(240)
+        val now = SystemClock.elapsedRealtime()
         if (value.isBlank()) {
             if (++blankFrames >= 2 && blankSince == 0L) {
-                blankSince = now; candidate = ""; shown = ""; translatedText = ""; render("")
+                resetText(); blankSince = now; render("")
             }
             return
         }
         blankFrames = 0; blankSince = 0; lastTextAt = now
+        if (value != candidate) {
+            candidate = value
+            if (shown != value && translatedText.isNotEmpty()) {
+                shown = ""; translatedText = ""; render("")
+            }
+        }
         if (value == shown && translatedText.isNotEmpty()) {
-            if (now - lastRenderAt >= 2500L) render(translatedText)
+            if (now - lastRenderAt >= 900L) render(translatedText)
             return
         }
-        candidate = value
+        translateLatest()
+    }
+    /** Independent OCR + one translation in flight; never queue stale dialogue. */
+    private fun translateLatest() {
+        if (!active || paused || translationBusy || candidate.isBlank()) return
+        val now = SystemClock.elapsedRealtime()
+        if (lastTextAt == 0L || now - lastTextAt > 1800L || (candidate == shown && translatedText.isNotEmpty())) return
+        if (candidate == lastAttempt && now - lastAttemptAt < 1000L) return
         val p = translator ?: return
+        val value = candidate
         val ticket = epoch
-        busy = true
+        lastAttempt = value; lastAttemptAt = now
+        translationBusy = true
         translationState = "Překládám"
-        try { p.preloz(value, { translated ->
+        fun completed(translated: String?) {
             ui.post {
-                if (active && !paused && ticket == epoch && translated.isNotBlank()) {
+                translationBusy = false
+                lastTranslationMs = SystemClock.elapsedRealtime() - now
+                val current = active && !paused && ticket == epoch && value == candidate &&
+                    lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt <= 1800L
+                if (current && !translated.isNullOrBlank()) {
                     translationState = "Přeloženo"; translationHits.incrementAndGet()
                     if (diagnostic) lastTranslated = translated.take(300)
                     shown = value; translatedText = translated; render(translated)
+                } else if (current) {
+                    translationState = "Chyba překladu"; render("")
+                } else {
+                    translationState = "Starý výsledek zahozen"
                 }
-                busy = false
+                // If a newer subtitle arrived during the request, translate only that one.
+                if (active && !paused && candidate != value) translateLatest()
             }
-        }, { ui.post { if (active && ticket == epoch) { translationState = "Chyba překladu"; render("") }; busy = false } }) } catch (e: Exception) { translationState = "Chyba: " + e.javaClass.simpleName; busy = false }
+        }
+        try { p.preloz(value, { completed(it) }, { completed(null) }) }
+        catch (e: Exception) { completed(null) }
     }
     private fun render(text: String) {
         lastRenderAt = android.os.SystemClock.elapsedRealtime()
         if (PrijemService.bezi || RemotePlayService.aktivni) return
         OverlayService.posli(this, Intent(this, OverlayService::class.java)
             .setAction(OverlayService.ACTION_SET_TEXT).putExtra(OverlayService.EXTRA_TEXT, text)
-            .putExtra(OverlayService.EXTRA_DOBA, 4500L).putExtra(OverlayService.EXTRA_VLASTNI, output))
+            .putExtra(OverlayService.EXTRA_DOBA, 1800L).putExtra(OverlayService.EXTRA_VLASTNI, output))
     }
     private fun notification() {
         val nm = getSystemService(NotificationManager::class.java)
@@ -454,6 +497,9 @@ class GameLingoScreenTranslationService : Service() {
         @Volatile private var frameError = "—"
         @Volatile private var ocrState = "Čeká"
         @Volatile private var translationState = "Čeká"
+        @Volatile private var layoutState = "—"
+        @Volatile private var lastOcrMs = 0L
+        @Volatile private var lastTranslationMs = 0L
         @Volatile private var lastRaw = ""
         @Volatile private var lastTranslated = ""
         @Volatile private var preview: Bitmap? = null
@@ -463,13 +509,15 @@ class GameLingoScreenTranslationService : Service() {
             received.set(0); decoded.set(0); ocrCalls.set(0); ocrHits.set(0); translationHits.set(0)
             startupFailed=false; foregroundState="Nezahájena"
             projectionState="Nezahájeno"; displayState="Nevytvořen"; resolution="—"; capturedSize="—"
-            frameError="—"; ocrState="Čeká"; translationState="Čeká"; clearPreview()
+            frameError="—"; ocrState="Čeká"; translationState="Čeká"; layoutState="—"
+            lastOcrMs=0L; lastTranslationMs=0L; clearPreview()
         }
         private fun clearPreview() { preview=null; lastRaw=""; lastTranslated="" }
         fun report(): String = "Stav: $status\nForeground služba: $foregroundState\nSouhlas / projekce: $projectionState\nVirtualDisplay: $displayState" +
             "\nSnímání: $resolution · zdroj: $capturedSize\nPřijaté snímky: ${received.get()} · výřezy: ${decoded.get()}" +
             "\nChyba snímku: $frameError\nOCR: $ocrState (${ocrHits.get()}/${ocrCalls.get()})" +
             "\nPřekladač: $translationState (${translationHits.get()})" +
+            "\nOCR: $lastOcrMs ms · překlad: $lastTranslationMs ms\nRozložení: $layoutState" +
             "\nPřekryv: " + (if (OverlayService.chyba != null) "hlášená chyba" else "bez hlášené chyby") +
             (if (lastRaw.isNotBlank()) "\nOCR: $lastRaw" else "") +
             (if (lastTranslated.isNotBlank()) "\nPřeklad: $lastTranslated" else "")
