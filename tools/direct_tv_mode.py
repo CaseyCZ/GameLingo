@@ -171,10 +171,22 @@ def patch_direct_tv(folder):
     # Install all TV-only screens and services in the actual generated workspace.
     for name in ("GameLingoTVSettings.kt", "GameLingoTVProfiles.kt",
                  "GameLingoScreenTranslationService.kt", "GameLingoTVFit.kt",
-                 "GameLingoSettings.kt", "GameLingoOCRSettings.kt",
-                 "GameLingoProfiles.kt", "GameLingoSubtitleAppearance.kt",
-                 "GameLingoDiagnostics.kt", "GameLingoPhoneSubtitleStyle.kt"):
+                 "GameLingoSettings.kt", "GameLingoOCRSettings.kt"):
         (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
+
+    # The translation and OCR panels are shared; the other destinations use the
+    # TV's local stores, not the phone's paired-receiver preferences or sender.
+    shared_settings = folder / "GameLingoSettings.kt"
+    shared_text = shared_settings.read_text(encoding="utf8")
+    for old, new in (
+        ("GameLingoProfiles.show(activity, settings) {}", "GameLingoTVProfiles.show(activity)"),
+        ("GameLingoSubtitleAppearance.show(activity)", "GameLingoTVCaptionStyle.show(activity)"),
+        ("GameLingoDiagnostics.show(activity)", "GameLingoScreenTranslationService.diagnostics(activity)"),
+    ):
+        if shared_text.count(old) != 1:
+            raise RuntimeError("Shared TV settings anchor changed: " + old)
+        shared_text = shared_text.replace(old, new, 1)
+    shared_settings.write_text(shared_text, encoding="utf8")
 
     main = folder / "MainActivity.kt"
     m = main.read_text(encoding="utf8")

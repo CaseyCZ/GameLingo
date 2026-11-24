@@ -269,6 +269,10 @@ object GameLingoDirectTVLayout {
         side.addView(modes)
         editor=button("Posouvat"){cycleMode()}
         var editing=false
+        editor.setOnFocusChangeListener { v, focused ->
+            v.background=GameLingoVisualKit.card(a,selected=focused)
+            if (!focused) editing=false
+        }
         editor.setOnKeyListener { _,key,event ->
             if(key==KeyEvent.KEYCODE_DPAD_CENTER || key==KeyEvent.KEYCODE_ENTER) {
                 if(event.action==KeyEvent.ACTION_UP) {
@@ -311,11 +315,12 @@ object GameLingoDirectTVLayout {
             boxes[3].forEachIndexed { i,v->e.putFloat("directOrange"+i,v) }
             e.apply();return true
         }
-        addWeighted(footer,button("Uložit do profilu"){if(save()){dialog.dismiss();GameLingoTVProfiles.show(a)}})
+        addWeighted(footer,button("Uložit do profilu"){if(save()){dialog.dismiss();GameLingoTVProfiles.saveCurrent(a) { onSaved() }}})
         addWeighted(footer,button("Uložit"){if(save()){dialog.dismiss();onSaved()}})
         root.addView(footer)
         refresh()
         dialog.setContentView(root)
+        root.viewTreeObserver.addOnWindowFocusChangeListener { focused -> if(focused) removePreview() }
         dialog.setOnDismissListener { removePreview() }
         dialog.show()
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT)

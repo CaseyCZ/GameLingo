@@ -79,23 +79,40 @@ object GameLingoTVProfiles {
             } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_LONG).show()
         }
     }
+    fun saveCurrent(a: Activity, onSaved: () -> Unit = {}) {
+        if (busy()) return
+        val input = EditText(a).apply {
+            hint = "Název hry nebo aplikace"; setSingleLine(true)
+            setText(store(a).getString("activeProfile","").orEmpty())
+            selectAll()
+        }
+        fun persist(name: String) {
+            if (busy()) return
+            val latest=all(a)
+            latest.put(name,snapshot(a))
+            store(a).edit().putString("profiles",latest.toString()).putString("activeProfile",name).apply()
+            android.widget.Toast.makeText(a,"Profil uložen: "+name,android.widget.Toast.LENGTH_SHORT).show()
+            onSaved()
+        }
+        AlertDialog.Builder(a).setTitle("Uložit profil").setView(input).setNegativeButton("Zrušit",null)
+            .setPositiveButton("Uložit") { _,_ ->
+                val name=input.text.toString().trim().take(80)
+                if (name.isEmpty()) {
+                    android.widget.Toast.makeText(a,"Zadej název profilu.",android.widget.Toast.LENGTH_SHORT).show()
+                } else if (all(a).has(name)) {
+                    AlertDialog.Builder(a).setMessage("Přepsat profil "+name+"?")
+                        .setNegativeButton("Zrušit",null).setPositiveButton("Přepsat"){_,_->persist(name)}.show()
+                } else persist(name)
+            }.show()
+    }
     fun show(a: Activity) {
         if (busy()) { AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show(); return }
         val items = all(a)
         val names = items.keys().asSequence().sorted().toList()
-        AlertDialog.Builder(a).setTitle("Profily her")
+        AlertDialog.Builder(a).setTitle("Profily her a aplikací")
             .setItems((listOf("+ Uložit aktuální nastavení") + names).toTypedArray()) { _, i ->
                 if (i == 0) {
-                    val input = EditText(a).apply { hint = "Název hry"; setSingleLine(true) }
-                    AlertDialog.Builder(a).setTitle("Uložit profil").setView(input).setNegativeButton("Zrušit", null)
-                        .setPositiveButton("Uložit") { _, _ ->
-                            val name = input.text.toString().trim().take(80)
-                            if (name.isNotEmpty() && !busy()) {
-                                if (items.has(name)) AlertDialog.Builder(a).setMessage("Přepsat profil $name?").setNegativeButton("Zrušit", null)
-                                    .setPositiveButton("Přepsat") { _, _ -> if (!busy()) { items.put(name, snapshot(a)); store(a).edit().putString("profiles", items.toString()).apply() }; show(a) }.show()
-                                else { items.put(name, snapshot(a)); store(a).edit().putString("profiles", items.toString()).apply(); show(a) }
-                            }
-                        }.show()
+                    saveCurrent(a) { show(a) }
                 } else {
                     val name = names[i-1]
                     AlertDialog.Builder(a).setTitle(name).setItems(arrayOf("Použít", "Smazat")) { _, action ->

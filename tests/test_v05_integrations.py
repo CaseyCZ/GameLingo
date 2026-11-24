@@ -860,6 +860,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for marker in ("blueLocked", "yellowLocked", "greenLocked", "orangeLocked"):
             self.assertIn(marker, profiles)
         self.assertIn("Obnovit oblast", layout)
+        self.assertIn("GameLingoTVProfiles.saveCurrent(a)",layout)
+        self.assertIn("fun saveCurrent",profiles)
         for marker in ("KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_CENTER", "TYPE_APPLICATION_OVERLAY", "FLAG_NOT_TOUCHABLE", "Uložit do profilu", "removePreview()", "30000L"):
             self.assertIn(marker, layout)
         self.assertIn("GameLingoOCRConfig.expandSearch", capture)
