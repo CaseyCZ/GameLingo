@@ -112,6 +112,24 @@ object GameLingoDiagnostics {
             ).apply { bottomMargin = d(10) })
         }
         action("Aktualizovat stav") { refresh() }
+        action("Vymazat místní log překladu") {
+            if (RemotePlayService.aktivni || PrijemService.bezi) {
+                android.app.AlertDialog.Builder(activity).setMessage("Nejdříve zastav překlad a příjem.")
+                    .setPositiveButton("OK", null).show()
+            } else android.app.AlertDialog.Builder(activity)
+                .setMessage("Vymazat starý i nový místní log překladu? Ostatní diagnostické soubory zůstanou.")
+                .setNegativeButton("Zrušit", null)
+                .setPositiveButton("Vymazat") { _, _ ->
+                    if (RemotePlayService.aktivni || PrijemService.bezi) return@setPositiveButton
+                    val removed = listOf("titulky.log", "titulky-private-v2.log").map { name ->
+                        val file = java.io.File(activity.filesDir, name)
+                        !file.exists() || file.delete()
+                    }.all { it }
+                    android.app.AlertDialog.Builder(activity)
+                        .setMessage(if (removed) "Místní log překladu vymazán." else "Některý log se nepodařilo vymazat.")
+                        .setPositiveButton("OK", null).show()
+                }.show()
+        }
         action("Hotovo") { dialog.dismiss() }
         val scroll = ScrollView(activity).apply {
             isFillViewport = true
