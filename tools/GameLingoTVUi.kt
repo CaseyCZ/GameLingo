@@ -153,7 +153,7 @@ object GameLingoTVUi {
                     setSpan(android.text.style.ForegroundColorSpan(purple),4,9,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
             })
-            addView(title(a, "TV · Překlad herních dialogů", 16f, muted = true))
+            addView(title(a, "Titulky a překlady her v reálném čase", 16f, muted = true))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
     }
 

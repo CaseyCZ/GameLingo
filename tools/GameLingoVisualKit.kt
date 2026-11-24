@@ -123,6 +123,45 @@ object GameLingoVisualKit {
             if(tv)GameLingoTVUi.controlFocus(activity,this)
         }
 
+    // GLBrandWordmark: same existing application mark, white Game and purple Lingo.
+    fun wordmark(activity:Activity,compact:Boolean=false):LinearLayout=LinearLayout(activity).apply {
+        orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+        val size=dp(activity,if(compact)39 else 50)
+        addView(ImageView(activity).apply {
+            setImageResource(R.drawable.gamelingo_ikona);adjustViewBounds=true
+            importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        },LinearLayout.LayoutParams(size,size).apply{marginEnd=dp(activity,if(compact)8 else 12)})
+        addView(TextView(activity).apply {
+            text=android.text.SpannableString("GameLingo").apply {
+                setSpan(android.text.style.ForegroundColorSpan(purple),4,9,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            textSize=if(compact)25f else 31f;setTextColor(Color.WHITE)
+            typeface=Typeface.create("sans-serif-black",Typeface.NORMAL);maxLines=1
+        })
+        contentDescription="GameLingo"
+    }
+    // The SwiftUI appearance preview uses a blue/violet scene and mountain symbol.
+    fun captionPreview(activity:Activity,caption:TextView):FrameLayout=FrameLayout(activity).apply {
+        background=card(activity,true)
+        setPadding(dp(activity,14),dp(activity,14),dp(activity,14),dp(activity,14))
+        val scene=FrameLayout(activity).apply {
+            background=GradientDrawable(GradientDrawable.Orientation.TL_BR,intArrayOf(
+                Color.rgb(20,54,102),Color.rgb(41,28,89),ink)).apply{cornerRadius=dp(activity,16).toFloat()}
+        }
+        scene.addView(object:View(activity){
+            private val p=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply{color=Color.argb(56,2,214,255)}
+            override fun onDraw(c:android.graphics.Canvas){
+                val w=width.toFloat();val h=height.toFloat();val path=android.graphics.Path()
+                path.moveTo(w*.12f,h*.85f);path.lineTo(w*.36f,h*.24f);path.lineTo(w*.52f,h*.63f)
+                path.lineTo(w*.69f,h*.10f);path.lineTo(w*.90f,h*.85f);path.close();c.drawPath(path,p)
+            }
+        },FrameLayout.LayoutParams(-1,-1))
+        (caption.parent as? ViewGroup)?.removeView(caption)
+        scene.addView(caption,FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+            bottomMargin=dp(activity,13);leftMargin=dp(activity,12);rightMargin=dp(activity,12)
+        })
+        addView(scene,FrameLayout.LayoutParams(-1,dp(activity,176)))
+    }
     fun dp(c: Context, value: Int): Int =
         (c.resources.displayMetrics.density * value + 0.5f).toInt()
 
@@ -181,11 +220,8 @@ object GameLingoVisualKit {
                 setPadding(0, dp(activity, 5), 0, 0)
             })
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        top.addView(ImageView(activity).apply {
-            setImageResource(R.drawable.gamelingo_ikona)
-            adjustViewBounds = true
-            contentDescription = "GameLingo"
-        }, LinearLayout.LayoutParams(dp(activity, 51), dp(activity, 51)))
+        top.addView(icon(activity,"waveform",cyan),
+            LinearLayout.LayoutParams(dp(activity,36),dp(activity,36)))
         panel.addView(top)
 
         // Same two platform badges as GameLingoHome.swift on iPhone.
@@ -239,23 +275,14 @@ object GameLingoVisualKit {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(activity, 5), 0, dp(activity, 8))
         }
-        bar.addView(ImageView(activity).apply {
-            setImageResource(R.drawable.gamelingo_ikona)
-            adjustViewBounds = true
-            contentDescription = "GameLingo"
-        }, LinearLayout.LayoutParams(dp(activity, 49), dp(activity, 49)).apply {
-            rightMargin = dp(activity, 9)
-        })
-        bar.addView(TextView(activity).apply {
-            val brand = android.text.SpannableString("GameLingo")
-            brand.setSpan(android.text.style.ForegroundColorSpan(purple),
-                4, 9, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            text = brand
-            textSize = 27f
-            setTextColor(Color.WHITE)
-            setTypeface(null, Typeface.BOLD)
-            maxLines = 1
-        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        bar.addView(LinearLayout(activity).apply {
+            orientation=LinearLayout.VERTICAL
+            addView(wordmark(activity,true))
+            addView(TextView(activity).apply {
+                text="Titulky a překlady her v reálném čase";textSize=12f;setTextColor(muted)
+                maxLines=1;ellipsize=android.text.TextUtils.TruncateAt.END
+            })
+        },LinearLayout.LayoutParams(0,-2,1f))
         bar.addView(GameLingoHelp.button(activity,"home"),GameLingoHelp.layout(activity,dp(activity,36),dp(activity,44)))
         bar.addView(TextView(activity).apply {
             text = ""
@@ -440,7 +467,7 @@ object GameLingoVisualKit {
         setTypeface(null, Typeface.BOLD)
         gravity = Gravity.CENTER
         background = primary(activity)
-        minHeight = dp(activity, 66)
+        minHeight = dp(activity, 52)
         isFocusable = true
         isClickable = true
         setOnClickListener { onClick() }

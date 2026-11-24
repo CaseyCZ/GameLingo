@@ -48,10 +48,8 @@ object GameLingoRegions {
                 background = GameLingoVisualKit.card(activity)
                 setPadding(d(14), d(15), d(14), d(15))
             }
-            line.addView(TextView(activity).apply {
-                setBackgroundColor(color)
-                contentDescription = "Oblast " + name
-            }, LinearLayout.LayoutParams(d(9), d(40)).apply { rightMargin = d(13) })
+            val symbol=when(name) {"Modrá"->"viewfinder";"Zelená"->"text.bubble";"Žlutá"->"rectangle.dashed";else->"character.book.closed.fill"}
+            line.addView(GameLingoVisualKit.icon(activity,symbol,color),LinearLayout.LayoutParams(d(38),d(38)).apply{rightMargin=d(13)})
             line.addView(LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(activity).apply {

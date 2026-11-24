@@ -47,6 +47,7 @@ object GameLingoSubtitleAppearance {
         val header = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(text("Vzhled titulků", 27f, bold = true),
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        header.addView(GameLingoHelp.button(activity,"appearance"),GameLingoHelp.layout(activity,dp(36),dp(44)))
         header.addView(TextView(activity).apply {
             this.text = "✕"
             contentDescription = "Zavřít vzhled titulků"
@@ -78,7 +79,7 @@ object GameLingoSubtitleAppearance {
             background = GameLingoVisualKit.card(activity)
             setPadding(dp(16), dp(16), dp(16), dp(16))
             addView(text("NÁHLED", 12f, cyan, true))
-            addView(preview, LinearLayout.LayoutParams(
+            addView(GameLingoVisualKit.captionPreview(activity,preview), LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = dp(12) })
         }

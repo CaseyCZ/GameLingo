@@ -34,7 +34,7 @@ object GameLingoAbout {
             setPadding(0, 6*d, 0, 14*d)
         }
         if (showClose) page.addView(close)
-        page.addView(GameLingoTVUi.brand(activity),
+        page.addView(GameLingoVisualKit.wordmark(activity),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 17*d })
 

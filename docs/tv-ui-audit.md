@@ -31,3 +31,7 @@ TV help buttons share fixed geometry, the standard focused panel and a full-scre
 ## iOS parity follow-up
 
 Added opt-in iOS-style fixed caption duration (3–10 s), age limit (2–8 s), narrow/center/wide OCR presets, profile persistence and named glossary selection, direct subtitle width/font controls and actual timed overlay preview. Existing game timing and legacy automatic crop are kept by default. Story queue retains its own reading timing. Local console aliases do not change console identities or credentials. Hardware validation remains required; the UI contract does not establish identical runtime behavior across Swift/Vision and Android/ML Kit.
+
+## SwiftUI visual source of truth
+
+Android and Google TV use native equivalents of the current iOS `GameLingoVisualSystem.swift`, `GameLingoStyle.swift`, `GameLingoHome.swift`, `SettingsHomeView.swift` and `SubtitleSettingsView.swift`. The iOS files are unchanged. `GameLingoVisualKit` supplies common detail rows, vector symbol equivalents, wordmark, primary action and subtitle preview; Android's fixed five-tab navigation uses matching symbol semantics. TV uses the same rows with D-pad focus and a wide layout. Apple SF Symbols are not redistributed. The approved language picker remains unchanged. Runtime and visual verification on devices is still required.

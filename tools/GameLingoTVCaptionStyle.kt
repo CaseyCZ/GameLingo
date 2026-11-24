@@ -74,34 +74,56 @@ object GameLingoTVCaptionStyle {
             max = 100; keyProgressIncrement = 5; isFocusable = true
             GameLingoTVUi.controlFocus(a, this)
         }
-        val colorAction=GameLingoTVUi.action(a,"Barva písma") {}
-        val backgroundAction=GameLingoTVUi.action(a,"Pozadí titulků") {}
+        val colors=intArrayOf(Color.WHITE,Color.rgb(255,213,74),Color.rgb(2,214,255),Color.rgb(53,229,125),Color.rgb(163,41,250))
+        val swatches=mutableListOf<android.widget.TextView>()
+        val backgrounds=mutableListOf<android.widget.TextView>()
+        val bgValues=intArrayOf(0,230,117)
+        val bgNames=arrayOf("Žádné","Tmavé","Průhledné")
+        fun paintSwatch(i:Int) {
+            val button=swatches[i]
+            val selected=p.getString("color","white")==keys[i]
+            button.text=if(selected)"✓" else ""
+            button.background=android.graphics.drawable.GradientDrawable().apply {
+                shape=android.graphics.drawable.GradientDrawable.OVAL
+                setColor(colors[i])
+                setStroke(GameLingoVisualKit.dp(a,if(button.hasFocus())4 else if(selected)3 else 1),
+                    if(button.hasFocus()||selected)Color.rgb(2,214,255) else Color.argb(100,255,255,255))
+            }
+            button.isSelected=selected
+            button.contentDescription=names[i]+if(selected)" · vybráno" else ""
+        }
         fun refresh() {
-            colorAction.text="Barva písma: "+names[keys.indexOf(p.getString("color","white")).coerceAtLeast(0)]
-            backgroundAction.text="Pozadí: "+when(p.getInt("opacity",230)){0->"Žádné";230->"Tmavé";117->"Průhledné";else->"Vlastní"}
+            swatches.indices.forEach{paintSwatch(it)}
+            backgrounds.forEachIndexed{i,v->v.text=(if(p.getInt("opacity",230)==bgValues[i])"✓ " else "")+bgNames[i]}
             val percent = (p.getInt("opacity",230).coerceIn(0,255)*100+127)/255
             label.text = "Neprůhlednost pozadí: $percent %"
             if(opacityBar.progress != percent) opacityBar.progress=percent
             preview.textSize=24f*GameLingoDirectTVLayout.storedGreen(a)[3]
             preview.setTextColor(textColor(a)); preview.setBackgroundColor(background(a))
         }
-        root.addView(preview)
-        colorAction.setOnClickListener {
-            GameLingoTVUi.select(a, "Barva písma", names, keys.indexOf(p.getString("color", "white"))) { index ->
-                p.edit().putString("color", keys[index]).apply(); refresh()
+        root.addView(GameLingoVisualKit.captionPreview(a,preview))
+        root.addView(GameLingoTVUi.title(a,"Barva textu",18f))
+        val colorRow=android.widget.LinearLayout(a).apply{orientation=android.widget.LinearLayout.HORIZONTAL;clipChildren=false}
+        keys.forEachIndexed{i,key->
+            val swatch=android.widget.TextView(a).apply {
+                gravity=android.view.Gravity.CENTER;textSize=20f;setTextColor(Color.BLACK)
+                isFocusable=true;isClickable=true
+                setOnClickListener {p.edit().putString("color",key).apply();refresh()}
+                setOnFocusChangeListener {_,_->paintSwatch(i)}
             }
+            swatches.add(swatch)
+            val size=GameLingoVisualKit.dp(a,44)
+            colorRow.addView(swatch,android.widget.LinearLayout.LayoutParams(size,size).apply{marginEnd=GameLingoVisualKit.dp(a,9)})
         }
-        root.addView(colorAction)
-        backgroundAction.setOnClickListener {
-            val dialogColors = arrayOf("Bez pozadí", "Tmavé", "Průhledné")
-            val values = intArrayOf(0,230,117)
-            val selected = values.indexOf(p.getInt("opacity",230))
-            GameLingoTVUi.select(a,"Pozadí titulků",dialogColors,selected) { index ->
-                p.edit().putInt("opacity",values[index]).apply()
-                refresh()
-            }
+        root.addView(colorRow)
+        root.addView(GameLingoTVUi.title(a,"Pozadí titulků",18f))
+        val backgroundRow=android.widget.LinearLayout(a).apply{orientation=android.widget.LinearLayout.HORIZONTAL}
+        bgNames.forEachIndexed{i,name->
+            val button=GameLingoTVUi.action(a,name){p.edit().putInt("opacity",bgValues[i]).apply();refresh()}
+            backgrounds.add(button)
+            backgroundRow.addView(button,android.widget.LinearLayout.LayoutParams(0,-2,1f).apply{marginEnd=GameLingoVisualKit.dp(a,5)})
         }
-        root.addView(backgroundAction)
+        root.addView(backgroundRow)
         root.addView(label)
         root.addView(opacityBar.apply {
             setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
