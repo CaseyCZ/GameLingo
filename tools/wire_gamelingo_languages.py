@@ -9,6 +9,7 @@ import sys
 from tv_translation_policy import tv_variant, tv_translator, finalize_tv
 from direct_tv_mode import patch_direct_tv
 from translation_backpressure import bound_translator, bound_choices
+from translation_privacy import protect_cache_writes, restrict_service_log
 
 SRC = Path("app/src/main/java/cz/titulky/tv")
 
@@ -311,6 +312,7 @@ def main():
     if tv_variant(root):
         t = tv_translator(t)
     t = bound_translator(t)
+    t = protect_cache_writes(t, tv_variant(root))
     translator.write_text(t, encoding="utf8")
 
     service = folder / "RemotePlayService.kt"
@@ -647,6 +649,7 @@ def main():
             GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), corrected.joinToString("\\n"))
             Propojeni.Vysilac.nastavVolby(corrected, volbyVybrana)''', service.name)
     s = bound_choices(s, folder)
+    s = restrict_service_log(s)
     service.write_text(s, encoding="utf8")
     if tv_variant(root):
         patch_direct_tv(folder)
