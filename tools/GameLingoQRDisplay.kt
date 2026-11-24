@@ -35,51 +35,67 @@ internal object GameLingoQRDisplay {
                 .setPositiveButton("OK", null).show()
             return
         }
-        val matrix = QRCodeWriter().encode(payload, BarcodeFormat.QR_CODE, 360, 360)
-        val pixels = IntArray(matrix.width * matrix.height) { i ->
-            if (matrix[i % matrix.width, i / matrix.width]) Color.BLACK else Color.WHITE
+        val codeBitmap = bitmap(ip,pin)
+        if (codeBitmap == null) {
+            android.widget.Toast.makeText(activity,"QR kód není dostupný.",android.widget.Toast.LENGTH_LONG).show()
+            return
         }
-        val bitmap = Bitmap.createBitmap(pixels, matrix.width, matrix.height, Bitmap.Config.ARGB_8888)
+        val television = GameLingoTVUi.isTV(activity)
         val image = ImageView(activity).apply {
-            setImageBitmap(bitmap)
+            setImageBitmap(codeBitmap)
+            (drawable as? android.graphics.drawable.BitmapDrawable)?.isFilterBitmap = false
             scaleType = ImageView.ScaleType.FIT_CENTER
             contentDescription = "Dočasný párovací QR kód"
         }
         val label = TextView(activity).apply {
             gravity = Gravity.CENTER
-            textSize = 18f
-            setPadding(12, 12, 12, 12)
+            textSize = if(television) 22f else 18f
+            setTextColor(Color.WHITE)
+            setPadding(12,12,12,12)
         }
-        val size = minOf(activity.resources.displayMetrics.widthPixels / 2,
-            activity.resources.displayMetrics.heightPixels / 2, 420)
-        val content = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            addView(image, LinearLayout.LayoutParams(size, size))
+        val instructions = GameLingoTVUi.title(activity,
+            "V mobilní aplikaci otevři Zařízení a naskenuj QR kód.",20f,muted=true).apply {
+            gravity=Gravity.CENTER
+        }
+        val metrics=activity.resources.displayMetrics
+        val size=if(television) minOf((metrics.widthPixels*.42f).toInt(),(metrics.heightPixels*.55f).toInt())
+            else minOf(metrics.widthPixels/2,metrics.heightPixels/2,420)
+        val content=LinearLayout(activity).apply {
+            orientation=LinearLayout.VERTICAL
+            gravity=Gravity.CENTER
+            setPadding(16,12,16,12)
+            addView(instructions)
+            addView(image,LinearLayout.LayoutParams(size,size).apply{topMargin=12;bottomMargin=12})
             addView(label)
         }
-        val dialog = AlertDialog.Builder(activity)
-            .setTitle("Párování pomocí QR")
-            .setView(content).setPositiveButton("Zavřít", null).create()
-        val handler = Handler(Looper.getMainLooper())
-        val tick = object : Runnable {
+        val handler=Handler(Looper.getMainLooper())
+        var dialog:android.app.Dialog?=null
+        val tick=object:Runnable {
             override fun run() {
-                if (!dialog.isShowing || activity.isFinishing) return
-                if (IPhoneTVPairing.activeCode() != pin) {
+                if(dialog?.isShowing != true || activity.isFinishing || activity.isDestroyed) return
+                if(IPhoneTVPairing.activeCode()!=pin) {
                     image.setImageDrawable(null)
-                    image.visibility = View.GONE
-                    label.text = "Kód již není platný. Vygeneruj nový."
+                    image.visibility=View.GONE
+                    label.text="Kód již není platný. Vrať se zpět a vygeneruj nový."
                     return
                 }
-                label.text = "PIN: " + pin + " · zbývá " + IPhoneTVPairing.remainingSeconds() + " s"
-                handler.postDelayed(this, 500)
+                label.text="PIN: "+pin+"  ·  zbývá "+IPhoneTVPairing.remainingSeconds()+" s"
+                handler.postDelayed(this,500L)
             }
         }
-        dialog.setOnDismissListener {
+        fun cleanup() {
             handler.removeCallbacks(tick)
             image.setImageDrawable(null)
         }
-        dialog.show()
+        if(television) {
+            dialog=GameLingoTVUi.page(activity,"Párování pomocí QR",content,onClose=::cleanup)
+        } else {
+            dialog=AlertDialog.Builder(activity).setTitle("Párování pomocí QR")
+                .setView(content).setPositiveButton("Zavřít",null).create().apply {
+                    setOnDismissListener { cleanup() }
+                    show()
+                }
+        }
         tick.run()
     }
 }
