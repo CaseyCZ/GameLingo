@@ -41,15 +41,23 @@ Tento soubor je pracovní kontrolní seznam. **CI build není potvrzení funkčn
 Vývojový základ: `feature/gamelingo-v05-platform-rebuild`; aktuální audit: `feature/audit-0.5`. Nešířit jako hotové aplikace pouze proto, že proběhl build. Testovací APK/IPA určené k fyzické kontrole smí být označeny jako **dev/QA**, ne jako stabilní verze. Po dokončení povinných kontrol navázat na aktuální společný zdrojový commit, vygenerovat všechny tři instalační soubory a až potom provést release.
 
 ## Dodatečné blokující body z auditu F0–P3
-- [ ] Vyjasněn předchozí písemný souhlas Google pro použití ML Kit on-device Translation na TV nebo odstraněna nepovolená TV integrace (včetně preload/quick/story a závislostí). Viz [P2.5](OFFLINE-TRANSLATION-DESIGN.md). Do té doby nepublikovat TV APK ani jako veřejný pre-release.
+- [x] TV ML Kit Translation odstraněna, včetně preload/quick/story a závislostí; ověřeno CI 45384321662. Znovu ověřit při každém kandidátním sestavení. Viz [P2.5](OFFLINE-TRANSLATION-DESIGN.md).
 - [ ] Ověřeny podmínky, soukromí a atribuce online providerů a ostatních SDK, odpovídající AGPL zdroj a notices. Stabilní release podpis, identita, aktualizace a kontrolní součty.
 - [ ] Fyzická kontrola HMAC/replay, QR/Keystore, více telefonů, odpárování, port fallback, story ACK a účtové cesty. Neuvádět šifrované titulky; rozhodnout o riziku plaintext pairing v důvěryhodné LAN před širší distribucí.
-- [ ] Fyzická kontrola všech P1/P2 implementovaných funkcí na téže revizi, doplněné případy v [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md). Auditní P2.4 CI 45379906749 PASS, hardware čeká. Návrhy P2.2/P2.5/P3 nejsou vydávané funkce.
+- [ ] Fyzická kontrola všech P1/P2 implementovaných funkcí na téže revizi, doplněné případy v [PHYSICAL_QA_0.5.md](PHYSICAL_QA_0.5.md). Aktuální CI 45384321662 PASS, hardware čeká. Návrhy P2.2/P2.5/P3 nejsou vydávané funkce.
 
 ### Aktualizace — TV Translation SDK
-- [ ] Dodatečná náprava v auditní větvi: odstraněna TV ML Kit Translation deklarace a lokální kód, zaveden build/DEX guard. Ověřit plný CI včetně skutečného TV a mobilního APK a zapsat výsledek do REPORT.md. Po CI zůstává kontrola dalších SDK, práv a HW; žádný veřejný release automaticky.
+- [x] TV dependency/source/DEX guard a mobilní pozitivní DEX check prošly; evidence níže. Další licence a HW zůstávají otevřené.
 
 ### Stav po licenčním auditu 2026-11-24
 - [x] Specifická TV ML Kit Translation závislost odstraněna a source/Gradle/DEX gate prošla v CI [45384321662](https://github.com/CaseyCZ/GameLingo/actions/runs/45384321662). Tento bod nahrazuje předchozí neuzavřené TV Translation checklisty; nejde o clearance ostatních SDK.
 - [ ] Uzavřít nedokumentované Google GTX / Microsoft Edge endpointy a MyMemory terms, doložit ML Kit attribution/privacy včetně přeneseného výsledku a kompatibilitu SDK. [Audit](LICENSE-AND-PROVIDER-AUDIT.md).
 - [ ] Resolved dependency SBOM, licence/notice balíčky, Android native .so hash a corresponding source, iOS WebRTC exact resolved, testovací snímky a zděděné WGT/IPK. Žádná veřejná distribuce do vyjasnění.
+
+## Otevřené závěry bodů 2–4
+- [ ] CODE-01–07: opravy a ověření priorit dle [auditu kódu](CODE-AUDIT-0.5.md), zejména ukončení Xbox relace, úplnost Android profilů a oranžová geometrie.
+- [ ] SEC-01/02: rozhodnutí a náprava rizik plaintext párování a účtové cesty; SEC-03–08 dle [bezpečnostního auditu](SECURITY-PRIVACY-AUDIT-0.5.md). Zásady soukromí schválit podle skutečné komunikace, oprávnění a retence.
+- [ ] CLEAN-01–10: inventář balíčků a schválené vyřazení nepotřebných komponent, ne automatické mazání. [Audit úklidu](CLEANUP-AUDIT-0.5.md).
+- [ ] Všechny tři QA balíčky ze stejné aktuální aplikační revize; nové SHA-256. Historické hardcoded publish workflow nepoužívat. Release jen po výslovném schválení.
+
+Aktuální rozcestník: [STATUS-0.5.md](STATUS-0.5.md).
