@@ -113,7 +113,7 @@ def tv(s):
             }
             dlazdiceTv = GameLingoTVUi.tile(
                 this, "▤", "Přímo na TV",
-                "TV se připojí k vybrané konzoli a sama překládá herní texty."
+                "Xbox, PlayStation nebo aplikace přímo na televizoru."
             ) {
                 if (!android.provider.Settings.canDrawOverlays(this)) pozadejOPovoleni()
                 else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
