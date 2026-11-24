@@ -116,6 +116,12 @@ struct GameLingoSettingsOverview: View {
             }
             .buttonStyle(.plain)
             NavigationLink {
+                GameLingoCacheView(model: model)
+            } label: {
+                GLDetailRow(icon: "internaldrive", title: "Překladová cache", detail: "Místní uložené překlady")
+            }
+            .buttonStyle(.plain)
+            NavigationLink {
                 GameLingoDiagnosticsView(model: model)
             } label: {
                 GLDetailRow(icon: "waveform.path.ecg",
@@ -628,13 +634,36 @@ private struct GameLingoHistoryView: View {
     }
 }
 
+private struct GameLingoCacheView: View {
+    @ObservedObject var model: CaptionAppModel
+    @State private var confirm = false
+    var body: some View {
+        GLScreen(title: "Překladová cache", help:
+            "Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu.") {
+            GLCard {
+                Toggle("Ukládat překladovou cache", isOn: Binding(
+                    get: { model.cacheEnabled },
+                    set: { enabled in Task { await model.manageTranslationCache(enabled: enabled) } }))
+                Button("Vymazat uložené překlady", role: .destructive) { confirm = true }
+                    .confirmationDialog("Vymazat místní překladovou cache?", isPresented: $confirm) {
+                        Button("Vymazat", role: .destructive) {
+                            Task { await model.manageTranslationCache() }
+                        }
+                    }
+                Text(model.cacheStatus).font(.caption)
+            }.disabled(model.isRunning || model.cacheChanging)
+            if model.isRunning { Text("Nejdříve zastav překlad.").font(.caption) }
+        }
+    }
+}
+
 private struct GameLingoDiagnosticsView: View {
     @ObservedObject var model: CaptionAppModel
     @State private var showLog = false
 
     var body: some View {
         GLScreen(title: "Diagnostika", help:
-            "Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Log může obsahovat texty ze hry, IP adresu TV a názvy konzolí — před sdílením jej zkontroluj.") {
+            "Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Technický log uchovává omezené kategorie událostí a metriky. Živý náhled níže obsahuje skutečné texty; není součástí sdíleného logu. Před sdílením log zkontroluj.") {
             GLCard {
                 GLHeader(title: "Stav")
                 status("Xbox", model.isRunning ? "Překládá" : "Neaktivní")
