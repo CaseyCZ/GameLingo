@@ -204,3 +204,5 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - Swift skutečný SQLite test persistence, unicode, engine/jazyk izolace, LRU a blank rejection; Android instrumentation analogický, kopírován do src/androidTest, kompilace v TV CI, runtime HW čeká. Statický kontrakt. CI a HW výkon zatím nepotvrzen. P1.4 až po CI.
 
 - P1.2 kumulativní CI 45356504392: všech šest jobů success včetně Swift mailbox testu a všech nativních balíčků. P1.3 připraven jako kandidát a připojen k auditní větvi až po potvrzení tohoto výsledku.
+
+- P1.3 commit `3b498db0d0736e4dfc6475a02970f2820ee03923`. CI [45357244015](https://github.com/CaseyCZ/GameLingo/actions/runs/45357244015): quick / verify: in_progress. Před P1.4 ověřit všech šest jobů, skutečný Swift SQLite test a Android patch anchors/kompilaci instrumentation; případně opravit nebo revertovat. Android runtime, kapacita 20k a reálné latence dosud neověřeny. P1.4: explicitní úspěch/chyba, zejména odstranit návrat originálu při chybě na iOS a zachovat validní shodný překlad.
