@@ -70,7 +70,7 @@ internal class GameLingoCacheStore(context: Context, name: String = "gamelingo_t
 /** Shared per app process; never perform SQLite operations on the UI thread.
  * Cache overload, unavailable storage or a corrupt database are cache misses. */
 internal object GameLingoTranslationCache {
-    val engines = listOf("google-gtx-v1", "microsoft-edge-v1", "mymemory-v1", "mlkit-v1")
+    val engines = listOf("google-gtx-v1", "microsoft-edge-v1", "mymemory-v1")
     private val worker = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
         ArrayBlockingQueue<Runnable>(128), ThreadPoolExecutor.AbortPolicy())
     private var store: GameLingoCacheStore? = null
