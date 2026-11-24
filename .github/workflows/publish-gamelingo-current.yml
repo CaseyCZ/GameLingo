@@ -70,7 +70,10 @@ jobs:
           cat > release-notes.md <<EOF
           # GameLingo 0.5.0 TEST — aktuální vydání
           - iOS (nepodepsaná IPA), Android a Google TV (testovací APK).
-          - TV: kompaktní párování, QR, mřížka nastavení, profily a čtyři oblasti.
+          - Android a Google TV: vizuální sjednocení podle současného SwiftUI kódu (ikony, karty, nápověda, profily, diagnostika a párování).
+          - TV: tlačítka Stáhnout aplikaci a Spravovat zařízení pod příslušnými režimy, QR na aktuální mobilní IPA/APK včetně testovacích vydání.
+          - TV: samostatné barevné oblasti, náhled titulků, barevné kruhy, nastavení časování a profily.
+          - iOS: zdrojový kód beze změny; nový instalační balíček ze stejného kódu.
           - Samostatná TV: text titulků + OCR, bez zvuku a mikrofonu.
           - TV: trvalý testovací titulek přes foreground službu, diagnostika překryvu a snímků bez ADB.
           - TV: kompaktní volba zařízení a jazyků, výraznější D-pad fokus a snímání jen se souhlasem.
