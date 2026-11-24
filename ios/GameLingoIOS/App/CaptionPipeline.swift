@@ -83,7 +83,7 @@ actor CaptionPipeline {
     private var lastText = ""
     private var lastRead = Date.distantPast
     private var lastSeen = Date.distantPast
-    private var lastTranslate = [String: String]()
+    private let translationCache = GLTranslationCache()
     private var lastSettings = ""
     private var emptyReads = 0
     private var revision = 0
@@ -271,8 +271,9 @@ actor CaptionPipeline {
                    from source: GLGameLanguage = .english,
                    to target: GLTargetLanguage = .czech) async -> String {
         if source.rawValue == target.rawValue { return original }
-        let cacheKey = source.rawValue + ":" + target.rawValue + ":" + original
-        if let cached = lastTranslate[cacheKey] { return cached }
+        let engine = "google-gtx-v1"
+        if let cached = await translationCache.lookup(engine: engine, source: source.rawValue,
+            target: target.rawValue, original: original) { return cached }
         // Preserve the previous translation service; language codes are now configurable.
         var components = URLComponents(string: "https://translate.googleapis.com/translate_a/single")
         components?.queryItems = [
@@ -293,8 +294,8 @@ actor CaptionPipeline {
             let translated = segments.compactMap { $0.first as? String }.joined()
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             guard !translated.isEmpty else { return original }
-            if lastTranslate.count > 250 { lastTranslate.removeAll() }
-            lastTranslate[cacheKey] = translated
+            await translationCache.remember(engine: engine, source: source.rawValue,
+                target: target.rawValue, original: original, result: translated)
             return translated
         } catch {
             return original

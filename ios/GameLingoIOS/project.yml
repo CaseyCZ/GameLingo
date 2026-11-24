@@ -21,6 +21,7 @@ settings:
     OTHER_LDFLAGS:
       - "$(inherited)"
       - "-lTPPlayCore"
+      - "-lsqlite3"
       - "-framework"
       - "Security"
       - "-framework"

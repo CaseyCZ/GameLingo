@@ -466,6 +466,26 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("await self?.processFrame(buffer", model)
         self.assertNotIn("await self?.processFrame(frame", model)
 
+    def test_p1_3_persistent_translation_cache_uses_engine_and_language_keys(self):
+        swift = code(IOS/"TranslationCache.swift")
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        android = code(TOOLS/"GameLingoTranslationCache.kt")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        for source in (swift, android):
+            self.assertIn("20_000", source)
+            self.assertIn("last_used", source)
+            self.assertIn("ORDER BY last_used DESC", source)
+            self.assertIn("INSERT OR REPLACE", source)
+        self.assertIn("isExcludedFromBackup = true", swift)
+        self.assertIn("translationCache.lookup(engine: engine", pipeline)
+        self.assertIn("translationCache.remember(engine: engine", pipeline)
+        self.assertNotIn("lastTranslate", pipeline)
+        self.assertIn("ArrayBlockingQueue<Runnable>(128)", android)
+        self.assertIn("cachedOrRun", wiring)
+        self.assertIn("google(vstup, target, source)", wiring)
+        self.assertIn("currentPair(source, target)", wiring)
+        self.assertIn("GameLingoTranslationCacheTest.kt", wiring)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

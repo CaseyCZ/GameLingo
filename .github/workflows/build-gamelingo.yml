@@ -63,6 +63,10 @@ jobs:
         run: |
           swiftc ios/GameLingoIOS/App/OCRFrameFingerprint.swift tests/OCRFrameFingerprintTests.swift -o "$RUNNER_TEMP/ocr-fingerprint-tests"
           "$RUNNER_TEMP/ocr-fingerprint-tests"
+      - name: Run persistent translation cache tests
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationCache.swift tests/TranslationCacheTests.swift -lsqlite3 -o "$RUNNER_TEMP/translation-cache-tests"
+          "$RUNNER_TEMP/translation-cache-tests"
       - name: Generate original GameLingo icon
         run: |
           python -m pip install pillow

@@ -42,7 +42,7 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P0.4 více telefonů a jednotlivé odpojení — poslední kumulativní CI 45348736716 success; HW čeká.
 - [x] P0.5 konzole + HDMI; ruční QA matice doplněna, CI 45349556066 success; HW čeká.
 - [x] P1.1 obrazový otisk posledního OCR, periodická kontrola a krátké věty — CI 45353138433 success; HW měření čeká.
-- [ ] P1.2 nejnovější snímek, omezená fronta
+- [x] P1.2 nejnovější snímek, omezená fronta — CI 45356504392 success; HW čeká.
 - [ ] P1.3 SQLite LRU ~20k, engine/jazyky
 - [ ] P1.4 explicitní success/error, žádný falešný překlad
 - [ ] P1.5 stabilizace, 800 ms / max ~4 s při stejném obrazu
@@ -197,3 +197,10 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - P1.2 run 45356393524 selhal v jediném z 34 Python kontraktů: test_both_translation_lanes_require_verified_tv_receiver očekával původní přesný počet mezer po extrakci dvou OCR funkcí. Kontrolou skutečného kódu potvrzeny obě podmínky verifiedTelevisionOutput bez změny. Následný commit `test: make verified receiver contract independent of indentation` mění pouze test na regex vyžadující stejné podmínky a volání, nikoliv vypnutí kontroly. První Swift executable test a nativní build byly přeskočeny, čeká nový CI. P1.3 zatím nezačal.
 
 - P1.2 opravný test commit `b34bfa906475fc347680c104188cb7cd3ae31056`. CI [45356504392](https://github.com/CaseyCZ/GameLingo/actions/runs/45356504392): quick / verify: in_progress. Před P1.3 ověřit plný kumulativní CI, zejména latest-frame Swift test a nativní build; HW neověřeno.
+
+## P1.3 — persistent SQLite LRU
+- iOS vlastní SQLite actor, Android SQLiteOpenHelper + jeden omezený cache worker (128 čekajících cache operací), limit 20 000 řádků na instalaci. Klíč engine+zdroj+ cíl+ přesný vstup (Android zachovává normalizaci anglického slangu). Po hitu aktualizace last_used; po insertu LRU trim v transakci, ne clear-all. UTF-8 a parametrizované SQL, limity vstupu 4096 / výstupu 8192 bytů; prázdný výsledek ani chyba se neukládá. Shodný validní překlad u jmen může být uložen. iOS Application Support, vyloučeno ze zálohy; Android privátní DB (aplikace má allowBackup=false). Žádná synchronizace mezi zařízeními. Lokální texty přetrvají restart, smazání dat aplikace odstraní cache; vlastní volba vymazání bude řešena s historií/diagnostikou. Databázová chyba znamená cache miss, překladače dál fungují. Není šifrovaná historie; žádné klíče/účty v DB.
+- Android nahrazuje RAM LruCache 500 ve všech třech vstupech (normal/story/quick), cache před síťovými službami i ML Kit. Skutečný engine se ukládá zvlášť; jazykové snapshoty předány online providerům, při změně jazyka nepoužít starý výsledek. Ponechány existující Google/Microsoft/MyMemory/ML Kit cesty a jejich strategie. iOS odstraněna RAM clear-all ~250, pouze úspěšný Google výsledek do SQLite. Fallback originálu při chybě iOS se v P1.3 nemění, neukládá se; řeší P1.4. Bez nových překladačů nebo jazyků.
+- Swift skutečný SQLite test persistence, unicode, engine/jazyk izolace, LRU a blank rejection; Android instrumentation analogický, kopírován do src/androidTest, kompilace v TV CI, runtime HW čeká. Statický kontrakt. CI a HW výkon zatím nepotvrzen. P1.4 až po CI.
+
+- P1.2 kumulativní CI 45356504392: všech šest jobů success včetně Swift mailbox testu a všech nativních balíčků. P1.3 připraven jako kandidát a připojen k auditní větvi až po potvrzení tohoto výsledku.

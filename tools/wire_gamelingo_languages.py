@@ -77,6 +77,132 @@ def main():
             t = t.replace(old, new)
         else:
             t = once(t, old, new, translator.name)
+    # P1.3: bounded persistent cache, shared by all translator instances.
+    # Apply after language integration so every request uses a stable pair.
+    for name in ("GameLingoTranslationCache.kt",):
+        (folder/name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"),encoding="utf8")
+    # folder is app/src/main/java/cz/titulky/tv; src/androidTest is a sibling of main.
+    test_dir=folder.parents[4]/"androidTest/java/cz/titulky/tv"
+    test_dir.mkdir(parents=True, exist_ok=True)
+    (test_dir/"GameLingoTranslationCacheTest.kt").write_text(
+        Path(__file__).with_name("GameLingoTranslationCacheTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    t=t.replace("import android.util.LruCache\n","")
+    if t.count("        cache.evictAll()\n") != 2:
+        raise RuntimeError("Expected two old language-cache resets")
+    t=t.replace("        cache.evictAll()\n","")
+    t=once(t, '    private val cache = LruCache<String, String>(500)', '''    private val cacheContext = context?.applicationContext
+
+    private fun currentPair(source: String, target: String) =
+        !zavreno && zdrojovyJazyk == source && cil == target
+
+    private fun cachedOrRun(text: String, source: String, target: String,
+                            hotovo: (String) -> Unit, chyba: (String) -> Unit,
+                            miss: () -> Unit) {
+        if (!currentPair(source, target)) { chyba("Změna jazyka nebo relace"); return }
+        GameLingoTranslationCache.lookup(cacheContext, source, target, text) { cached ->
+            ui.post {
+                if (!currentPair(source, target)) chyba("Změna jazyka nebo relace")
+                else if (cached != null) { zdroj = "paměť"; hotovo(cached) }
+                else miss()
+            }
+        }
+    }
+
+    private fun remember(engine: String, source: String, target: String, text: String, result: String) {
+        GameLingoTranslationCache.remember(cacheContext, engine, source, target, text, result)
+    }''', translator.name)
+    t=once(t, '''        val jazyk = cil
+        cache.get(vstup)?.let { hotovo(it); return }
+        if (zavreno) { chyba("Překladač je zavřený"); return }
+        val strategie''', '''        val jazyk = cil
+        val source = zdrojovyJazyk
+        cachedOrRun(vstup, source, jazyk, hotovo, chyba) {
+            prelozPribehMiss(vstup, source, jazyk, hotovo, chyba)
+        }
+    }
+
+    private fun prelozPribehMiss(vstup: String, source: String, jazyk: String,
+                                 hotovo: (String) -> Unit, chyba: (String) -> Unit) {
+        val strategie''',translator.name)
+    t=once(t, 'google(t, jazyk)', 'google(t, jazyk, source)',translator.name)
+    t=once(t, 'if (!vysledek.isNullOrBlank() && cil == jazyk && !zavreno) cache.put(t, vysledek)\n                        callback(vysledek)', '''if (!currentPair(source, jazyk)) { callback(null); return@post }
+                        if (!vysledek.isNullOrBlank()) remember("google-gtx-v1", source, jazyk, t, vysledek)
+                        callback(vysledek)''',translator.name)
+    t=once(t,'prelozVTelevizi(t, ok, { err() })','prelozVTelevizi(t, source, jazyk, ok, { err() })',translator.name)
+    t=once(t,'if (zavreno || cil != jazyk) chyba("Změna jazyka nebo relace")','if (!currentPair(source, jazyk)) chyba("Změna jazyka nebo relace")',translator.name)
+    t=once(t, '''        cache.get(vstup)?.let { zdroj = "paměť"; hotovo(it); return }
+        // služba mezitím skončila (překladač zavřený) → nic nedělat, hlavně nespadnout
+        if (zavreno) { chyba("překladač zavřený"); return }
+
+        if (runCatching { sit.execute {''', '''        val source = zdrojovyJazyk
+        val target = cil
+        cachedOrRun(vstup, source, target, hotovo, chyba) {
+            prelozOnlineMiss(vstup, source, target, hotovo, chyba)
+        }
+    }
+
+    private fun prelozOnlineMiss(vstup: String, source: String, target: String,
+                                 hotovo: (String) -> Unit, chyba: (String) -> Unit) {
+        if (runCatching { sit.execute {
+            if (!currentPair(source, target)) { ui.post { chyba("Změna jazyka nebo relace") }; return@execute }''',translator.name)
+    if t.count("google(vstup)") != 2 or t.count("edge(vstup)") != 2:
+        raise RuntimeError("Expected online provider retry calls")
+    t=t.replace("google(vstup)","google(vstup, target, source)").replace("edge(vstup)","edge(vstup, target, source)")
+    t=once(t,"myMemory(vstup)","myMemory(vstup, target, source)",translator.name)
+    t=once(t, '''                if (!hotovyText.isNullOrBlank()) {
+                    zdroj = odkud
+                    cache.put(vstup, hotovyText)
+                    hotovo(hotovyText)''', '''                if (!currentPair(source, target)) { chyba("Změna jazyka nebo relace"); return@post }
+                if (!hotovyText.isNullOrBlank()) {
+                    zdroj = odkud
+                    val engine = when (odkud) {
+                        "google" -> "google-gtx-v1"
+                        "microsoft" -> "microsoft-edge-v1"
+                        else -> "mymemory-v1"
+                    }
+                    remember(engine, source, target, vstup, hotovyText)
+                    hotovo(hotovyText)''',translator.name)
+    t=once(t,"prelozZalozne(vstup, hotovo, chyba)","prelozZalozne(vstup, source, target, hotovo, chyba)",translator.name)
+    t=once(t,'''        // když už Google tuhle větu znal, vrátit rovnou dobrý překlad
+        cache.get(vstup)?.let { hotovo(it); return }
+        if (zavreno) { chyba("překladač zavřený"); return }
+        runCatching {
+            translator.translate(vstup)
+                .addOnSuccessListener { hotovo(it) }
+                .addOnFailureListener { chyba(it.message ?: "Neznámá chyba") }
+        }.onFailure { chyba(it.message ?: "překladač zavřený") }''','''        val source = zdrojovyJazyk
+        val target = cil
+        cachedOrRun(vstup, source, target, hotovo, chyba) {
+            prelozVTelevizi(vstup, source, target, hotovo, chyba)
+        }''',translator.name)
+    t=once(t,'''    private fun prelozZalozne(vstup: String, hotovo: (String) -> Unit, chyba: (String) -> Unit) =
+        prelozVTelevizi(vstup, hotovo, chyba)''','''    private fun prelozZalozne(vstup: String, source: String, target: String,
+                               hotovo: (String) -> Unit, chyba: (String) -> Unit) =
+        prelozVTelevizi(vstup, source, target, hotovo, chyba)''',translator.name)
+    t=once(t,'private fun prelozVTelevizi(vstup: String, hotovo: (String) -> Unit, chyba: (String) -> Unit)', 'private fun prelozVTelevizi(vstup: String, source: String, target: String, hotovo: (String) -> Unit, chyba: (String) -> Unit)',translator.name)
+    t=once(t,'''        if (zavreno) { chyba("překladač zavřený"); return }
+        runCatching {
+            translator.translate(vstup)
+                .addOnSuccessListener { cesky -> zdroj = "tv"; hotovo(cesky) }''','''        if (!currentPair(source, target)) { chyba("Změna jazyka nebo relace"); return }
+        val activeTranslator = translator
+        runCatching {
+            activeTranslator.translate(vstup)
+                .addOnSuccessListener { cesky ->
+                    if (!currentPair(source, target)) chyba("Změna jazyka nebo relace")
+                    else {
+                        zdroj = "tv"
+                        remember("mlkit-v1", source, target, vstup, cesky)
+                        hotovo(cesky)
+                    }
+                }''',translator.name)
+    t=once(t,'private fun google(text: String, cilJazyk: String = cil)', 'private fun google(text: String, cilJazyk: String = cil, sourceJazyk: String = zdrojovyJazyk)',translator.name)
+    t=once(t,'&sl=$zdrojovyJazyk&tl=$cilJazyk','&sl=$sourceJazyk&tl=$cilJazyk',translator.name)
+    t=once(t,'private fun edge(text: String)', 'private fun edge(text: String, target: String, source: String)',translator.name)
+    t=once(t,'?from=$zdrojovyJazyk&to=$cil&api-version','?from=$source&to=$target&api-version',translator.name)
+    t=once(t,'private fun myMemory(text: String)', 'private fun myMemory(text: String, target: String, source: String)',translator.name)
+    t=once(t,'?langpair=$zdrojovyJazyk%7C$cil&q=','?langpair=$source%7C$target&q=',translator.name)
+    if "cache.get(" in t or "cache.put(" in t or "LruCache" in t:
+        raise RuntimeError("Old text-only cache not fully removed")
     translator.write_text(t, encoding="utf8")
 
     service = folder / "RemotePlayService.kt"
