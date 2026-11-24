@@ -1,5 +1,7 @@
 # GameLingo 0.5 — kontrolní bod vývoje (obnovitelné po přerušení)
 
+> **Historický checkpoint 23. 11. 2026.** Pro pokračování používej [aktuální stav](STATUS-0.5.md) a [REPORT.md](../REPORT.md) na `feature/audit-0.5`. Původní instrukce a výsledky níže jsou historie; nespouštět staré publikační workflow ani přebírat jejich SHA jako aktuální.
+
 **Závazné zadání:** audit z 23. 11. 2026 (priorita P0–P2). Práce probíhá pouze ve větvi `feature/gamelingo-v05-platform-rebuild`, PR [#5](https://github.com/CaseyCZ/GameLingo/pull/5). **Master ani veřejná vydání neměnit, dokud neprojde plný build a reálný test na zařízeních.**
 
 **Jak navázat po přerušení:** Otevři tento soubor a PR #5, přečti poslední commit větve, pokračuj od prvního řádku se stavem **ROZPRACOVÁNO** nebo **NEOVĚŘENO**. Po dokončení každého bodu vytvoř samostatný commit, doplň odkaz na commit a důkaz o testu. Nikdy neoznač funkci za ověřenou pouze díky statickému testu.
