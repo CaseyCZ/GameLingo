@@ -941,6 +941,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("activateGlossary",profile)
         self.assertIn("GameLingoOCRConfig.displayMs",code(TOOLS/"direct_tv_mode.py"))
         self.assertIn("Náhled na TV",code(TOOLS/"GameLingoTVCaptionStyle.kt"))
+        self.assertIn("Přejmenovat konzoli",code(TOOLS/"GameLingoDeviceCenter.kt"))
+        self.assertIn("GameLingoDeviceCenter.consoleName",code(TOOLS/"polish_all_screens.py"))
 
     def test_tv_review_fixes_focus_opacity_and_profile_editing(self):
         style=code(TOOLS/"GameLingoTVCaptionStyle.kt")
@@ -964,8 +966,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         self.assertIn("GameLingoTVUi.select(c, heading, options, onSelect = onSelect)",manager)
-        for marker in ('chooseDevice(c, "Přidat zařízení", options)', "chooseDevice(c, ps.name",
-                       "chooseDevice(c, xbox.jmeno", "chooseDevice(c, tv.jmeno"):
+        for marker in ('chooseDevice(c, "Přidat zařízení", options)', 'chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name)',
+                       'chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno)', "chooseDevice(c, tv.jmeno"):
             self.assertIn(marker,manager)
 
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
