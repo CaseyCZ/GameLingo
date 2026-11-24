@@ -69,7 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           # Keep existing tags and releases intact until the replacement is verified.
-          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' > old-releases.txt
+          gh release list --limit 1000 --json tagName --jq '.[].tagName' > old-releases.txt
           cat > notes.md <<EOF
           ## GameLingo – aktuální testovací verze
 
@@ -105,7 +105,7 @@ jobs:
             [[ -n "$tag" && "$tag" != "$RELEASE_TAG" ]] || continue
             gh release delete "$tag" --yes
           done < old-releases.txt
-          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' > remaining.txt
+          gh release list --limit 1000 --json tagName --jq '.[].tagName' > remaining.txt
           test "$(cat remaining.txt)" = "$RELEASE_TAG"
           gh release view "$RELEASE_TAG" --json url,assets,isPrerelease
       - name: Report publication result
