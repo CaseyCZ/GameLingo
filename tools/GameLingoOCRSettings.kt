@@ -43,7 +43,13 @@ object GameLingoOCRSettings {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = d(12) })
         }
-        add(text("OCR a rozpoznávání", 26f, true))
+        if(GameLingoTVUi.isTV(activity)) {
+            add(LinearLayout(activity).apply {
+                gravity=Gravity.CENTER_VERTICAL
+                addView(text("OCR a rozpoznávání",26f,true),LinearLayout.LayoutParams(0,-2,1f))
+                addView(GameLingoHelp.button(activity,"ocr"),GameLingoHelp.layout(activity))
+            })
+        } else add(text("OCR a rozpoznávání", 26f, true))
         add(text("Rychlost čtení, filtrování menu a skutečná oblast snímání. " +
             "Během spuštěné relace nejprve zastav překlad.", 14f))
         fun action(title: String, detail: String, enabled: Boolean = true,

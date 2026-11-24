@@ -23,3 +23,7 @@ The audit follows the generated TV variant after all upstream branding and patch
 The build runs `tools/audit_tv_ui.py` on the final generated TV source and publishes a separate **GameLingo-TV-UI-inventory** artifact. It inventories manifest activities, Kotlin UI entry points and unthemed alert/dialog constructors. It is not a guarantee of focus order, geometry, typography or runtime behavior. Those still require physical TV testing.
 
 Do not change approved languages, phone UI, translation defaults, permissions, account or signing behavior as part of visual-only changes.
+
+## Help and remote focus
+
+TV help buttons share fixed geometry, the standard focused panel and a full-screen help destination. The generated UI audit inventories help calls and rejects independent literal question-mark buttons outside the shared component. Existing language picker layout is preserved. Physical focus navigation and safe-area checks remain necessary.

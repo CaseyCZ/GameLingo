@@ -868,6 +868,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("blockedHome", capture)
         self.assertIn("clearHint()", capture)
 
+    def test_tv_help_has_single_focus_style_and_fullscreen_destination(self):
+        help_ui=code(TOOLS/"GameLingoHelp.kt")
+        self.assertIn("fun layout(activity: Activity",help_ui)
+        self.assertIn("GameLingoTVUi.panel(activity,focused)",help_ui)
+        self.assertIn("setOnFocusChangeListener",help_ui)
+        self.assertIn('GameLingoTVUi.page(activity,"Nápověda · "+title',help_ui)
+        for module in ("GameLingoTVSettings.kt","GameLingoOCRSettings.kt","GameLingoDirectTVLayout.kt"):
+            self.assertIn("GameLingoHelp.layout",code(TOOLS/module))
+        self.assertIn("Independent help glyph",code(TOOLS/"audit_tv_ui.py"))
+
     def test_tv_fullscreen_pages_and_global_dialog_theme(self):
         ui=code(TOOLS/"GameLingoTVUi.kt")
         wiring=code(TOOLS/"wire_gamelingo_languages.py")

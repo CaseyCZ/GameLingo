@@ -25,7 +25,7 @@ def mobile(s):
         '''        addView(View(this@MainActivity),
             LinearLayout.LayoutParams(0, 1, 1f))
         addView(GameLingoHelp.button(this@MainActivity, "console"),
-            LinearLayout.LayoutParams(dp(55), dp(55)))
+            GameLingoHelp.layout(this@MainActivity, dp(55), dp(55)))
         setPadding(dp(4), dp(8), dp(4), dp(12))
     }
 
@@ -37,7 +37,7 @@ def mobile(s):
         '''        if (telefon) {
             logoRadek.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
             logoRadek.addView(GameLingoHelp.button(this, "home"),
-                LinearLayout.LayoutParams(dp(51), dp(51)))
+                GameLingoHelp.layout(this, dp(51), dp(51)))
         }
         if (!telefon) {
             // po najetí na logo se vedle ukáže''',
@@ -90,8 +90,8 @@ def tv(s):
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 rightMargin = dp(14)
             })
-            hlava.addView(GameLingoHelp.button(this, "tv"),
-                LinearLayout.LayoutParams(dp(48), dp(48)))
+            hlava.addView(GameLingoHelp.button(this, "home"),
+                GameLingoHelp.layout(this, dp(48), dp(48)))
             obsah.addView(hlava, odsazeni(bottom = 12))
             povoleni?.let { obsah.addView(it, odsazeni(bottom = 13)) }
 
@@ -202,7 +202,7 @@ def tv(s):
         '        vrsek.addView(logo)\n',
         '''        vrsek.addView(logo)
         vrsek.addView(GameLingoHelp.button(this, "tv"),
-            LinearLayout.LayoutParams(dp(55), dp(55)).apply {
+            GameLingoHelp.layout(this, dp(55), dp(55)).apply {
                 leftMargin = dp(15)
             })
 ''', "Google TV receiver header")
@@ -229,7 +229,7 @@ def tv(s):
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 .apply { leftMargin = dp(12) })
         addView(GameLingoHelp.button(this@MainActivity, "console"),
-            LinearLayout.LayoutParams(dp(56), dp(56)))
+            GameLingoHelp.layout(this@MainActivity, dp(56), dp(56)))
         setPadding(dp(4), dp(8), dp(4), dp(10))
     }
 '''
@@ -263,7 +263,7 @@ def polish_phone_activity(s):
     # but move instructional text to optional Help.
     s=one(s,'        val horni = LinearLayout(this).apply {',
       '''        lista.addView(GameLingoHelp.button(this, "phone", 20f),
-            LinearLayout.LayoutParams(dp(48), dp(48)).apply {
+            GameLingoHelp.layout(this, dp(48), dp(48)).apply {
                 leftMargin = dp(9)
             })
         val horni = LinearLayout(this).apply {''',"phone caption header")

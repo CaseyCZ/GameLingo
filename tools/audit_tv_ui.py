@@ -28,12 +28,15 @@ def main():
         for act in app.findall("activity"):
             lines.append("- "+str(act.get(ns+"name"))+" — "+str(act.get(ns+"theme","inherits app theme")))
     lines+=["","## Kotlin UI entry points and dialogs",""]
-    pattern=re.compile(r'AlertDialog\.Builder|ProgressDialog|(?<![A-Za-z])Dialog\(|setContentView\(|GameLingoTVUi\.(?:page|select)\(|WebView\(')
+    pattern=re.compile(r'AlertDialog\.Builder|ProgressDialog|(?<![A-Za-z])Dialog\(|setContentView\(|GameLingoTVUi\.(?:page|select)\(|WebView\(|GameLingoHelp\.(?:button|show|layout)\(')
     files=sorted((src/"java").rglob("*.kt"))
     counts=0
     for f in files:
         source=f.read_text(encoding="utf8")
         rows=[]
+        if f.name!="GameLingoHelp.kt":
+            for match in re.finditer(r'\btext\s*=\s*"\?"|\btext\(\s*"\?"',source):
+                errors.append(f"Independent help glyph: {f.name}:{source.count(chr(10),0,match.start())+1}")
         for i,line in enumerate(source.splitlines(),1):
             if pattern.search(line):
                 rows.append((i,line.strip()))

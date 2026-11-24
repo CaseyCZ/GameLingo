@@ -66,7 +66,7 @@ object GameLingoSettings {
             setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(GameLingoHelp.button(activity, "translation"),
-            LinearLayout.LayoutParams(54, 54))
+            GameLingoHelp.layout(activity,54,54))
         content.addView(header, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = 18 })

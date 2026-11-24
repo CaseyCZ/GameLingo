@@ -44,7 +44,7 @@ object GameLingoTVUi {
             )
         ).apply {
             cornerRadius = dp(a, 22).toFloat()
-            setStroke(dp(a, if (focus) 3 else 1),
+            setStroke(dp(a, if (focus) 4 else 1).coerceAtLeast(1),
                 if (focus) cyan else Color.parseColor("#644393"))
         }
 
@@ -106,7 +106,7 @@ object GameLingoTVUi {
 
     /** Full-screen TV settings destination. Content may supply its own weighted scroll area. */
     fun page(a: Activity, heading: String, body: View, scroll: Boolean = true,
-             onClose: () -> Unit = {}): Dialog {
+             helpTopic: String? = null, onClose: () -> Unit = {}): Dialog {
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
@@ -116,6 +116,7 @@ object GameLingoTVUi {
         val top = LinearLayout(a).apply { gravity=Gravity.CENTER_VERTICAL }
         top.addView(title(a,heading,29f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
         val back=action(a,"Zpět"){dialog.dismiss()}
+        if(helpTopic!=null) top.addView(GameLingoHelp.button(a,helpTopic),GameLingoHelp.layout(a))
         top.addView(back)
         root.addView(top,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(a,14)})
         val content=if(scroll) ScrollView(a).apply{isFillViewport=true;addView(body)} else body

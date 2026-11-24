@@ -188,6 +188,7 @@ object GameLingoDirectTVLayout {
         }
         val top=row()
         top.addView(GameLingoTVUi.title(a,"Rozložení oblastí",24f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
+        top.addView(GameLingoHelp.button(a,"regions"),GameLingoHelp.layout(a))
         top.addView(button("Zrušit"){dialog.dismiss()})
         root.addView(top)
         val tabs=row(); root.addView(tabs)

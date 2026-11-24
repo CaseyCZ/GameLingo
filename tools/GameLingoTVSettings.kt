@@ -28,6 +28,8 @@ object GameLingoTVSettings {
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val back = GameLingoTVUi.action(a, "Zpět") { dialog.dismiss(); onUpdate() }
         back.id = View.generateViewId()
+        val help=GameLingoHelp.button(a,"settings")
+        header.addView(help,GameLingoHelp.layout(a))
         header.addView(back)
         root.addView(header)
         val cards = mutableListOf<View>()
@@ -77,6 +79,10 @@ object GameLingoTVSettings {
             card.nextFocusDownId = cards.getOrNull(i+3)?.id ?: card.id
         }
         back.nextFocusDownId = cards[2].id
+        back.nextFocusLeftId=help.id
+        help.nextFocusRightId=back.id
+        help.nextFocusDownId=cards[1].id
+        cards[1].nextFocusUpId=help.id
         dialog.setContentView(root)
         dialog.show()
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -127,6 +133,6 @@ object GameLingoTVSettings {
                     }.setNegativeButton("Zpět", null).show()
         })
         body.addView(GameLingoTVUi.action(a,"Test OCR") { GameLingoScreenTranslationService.diagnostics(a) })
-        GameLingoTVUi.page(a,"Diagnostika TV",body)
+        GameLingoTVUi.page(a,"Diagnostika TV",body,helpTopic="diagnostics")
     }
 }
