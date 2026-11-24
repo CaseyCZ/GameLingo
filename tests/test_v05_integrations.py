@@ -908,6 +908,13 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoScreenTranslationService.running ||", wiring)
         self.assertIn("Obsolete accessibility implementation included", code(TOOLS/"verify_tv_ui_apk.py"))
 
+    def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
+        manager=code(TOOLS/"GameLingoDeviceCenter.kt")
+        self.assertIn("GameLingoTVUi.select(c, heading, options, onSelect = onSelect)",manager)
+        for marker in ('chooseDevice(c, "Přidat zařízení"', "chooseDevice(c, ps.name",
+                       "chooseDevice(c, xbox.jmeno", "chooseDevice(c, tv.jmeno"):
+            self.assertIn(marker,manager)
+
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         for marker in (

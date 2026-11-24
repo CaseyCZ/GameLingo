@@ -112,6 +112,17 @@ object GameLingoDeviceCenter {
         ).apply { bottomMargin = 13 })
     }
 
+    /** TV uses the branded D-pad picker. Preserve the existing mobile presentation. */
+    private fun chooseDevice(c: Activity, heading: String, options: Array<String>,
+                             onSelect: (Int) -> Unit) {
+        if (GameLingoTVUi.isTV(c)) {
+            GameLingoTVUi.select(c, heading, options, onSelect = onSelect)
+        } else {
+            AlertDialog.Builder(c).setTitle(heading).setItems(options) { _, i -> onSelect(i) }
+                .setNegativeButton("Zpět", null).show()
+        }
+    }
+
     /** Shared content for the native mobile device tab and the TV dialog. */
     fun content(c: Activity,
              onXbox: () -> Unit,
@@ -143,10 +154,8 @@ object GameLingoDeviceCenter {
         root.addView(header)
 
         val addDeviceButton = line(c, "＋  Přidat zařízení") {
-            AlertDialog.Builder(c)
-                .setTitle("Přidat zařízení")
-                .setItems(arrayOf("Xbox", "PlayStation 5 / 4",
-                                  "Google TV / Android TV")) { _, selected ->
+            chooseDevice(c, "Přidat zařízení", arrayOf("Xbox", "PlayStation 5 / 4",
+                                  "Google TV / Android TV")) { selected ->
                     onDismiss()
                     when (selected) {
                         0 -> onXbox()
@@ -154,7 +163,6 @@ object GameLingoDeviceCenter {
                         else -> onTV()
                     }
                 }
-                .show()
         }
         add(root, addDeviceButton)
 
@@ -185,9 +193,7 @@ object GameLingoDeviceCenter {
                 for (ps in saved) {
                     add(consoles, line(c, ps.name, ps.type + " · " + ps.ip,
                                       ps.selected) {
-                        AlertDialog.Builder(c)
-                            .setTitle(ps.name)
-                            .setItems(arrayOf("Použít", "Odebrat")) { _, option ->
+                        chooseDevice(c, ps.name, arrayOf("Použít", "Odebrat")) { option ->
                                 if (option == 0) {
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
@@ -202,7 +208,7 @@ object GameLingoDeviceCenter {
                                         AlertDialog.Builder(c)
                                             .setMessage("Nejdřív zastav probíhající překlad.")
                                             .setPositiveButton("OK", null).show()
-                                        return@setItems
+                                        return@chooseDevice
                                     }
                                     AlertDialog.Builder(c)
                                         .setMessage("Odebrat " + ps.name + "?")
@@ -213,7 +219,7 @@ object GameLingoDeviceCenter {
                                         }
                                         .setNegativeButton("Zrušit", null).show()
                                 }
-                            }.show()
+                            }
                     })
                 }
             }
@@ -239,14 +245,12 @@ object GameLingoDeviceCenter {
                     list.filterNot { it.id in hiddenXboxIds }.forEach { xbox ->
                         add(consoles, line(c, xbox.jmeno, "Xbox Series / One",
                                           selectedID == xbox.id) {
-                            AlertDialog.Builder(c)
-                                .setTitle(xbox.jmeno)
-                                .setItems(arrayOf("Použít", "Připojit", "Odebrat")) { _, option ->
+                            chooseDevice(c, xbox.jmeno, arrayOf("Použít", "Připojit", "Odebrat")) { option ->
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
                                             .setMessage("Nejdřív zastav probíhající překlad.")
                                             .setPositiveButton("OK", null).show()
-                                        return@setItems
+                                        return@chooseDevice
                                     }
                                     if (option == 2) {
                                         AlertDialog.Builder(c)
@@ -271,7 +275,7 @@ object GameLingoDeviceCenter {
                                         onDismiss()
                                         if (option == 1) onXbox() else onUpdated()
                                     }
-                                }.show()
+                                }
                         })
                     }
                     if (hiddenXboxIds.isNotEmpty()) {
@@ -336,12 +340,10 @@ object GameLingoDeviceCenter {
             }
             add(tvPanel, line(c, tv.jmeno, descriptor,
                           tvStore.posledniId == tv.id) {
-                AlertDialog.Builder(c)
-                    .setTitle(tv.jmeno)
-                    .setItems(if (pinSupported)
+                chooseDevice(c, tv.jmeno, if (pinSupported)
                         arrayOf("Použít", "Spárovat šest číslic z TV",
                             "Ověřit spojení", "Odebrat")
-                        else arrayOf("Použít", "Odebrat")) { _, option ->
+                        else arrayOf("Použít", "Odebrat")) { option ->
                         if (RemotePlayService.aktivni) {
                             AlertDialog.Builder(c)
                                 .setMessage("Nejdřív zastav probíhající překlad.")
@@ -378,7 +380,6 @@ object GameLingoDeviceCenter {
                                 .setNegativeButton("Zrušit", null).show()
                         }
                     }
-                    .show()
             })
         }
 
