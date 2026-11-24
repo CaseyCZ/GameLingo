@@ -844,6 +844,24 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("PribehovaRelace(", capture)
         self.assertIn("shownUntil", capture)
 
+    def test_tv_uses_shared_mobile_settings_and_persists_layout_locks(self):
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        settings = code(TOOLS/"GameLingoSettings.kt")
+        profiles = code(TOOLS/"GameLingoTVProfiles.kt")
+        layout = code(TOOLS/"GameLingoDirectTVLayout.kt")
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("GameLingoOCRSettings.show(a)", tv)
+        self.assertIn("GameLingoSettings.showTranslation(a", tv)
+        for marker in ("settings.napovedy", "settings.prekryvat", "settings.casPribehuProcenta",
+                       "Volby.rezimText", "OblastTitulku.rucne"):
+            self.assertIn(marker, settings)
+        for marker in ("blueLocked", "yellowLocked", "greenLocked", "orangeLocked"):
+            self.assertIn(marker, profiles)
+        self.assertIn("Obnovit oblast", layout)
+        self.assertIn("GameLingoOCRConfig.expandSearch", capture)
+        self.assertIn("blockedHome", capture)
+        self.assertIn("clearHint()", capture)
+
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")

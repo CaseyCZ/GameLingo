@@ -161,6 +161,19 @@ class GameLingoScreenTranslationService : Service() {
     private var storyMode = false
     private var durationPercent = 100
     private var hintsEnabled = false
+    private val foreground by lazy { Popredi(this) }
+    private val launcherPackage by lazy {
+        packageManager.resolveActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),0)
+            ?.activityInfo?.packageName
+    }
+    private var observedPackage: String? = null
+    private var blockedHome = false
+    private var hintText = ""
+    private var hintEpoch = 0L
+    private var hintBusy = false
+    private var hintLastAt = 0L
+    private var hintAttempt = ""
+    private var hintAttemptAt = 0L
     private var useAutomaticOutput = true
     private var cleanCapture = false
     private var capturePending = false
@@ -193,9 +206,22 @@ class GameLingoScreenTranslationService : Service() {
         override fun run() {
             if (!active) return
             if (RemotePlayService.aktivni || PrijemService.bezi) { stopSelf(); return }
+            val app = foreground.balicek()
+            if (app != null && app != observedPackage) {
+                observedPackage = app
+                cancelSample(); resetText(); clearYellow(); clearHint(); render("")
+            }
+            blockedHome = app != null && (app == launcherPackage || app == packageName)
+            if (blockedHome) {
+                setSource("Čekám na otevření videa nebo vstupu TV")
+                if (active) ui.postDelayed(this, 350L)
+                return
+            }
+            if (hintLastAt != 0L && SystemClock.elapsedRealtime()-hintLastAt > 1800L) clearHint()
             if (!paused && !ocrBusy && !capturePending && wantFrame.get() == 0) {
-                val region = if (yellowEnabled && (!dialogueEnabled || nextYellow)) 2 else 1
-                if (dialogueEnabled && yellowEnabled) nextYellow = !nextYellow
+                val blueEnabled = dialogueEnabled || hintsEnabled
+                val region = if (yellowEnabled && (!blueEnabled || nextYellow)) 2 else 1
+                if (blueEnabled && yellowEnabled) nextYellow = !nextYellow
                 requestSample(region)
             }
             if (!paused && storyMode) {
@@ -226,7 +252,7 @@ class GameLingoScreenTranslationService : Service() {
         if (intent?.action == STOP) { stopSelf(); return START_NOT_STICKY }
         if (intent?.action == PAUSE) {
             if (!active) { stopSelf(); return START_NOT_STICKY }
-            paused = !paused; cancelSample(); resetText(); render(""); clearYellow()
+            paused = !paused; cancelSample(); resetText(); render(""); clearYellow(); clearHint()
             status = if (paused) "Pozastaveno" else source
             notification()
             return START_NOT_STICKY
@@ -281,7 +307,7 @@ class GameLingoScreenTranslationService : Service() {
             hintsEnabled = settings.napovedy
             yellowEnabled = Volby.zapnuto
             yellowTextMode = Volby.rezimText
-            check(dialogueEnabled || yellowEnabled) { "Zapni dialogy nebo žlutou oblast v nastavení Překlad." }
+            check(dialogueEnabled || yellowEnabled || hintsEnabled) { "Zapni dialogy, nápovědu nebo žlutou oblast v nastavení Překlad." }
             // Same saved regions and automatic dialogue crop as Remote Play.
             roi = if (OblastTitulku.rucne) GameLingoDirectTVLayout.blue(this)
                 else if (GameLingoOCRConfig.expandSearch && GameLingoOCRConfig.mode != "classic") floatArrayOf(0f,.50f,1f,1f)
@@ -424,7 +450,7 @@ class GameLingoScreenTranslationService : Service() {
             decoded.incrementAndGet()
             ui.post {
                 if (capturePending) cancelSample()
-                if (!active || paused || ocrBusy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
+                if (!active || paused || blockedHome || ocrBusy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
                 else if (yellow) processYellow(bitmap) else process(bitmap)
             }
         } catch (e: Exception) { frameError = e.javaClass.simpleName + ": " + (e.message ?: "").take(120) }
@@ -461,13 +487,19 @@ class GameLingoScreenTranslationService : Service() {
                 ui.post {
                     ocrBusy = false
                     lastOcrMs = SystemClock.elapsedRealtime() - ocrStarted
-                    if (!active || paused || ticket != epoch) return@post
+                    if (!active || paused || blockedHome || ticket != epoch) return@post
                     ocrCalls.incrementAndGet()
                     if (raw.isNotBlank()) ocrHits.incrementAndGet()
                     ocrState = if (raw.isBlank()) "Bez textu" else "Text rozpoznán"
                     if (diagnostic && raw.isNotBlank()) lastRaw = raw.take(300)
-                    if (raw.isNotBlank()) { currentBox = normalized; currentRows = rows.coerceAtLeast(1) }
-                    accept(raw)
+                    val hint = sourceLanguage == "en" && Ctecka.NAPOVEDA.containsMatchIn(raw)
+                    if (hint) {
+                        if (hintsEnabled && normalized != null) acceptHint(raw,normalized)
+                        if (dialogueEnabled) accept("")
+                    } else if (dialogueEnabled) {
+                        if (raw.isNotBlank()) { currentBox = normalized; currentRows = rows.coerceAtLeast(1) }
+                        accept(raw)
+                    }
                 }
             }, { cropped.recycle(); ui.post { ocrBusy=false; ocrState = "Chyba OCR" } })
         } catch (e: Exception) {
@@ -542,6 +574,37 @@ class GameLingoScreenTranslationService : Service() {
         }
         try { p.preloz(value, { completed(it) }, { completed(null) }) }
         catch (e: Exception) { completed(null) }
+    }
+    private fun clearHint() {
+        hintEpoch++; hintText=""; hintLastAt=0L; hintAttempt=""; hintAttemptAt=0L
+        renderHint("",null)
+    }
+    private fun renderHint(text: String, box: FloatArray?) {
+        if (PrijemService.bezi || RemotePlayService.aktivni) return
+        val intent = Intent(this, OverlayService::class.java).setAction(OverlayService.ACTION_SET_NAPOVEDA)
+            .putExtra(OverlayService.EXTRA_TEXT,text)
+        if (box != null) intent.putExtra(OverlayService.EXTRA_BOX,box)
+        OverlayService.posli(this,intent)
+    }
+    private fun acceptHint(text: String, box: FloatArray) {
+        val now = SystemClock.elapsedRealtime()
+        hintLastAt=now
+        if (text != hintText) { hintText=text; hintEpoch++; renderHint("",null) }
+        if (hintBusy || (text == hintAttempt && now-hintAttemptAt < 1500L)) return
+        val p = translator ?: return
+        val ticket = hintEpoch
+        hintBusy=true; hintAttempt=text; hintAttemptAt=now
+        fun finish(result: String?) {
+            ui.post {
+                hintBusy=false
+                if (active && !paused && !blockedHome && ticket == hintEpoch && text == hintText &&
+                    SystemClock.elapsedRealtime()-hintLastAt <= 1800L && !result.isNullOrBlank()) {
+                    renderHint(result,box)
+                    hintAttemptAt=Long.MAX_VALUE
+                }
+            }
+        }
+        try { p.preloz(text,{ finish(it) },{ finish(null) }) } catch (e: Exception) { finish(null) }
     }
     private fun clearYellow() {
         yellowEpoch++
@@ -662,7 +725,7 @@ class GameLingoScreenTranslationService : Service() {
         cancelSample(); story.reset(); storyPage=null
         active=false; running=false; wantFrame.set(0); epoch++; ui.removeCallbacks(tick)
         if (wasActive && !status.startsWith("Systém ukončil")) status = "Zastaveno · poslední stav: " + source
-        if (wasActive) { render(""); clearYellow() }
+        if (wasActive) { render(""); clearYellow(); clearHint() }
         runCatching { display?.release() }; display=null
         val oldReader = reader; reader=null
         val handler = frameHandler; frameHandler=null
