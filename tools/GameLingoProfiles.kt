@@ -193,9 +193,6 @@ object GameLingoProfiles {
             setPadding(22, 22, 22, 22)
             background = GameLingoVisualKit.pageBackground(activity)
         }
-        outer.addView(GameLingoVisualKit.hero(activity), LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 14 })
         val heading = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         heading.addView(text(activity, "Profily her", 24f, Color.WHITE, true),
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -207,17 +204,54 @@ object GameLingoProfiles {
             android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val scroll = ScrollView(activity)
         scroll.addView(outer)
+        val input = EditText(activity).apply {
+            hint="Název hry";setSingleLine(true);setTextColor(Color.WHITE);setHintTextColor(muted)
+            background=box(Color.parseColor("#172033"),radius=GameLingoVisualKit.dp(activity,11).toFloat())
+            val pad=GameLingoVisualKit.dp(activity,10);setPadding(pad,pad,pad,pad)
+        }
+        val form=LinearLayout(activity).apply {
+            orientation=LinearLayout.VERTICAL;background=GameLingoVisualKit.card(activity)
+            val pad=GameLingoVisualKit.dp(activity,13);setPadding(pad,pad,pad,pad)
+            addView(input,LinearLayout.LayoutParams(-1,-2))
+        }
+        val save=GameLingoVisualKit.cta(activity,"Uložit profil") {
+            if(canChangeProfile(activity)) {
+                val name=input.text.toString().trim()
+                if(name.isEmpty()||name.length>64)input.error="Zadej název hry (max. 64 znaků)"
+                else {
+                    fun persist() {
+                        if(canChangeProfile(activity)) {
+                            saved.edit().putString(name,snapshot(activity,settings).toString()).apply()
+                            dialog.dismiss();show(activity,settings,onApplied)
+                        }
+                    }
+                    if(saved.contains(name))AlertDialog.Builder(activity).setMessage("Přepsat profil „"+name+"“?")
+                        .setNegativeButton("Zrušit",null).setPositiveButton("Přepsat"){_,_->persist()}.show()
+                    else persist()
+                }
+            }
+        }
+        form.addView(save,LinearLayout.LayoutParams(-1,-2).apply{topMargin=GameLingoVisualKit.dp(activity,10)})
+        outer.addView(form)
         val names = saved.all.keys.sorted()
+        if(names.isNotEmpty())outer.addView(button(activity,"Nepoužívat herní slovník") {
+            if(canChangeProfile(activity)) {GameLingoGlossaryStore.activate(activity,null);dialog.dismiss();show(activity,settings,onApplied)}
+        })
         names.forEach { name ->
             val row = LinearLayout(activity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
+                orientation = LinearLayout.VERTICAL
                 background = GameLingoVisualKit.card(activity)
-                setPadding(12, 10, 12, 10)
+                val pad=GameLingoVisualKit.dp(activity,13);setPadding(pad,pad,pad,pad)
             }
-            row.addView(text(activity, name, 16f, Color.WHITE, true),
-                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            row.addView(button(activity, "Použít") {
+            val title=LinearLayout(activity).apply {gravity=Gravity.CENTER_VERTICAL
+                addView(GameLingoVisualKit.icon(activity,"gamecontroller",cyan),LinearLayout.LayoutParams(GameLingoVisualKit.dp(activity,25),GameLingoVisualKit.dp(activity,25)))
+                addView(text(activity,name,16f,Color.WHITE,true),LinearLayout.LayoutParams(0,-2,1f))
+                if(GameLingoGlossaryStore.active(activity)==name)addView(text(activity,"✓",18f,Color.parseColor("#35E57D"),true))
+            }
+            row.addView(title)
+            row.addView(GameLingoVisualKit.detailRow(activity,"character.book.closed.fill","Herní slovník","") { GameLingoGlossaryUi.edit(activity,name) })
+            val actions=LinearLayout(activity).apply{orientation=LinearLayout.HORIZONTAL}
+            actions.addView(button(activity, "Použít") {
                 if (!canChangeProfile(activity)) return@button
                 val encoded = saved.getString(name, null)
                 val data = runCatching { JSONObject(encoded ?: "") }.getOrNull()
@@ -227,11 +261,8 @@ object GameLingoProfiles {
                     dialog.dismiss()
                     onApplied()
                 }
-            })
-            row.addView(button(activity, "Slovník") {
-                GameLingoGlossaryUi.edit(activity, name)
-            })
-            row.addView(button(activity, "×") {
+            },LinearLayout.LayoutParams(0,-2,1f))
+            actions.addView(button(activity, "Smazat") {
                 AlertDialog.Builder(activity)
                     .setMessage("Smazat profil „$name“?")
                     .setPositiveButton("Smazat") { _: DialogInterface, _: Int ->
@@ -243,7 +274,8 @@ object GameLingoProfiles {
                     }
                     .setNegativeButton("Zrušit", null)
                     .show()
-            })
+            },LinearLayout.LayoutParams(0,-2,1f))
+            row.addView(actions)
             outer.addView(row, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = 10 })
@@ -251,38 +283,6 @@ object GameLingoProfiles {
         if (names.isEmpty()) {
             outer.addView(text(activity, "Zatím nemáš uložený žádný profil.", 14f, muted))
         }
-        outer.addView(button(activity, "Bez herního slovníku") {
-            if (canChangeProfile(activity)) GameLingoGlossaryStore.activate(activity, null)
-        })
-        outer.addView(button(activity, "＋  Uložit aktuální nastavení") {
-            val input = EditText(activity).apply {
-                hint = "Název hry"
-                setSingleLine(true)
-                setTextColor(Color.WHITE)
-                setHintTextColor(muted)
-            }
-            val container = LinearLayout(activity).apply {
-                setPadding(24, 8, 24, 8)
-                addView(input)
-            }
-            AlertDialog.Builder(activity)
-                .setTitle("Uložit profil hry")
-                .setView(container)
-                .setPositiveButton("Uložit") { _, _ ->
-                    if (!canChangeProfile(activity)) return@setPositiveButton
-                    val name = input.text.toString().trim()
-                    if (name.isNotEmpty() && name.length <= 64) {
-                        // Snapshot the explicitly selected layout, even before live connection.
-                        saved.edit().putString(name, snapshot(activity, settings).toString()).apply()
-                        dialog.dismiss()
-                        show(activity, settings, onApplied)
-                    }
-                }
-                .setNegativeButton("Zrušit", null)
-                .show()
-        }, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = 16 })
         outer.addView(button(activity, "Zavřít") { dialog.dismiss() },
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = 10 })

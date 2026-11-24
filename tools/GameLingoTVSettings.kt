@@ -106,7 +106,15 @@ object GameLingoTVSettings {
             "\nSamostatná TV: " + GameLingoScreenTranslationService.status +
             "\nOCR obrazovky: pouze MediaProjection"
         val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
-        body.addView(GameLingoTVUi.title(a,info+"\nPřekryv: "+if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen",20f))
+        body.addView(GameLingoTVUi.title(a,"Stav",24f))
+        body.addView(GameLingoTVUi.title(a,info+"\nPřekryv: "+if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen",20f).apply {
+            background=GameLingoTVUi.panel(a); val pad=d(a,16);setPadding(pad,pad,pad,pad)
+        })
+        body.addView(GameLingoTVUi.title(a,"Poslední překlad",24f))
+        val item=GameLingoTranslationHistory.snapshot().firstOrNull()
+        body.addView(GameLingoTVUi.title(a,if(item==null)"Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR." else item.original+"\n\n"+item.translated,20f).apply {
+            background=GameLingoTVUi.panel(a); val pad=d(a,16);setPadding(pad,pad,pad,pad)
+        })
         body.addView(GameLingoTVUi.action(a,"Povolit překryv") {
             a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+a.packageName)))
         })

@@ -31,7 +31,11 @@ object GameLingoDiagnostics {
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         }
-        root.addView(heading)
+        root.addView(LinearLayout(activity).apply {
+            gravity=Gravity.CENTER_VERTICAL
+            addView(heading,LinearLayout.LayoutParams(0,-2,1f))
+            addView(GameLingoHelp.button(activity,"diagnostics"),GameLingoHelp.layout(activity,d(36),d(44)))
+        })
         root.addView(TextView(activity).apply {
             text = "Stav místních nastavení a zahájené relace. " +
                 "Uložené údaje nepotvrzují živé spojení s konzolí ani TV."
@@ -43,7 +47,16 @@ object GameLingoDiagnostics {
         val states = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
         }
+        states.background=GameLingoVisualKit.card(activity)
+        states.setPadding(d(13),d(13),d(13),d(13))
+        root.addView(GameLingoVisualKit.heading(activity,"Stav"))
         root.addView(states)
+        val last=TextView(activity).apply {
+            setTextColor(Color.WHITE);textSize=16f;background=GameLingoVisualKit.card(activity)
+            setPadding(d(13),d(13),d(13),d(13))
+        }
+        root.addView(GameLingoVisualKit.heading(activity,"Poslední překlad"))
+        root.addView(last)
         fun value(title: String, actual: String) {
             val card = LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
@@ -69,6 +82,8 @@ object GameLingoDiagnostics {
         }
         fun refresh() {
             states.removeAllViews()
+            val item=GameLingoTranslationHistory.snapshot().firstOrNull()
+            last.text=if(item==null)"Zatím žádný překlad ve volitelné historii." else item.original+"\n\n"+item.translated
             val tvStore = TvProfily(activity)
             val savedTv = tvStore.posledniId?.let { tvStore.najdi(it) }
             val xboxLogged = XboxUcet.prihlasen(activity)

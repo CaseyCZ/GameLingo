@@ -46,12 +46,15 @@ def patch_direct_tv(folder):
                 it[2] > it[0] + 0.10f && it[3] > it[1] + 0.05f
         } else if (!telefon) GameLingoOCRConfig.preset(this) else null""")
     # Optional iOS timing in the console path, without changing the verified default.
-    one("        ukaz(cesky, 15000, box, radku, barvyJmen)",
-        "        ukaz(cesky, if (telefon) 15000 else GameLingoOCRConfig.displayMs(this,15000L), box, radku, barvyJmen)")
-    one("        val minDoba = 1800L + 60L * ukazanaDelka",
-        "        val minDoba = if (telefon) 1800L + 60L * ukazanaDelka else GameLingoOCRConfig.displayMs(this,1800L + 60L * ukazanaDelka)")
+    # The common language integration already bounds ordinary captions to four seconds.
+    one("        ukaz(cesky, 4000, box, radku, barvyJmen)",
+        "        ukaz(cesky, if (telefon) 4000L else GameLingoOCRConfig.displayMs(this,4000L), box, radku, barvyJmen)")
+    one("        val zbyva = (ukazanoKdy + 4000L - System.currentTimeMillis()).coerceIn(0L, 800L)",
+        "        val zbyva = (ukazanoKdy + (if (telefon) 4000L else GameLingoOCRConfig.displayMs(this,4000L)) - System.currentTimeMillis()).coerceIn(0L, 800L)")
+    one("        val token = platnostPrekladu.novy()\n        val oblast =",
+        "        val token = platnostPrekladu.novy()\n        val tvTranslationStarted = android.os.SystemClock.elapsedRealtime()\n        val oblast =")
     one("            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika",
-        "            if (!telefon && GameLingoOCRConfig.expired(this,System.currentTimeMillis()-zacatekPrekladu)) return\n            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika")
+        "            if (!telefon && GameLingoOCRConfig.expired(this,android.os.SystemClock.elapsedRealtime()-tvTranslationStarted)) return\n            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika")
     one("        ui.post(pribehHlidac)\n        Pady.hlidej(this)",
         "        if (!telefon) { Volby.nacti(this); OblastTitulku.nacti(this) }\n        ui.post(pribehHlidac)\n        Pady.hlidej(this)")
     # YUV PS decoder uses aligned crop just like GL and I420.
