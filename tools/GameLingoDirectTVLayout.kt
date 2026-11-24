@@ -48,6 +48,7 @@ object GameLingoDirectTVLayout {
         val left = (r[0] - r[2]/2f).coerceIn(0f, 1f-r[2])
         return floatArrayOf(left,(r[1]-.24f*r[3]).coerceAtLeast(0f),left+r[2],r[1])
     }
+    internal fun locked(c: Context, region: String): Boolean = prefs(c).getBoolean("directLock"+region, false)
     private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
 
     fun show(a: Activity, onSaved: () -> Unit) {
@@ -117,6 +118,7 @@ object GameLingoDirectTVLayout {
         root.addView(ScrollView(a).apply { addView(columns) }, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, (a.resources.displayMetrics.heightPixels * .46f).toInt()))
         var controls = left
+        var sectionLocked: Switch? = null
         fun heading(label: String, color: Int) {
             controls.addView(TextView(a).apply {
                 text = label; textSize = 16f; setTextColor(color)
@@ -132,6 +134,7 @@ object GameLingoDirectTVLayout {
         fun slider(label: String, min: Int, max: Int, current: () -> Float, update: (Float) -> Unit,
                    refreshAll: MutableList<() -> Unit>) {
             val title = TextView(a)
+            val lock = sectionLocked
             val bar = SeekBar(a).apply {
                 this.max = max-min; keyProgressIncrement = 5; isFocusable = true
                 GameLingoTVUi.controlFocus(a, this)
@@ -145,6 +148,7 @@ object GameLingoDirectTVLayout {
             bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seek: SeekBar, progress: Int, fromUser: Boolean) {
                     if (fromUser) {
+                        if (lock?.isChecked == true) { refresh(); return }
                         update((progress+min)/100f)
                         refreshAll.forEach { it() }
                         preview.invalidate()
@@ -157,7 +161,13 @@ object GameLingoDirectTVLayout {
             controls.addView(bar)
             refresh()
         }
-        fun rect(r: FloatArray) {
+        fun reset(label: String, lock: Switch, run: () -> Unit) {
+            controls.addView(GameLingoTVUi.action(a,label) {
+                if (!lock.isChecked) { run(); preview.invalidate() }
+                else android.widget.Toast.makeText(a,"Nejdřív odemkni oblast.",android.widget.Toast.LENGTH_SHORT).show()
+            })
+        }
+        fun rect(r: FloatArray, defaults: FloatArray) {
             val refresh = mutableListOf<() -> Unit>()
             slider("Poloha X", 0, 89, { r[0] }, { v ->
                 val width = r[2]-r[0]
@@ -174,24 +184,34 @@ object GameLingoDirectTVLayout {
                 r[1] = r[1].coerceAtMost(1f-v); r[3] = (r[1]+v).coerceAtMost(1f)
             }, refresh)
             if (r.size == 5) slider("Velikost písma", 60, 200, { r[4] }, { r[4] = it }, refresh)
+            sectionLocked?.let { lock -> reset("Obnovit oblast", lock) { defaults.copyInto(r); refresh.forEach { it() } } }
         }
         heading("Modrá · čtení dialogů", Color.parseColor("#4FB3FF"))
         val manual = toggle("Ruční oblast", OblastTitulku.rucne)
-        rect(blue)
+        val blueLock = toggle("Zamknout modrou oblast", OblastTitulku.zamceno)
+        sectionLocked = blueLock
+        rect(blue, OblastTitulku.VYCHOZI)
         heading("Žlutá · čtení herních textů", Color.parseColor("#FFD54A"))
         val enabled = toggle("Číst oblast herních textů", Volby.zapnuto)
         val asText = toggle("Celý text místo seznamu voleb", Volby.rezimText)
-        rect(yellow)
+        val yellowLock = toggle("Zamknout žlutou oblast", Volby.zamceno)
+        sectionLocked = yellowLock
+        rect(yellow, Volby.VYCHOZI)
         controls = right
         heading("Zelená · výstup dialogů", Color.parseColor("#3CFF6E"))
         val customGreen = toggle("Vlastní poloha místo automatické", savedGreen != null)
+        val greenLock = toggle("Zamknout zelenou oblast", locked(a,"Green"))
+        sectionLocked = greenLock
         val refreshGreen = mutableListOf<() -> Unit>()
         slider("Střed X", 0, 100, { green[0] }, { green[0] = it }, refreshGreen)
         slider("Spodní hrana Y", 0, 100, { green[1] }, { green[1] = it }, refreshGreen)
         slider("Šířka", 20, 100, { green[2] }, { green[2] = it }, refreshGreen)
         slider("Velikost písma", 60, 200, { green[3] }, { green[3] = it }, refreshGreen)
+        reset("Obnovit výchozí polohu", greenLock) { greenDefault.copyInto(green); refreshGreen.forEach { it() } }
         heading("Oranžová · výstup herních textů", Color.parseColor("#FF9E34"))
-        rect(orange)
+        val orangeLock = toggle("Zamknout oranžovou oblast", locked(a,"Orange"))
+        sectionLocked = orangeLock
+        rect(orange, orangeDefault)
         val dialog = AlertDialog.Builder(a).setTitle("Oblasti přímého překladu")
             .setView(root).setNegativeButton("Zrušit", null)
             .setPositiveButton("Uložit") { _, _ ->
@@ -205,6 +225,8 @@ object GameLingoDirectTVLayout {
                         android.widget.Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
+                OblastTitulku.zamceno = blueLock.isChecked
+                Volby.zamceno = yellowLock.isChecked
                 OblastTitulku.rucne = manual.isChecked
                 OblastTitulku.oblast = blue.copyOf()
                 OblastTitulku.uloz(a)
@@ -213,6 +235,7 @@ object GameLingoDirectTVLayout {
                 Volby.oblast = yellow.copyOf()
                 Volby.uloz(a)
                 val editor = prefs(a).edit().putBoolean("directGreenEnabled", customGreen.isChecked)
+                editor.putBoolean("directLockGreen", greenLock.isChecked).putBoolean("directLockOrange", orangeLock.isChecked)
                 orange.forEachIndexed { i, v -> editor.putFloat("directOrange"+i, v) }
                 green.forEachIndexed { i, v -> editor.putFloat("directGreen"+i, v) }
                 editor.apply()

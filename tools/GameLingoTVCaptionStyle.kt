@@ -75,6 +75,15 @@ object GameLingoTVCaptionStyle {
                 p.edit().putString("color", keys[index]).apply(); refresh()
             }
         })
+        root.addView(GameLingoTVUi.action(a, "Pozadí titulků") {
+            val dialogColors = arrayOf("Bez pozadí", "Tmavé", "Průhledné")
+            val values = intArrayOf(0,230,117)
+            val selected = values.indexOf(p.getInt("opacity",230))
+            GameLingoTVUi.select(a,"Pozadí titulků",dialogColors,selected) { index ->
+                p.edit().putInt("opacity",values[index]).apply()
+                refresh()
+            }
+        })
         val label = android.widget.TextView(a).apply { text = "Neprůhlednost pozadí" }
         root.addView(label)
         root.addView(android.widget.SeekBar(a).apply {

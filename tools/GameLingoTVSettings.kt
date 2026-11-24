@@ -50,7 +50,7 @@ object GameLingoTVSettings {
         tile("文", "Překlad", "Dialogy, herní texty, Story") { translation(a) }
         tile("⌗", "Rozložení", "Čtyři oblasti") { GameLingoDirectTVLayout.show(a) {} }
         tile("Aa", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }
-        tile("♧", "Profily her", "Uložená nastavení") { GameLingoTVProfiles.show(a) }
+        tile("♧", "Profily", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a) }
         tile("▭", "Zařízení", "Konzole a telefony") { dialog.dismiss(); onDevices() }
         tile("文", "Herní slovník", "Vlastní výrazy") { GameLingoGlossaryUi.show(a) }
         tile("◷", "Historie", "Překlady na TV") { GameLingoHistoryUi.show(a) }
@@ -95,61 +95,12 @@ object GameLingoTVSettings {
     }
     private fun ocr(a: Activity) {
         if (busy(a)) return
-        GameLingoOCRConfig.load(a)
-        val keys = arrayOf("classic", "automatic", "street")
-        val labels = arrayOf("Původní · stabilní", "Automatický · vyvážený", "Krátké dialogy · rychlý")
-        AlertDialog.Builder(a).setTitle("OCR a rozpoznávání")
-            .setItems(arrayOf("Režim: " + GameLingoOCRConfig.title(),
-                "Filtrovat menu: " + if (GameLingoOCRConfig.filterMenuText) "Ano" else "Ne",
-                "Rozšířené hledání: " + if (GameLingoOCRConfig.expandSearch) "Ano" else "Ne",
-                "Výchozí nastavení")) { _, i ->
-                when (i) {
-                    0 -> GameLingoTVUi.select(a, "Režim OCR", labels, keys.indexOf(GameLingoOCRConfig.mode)) { n ->
-                        GameLingoOCRConfig.setMode(a, keys[n]); ocr(a)
-                    }
-                    1 -> { GameLingoOCRConfig.setFilterMenu(a, !GameLingoOCRConfig.filterMenuText); ocr(a) }
-                    2 -> { GameLingoOCRConfig.setExpandSearch(a, !GameLingoOCRConfig.expandSearch); ocr(a) }
-                    3 -> { GameLingoOCRConfig.reset(a); ocr(a) }
-                }
-            }.setNegativeButton("Zpět", null).show()
+        GameLingoOCRSettings.show(a) { GameLingoDirectTVLayout.show(a) {} }
     }
     private fun translation(a: Activity) {
         if (busy(a)) return
-        val s = Nastaveni(a)
-        Volby.nacti(a); OblastTitulku.nacti(a)
-        val labels = arrayOf("Dialogy", "Nápověda a úkoly", "Překrývat originál", "Příběhový režim", "Herní texty a volby (žlutá oblast)", "Celý text místo seznamu voleb", "Ruční oblast OCR (modrá)")
-        val checked = booleanArrayOf(s.dialogy, s.napovedy, s.prekryvat, s.pribehovy, Volby.zapnuto, Volby.rezimText, OblastTitulku.rucne)
-        val panel = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(24,8,24,8) }
-        for (i in labels.indices) panel.addView(android.widget.CheckBox(a).apply {
-            text = labels[i]; isChecked = checked[i]; isFocusable = true
-            GameLingoTVUi.controlFocus(a, this)
-            setOnCheckedChangeListener { _, enabled -> checked[i] = enabled }
-        })
-        val min = CasovaniPribehu.MIN_PROCENT
-        var duration = s.casPribehuProcenta
-        val label = TextView(a).apply { text = "Doba zobrazení: $duration %" }
-        panel.addView(label)
-        panel.addView(SeekBar(a).apply {
-            max = CasovaniPribehu.MAX_PROCENT - min; progress = duration - min
-            keyProgressIncrement = 5; isFocusable = true
-            GameLingoTVUi.controlFocus(a, this)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
-                    duration = min + value; label.text = "Doba zobrazení: $duration %"
-                }
-                override fun onStartTrackingTouch(bar: SeekBar) {}
-                override fun onStopTrackingTouch(bar: SeekBar) {}
-            })
-        })
-        AlertDialog.Builder(a).setTitle("Překlad hry")
-            .setView(android.widget.ScrollView(a).apply { addView(panel) })
-            .setNegativeButton("Zrušit", null).setPositiveButton("Uložit") { _, _ ->
-                if (busy(a)) return@setPositiveButton
-                s.dialogy = checked[0]; s.napovedy = checked[1]; s.prekryvat = checked[2]; s.pribehovy = checked[3]
-                Volby.zapnuto = checked[4]; Volby.rezimText = checked[5]; Volby.uloz(a)
-                OblastTitulku.rucne = checked[6]; OblastTitulku.uloz(a)
-                s.casPribehuProcenta = duration
-            }.show()
+        GameLingoSettings.showTranslation(a, Nastaveni(a),
+            { GameLingoDirectTVLayout.show(a) {} }, { GameLingoLanguages.show(a) })
     }
     private fun diagnostics(a: Activity) {
         val info = PrijemService.statistikaPrijmu() + "\n\nVerze: " +

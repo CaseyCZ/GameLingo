@@ -42,12 +42,14 @@ object GameLingoSettings {
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         addView(Switch(c).apply {
             isChecked = state
+            isFocusable = true
+            if (GameLingoTVUi.isTV(c)) GameLingoTVUi.controlFocus(c, this)
             thumbTintList = android.content.res.ColorStateList.valueOf(accent)
             setOnCheckedChangeListener { _, checked -> update(checked) }
         })
     }
 
-    private fun showTranslation(activity: Activity, settings: Nastaveni,
+    fun showTranslation(activity: Activity, settings: Nastaveni,
              onAreas: () -> Unit, onLanguage: () -> Unit) {
         Volby.nacti(activity)
         OblastTitulku.nacti(activity)
@@ -78,6 +80,10 @@ object GameLingoSettings {
             Volby.zapnuto) { Volby.zapnuto = it; Volby.uloz(activity) })
         add(row(activity, "Dopisy a zprávy", "Překládat celý text místo seznamu voleb.",
             Volby.rezimText) { Volby.rezimText = it; Volby.uloz(activity) })
+        add(row(activity, "Nápověda a úkoly", "Překládat herní nápovědu.",
+            settings.napovedy) { settings.napovedy = it })
+        add(row(activity, "Překrývat originál", "Překlad překryje původní titulky.",
+            settings.prekryvat) { settings.prekryvat = it })
         add(row(activity, "Příběhový režim", "Delší přeložené dialogy.",
             settings.pribehovy) { settings.pribehovy = it })
         add(row(activity, "Ruční OCR oblast", "Vlastní modrý rámeček.",
@@ -103,6 +109,8 @@ object GameLingoSettings {
         sliderCard.addView(SeekBar(activity).apply {
             max = CasovaniPribehu.MAX_PROCENT - CasovaniPribehu.MIN_PROCENT
             progress = settings.casPribehuProcenta - CasovaniPribehu.MIN_PROCENT
+            isFocusable = true; keyProgressIncrement = 5
+            if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
             progressTintList = android.content.res.ColorStateList.valueOf(accent)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
@@ -131,6 +139,7 @@ object GameLingoSettings {
                 }
                 setPadding(13,15,13,15)
                 isFocusable = true
+                if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
                 setOnClickListener { dialog.dismiss(); action() }
             }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 })

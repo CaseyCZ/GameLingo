@@ -284,6 +284,7 @@ class GameLingoScreenTranslationService : Service() {
             check(dialogueEnabled || yellowEnabled) { "Zapni dialogy nebo žlutou oblast v nastavení Překlad." }
             // Same saved regions and automatic dialogue crop as Remote Play.
             roi = if (OblastTitulku.rucne) GameLingoDirectTVLayout.blue(this)
+                else if (GameLingoOCRConfig.expandSearch && GameLingoOCRConfig.mode != "classic") floatArrayOf(0f,.50f,1f,1f)
                 else floatArrayOf(.05f,.70f,.95f,1f)
             yellowRoi = GameLingoDirectTVLayout.yellow(this)
             orangeOutput = GameLingoDirectTVLayout.orange(this)

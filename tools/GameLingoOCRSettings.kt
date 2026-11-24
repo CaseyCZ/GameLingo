@@ -55,6 +55,7 @@ object GameLingoOCRSettings {
                 minimumHeight = d(67)
                 isClickable = enabled
                 isFocusable = enabled
+                if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
                 alpha = if (enabled) 1f else 0.5f
                 setOnClickListener { if (enabled) run() }
             }
@@ -87,6 +88,8 @@ object GameLingoOCRSettings {
             row.addView(Switch(activity).apply {
                 isChecked = active
                 isEnabled = available
+                isFocusable = available
+                if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
                 setOnCheckedChangeListener { _, value -> if (available) changed(value) }
             })
             add(row)
@@ -103,6 +106,14 @@ object GameLingoOCRSettings {
                 "Krátké dialogy · rychlý"
             )
             val keys = arrayOf("classic", "automatic", "street")
+            if (GameLingoTVUi.isTV(activity)) {
+                dialog.dismiss()
+                GameLingoTVUi.select(activity, "Režim OCR", labels, keys.indexOf(GameLingoOCRConfig.mode)) { index ->
+                    GameLingoOCRConfig.setMode(activity, keys[index])
+                    show(activity, onAreas)
+                }
+                return@action
+            }
             AlertDialog.Builder(activity)
                 .setTitle("Režim OCR")
                 .setSingleChoiceItems(labels, keys.indexOf(GameLingoOCRConfig.mode)) {
