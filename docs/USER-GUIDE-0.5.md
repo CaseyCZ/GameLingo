@@ -31,7 +31,7 @@ Změna oranžové oblasti nemá měnit žlutou OCR oblast. Nezávislé posílán
 - Zkontroluj stejnou důvěryhodnou domácí síť, nikoli veřejnou Wi-Fi/guest izolaci. Neotvírej UDP porty do internetu. Port fallback 41989–41993 je implementován, HW čeká.
 - Vytvoř čerstvý PIN, ověř IP/QR a správné zařízení. Po změně IP může být nutné nové párování. Lokální zapomenutí neznamená revokaci na TV; odeber daný telefon v TV nastavení.
 - Je-li připojeno více telefonů, zastav původní zdroj, než začne vysílat druhý. TV podporuje jeden aktivní zdroj.
-- Při chybě překladače ověř internet a jazyk; služby mají limity. Nepředpokládej neomezený bezplatný překlad. Offline fallback pouze Android mobil s dostupným modelem.
+- Při chybě překladače ověř internet a jazyk; služby mají limity. Nepředpokládej neomezený bezplatný překlad. Žádná platforma nepřekládá nové texty offline. Již přeložené texty mohou být dostupné v lokální paměti.
 - Netflix a jiný chráněný obsah nejsou ověřeny; žádný příslib OCR chráněného přehrávání. Pokud systém překryv blokuje, neobcházej ochrany.
 
 ## Bezpečnost a hlášení
