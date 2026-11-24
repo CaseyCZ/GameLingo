@@ -963,6 +963,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("IPhoneTVPairing.unpair(c, phone.id)",tv)
         self.assertIn("return root",manager.split("TV_RECEIVER_PHONE_ROWS",1)[1].split('label(c, "Televize"',1)[0])
 
+    def test_tv_mobile_downloads_use_public_prerelease_assets_and_two_home_actions(self):
+        qr=code(TOOLS/"GameLingoQRDisplay.kt")
+        wiring=code(TOOLS/"wire_android_devices.py")
+        for marker in ("GameLingoMobileDownloads", "/releases?per_page=20",
+                       "GameLingo-iOS-", "GameLingo-Android-", "published_at",
+                       'release.optBoolean("draft")', "QRCodeWriter().encode(target",
+                       "Znovu ověřit vydání"):
+            self.assertIn(marker,qr)
+        self.assertNotIn('"/releases/latest"',qr)
+        for marker in ("GameLingoMobileDownloads.show(this)", "Stáhnout aplikaci",
+                       "Spravovat zařízení", "dlazdiceTel.nextFocusDownId=stahnoutMobil.id",
+                       "dlazdiceTv.nextFocusDownId=spravaZarizeni.id"):
+            self.assertIn(marker,wiring)
+
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         self.assertIn("GameLingoTVUi.select(c, heading, options, onSelect = onSelect)",manager)

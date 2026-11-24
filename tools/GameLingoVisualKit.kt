@@ -84,6 +84,7 @@ object GameLingoVisualKit {
                     "questionmark.circle" -> {circle(12f,12f,9f);canvas.drawArc(8f,6f,16f,13f,180f,200f,false,p);path(15f,11f,12f,14f,12f,15f);circle(12f,18f,.55f)}
                     "chevron.right" -> path(9f,6f,15f,12f,9f,18f)
                     "arrow.right" -> {line(4f,12f,20f,12f);path(14f,6f,20f,12f,14f,18f)}
+                    "download" -> {line(12f,3f,12f,15f);path(7f,10f,12f,15f,17f,10f);path(4f,16f,4f,21f,20f,21f,20f,16f)}
                     "play.fill" -> path(7f,4f,20f,12f,7f,20f,7f,4f)
                     "plus.circle" -> {circle(12f,12f,9f);line(7f,12f,17f,12f);line(12f,7f,12f,17f)}
                     else -> {circle(12f,12f,9f);line(7f,12f,17f,12f)}

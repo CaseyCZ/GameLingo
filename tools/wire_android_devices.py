@@ -113,9 +113,32 @@ def main():
             code,
             '''            obsah.addView(volby, odsazeni(bottom = 5))''',
             '''            obsah.addView(volby, odsazeni(bottom = 5))
-            obsah.addView(GameLingoTVUi.action(this, "▭  Spravovat zařízení") {
+            // The two actions are aligned with the two source cards, not one full-width button.
+            val stahnoutMobil = GameLingoTVUi.action(this, "Stáhnout aplikaci") {
+                GameLingoMobileDownloads.show(this)
+            }.apply {
+                id = View.generateViewId()
+                setCompoundDrawablesWithIntrinsicBounds(GameLingoVisualKit.iconDrawable("download",Color.WHITE,dp(23)),null,null,null)
+            }
+            val spravaZarizeni = GameLingoTVUi.action(this, "Spravovat zařízení") {
                 '''+manager()+'''
-            }, odsazeni(bottom = 9))''',
+            }.apply {
+                id = View.generateViewId()
+                setCompoundDrawablesWithIntrinsicBounds(GameLingoVisualKit.iconDrawable("display.2",Color.WHITE,dp(23)),null,null,null)
+            }
+            val sourceActions = vodorovne().apply {
+                clipChildren=false;clipToPadding=false
+                setPadding(dp(8),dp(2),dp(8),dp(8))
+                addView(stahnoutMobil,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f).apply{rightMargin=dp(20)})
+                addView(spravaZarizeni,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
+            }
+            dlazdiceTel.nextFocusDownId=stahnoutMobil.id
+            dlazdiceTv.nextFocusDownId=spravaZarizeni.id
+            stahnoutMobil.nextFocusUpId=dlazdiceTel.id
+            spravaZarizeni.nextFocusUpId=dlazdiceTv.id
+            stahnoutMobil.nextFocusRightId=spravaZarizeni.id
+            spravaZarizeni.nextFocusLeftId=stahnoutMobil.id
+            obsah.addView(sourceActions, odsazeni(bottom = 9))''',
             "Google TV device center action"
         )
     else:

@@ -25,6 +25,8 @@ object GameLingoHelp {
             "Vyber barvu a pozadí překladu. Polohu, šířku a velikost písma upravíš v Rozložení a uložíš do profilu."
         "diagnostics" -> "Diagnostika" to
             "Test překryvu ověří zobrazení pevného titulku. Test překladového jádra ověří online překlad. Test snímání vyžaduje souhlas Androidu. Náhled lze vymazat."
+        "download" -> "Stáhnout aplikaci" to
+            "Vyber iPhone nebo Android a naskenuj QR kód fotoaparátem telefonu. Odkaz vede na nejnovější dostupný mobilní balíček na GitHubu. IPA vyžaduje podpis; Android APK může vyžadovat povolení instalace z tohoto zdroje. Pokud vydání nelze ověřit, použij stránku všech vydání. Toto není párovací QR kód."
         "pairing" -> "Párování telefonu" to
             "Telefon a TV připoj ke stejné síti. V mobilu otevři Zařízení, vyber TV a naskenuj QR kód nebo zadej šestimístný PIN. Po vypršení platnosti vytvoř nový kód."
         "history" -> "Historie překladů" to
