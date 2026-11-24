@@ -1,6 +1,6 @@
 # GameLingo 0.5 — fyzický akceptační test
 
-**Stav všech případů: NEOTESTOVÁNO NA HARDWARU.** CI ani sestavení IPA/APK tyto případy nenahrazují. Nepoužívej skutečné přihlašovací PINy, tokeny, PSN Account ID ani identifikátory konzolí v veřejných komentářích nebo diagnostice.
+**Stav všech případů: NEOTESTOVÁNO NA HARDWARU.** Prioritní první průchod a evidence: [QA-RESULTS-0.5.md](QA-RESULTS-0.5.md). CI ani sestavení IPA/APK tyto případy nenahrazují. Nepoužívej skutečné přihlašovací PINy, tokeny, PSN Account ID ani identifikátory konzolí v veřejných komentářích nebo diagnostice.
 
 Pracovní větev: `feature/audit-0.5`; původní vývojový základ `feature/gamelingo-v05-platform-rebuild` ([PR #5](https://github.com/CaseyCZ/GameLingo/pull/5)). Zapisuj pro každý test datum, zařízení, sestavení / SHA, výsledek **PASS / FAIL / BLOCKED** a případně odkaz na redigovaný snímek obrazovky. Po jakékoli změně kódu zkontroluj, zda test nevyžaduje opakování.
 
