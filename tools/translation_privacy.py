@@ -76,3 +76,36 @@ def restrict_service_log(s):
             f.appendText("$cas $safe\\n")
         }
     }''' + s[end:]
+
+
+def restrict_provider_transport(t):
+    # The Android provider requests are constructed here, not by account
+    # authentication or console code. Do not modify global networking settings.
+    t = once(t, '    private fun google(text: String, cilJazyk: String = cil, sourceJazyk: String = zdrojovyJazyk)',
+        '''    private fun providerConnection(address: String): HttpURLConnection {
+        val url = URL(address)
+        val permitted = when (url.host) {
+            "translate.googleapis.com" -> url.path == "/translate_a/single"
+            "edge.microsoft.com" -> url.path == "/translate/auth"
+            "api-edge.cognitive.microsofttranslator.com" -> url.path == "/translate"
+            "api.mymemory.translated.net" -> url.path == "/get"
+            else -> false
+        }
+        require(url.protocol == "https" && permitted && url.userInfo == null &&
+            (url.port == -1 || url.port == 443) && url.ref == null) { "Nepovolená adresa překladače" }
+        return (url.openConnection() as HttpURLConnection).apply {
+            instanceFollowRedirects = false
+            useCaches = false
+            setRequestProperty("Cache-Control", "no-store")
+        }
+    }
+
+    private fun google(text: String, cilJazyk: String = cil, sourceJazyk: String = zdrojovyJazyk)''')
+    if t.count('URL(adresa).openConnection() as HttpURLConnection') != 2:
+        raise RuntimeError("Expected Google and MyMemory connections")
+    t = t.replace('URL(adresa).openConnection() as HttpURLConnection', 'providerConnection(adresa)')
+    t = once(t, 'URL("https://edge.microsoft.com/translate/auth").openConnection() as HttpURLConnection',
+        'providerConnection("https://edge.microsoft.com/translate/auth")')
+    t = once(t, 'URL("https://api-edge.cognitive.microsofttranslator.com/translate?from=$source&to=$target&api-version=3.0")\n            .openConnection() as HttpURLConnection',
+        'providerConnection("https://api-edge.cognitive.microsofttranslator.com/translate?from=$source&to=$target&api-version=3.0")')
+    return t
