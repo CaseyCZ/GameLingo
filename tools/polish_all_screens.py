@@ -98,7 +98,7 @@ def tv(s):
             obsah.addView(GameLingoTVUi.title(this,
                 "Hraj. Rozuměj.", 28f), odsazeni(bottom = 4))
             obsah.addView(GameLingoTVUi.title(this,
-                "Vyber zdroj překladu. Pro iPhone zvol Překlad z telefonu.",
+                "Vyber způsob překladu nebo spravuj svá zařízení.",
                 16f, muted = true), odsazeni(bottom = 12))
 
             obsah.addView(GameLingoTVUi.title(this, "ZPŮSOB PŘEKLADU", 16f).apply {
@@ -106,10 +106,10 @@ def tv(s):
             }, odsazeni(bottom = 10))
             dlazdiceTel = GameLingoTVUi.tile(
                 this, "▣", "Překlad z telefonu",
-                "Nejdřív otevři tento režim. TV ukáže šest číslic pro spárování."
+                if (PrijemService.bezi) "Příjem běží · otevřít párování a stav" else "Spustit příjem a párování telefonu."
             ) {
                 if (!android.provider.Settings.canDrawOverlays(this)) pozadejOPovoleni()
-                else hratSTelefonem()
+                else if (PrijemService.bezi) ukazPrijem() else hratSTelefonem()
             }
             dlazdiceTv = GameLingoTVUi.tile(
                 this, "▤", "Přímo na TV",
@@ -136,39 +136,48 @@ def tv(s):
             obsah.addView(volby, odsazeni(bottom = 5))
             // The device centre is inserted here by wire_android_devices.py.
 
-            obsah.addView(GameLingoTVUi.title(this, "MOJE KONZOLE", 16f).apply {
-                setTextColor(Color.parseColor("#02D6FF"))
-            }, odsazeni(top = 10, bottom = 7))
-            val ulozenaPS = udaje.sparovano
-            val ulozenyXbox = XboxUcet.konzole(this) != null
-            val volbyKonzoli = vodorovne().apply {
-                clipChildren = false
-                clipToPadding = false
-                setPadding(dp(8), dp(5), dp(8), dp(7))
+            // Only real saved devices, never setup placeholders under "Moje konzole".
+            val savedPS = GameLingoPlayStationConsoles.list(this)
+            val devicePrefs = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
+            val hiddenXboxIds = devicePrefs.getStringSet("hiddenXboxIds", emptySet()).orEmpty()
+            val savedXbox = XboxUcet.konzole(this)?.takeIf {
+                XboxUcet.prihlasen(this) && it.first !in hiddenXboxIds
             }
-            val psDostupna = GameLingoTVUi.tile(
-                this, "PS", "PlayStation 5 / 4",
-                if (ulozenaPS) "Konzole uložená · vybrat nebo spravovat"
-                else "Přidat PlayStation a spárovat osmimístným PINem"
-            ) { ukazPripojeni() }
-            val xboxDostupny = GameLingoTVUi.tile(
-                this, "ⓧ", "Xbox Series / One",
-                if (ulozenyXbox) "Konzole uložená · vybrat nebo spravovat"
-                else "Přidat Xbox pomocí účtu Microsoft"
-            ) { ukazPripojeniXbox() }
-            psDostupna.id = View.generateViewId()
-            xboxDostupny.id = View.generateViewId()
-            psDostupna.nextFocusRightId = xboxDostupny.id
-            xboxDostupny.nextFocusLeftId = psDostupna.id
-            dlazdiceTel.nextFocusDownId = psDostupna.id
-            dlazdiceTv.nextFocusDownId = xboxDostupny.id
-            volbyKonzoli.addView(psDostupna,
-                LinearLayout.LayoutParams(0, dp(123), 1f).apply {
-                rightMargin = dp(20)
+            val hasLegacyPS = savedPS.isEmpty() && udaje.sparovano
+            val consoleCards = mutableListOf<View>()
+            for (ps in savedPS) {
+                consoleCards.add(GameLingoTVUi.tile(this,"PS",ps.name,ps.type+" · uložená konzole") {
+                    vyberPrimouPS()
+                })
+            }
+            if (hasLegacyPS) consoleCards.add(GameLingoTVUi.tile(this,"PS","PlayStation","Uložená konzole") {
+                vyberPrimouPS()
             })
-            volbyKonzoli.addView(xboxDostupny,
-                LinearLayout.LayoutParams(0, dp(123), 1f))
-            obsah.addView(volbyKonzoli, odsazeni(bottom = 13))
+            savedXbox?.let { xbox ->
+                consoleCards.add(GameLingoTVUi.tile(this,"ⓧ",xbox.second,"Xbox · uložená konzole") {
+                    vyberPrimyXbox()
+                })
+            }
+            if (consoleCards.isNotEmpty()) {
+                obsah.addView(GameLingoTVUi.title(this,"MOJE KONZOLE",16f).apply {
+                    setTextColor(Color.parseColor("#02D6FF"))
+                },odsazeni(top=10,bottom=7))
+                consoleCards.chunked(2).forEach { group ->
+                    val row=vodorovne().apply {
+                        clipChildren=false;clipToPadding=false
+                        setPadding(dp(8),dp(5),dp(8),dp(7))
+                    }
+                    group.forEachIndexed { i, card ->
+                        row.addView(card,LinearLayout.LayoutParams(0,dp(123),1f).apply {
+                            if(i<group.lastIndex) rightMargin=dp(20)
+                        })
+                    }
+                    obsah.addView(row,odsazeni(bottom=6))
+                }
+            } else {
+                obsah.addView(GameLingoTVUi.title(this,"Zatím nemáš přidanou žádnou konzoli.",17f,muted=true),
+                    odsazeni(top=9,bottom=12))
+            }
 
             // Genuine state, never imply that a saved device is connected.
             val statusy = vodorovne().apply {
@@ -176,7 +185,7 @@ def tv(s):
             }
             statusy.addView(GameLingoTVUi.statusPill(this, "Konzole",
                 if (RemotePlayService.aktivni) "Remote Play běží"
-                else if (nejakaKonzole) "Uložená · nepřipojena" else "Nepřidána",
+                else if (consoleCards.isNotEmpty()) "Uložená · nepřipojena" else "Nepřidána",
                 RemotePlayService.aktivni),
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(11) })

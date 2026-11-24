@@ -281,6 +281,10 @@ def patch_direct_tv(folder):
 
     private fun hratTelevizi() {
         GameLingoScreenTranslationService.stop(this)""")
+    # Always land on the dashboard. Opening the app must not redirect to
+    # the phone receiver merely because its background service is running.
+    patch_main('        if (!telefon && PrijemService.bezi) { ukazPrijem(); return }',
+               '        // Active phone reception stays in the background; its tile opens it explicitly.')
     patch_main('private fun hratSTelefonem() {',
                'private fun hratSTelefonem() {\n        GameLingoScreenTranslationService.stop(this)')
     patch_main("private val SKALA = 0.72f", "private val SKALA = 0.66f")

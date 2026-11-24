@@ -918,6 +918,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoScreenTranslationService.running ||", wiring)
         self.assertIn("Obsolete accessibility implementation included", code(TOOLS/"verify_tv_ui_apk.py"))
 
+    def test_tv_home_only_shows_real_saved_consoles_and_does_not_redirect(self):
+        home=code(TOOLS/"polish_all_screens.py")
+        wiring=code(TOOLS/"direct_tv_mode.py")
+        for marker in ("GameLingoPlayStationConsoles.list(this)", "consoleCards.isNotEmpty()",
+                       "Zatím nemáš přidanou žádnou konzoli.", "it.first !in hiddenXboxIds",
+                       "else if (PrijemService.bezi) ukazPrijem() else hratSTelefonem()"):
+            self.assertIn(marker,home)
+        self.assertIn("Active phone reception stays in the background",wiring)
+        self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
+
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         self.assertIn("GameLingoTVUi.select(c, heading, options, onSelect = onSelect)",manager)
