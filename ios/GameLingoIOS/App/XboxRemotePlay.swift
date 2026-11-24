@@ -9,8 +9,44 @@ final class XboxRemotePlay: NSObject {
     var onFrame: ((CVPixelBuffer) -> Void)?
 
     private let authorization: XboxAuthorization
-    private var access: XboxStreamingAccess?
-    private var sessionURL: String?
+    // Serialize ownership of a created server session with Stop, including a late POST response.
+    private let lifecycleLock = NSLock()
+    private var serverSession: (url: String, access: XboxStreamingAccess)?
+    private var stopped = false
+    private var ended: Bool {
+        lifecycleLock.lock(); defer { lifecycleLock.unlock() }
+        return stopped
+    }
+
+    private func registerSession(_ url: String, access: XboxStreamingAccess) -> Bool {
+        lifecycleLock.lock(); defer { lifecycleLock.unlock() }
+        guard !stopped else { return false }
+        serverSession = (url, access)
+        return true
+    }
+
+    private func activeSession() -> (url: String, access: XboxStreamingAccess)? {
+        lifecycleLock.lock(); defer { lifecycleLock.unlock() }
+        return stopped ? nil : serverSession
+    }
+
+    private func takeSessionForStop() -> (first: Bool, session: (url: String, access: XboxStreamingAccess)?) {
+        lifecycleLock.lock(); defer { lifecycleLock.unlock() }
+        guard !stopped else { return (false, nil) }
+        stopped = true
+        let session = serverSession
+        serverSession = nil
+        return (true, session)
+    }
+
+    private func deleteSession(_ url: String, access: XboxStreamingAccess) {
+        // Do not cancel a create POST in flight: its late response must be consumed
+        // to learn the session URL and release it. Cleanup owns its own task.
+        Task { [authorization] in
+            _ = try? await authorization.request(url, method: "DELETE",
+                headers: await authorization.streamHeaders(access))
+        }
+    }
     private var factory: RTCPeerConnectionFactory?
     private var peer: RTCPeerConnection?
     private var videoTrack: RTCVideoTrack?
@@ -18,7 +54,6 @@ final class XboxRemotePlay: NSObject {
     private let videoSink: XboxVideoSink
     private let lock = NSLock()
     private var candidates: [RTCIceCandidate] = []
-    private var ended = false
     private var lastKeyframe = Date.distantPast
     private var lastFrame = Date.distantPast
     private var heartbeat: Task<Void, Never>?
@@ -29,7 +64,7 @@ final class XboxRemotePlay: NSObject {
         self.videoSink = XboxVideoSink(minimumFrameInterval: minimumFrameInterval)
         super.init()
         videoSink.onPixelBuffer = { [weak self] buffer in
-            guard let self else { return }
+            guard let self, !self.ended else { return }
             self.lastFrame = Date()
             self.onFrame?(buffer)
         }
@@ -42,10 +77,10 @@ final class XboxRemotePlay: NSObject {
     func connect(console: XboxConsole) async throws {
         info("Přihlašuji Xbox…")
         let access = try await authorization.streamingAccess()
-        self.access = access
         if ended { return }
         info("Spouštím vzdálené hraní na Xboxu: \(console.name)…")
         let headers = await authorization.streamHeaders(access)
+        guard !ended else { return }
         // Match PlayCaption Android's xHome session schema exactly.
         // Without serverId the backend cannot route the request to the chosen console.
         let session: [String: Any]
@@ -67,15 +102,21 @@ final class XboxRemotePlay: NSObject {
         guard let path = session["sessionPath"] as? String else {
             throw XboxError.message("Xbox nevrátil sessionPath")
         }
-        sessionURL = path.hasPrefix("https://") ? path :
+        let createdURL = path.hasPrefix("https://") ? path :
             "\(access.baseURL)/\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))"
+        guard registerSession(createdURL, access: access) else {
+            deleteSession(createdURL, access: access)
+            return
+        }
         try await waitUntilReady()
         if ended { return }
         info("Navazuji WebRTC spojení…")
         try initializePeer()
         guard let peer else { throw XboxError.message("WebRTC není inicializované") }
         let offer = try await createOffer(peer)
+        guard !ended else { return }
         try await setLocal(offer, on: peer)
+        guard !ended else { return }
         let sdpRequest: [String: Any] = [
             "messageType": "offer", "sdp": offer.sdp,
             "configuration": [
@@ -92,6 +133,7 @@ final class XboxRemotePlay: NSObject {
         ]
         _ = try await sessionRequest("sdp", method: "POST", json: sdpRequest)
         let remoteSDP = try await waitForExchange("sdp")
+        guard !ended else { return }
         guard let sdp = remoteSDP["sdp"] as? String else {
             throw XboxError.message("Xbox nevrátil SDP odpověď")
         }
@@ -113,6 +155,7 @@ final class XboxRemotePlay: NSObject {
         ])
         let remote = try await waitForExchangeArray("ice")
         for item in remote {
+            guard !ended else { return }
             guard let text = item["candidate"] as? String,
                   !text.isEmpty, text != "a=end-of-candidates" else { continue }
             let mid = item["sdpMid"] as? String ?? "0"
@@ -120,6 +163,7 @@ final class XboxRemotePlay: NSObject {
                 Int(item["sdpMLineIndex"] as? String ?? "0") ?? 0)
             try await peer.add(RTCIceCandidate(sdp: text, sdpMLineIndex: index, sdpMid: mid))
         }
+        guard !ended else { return }
         info("WebRTC navázáno · čekám na obraz")
         keepalive = Task { [weak self] in
             while let self, !Task.isCancelled, !self.ended {
@@ -164,10 +208,11 @@ final class XboxRemotePlay: NSObject {
     private func sessionRequest(_ path: String,
                                 method: String = "GET",
                                 json: [String: Any]? = nil) async throws -> [String: Any] {
-        guard let sessionURL, let access else { throw XboxError.message("Chybí relace Xbox") }
+        guard let session = activeSession() else { throw XboxError.message("Chybí relace Xbox") }
+        let headers = await authorization.streamHeaders(session.access)
+        guard !ended else { throw CancellationError() }
         return try await authorization.request(
-            "\(sessionURL)/\(path)", method: method, json: json,
-            headers: await authorization.streamHeaders(access))
+            "\(session.url)/\(path)", method: method, json: json, headers: headers)
     }
 
     private func waitForExchange(_ name: String) async throws -> [String: Any] {
@@ -335,23 +380,17 @@ final class XboxRemotePlay: NSObject {
     }
 
     func stop() {
-        if ended { return }
-        ended = true
+        let cleanup = takeSessionForStop()
+        guard cleanup.first else { return }
         keepalive?.cancel()
         heartbeat?.cancel()
-        let session = sessionURL
-        let access = access
         videoTrack?.remove(videoSink)
         peer?.close()
         channels.removeAll()
         peer = nil
         factory = nil
-        if let session, let access {
-            Task {
-                _ = try? await authorization.request(
-                    session, method: "DELETE",
-                    headers: await authorization.streamHeaders(access))
-            }
+        if let session = cleanup.session {
+            deleteSession(session.url, access: session.access)
         }
         info("Remote Play zastaveno")
     }
@@ -399,6 +438,7 @@ extension XboxRemotePlay: RTCPeerConnectionDelegate {
     func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {}
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didStartReceivingOn transceiver: RTCRtpTransceiver) {
+        guard !ended else { return }
         if let video = transceiver.receiver.track as? RTCVideoTrack {
             videoTrack = video
             video.add(videoSink)
