@@ -131,7 +131,7 @@ internal object GameLingoTranslationCache {
     }
 
     fun remember(context: Context?, engine: String, source: String, target: String,
-                 original: String, result: String, revision: Long = revision()) {
+                 original: String, result: String, revision: Long = epoch.get()) {
         if (context == null || !allowed(context, revision)) return
         runCatching { worker.execute {
             if (allowed(context, revision))
