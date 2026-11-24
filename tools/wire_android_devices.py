@@ -34,7 +34,9 @@ def main():
         return '''GameLingoDeviceCenter.show(this,
                     onXbox = { ukazPripojeniXbox() },
                     onPlayStation = { ukazPripojeni() },
-                    onTV = { vyberVystupTv() },
+                    onTV = { if (telefon) vyberVystupTv() else if (android.provider.Settings.canDrawOverlays(this)) {
+                        if (PrijemService.bezi) ukazPrijem() else hratSTelefonem()
+                    } else pozadejOPovoleni() },
                     onUpdated = { ukazHlavni() })'''
 
     # Mobile and TV share the PSN source, but the TV has a different

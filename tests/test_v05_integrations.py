@@ -928,10 +928,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Active phone reception stays in the background",wiring)
         self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
 
+    def test_tv_device_manager_shows_phones_instead_of_other_tvs(self):
+        manager=code(TOOLS/"GameLingoDeviceCenter.kt")
+        tv=code(TOOLS/"direct_tv_mode.py")
+        self.assertIn('arrayOf("Xbox", "PlayStation 5 / 4", "Telefon · QR / PIN")',manager)
+        self.assertIn('label(c, "Telefony", 16f)',manager)
+        self.assertIn("TV_RECEIVER_PHONE_ROWS",manager)
+        self.assertIn("IPhoneTVPairing.phones(c)",tv)
+        self.assertIn("IPhoneTVPairing.unpair(c, phone.id)",tv)
+        self.assertIn("return root",manager.split("TV_RECEIVER_PHONE_ROWS",1)[1].split('label(c, "Televize"',1)[0])
+
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         self.assertIn("GameLingoTVUi.select(c, heading, options, onSelect = onSelect)",manager)
-        for marker in ('chooseDevice(c, "Přidat zařízení"', "chooseDevice(c, ps.name",
+        for marker in ('chooseDevice(c, "Přidat zařízení", options)', "chooseDevice(c, ps.name",
                        "chooseDevice(c, xbox.jmeno", "chooseDevice(c, tv.jmeno"):
             self.assertIn(marker,manager)
 

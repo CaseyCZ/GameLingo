@@ -200,7 +200,10 @@ def patch_direct_tv(folder):
         """GameLingoTVSettings.show(this,
                     onDevices = {
                         GameLingoDeviceCenter.show(this, onXbox = { ukazPripojeniXbox() },
-                            onPlayStation = { ukazPripojeni() }, onTV = { hratSTelefonem() },
+                            onPlayStation = { ukazPripojeni() }, onTV = {
+                                if (!android.provider.Settings.canDrawOverlays(this)) pozadejOPovoleni()
+                                else if (PrijemService.bezi) ukazPrijem() else hratSTelefonem()
+                            },
                             onUpdated = { ukazHlavni() })
                     }, onUpdate = { ukazHlavni() })""")
     patch_main('else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()',
@@ -289,6 +292,39 @@ def patch_direct_tv(folder):
                'private fun hratSTelefonem() {\n        GameLingoScreenTranslationService.stop(this)')
     patch_main("private val SKALA = 0.72f", "private val SKALA = 0.66f")
     main.write_text(m, encoding="utf8")
+
+    # Receiver keys exist in the TV build only. Do not add dependencies on
+    # receiver code to the shared Android-phone device manager.
+    devices = folder / "GameLingoDeviceCenter.kt"
+    device_source = devices.read_text(encoding="utf8")
+    marker = "            // TV_RECEIVER_PHONE_ROWS"
+    if device_source.count(marker) != 1:
+        raise RuntimeError("TV phone list anchor changed")
+    device_source = device_source.replace(marker, """            val phones = IPhoneTVPairing.phones(c)
+            if (phones.isEmpty()) {
+                tvPanel.addView(label(c, "Zatím žádný spárovaný telefon.", 14f, muted))
+            }
+            for (phone in phones) {
+                add(tvPanel, line(c, phone.label,
+                    if (phone.connected) "Připojen" else "Spárován",
+                    phone.connected) {
+                    chooseDevice(c, phone.label, arrayOf("Odpárovat")) {
+                        AlertDialog.Builder(c)
+                            .setTitle("Odpárovat " + phone.label + "?")
+                            .setMessage("Ostatní telefony zůstanou spárované.")
+                            .setNegativeButton("Zrušit", null)
+                            .setPositiveButton("Odpárovat") { _, _ ->
+                                if (IPhoneTVPairing.unpair(c, phone.id)) {
+                                    onDismiss()
+                                    onUpdated()
+                                } else AlertDialog.Builder(c)
+                                    .setMessage("Odpárování se nepodařilo uložit.")
+                                    .setPositiveButton("OK", null).show()
+                            }.show()
+                    }
+                })
+            }""", 1)
+    devices.write_text(device_source, encoding="utf8")
 
     # Respect explicit TV platform choice; never silently fall back to the other console.
     s = service.read_text(encoding="utf8")

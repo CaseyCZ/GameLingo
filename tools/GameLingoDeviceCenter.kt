@@ -153,9 +153,11 @@ object GameLingoDeviceCenter {
         header.addView(GameLingoHelp.button(c, "console"),GameLingoHelp.layout(c))
         root.addView(header)
 
+        val tenFoot = GameLingoTVUi.isTV(c)
         val addDeviceButton = line(c, "＋  Přidat zařízení") {
-            chooseDevice(c, "Přidat zařízení", arrayOf("Xbox", "PlayStation 5 / 4",
-                                  "Google TV / Android TV")) { selected ->
+            val options = if (tenFoot) arrayOf("Xbox", "PlayStation 5 / 4", "Telefon · QR / PIN")
+                else arrayOf("Xbox", "PlayStation 5 / 4", "Google TV / Android TV")
+            chooseDevice(c, "Přidat zařízení", options) { selected ->
                     onDismiss()
                     when (selected) {
                         0 -> onXbox()
@@ -166,7 +168,6 @@ object GameLingoDeviceCenter {
         }
         add(root, addDeviceButton)
 
-        val tenFoot = GameLingoTVUi.isTV(c)
         val consolePanel = if (tenFoot) LinearLayout(c).apply { orientation = LinearLayout.VERTICAL } else root
         val tvPanel = if (tenFoot) LinearLayout(c).apply { orientation = LinearLayout.VERTICAL } else root
         if (tenFoot) {
@@ -302,6 +303,16 @@ object GameLingoDeviceCenter {
             })
         }
 
+        if (tenFoot) {
+            tvPanel.addView(label(c, "Telefony", 16f))
+            add(tvPanel, line(c, "Přidat telefon", "Párování pomocí QR kódu nebo PINu") {
+                onDismiss()
+                onTV()
+            })
+            // TV_RECEIVER_PHONE_ROWS
+            if (showClose) add(root, line(c, "Hotovo") { onDismiss() })
+            return root
+        }
         tvPanel.addView(label(c, "Televize", 16f))
         val tvStore = TvProfily(c)
         val tvs = tvStore.seznam()

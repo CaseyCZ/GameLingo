@@ -22,7 +22,11 @@ REQUIRED = (
     "Spárované telefony",
     "Vyber zdroj překladu",
     "Samostatná TV",
-    "Náhled rozložení · 4 nezávislé oblasti",
+    "Rozložení oblastí",
+    "Náhled na TV",
+    "Uložit do profilu",
+    "Přidat telefon",
+    "Párování pomocí QR kódu nebo PINu",
     "Neprůhlednost pozadí",
 )
 
