@@ -71,11 +71,25 @@ object GameLingoProfiles {
         return r
     }
 
+    // The dashboard may have a saved receiver while no live receiver is active.
+    // Resolve its preferences without connecting or changing TvProfily.aktivniId.
+    private fun layoutPrefs(c: Context): android.content.SharedPreferences {
+        val store = TvProfily(c)
+        val id = if (store.pouzeTelefon) null else store.posledniId
+        return if (id != null && store.najdi(id) != null) store.nastaveni(id)
+            else c.getSharedPreferences("gamelingo", Context.MODE_PRIVATE)
+    }
+
+    private fun rect(p: android.content.SharedPreferences, prefix: String, fallback: FloatArray): FloatArray =
+        FloatArray(4) { i -> p.getFloat(prefix + listOf("L", "T", "R", "B")[i], fallback[i]) }
+
     private fun snapshot(c: Context, settings: Nastaveni) = JSONObject().apply {
         put("dialogy", settings.dialogy)
         put("pribehovy", settings.pribehovy)
         put("cas", settings.casPribehuProcenta)
         put("prekryvat", settings.prekryvat)
+        put("napovedy", settings.napovedy)
+        put("phoneTextSize", c.getSharedPreferences("gamelingo", Context.MODE_PRIVATE).getInt("telefonPismo", 1))
         put("gameLanguage", GameLingoLanguages.game(c))
         put("targetLanguage", GameLingoLanguages.target(c))
         GameLingoOCRConfig.load(c)
@@ -85,23 +99,22 @@ object GameLingoProfiles {
         put("phoneScale", GameLingoPhoneSubtitleStyle.scale(c).toDouble())
         put("phoneColor", GameLingoPhoneSubtitleStyle.color(c))
         put("phoneBackground", GameLingoPhoneSubtitleStyle.background(c))
-        put("volbyZap", Volby.zapnuto)
-        put("volbyText", Volby.rezimText)
-        put("volbyZamek", Volby.zamceno)
-        put("volbyOblast", array(Volby.oblast))
-        put("dialogRucne", OblastTitulku.rucne)
-        put("dialogZamek", OblastTitulku.zamceno)
-        put("dialogOblast", array(OblastTitulku.oblast))
-        // Output position/font are persisted in the current TV profile.
-        val p = TvProfily.nastaveni(c)
+        val p = layoutPrefs(c)
+        put("volbyZap", p.getBoolean("volbyZap", false))
+        put("volbyText", p.getBoolean("volbyRezimText", false))
+        put("volbyZamek", p.getBoolean("volbyZamek", false))
+        put("volbyOblast", array(rect(p, "volby", Volby.VYCHOZI)))
+        put("dialogRucne", p.getBoolean("titRucne", false))
+        put("dialogZamek", p.getBoolean("titZamek", false))
+        put("dialogOblast", array(rect(p, "tit", OblastTitulku.VYCHOZI)))
         put("tvX", p.getFloat("tvX", 0.5f).toDouble())
         put("tvY", p.getFloat("tvY", 0.9f).toDouble())
         put("tvSirka", p.getFloat("tvSirka", 0.75f).toDouble())
         put("tvPismo", p.getFloat("tvPismo", 1f).toDouble())
         put("greenLocked", p.getBoolean("rozvrhZamek", false))
-        put("yellowPreview", Volby.ukazatNaTv)
-        put("orangeOutput", array(GameLingoOrangeOutput.read(c)))
-        put("orangeLocked", GameLingoOrangeOutput.locked(c))
+        put("yellowPreview", p.getBoolean("volbyUkazat", false))
+        put("orangeOutput", array(GameLingoOrangeOutput.readFrom(p)))
+        put("orangeLocked", GameLingoOrangeOutput.lockedFrom(p))
     }
 
     private fun restore(c: Context, settings: Nastaveni, data: JSONObject) {
@@ -109,6 +122,10 @@ object GameLingoProfiles {
         settings.pribehovy = data.optBoolean("pribehovy", settings.pribehovy)
         settings.casPribehuProcenta = data.optInt("cas", settings.casPribehuProcenta)
         settings.prekryvat = data.optBoolean("prekryvat", settings.prekryvat)
+        settings.napovedy = data.optBoolean("napovedy", settings.napovedy)
+        val phoneSize = data.optInt("phoneTextSize", -1)
+        if (phoneSize in 0..2) c.getSharedPreferences("gamelingo", Context.MODE_PRIVATE)
+            .edit().putInt("telefonPismo", phoneSize).apply()
         // Old profiles omit these keys: retain the current setting in that case.
         GameLingoLanguages.restoreProfile(c, data.optString("gameLanguage", ""), data.optString("targetLanguage", ""))
         val mode = data.optString("ocrMode", "")
@@ -122,20 +139,25 @@ object GameLingoProfiles {
         val phoneBackground = data.optString("phoneBackground", "")
         if (phoneBackground in GameLingoPhoneSubtitleStyle.backgrounds) GameLingoPhoneSubtitleStyle.setBackground(c, phoneBackground)
 
-        Volby.nacti(c)
-        Volby.zapnuto = data.optBoolean("volbyZap", Volby.zapnuto)
-        Volby.rezimText = data.optBoolean("volbyText", Volby.rezimText)
-        Volby.zamceno = data.optBoolean("volbyZamek", Volby.zamceno)
-        Volby.oblast = readArray(data, "volbyOblast", Volby.oblast)
-        Volby.uloz(c)
-
-        OblastTitulku.nacti(c)
-        OblastTitulku.rucne = data.optBoolean("dialogRucne", OblastTitulku.rucne)
-        OblastTitulku.zamceno = data.optBoolean("dialogZamek", OblastTitulku.zamceno)
-        OblastTitulku.oblast = readArray(data, "dialogOblast", OblastTitulku.oblast)
-        OblastTitulku.uloz(c)
-
-        val output = TvProfily.nastaveni(c).edit()
+        val p = layoutPrefs(c)
+        val output = p.edit()
+        for ((key, prefKey) in listOf(
+            "volbyZap" to "volbyZap", "volbyText" to "volbyRezimText",
+            "volbyZamek" to "volbyZamek", "yellowPreview" to "volbyUkazat",
+            "dialogRucne" to "titRucne", "dialogZamek" to "titZamek",
+            "greenLocked" to "rozvrhZamek"
+        )) {
+            if (data.has(key)) output.putBoolean(prefKey, data.optBoolean(key, p.getBoolean(prefKey, false)))
+        }
+        for ((key, prefix, fallback) in listOf(
+            Triple("volbyOblast", "volby", Volby.VYCHOZI),
+            Triple("dialogOblast", "tit", OblastTitulku.VYCHOZI)
+        )) {
+            val values = readArray(data, key, rect(p, prefix, fallback))
+            listOf("L", "T", "R", "B").forEachIndexed { i, suffix ->
+                output.putFloat(prefix + suffix, values[i])
+            }
+        }
         for ((key, min, max) in listOf(
             Triple("tvX", 0f, 1f), Triple("tvY", 0f, 1f),
             Triple("tvSirka", 0.15f, 1f), Triple("tvPismo", 0.6f, 2f)
@@ -143,17 +165,15 @@ object GameLingoProfiles {
             val v = data.optDouble(key, Double.NaN).toFloat()
             if (v.isFinite() && v in min..max) output.putFloat(key, v)
         }
-        if (data.has("greenLocked")) output.putBoolean("rozvrhZamek", data.optBoolean("greenLocked"))
         output.apply()
-        if (data.has("yellowPreview")) {
-            Volby.ukazatNaTv = data.optBoolean("yellowPreview", Volby.ukazatNaTv)
-            Volby.uloz(c)
-        }
-        val currentOrange = GameLingoOrangeOutput.read(c)
+        val currentOrange = GameLingoOrangeOutput.readFrom(p)
         val orange = data.optJSONArray("orangeOutput")?.takeIf { it.length() == 5 }
             ?.let { a -> FloatArray(5) { a.optDouble(it, Double.NaN).toFloat() } }
             ?.takeIf(GameLingoOrangeOutput::valid) ?: currentOrange
-        GameLingoOrangeOutput.save(c, orange, data.optBoolean("orangeLocked", GameLingoOrangeOutput.locked(c)))
+        GameLingoOrangeOutput.saveTo(p, orange, data.optBoolean("orangeLocked", GameLingoOrangeOutput.lockedFrom(p)))
+        // Reload only the actual active layout; a later receiver selection loads its own prefs.
+        Volby.nacti(c)
+        OblastTitulku.nacti(c)
     }
 
     private fun canChangeProfile(activity: Activity): Boolean {
@@ -252,10 +272,7 @@ object GameLingoProfiles {
                     if (!canChangeProfile(activity)) return@setPositiveButton
                     val name = input.text.toString().trim()
                     if (name.isNotEmpty() && name.length <= 64) {
-                        // Objects are loaded from the active TV profile, not
-                        // from a fixed global preference store.
-                        Volby.nacti(activity)
-                        OblastTitulku.nacti(activity)
+                        // Snapshot the explicitly selected layout, even before live connection.
                         saved.edit().putString(name, snapshot(activity, settings).toString()).apply()
                         dialog.dismiss()
                         show(activity, settings, onApplied)
