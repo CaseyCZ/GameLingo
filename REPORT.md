@@ -50,8 +50,8 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P1.7 latence, paměť, teplota, nečekané konce — CI 45363666595 success; HW čeká.
 - [x] P1.8 společná semantika OCR režimů a dynamická žlutá oblast — CI 45364864455 success; HW čeká.
 - [x] P1.9 jednotná ochrana starých překladů — CI 45367664700 success; zbývající HW/race rizika uvedena níže.
-- [ ] P2.1 QR párování
-- [ ] P2.2 návrh automatické instalace TV
+- [x] P2.1 QR párování — CI 45368960470 success; HW čeká.
+- [x] P2.2 návrh automatické instalace TV — dokumentace, bez implementace.
 - [ ] P2.3 historie
 - [ ] P2.4 slovník a kontext profilu
 - [ ] P2.5 návrh offline překladu
@@ -265,3 +265,8 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - Swift validace, JVM skutečný QR roundtrip přes ZXing a neplatné payloady, statické kontrakty, full CI. HW kamera, D-pad, čitelnost, expirace, port fallback, více telefonů čeká. P2.2 po CI pouze návrh automatické instalace TV.
 
 - P2.1 commit `b1e9dca8a5657563d2544878e6b69a5e628eb902`, [CI 45368960470](https://github.com/CaseyCZ/GameLingo/actions/runs/45368960470). Stav: quick / verify: in_progress. Před P2.2 ověřit všech šest jobů včetně Swift QR parseru, JVM QR roundtrip a nativní kompilace iOS VisionKit/Android JourneyApps; při chybě opravit/revertovat. HW scanner, PIN expiry, multi-phone a port fallback neověřeny. P2.2 pouze architektura opt-in automatické instalace TV, bez implementace ADB a bez release.
+
+## P2.2 — návrh automatické instalace TV
+- P2.1 CI 45368960470: všech šest jobů success, včetně Swift validace QR, JVM QR roundtrip a iOS/Android/TV balíčků; kamera/HW neověřena.
+- Návrh uložen v [docs/TV-INSTALLATION-DESIGN.md](docs/TV-INSTALLATION-DESIGN.md). Aktuální Android oficiální dokumentace: Wireless debugging pro TV od Android 13, dostupnost na TCL C835 neověřena; ruční APK cesta na obou mobilech, volitelný ADB PoC po explicitním souhlasu, iOS zatím PC helper pouze návrh. Oddělené ADB a GameLingo párování, podpis/manifest/hash, výběr cíle, potvrzení, fail closed, žádná odinstalace ani obcházení oprávnění. Podmínkou release podpis a hardware QA. Žádný aplikační kód, žádný build dependency ani release.
+- Test P2.2: kontrola dokumentu proti docs/RELEASES.md, tools/brand_android.py, audit CI a oficiální Android dokumentaci; čistě dokumentační commit audit CI záměrně nespouští. Nativní kód je totožný s úspěšným P2.1. P2.3 historie: nejprve prověřit existující UI/log/cache; lokální opt-in, omezení retence/počtu, vymazání a soukromí, nezaměňovat se SQLite cache ani technickým logem.
