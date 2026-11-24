@@ -1,6 +1,6 @@
-"""TV-only removal of restricted Google on-device Translation API.
+"""Removal of offline Translation API on both Android variants.
 
-Run after common language/cache/provider patches. Mobile source is untouched.
+Run after common language/cache/provider patches. Both variants use identical online translation policy.
 The direct TV reader retains online providers, OCR and the SQLite cache.
 """
 from pathlib import Path
@@ -30,16 +30,16 @@ def between(text, start, end, new):
 
 def strip_dependency(gradle):
     gradle = once(gradle, '    // Překlad přímo v televizi – zdarma, bez limitu (Google ML Kit)\n' + DEP,
-                  '    // TV: no ML Kit on-device Translation dependency.')
+                  '    // Online only: no ML Kit on-device Translation dependency.')
     # Reject accidental reintroduction, including a future transitive request.
     return gradle + '''
-// GameLingo TV: Google's on-device Translation API is restricted on TVs.
+// GameLingo: offline translation is not shipped.
 configurations.configureEach {
     resolutionStrategy.eachDependency {
         if ((requested.group == "com.google.mlkit" && requested.name == "translate") ||
             (requested.group == "com.google.android.gms" &&
                 requested.name.startsWith("play-services-mlkit-translate"))) {
-            throw GradleException("ML Kit on-device Translation is not allowed in GameLingo TV")
+            throw GradleException("ML Kit on-device Translation is not allowed in GameLingo")
         }
     }
 }
@@ -63,8 +63,8 @@ def tv_translator(text):
         text = once(text, "import " + name + "\n", "")
     text = between(text, "/**\n * Překlad angličtina → čeština.",
                    "class Prekladac(", """/**
- * TV: online providers and local translation cache only.
- * The restricted on-device translation SDK is not shipped.
+ * Online providers and local translation cache only.
+ * The on-device translation SDK is not shipped.
  */
 """)
     text = between(text, "    private fun novyTranslator(", "    private val ui = Handler(", '''    @Volatile private var zavreno = false
@@ -100,7 +100,7 @@ def tv_translator(text):
     text = once(text, 'var vysledek = guardedGoogle(vstup, target, source)',
                 'var vysledek = if (skipGoogle) null else guardedGoogle(vstup, target, source)')
     text = once(text, 'prelozZalozne(vstup, source, target, hotovo, chyba)',
-                'chyba("Online překlad není dostupný; na TV není offline model")')
+                'chyba("Online překlad není dostupný")')
     text = between(text, "    /** Záloha, když nic online nejde:", "    /** Neoficiální adresa Google Překladače", "")
     text = once(text, '        runCatching { translator.close() }\n', '')
     text = once(text, '    /** Jen rychlý překlad přímo v televizi (bez internetu) – na okamžitý náhled. */',
@@ -115,8 +115,7 @@ def tv_translator(text):
 
 
 def finalize_tv(root, folder):
-    if not tv_variant(root):
-        return
+    tv_variant(root)  # validate branded variant
     cache = folder / "GameLingoTranslationCache.kt"
     text = cache.read_text(encoding="utf8")
     text = once(text, 'listOf("google-gtx-v1", "microsoft-edge-v1", "mymemory-v1", "mlkit-v1")',
@@ -138,12 +137,11 @@ def finalize_tv(root, folder):
 
 
 def assert_tv_source(root):
-    if not tv_variant(root):
-        raise AssertionError("TV policy must be verified against TV variant")
+    tv_variant(root)  # validate branded variant
     gradle = (root / "app/build.gradle.kts").read_text(encoding="utf8")
     if re.search(r'["\']com\.google\.mlkit:translate:', gradle):
         raise AssertionError("TV Gradle still declares ML Kit Translation")
-    if 'ML Kit on-device Translation is not allowed in GameLingo TV' not in gradle:
+    if 'ML Kit on-device Translation is not allowed in GameLingo' not in gradle:
         raise AssertionError("TV dependency resolution guard missing")
     for path in (root / "app/src").rglob("*"):
         if path.is_file() and path.suffix in (".kt", ".java"):
