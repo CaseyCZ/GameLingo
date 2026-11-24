@@ -15,6 +15,18 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 
 internal object GameLingoQRDisplay {
+    fun bitmap(ip: String, pin: String): Bitmap? {
+        val payload = GameLingoPairingQR.encode(ip, pin) ?: return null
+        if (IPhoneTVPairing.activeCode() != pin) return null
+        return runCatching {
+            val matrix = QRCodeWriter().encode(payload, BarcodeFormat.QR_CODE, 360, 360)
+            val pixels = IntArray(matrix.width * matrix.height) { i ->
+                if (matrix[i % matrix.width, i / matrix.width]) Color.BLACK else Color.WHITE
+            }
+            Bitmap.createBitmap(pixels, matrix.width, matrix.height, Bitmap.Config.ARGB_8888)
+        }.getOrNull()
+    }
+
     fun show(activity: Activity, ip: String, pin: String) {
         val payload = GameLingoPairingQR.encode(ip, pin)
         if (payload == null || IPhoneTVPairing.activeCode() != pin) {
