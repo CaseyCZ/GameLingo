@@ -74,25 +74,106 @@ internal object GameLingoTranslationCache {
     private val worker = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
         ArrayBlockingQueue<Runnable>(128), ThreadPoolExecutor.AbortPolicy())
     private var store: GameLingoCacheStore? = null
+    private val epoch = java.util.concurrent.atomic.AtomicLong()
+    @Volatile private var changing = false
+    fun revision(): Long = epoch.get()
+    private fun prefs(c: Context) = c.getSharedPreferences("gamelingo_cache_privacy", Context.MODE_PRIVATE)
+    fun enabled(c: Context) = !prefs(c).getBoolean("disabled", false)
+    private fun allowed(c: Context, revision: Long) =
+        !changing && enabled(c) && revision == epoch.get()
+
+    /** Mutations are serialized with SQLite jobs. Never wipe anything other than
+     * the translation database; deleteDatabase handles SQLite sidecars. */
+    @Synchronized fun manage(c: Context, enable: Boolean?, callback: (Boolean) -> Unit) {
+        if (changing) { callback(false); return }
+        changing = true
+        epoch.incrementAndGet()
+        val app = c.applicationContext
+        try {
+            worker.execute {
+                val success = runCatching {
+                    if (enable != null) {
+                        prefs(app).edit().putBoolean("disabled", !enable).commit()
+                    } else {
+                        store?.close()
+                        store = null
+                        val name = "gamelingo_translations_v1.db"
+                        val path = app.getDatabasePath(name)
+                        app.deleteDatabase(name)
+                        listOf("", "-wal", "-shm", "-journal").none {
+                            java.io.File(path.path + it).exists()
+                        }
+                    }
+                }.getOrDefault(false)
+                changing = false
+                callback(success)
+            }
+        } catch (_: java.util.concurrent.RejectedExecutionException) {
+            changing = false
+            callback(false)
+        }
+    }
     private fun store(context: Context): GameLingoCacheStore =
         store ?: GameLingoCacheStore(context.applicationContext).also { store = it }
 
     fun lookup(context: Context?, source: String, target: String, original: String,
                callback: (String?) -> Unit) {
-        if (context == null) { callback(null); return }
+        val revision = revision()
+        if (context == null || !allowed(context, revision)) { callback(null); return }
         try {
             worker.execute {
-                val result = runCatching { store(context).lookup(engines, source, target, original) }.getOrNull()
-                callback(result)
+                val result = if (allowed(context, revision))
+                    runCatching { store(context).lookup(engines, source, target, original) }.getOrNull()
+                    else null
+                callback(if (allowed(context, revision)) result else null)
             }
         } catch (_: java.util.concurrent.RejectedExecutionException) { callback(null) }
     }
 
     fun remember(context: Context?, engine: String, source: String, target: String,
-                 original: String, result: String) {
-        if (context == null) return
+                 original: String, result: String, revision: Long = revision()) {
+        if (context == null || !allowed(context, revision)) return
         runCatching { worker.execute {
-            runCatching { store(context).remember(engine, source, target, original, result) }
+            if (allowed(context, revision))
+                runCatching { store(context).remember(engine, source, target, original, result) }
         } }
+    }
+}
+
+/** Shared mobile/TV settings, D-pad reachable. No changes to account or history. */
+internal object GameLingoCachePrivacyUi {
+    private fun busy() = RemotePlayService.aktivni || PrijemService.bezi
+    fun show(a: android.app.Activity) {
+        if (busy()) {
+            android.app.AlertDialog.Builder(a).setMessage("Nejdříve zastav překlad a příjem z telefonu.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        val enabled = GameLingoTranslationCache.enabled(a)
+        android.app.AlertDialog.Builder(a)
+            .setTitle("Překladová cache")
+            .setMessage("Ukládá originály i překlady na tomto zařízení. Je oddělená od historie. Vypnutí může zvýšit počet online požadavků a omezit překlad bez internetu. Stav: " + if (enabled) "zapnuto" else "vypnuto")
+            .setNeutralButton(if (enabled) "Vypnout" else "Zapnout") { _, _ ->
+                if (!busy()) change(a, !enabled)
+            }
+            .setPositiveButton("Vymazat") { _, _ ->
+                android.app.AlertDialog.Builder(a)
+                    .setMessage("Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže.")
+                    .setNegativeButton("Zrušit", null)
+                    .setPositiveButton("Vymazat") { _, _ -> if (!busy()) change(a, null) }.show()
+            }
+            .setNegativeButton("Zavřít", null).show()
+    }
+    private fun change(a: android.app.Activity, value: Boolean?) {
+        GameLingoTranslationCache.manage(a, value) { success ->
+            a.runOnUiThread {
+                if (!a.isFinishing && !a.isDestroyed) android.app.AlertDialog.Builder(a)
+                    .setMessage(if (!success) "Operace se nezdařila. Zkus ji znovu." else when (value) {
+                        true -> "Cache zapnuta."
+                        false -> "Cache vypnuta; uložené překlady lze vymazat zvlášť."
+                        null -> "Místní překladová cache vymazána."
+                    }).setPositiveButton("OK", null).show()
+            }
+        }
     }
 }
