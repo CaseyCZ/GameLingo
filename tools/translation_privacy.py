@@ -4,14 +4,13 @@ def once(s, a, b):
         raise RuntimeError("Privacy anchor changed: " + a[:100])
     return s.replace(a, b, 1)
 
-def protect_cache_writes(t, tv):
-    if not tv: raise RuntimeError('Offline translation is no longer supported')
+def protect_cache_writes(t):
     # Capture epoch at the public request, pass it through all fallbacks.
     # The cache worker checks it again when the write is actually performed.
     anchor = '        cachedOrRun(vstup, source, '
     if t.count(anchor) != 3:
         raise RuntimeError("Expected three translation entry points")
-    t = t.replace(anchor, '        val cacheRevision = GameLingoTranslationCache.revision()\n' + anchor)
+    t = t.replace(anchor, '        val cacheRevision = GameLingoTranslationCache.revision()\n' + anchor, 2)
     t = once(t, 'private fun remember(engine: String, source: String, target: String, text: String, result: String)',
         'private fun remember(engine: String, source: String, target: String, text: String, result: String, cacheRevision: Long)')
     t = once(t, 'GameLingoTranslationCache.remember(cacheContext, engine, source, target, text, result)',
