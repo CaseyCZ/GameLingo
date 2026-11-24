@@ -728,14 +728,23 @@ class GameLingoScreenTranslationService : Service() {
         active=false; running=false; wantFrame.set(0); epoch++; ui.removeCallbacks(tick)
         if (wasActive && !status.startsWith("Systém ukončil")) status = "Zastaveno · poslední stav: " + source
         if (wasActive) { render(""); clearYellow(); clearHint() }
-        runCatching { display?.release() }; display=null
+        val hadDisplay = display != null
+        val releaseDisplay = runCatching { display?.release() }
+        display=null
+        if (hadDisplay) displayState = if (releaseDisplay.isSuccess) "Uvolněn" else "Chyba při uvolnění"
         val oldReader = reader; reader=null
         val handler = frameHandler; frameHandler=null
         val thread = worker; worker=null
         if (handler != null) {
             handler.post { runCatching { oldReader?.setOnImageAvailableListener(null,null); oldReader?.close() }; thread?.quitSafely() }
         } else runCatching { oldReader?.close() }
-        runCatching { projection?.stop() }; projection=null
+        val hadProjection = projection != null
+        val releaseProjection = runCatching { projection?.stop() }
+        projection=null
+        if (hadProjection) projectionState = if (releaseProjection.isSuccess) "Ukončena" else "Chyba při ukončení"
+        val stopForegroundResult = runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+        if (foregroundState.startsWith("Aktivní")) foregroundState =
+            if (stopForegroundResult.isSuccess) "Ukončena" else "Chyba při ukončení"
         runCatching { ocr?.zavri() }; ocr=null
         runCatching { translator?.zavri() }; translator=null
         super.onDestroy()
@@ -806,7 +815,21 @@ class GameLingoScreenTranslationService : Service() {
         fun diagnostics(a: Activity) {
             if (running) stop(a)
             val panel = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(20,8,20,8) }
-            panel.addView(android.widget.TextView(a).apply { text = report(); textSize = 15f })
+            val reportView = android.widget.TextView(a).apply { text = report(); textSize = 15f }
+            panel.addView(reportView)
+            // stopService is asynchronous; refresh when onDestroy has completed.
+            // Preserve final counters for diagnosis, not stale active-state labels.
+            val reportRefresh = object : Runnable {
+                override fun run() {
+                    if (!reportView.isAttachedToWindow) return
+                    reportView.text = report()
+                    reportView.postDelayed(this,500L)
+                }
+            }
+            reportView.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: android.view.View) { reportView.post(reportRefresh) }
+                override fun onViewDetachedFromWindow(v: android.view.View) { reportView.removeCallbacks(reportRefresh) }
+            })
             preview?.let { bmp ->
                 panel.addView(android.widget.ImageView(a).apply {
                     setImageBitmap(bmp); adjustViewBounds=true; contentDescription="Diagnostický výřez OCR"

@@ -878,6 +878,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(marker,wiring)
         self.assertIn("if(television) ViewGroup.LayoutParams.MATCH_PARENT",code(TOOLS/"GameLingoSettings.kt"))
 
+    def test_tv_diagnostics_distinguishes_stopped_resources_from_last_session_counters(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        service = capture.split("class GameLingoScreenTranslationService",1)[1]
+        cleanup = service.split("override fun onDestroy()",1)[1].split("companion object",1)[0]
+        for marker in ("releaseDisplay.isSuccess", "releaseProjection.isSuccess",
+                       "stopForeground(STOP_FOREGROUND_REMOVE)", "stopForegroundResult.isSuccess"):
+            self.assertIn(marker, cleanup)
+        self.assertIn("reportView.text = report()", service)
+        self.assertIn("reportView.removeCallbacks(reportRefresh)", service)
+
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")
