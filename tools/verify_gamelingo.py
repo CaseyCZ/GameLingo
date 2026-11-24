@@ -107,7 +107,12 @@ def android(root: Path, mode: str):
     contains(base / "GameLingoPlayStationConsoles.kt", 'put("target", current.consoleTarget.value)',
              "active.consoleTarget = Target.values()")
     contains(base / "MainActivity.kt", "Target.PS4_10", "target = target, log",
-             "supported.map", "PS_TARGET:")
+             "supported.map")
+    for path in (base / "MainActivity.kt", base / "XboxUcet.kt", base / "Propojeni.kt"):
+        source = path.read_text(encoding="utf8")
+        for forbidden in ("XboxUcet.proPredani(", "XboxUcet.prevezmi(", "fun proPredani(", "fun sparovaniDotaz("):
+            if forbidden in source:
+                raise RuntimeError(f"{path}: obsolete account transfer remains: {forbidden}")
     if mode == "tv":
         contains(base / "PrijemService.kt", "explicit receiver mode, same as standard captions")
         contains(base / "OverlayService.kt", "val vstup = PrijemService.bezi ||")
