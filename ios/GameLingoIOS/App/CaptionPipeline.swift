@@ -87,6 +87,8 @@ actor CaptionPipeline {
     private var lastSettings = ""
     private var emptyReads = 0
     private var revision = 0
+    private var dialogueRetryAt: TimeInterval?
+    private var optionsRetryAt: TimeInterval?
     private var dialogueImageGate = OCRFrameGate(maximumSkip: 1.5)
 
     func resetDialogue() {
@@ -95,12 +97,28 @@ actor CaptionPipeline {
         lastSeen = .distantPast
         lastSettings = ""
         dialogueImageGate.reset()
+        dialogueRetryAt = nil
         emptyReads = 0
         revision += 1
     }
 
     func isCurrent(revision candidate: Int) -> Bool {
         revision == candidate
+    }
+
+    /// Permit a new attempt only if this exact failed reading is still current.
+    /// Do not continuously retry the same visible sentence on every OCR pass.
+    func dialogueTranslationFailed(revision candidate: Int) {
+        guard revision == candidate, !lastText.isEmpty else { return }
+        dialogueRetryAt = ProcessInfo.processInfo.systemUptime + 2
+    }
+
+    func optionsTranslationFailed(_ options: [String], area: CGRect,
+                                  asText: Bool, gameLanguage: GLGameLanguage) {
+        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)"
+        guard lastOptionsSettings == signature, lastOptions == options,
+              !options.isEmpty else { return }
+        optionsRetryAt = ProcessInfo.processInfo.systemUptime + 2
     }
 
     func recognize(_ buffer: CVPixelBuffer,
@@ -120,6 +138,7 @@ actor CaptionPipeline {
             lastRead = .distantPast
             lastSeen = .distantPast
             dialogueImageGate.reset()
+            dialogueRetryAt = nil
             emptyReads = 0
             revision += 1
         }
@@ -164,13 +183,16 @@ actor CaptionPipeline {
                     // Allow the same phrase again without invalidating a
                     // translation still in flight for the last visible line.
                     lastText = ""
+                    dialogueRetryAt = nil
                 }
                 return nil
             }
 
             lastSeen = now
             emptyReads = 0
-            guard text != lastText else { return nil }
+            let retryDue = dialogueRetryAt.map { imageTime >= $0 } ?? false
+            guard text != lastText || retryDue else { return nil }
+            dialogueRetryAt = nil
             lastText = text
             revision += 1
             return RecognizedCaption(english: text, revision: revision, capturedAt: now)
@@ -191,6 +213,7 @@ actor CaptionPipeline {
         lastOptionsRead = .distantPast
         lastOptionsSettings = ""
         optionsImageGate.reset()
+        optionsRetryAt = nil
     }
 
     /// The area uses top-left normalized screen coordinates, unlike Vision.
@@ -205,6 +228,7 @@ actor CaptionPipeline {
             lastOptions = []
             lastOptionsRead = .distantPast
             optionsImageGate.reset()
+            optionsRetryAt = nil
         }
         guard Date().timeIntervalSince(lastOptionsRead) > 1.0 else { return nil }
         lastOptionsRead = Date()
@@ -231,7 +255,9 @@ actor CaptionPipeline {
             let output = asText
                 ? (lines.isEmpty ? [] : [lines.joined(separator: " ")])
                 : Array(lines.prefix(6))
-            guard output != lastOptions else { return nil }
+            let retryDue = optionsRetryAt.map { imageTime >= $0 } ?? false
+            guard output != lastOptions || retryDue else { return nil }
+            optionsRetryAt = nil
             lastOptions = output
             return output
         } catch {
@@ -269,11 +295,15 @@ actor CaptionPipeline {
 
     func translate(_ original: String,
                    from source: GLGameLanguage = .english,
-                   to target: GLTargetLanguage = .czech) async -> String {
-        if source.rawValue == target.rawValue { return original }
+                   to target: GLTargetLanguage = .czech) async -> Result<String, GLTranslationFailure> {
+        guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return .failure(.emptyInput)
+        }
+        if Task.isCancelled { return .failure(.cancelled) }
+        if source.rawValue == target.rawValue { return .success(original) }
         let engine = "google-gtx-v1"
         if let cached = await translationCache.lookup(engine: engine, source: source.rawValue,
-            target: target.rawValue, original: original) { return cached }
+            target: target.rawValue, original: original) { return .success(cached) }
         // Preserve the previous translation service; language codes are now configurable.
         var components = URLComponents(string: "https://translate.googleapis.com/translate_a/single")
         components?.queryItems = [
@@ -283,22 +313,21 @@ actor CaptionPipeline {
             URLQueryItem(name: "dt", value: "t"),
             URLQueryItem(name: "q", value: original)
         ]
-        guard let url = components?.url else { return original }
+        guard let url = components?.url else { return .failure(.invalidRequest) }
         do {
             var req = URLRequest(url: url)
             req.timeoutInterval = 5
             let (data, response) = try await URLSession.shared.data(for: req)
-            guard (response as? HTTPURLResponse)?.statusCode == 200,
-                  let array = try JSONSerialization.jsonObject(with: data) as? [Any],
-                  let segments = array.first as? [[Any]] else { return original }
-            let translated = segments.compactMap { $0.first as? String }.joined()
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !translated.isEmpty else { return original }
-            await translationCache.remember(engine: engine, source: source.rawValue,
-                target: target.rawValue, original: original, result: translated)
-            return translated
+            if Task.isCancelled { return .failure(.cancelled) }
+            let outcome = GLTranslationOutcome.googleResponse(data,
+                statusCode: (response as? HTTPURLResponse)?.statusCode)
+            if case .success(let translated) = outcome {
+                await translationCache.remember(engine: engine, source: source.rawValue,
+                    target: target.rawValue, original: original, result: translated)
+            }
+            return outcome
         } catch {
-            return original
+            return .failure(GLTranslationFailure.classify(error))
         }
     }
 }

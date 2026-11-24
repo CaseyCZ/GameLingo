@@ -486,6 +486,25 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("currentPair(source, target)", wiring)
         self.assertIn("GameLingoTranslationCacheTest.kt", wiring)
 
+    def test_p1_4_translation_failures_never_render_original_text(self):
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        outcome = code(IOS/"TranslationOutcome.swift")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("async -> Result<String, GLTranslationFailure>", pipeline)
+        self.assertNotIn("return original", pipeline)
+        self.assertIn("if case .success(let translated) = outcome", pipeline)
+        self.assertIn("guard case .success(let czech) = outcome", model)
+        self.assertIn("case .failure(let error):", model)
+        self.assertIn("dialogueTranslationFailed(revision: reading.revision)", model)
+        self.assertIn("optionsTranslationFailed(englishChoices", model)
+        self.assertIn("dialogueRetryAt", pipeline)
+        self.assertIn("optionsRetryAt", pipeline)
+        self.assertIn("guard statusCode == 200", outcome)
+        self.assertIn("else if (cesky.isBlank()) chyba", wiring)
+        self.assertIn("vysledky[i] = null", wiring)
+        self.assertIn("prelozene.size != volby.size", wiring)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

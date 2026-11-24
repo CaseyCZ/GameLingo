@@ -488,19 +488,45 @@ final class CaptionAppModel: ObservableObject {
            self.choicesEnabled else { return }
         var translated = [String]()
         for option in englishChoices {
-            let item = await self.pipeline.translate(
+            let outcome = await self.pipeline.translate(
                 option, from: activeGameLanguage,
                 to: activeTargetLanguage)
             guard self.isRunning,
                   self.sessionRevision == currentSession,
-                  self.choicesEnabled else { return }
-            translated.append(item)
+                  self.choicesEnabled,
+                  self.choicesArea == area, self.choicesTextMode == asText,
+                  self.gameLanguage == activeGameLanguage,
+                  self.targetLanguage == activeTargetLanguage else { return }
+            switch outcome {
+            case .success(let item):
+                translated.append(item)
+            case .failure(let error):
+                // A partial list could point to the wrong selectable option.
+                // Clear the old list without ever sending the original text.
+                self.lastChoices = ""
+                self.lastTranslatedChoiceItems = []
+                self.lastChoicesSentAt = nil
+                if self.devices.subtitleOutput == .googleTV {
+                    self.devices.prepareTV(self.tv)
+                    if self.verifiedTelevisionOutput {
+                        self.tv.sendChoices([], area: area, asText: asText,
+                                            outputArea: self.choicesOutputArea,
+                                            outputFont: self.choicesOutputFont)
+                    }
+                }
+                self.write("Volby: chyba překladu (\(error.diagnostic))")
+                await self.pipeline.optionsTranslationFailed(englishChoices,
+                    area: area, asText: asText, gameLanguage: activeGameLanguage)
+                return
+            }
         }
         guard self.isRunning,
               self.sessionRevision == currentSession,
               self.choicesEnabled,
               self.choicesArea == area,
-              self.choicesTextMode == asText else { return }
+              self.choicesTextMode == asText,
+              self.gameLanguage == activeGameLanguage,
+              self.targetLanguage == activeTargetLanguage else { return }
         self.lastChoices = translated.joined(separator: " · ")
         self.lastTranslatedChoiceItems = translated
         self.lastTranslatedChoiceIsText = asText
@@ -544,16 +570,34 @@ final class CaptionAppModel: ObservableObject {
                 self.write("OCR: \(reading.english)")
                 Task { @MainActor [weak self] in
                     guard let self else { return }
-                    let czech = await self.pipeline.translate(
+                    let outcome = await self.pipeline.translate(
                         reading.english, from: activeGameLanguage,
                         to: activeTargetLanguage)
                     let isLatest = await self.pipeline.isCurrent(revision: reading.revision)
                     guard self.isRunning,
                           self.sessionRevision == currentSession,
-                          isLatest else { return }
+                          isLatest,
+                          self.gameLanguage == activeGameLanguage,
+                          self.targetLanguage == activeTargetLanguage else { return }
                     if self.skipOldTranslations &&
                        Date().timeIntervalSince(reading.capturedAt) > self.maxTranslationAge {
                         self.write("Příliš starý překlad byl přeskočen.")
+                        return
+                    }
+                    guard case .success(let czech) = outcome else {
+                        if case .failure(let error) = outcome {
+                            self.write("Chyba překladu (\(error.diagnostic))")
+                            // Do not present an old or original line as this translation.
+                            self.lastCzech = ""
+                            self.phoneSubtitle = ""
+                            if self.devices.subtitleOutput == .googleTV {
+                                self.devices.prepareTV(self.tv)
+                                if self.verifiedTelevisionOutput {
+                                    self.tv.sendSubtitle("", duration: 0)
+                                }
+                            }
+                            await self.pipeline.dialogueTranslationFailed(revision: reading.revision)
+                        }
                         return
                     }
                     self.lastCzech = czech

@@ -43,7 +43,7 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P0.5 konzole + HDMI; ruční QA matice doplněna, CI 45349556066 success; HW čeká.
 - [x] P1.1 obrazový otisk posledního OCR, periodická kontrola a krátké věty — CI 45353138433 success; HW měření čeká.
 - [x] P1.2 nejnovější snímek, omezená fronta — CI 45356504392 success; HW čeká.
-- [ ] P1.3 SQLite LRU ~20k, engine/jazyky
+- [x] P1.3 SQLite LRU ~20k, engine/jazyky — CI 45357244015 success; HW měření čeká.
 - [ ] P1.4 explicitní success/error, žádný falešný překlad
 - [ ] P1.5 stabilizace, 800 ms / max ~4 s při stejném obrazu
 - [ ] P1.6 circuit breaker (2 chyby/30 s/1 pokus)
@@ -206,3 +206,8 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - P1.2 kumulativní CI 45356504392: všech šest jobů success včetně Swift mailbox testu a všech nativních balíčků. P1.3 připraven jako kandidát a připojen k auditní větvi až po potvrzení tohoto výsledku.
 
 - P1.3 commit `3b498db0d0736e4dfc6475a02970f2820ee03923`. CI [45357244015](https://github.com/CaseyCZ/GameLingo/actions/runs/45357244015): quick / verify: in_progress. Před P1.4 ověřit všech šest jobů, skutečný Swift SQLite test a Android patch anchors/kompilaci instrumentation; případně opravit nebo revertovat. Android runtime, kapacita 20k a reálné latence dosud neověřeny. P1.4: explicitní úspěch/chyba, zejména odstranit návrat originálu při chybě na iOS a zachovat validní shodný překlad.
+
+## P1.4 — explicitní úspěch/chyba překladu
+- P1.3 CI 45357244015: všech šest jobů success; nativní Swift SQLite test prošel, Android instrumentation zkompilována, runtime HW čeká.
+- iOS: Result<String, GLTranslationFailure>; HTTP != 200, prázdná/neplatná odpověď, timeout, síť, zrušení a chybný vstup odděleny od úspěchu. Striktní JSON segmenty, cache zápis jen v success. Stejný zdrojový/cílový jazyk je legitimní success bez provideru; platný překlad shodný s originálem (jméno apod.) nezakazujeme. Nezaměňovat selhání s textem. Dialog i seznam voleb přijímají pouze success, při chybě aktuálního výsledku schovají starý překlad; u seznamu žádné částečné indexy. Diagnostika bez citlivých URL nebo provider payloadu. Po chybě může stále viditelný stejný text projít novým OCR/překladem po min. 2 s (stávající OCR gate zachován), bez retry starého revision/oblasti. P1.6 teprve společný circuit breaker a fallback.
+- Android: již existující success/error callback API zachováno, doplněno odmítání prázdného vstupu/ML Kit výsledku a strukturálně neplatných Google/Microsoft/MyMemory dat. Zjištěné skutečné chyby upstream RemotePlayService: prelozVse dříve dosazoval replika při selhání normálního překladu; zpracujVolby posílal prekladyVoleb[it] ?: it. Nyní při selhání dávky žádný nový dialog (předchozí validní titulek doběhne podle původní doby), story dostane chybu, neúplné volby schovány bez přesunu indexu, chyba žlutého textu schová pouze výstup aktuální relace. Žádný nový provider, změna designu/jazykové nabídky ani cache neúspěchu. Android existující krátkodobá mapa prekladyVoleb a retry dedup TextVRamecku jsou další rizika při změně jazyka či výpadku; ověřit v P1.5/P1.9, neoznačovat za vyřešené. Test explicitního Swift výsledku s validní/invalidní/HTTP/timeout/network/cancel odpovědí v quick CI, Android statický kontrakt + nativní sestavení. HW vypnutí Wi-Fi, návrat služby, opakování a volby čekají. P1.5 až po CI.

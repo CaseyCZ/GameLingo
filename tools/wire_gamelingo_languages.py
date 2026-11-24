@@ -203,6 +203,32 @@ def main():
     t=once(t,'?langpair=$zdrojovyJazyk%7C$cil&q=','?langpair=$source%7C$target&q=',translator.name)
     if "cache.get(" in t or "cache.put(" in t or "LruCache" in t:
         raise RuntimeError("Old text-only cache not fully removed")
+    # P1.4: malformed provider responses and empty model results are failures.
+    old = 'if (vstup.isEmpty()) { hotovo(""); return }'
+    if t.count(old) != 2:
+        raise RuntimeError("Expected two blank-input success paths")
+    t = t.replace(old, 'if (vstup.isEmpty()) { chyba("Prázdný vstup"); return }')
+    t=once(t, '''        val jazyk = cil
+        val source = zdrojovyJazyk
+        cachedOrRun''', '''        if (vstup.isEmpty()) { chyba("Prázdný vstup"); return }
+        val jazyk = cil
+        val source = zdrojovyJazyk
+        cachedOrRun''', translator.name)
+    t=once(t, '''                    else {
+                        zdroj = "tv"
+                        remember("mlkit-v1", source, target, vstup, cesky)''', '''                    else if (cesky.isBlank()) chyba("Prázdná odpověď překladače")
+                    else {
+                        zdroj = "tv"
+                        remember("mlkit-v1", source, target, vstup, cesky)''', translator.name)
+    t=once(t, '''                val kus = kusy.optJSONArray(i) ?: continue
+                sb.append(kus.optString(0, ""))''', '''                val kus = kusy.optJSONArray(i) ?: return null
+                val segment = kus.opt(0) as? String ?: return null
+                sb.append(segment)''', translator.name)
+    t=once(t, '''        return JSONArray(json).getJSONObject(0).getJSONArray("translations")
+            .getJSONObject(0).optString("text").trim().ifEmpty { null }''', '''        return (JSONArray(json).getJSONObject(0).getJSONArray("translations")
+            .getJSONObject(0).opt("text") as? String)?.trim()?.ifEmpty { null }''', translator.name)
+    t=once(t, '''        val preklad = json.getJSONObject("responseData").optString("translatedText").trim()''', '''        val preklad = (json.getJSONObject("responseData").opt("translatedText") as? String)?.trim()
+            ?: return null''', translator.name)
     translator.write_text(t, encoding="utf8")
 
     service = folder / "RemotePlayService.kt"
@@ -251,6 +277,34 @@ def main():
     s = s.replace(old,
         'prekladac.nastavZdroj(GameLingoLanguages.game(this))\n'
         '        prekladac.nastavJazyk(GameLingoLanguages.target(this))')
+    # P1.4: no raw OCR text in the success/render path, even if a
+    # multi-line translation or an individual choice failed.
+    s=once(s, '''                if (pribeh && selhalo) chybaPribehu()
+                else if (!(rychle && selhalo)) hotovo(vysledky.filterNotNull().joinToString("\\n"))''', '''                if (selhalo) {
+                    if (pribeh) chybaPribehu()
+                } else hotovo(vysledky.filterNotNull().joinToString("\\n"))''', service.name)
+    s=once(s, '''            val chyba: (String) -> Unit = { selhalo = true; vysledky[i] = replika; hotovaJedna() }''', '''            val chyba: (String) -> Unit = {
+                selhalo = true
+                vysledky[i] = null
+                zapis("[chyba překladu dialogu]")
+                hotovaJedna()
+            }''', service.name)
+    s=once(s, '''            Propojeni.Vysilac.nastavVolby(volby.map { prekladyVoleb[it] ?: it }, volbyVybrana)''', '''            val prelozene = volby.mapNotNull { prekladyVoleb[it]?.takeIf { value -> value.isNotBlank() } }
+            if (prelozene.size != volby.size) {
+                Propojeni.Vysilac.nastavVolby(emptyList(), -1)
+                zapis("[chyba překladu voleb: neúplný seznam]")
+                return
+            }
+            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)''', service.name)
+    s=once(s, '''        }, { e -> zapis("[text: chyba překladu $e]") })''', '''        }, { _ ->
+            ui.post {
+                if (bezi && relace == relaceCteni.get() && Volby.zapnuto && Volby.rezimText &&
+                    Volby.revize == revize && textVRamecku.text == text) {
+                    Propojeni.Vysilac.nastavVolby(emptyList(), -1)
+                    zapis("[text: chyba překladu]")
+                }
+            }
+        })''', service.name)
     service.write_text(s, encoding="utf8")
     print("GameLingo source and target languages connected to real Android translation")
 
