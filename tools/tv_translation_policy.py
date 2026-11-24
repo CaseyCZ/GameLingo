@@ -1,6 +1,6 @@
 """Removal of offline Translation API on both Android variants.
 
-Run after common language/cache/provider patches. Both variants use identical online translation policy.
+Strip offline SDK before common language/cache/provider patches. Both variants use identical online translation policy.
 The direct TV reader retains online providers, OCR and the SQLite cache.
 """
 from pathlib import Path
@@ -54,7 +54,7 @@ def tv_variant(root):
     return tv
 
 
-def tv_translator(text):
+def strip_offline_translator(text):
     for name in ("com.google.mlkit.common.model.DownloadConditions",
                  "com.google.mlkit.nl.translate.TranslateLanguage",
                  "com.google.mlkit.nl.translate.Translation",
@@ -81,17 +81,36 @@ def tv_translator(text):
     }
 
 ''')
-    # Do not submit duplicate network requests for the quick preview. The
-    # full translation path already runs independently; cache hit stays fast.
-    text = once(text, '''        cachedOrRun(vstup, source, target, hotovo, chyba) {
-            prelozVTelevizi(vstup, source, target, hotovo, chyba)
-        }''', '''        cachedOrRun(vstup, source, target, hotovo, chyba) {
-            chyba("Rychlý náhled není v paměti; čeká se na online překlad")
-        }''')
-    # The existing story coordinator can start its secondary route after
-    # 2.5 seconds; use only alternative online providers, never duplicate Google.
-    text = once(text, 'prelozVTelevizi(t, source, jazyk, ok, { err() })',
-                'prelozOnlineMiss(t, source, jazyk, ok, { err() }, skipGoogle = true)')
+    # Remove the inherited implementation before any language/cache wiring.
+    text = once(text, '''        // když už Google tuhle větu znal, vrátit rovnou dobrý překlad
+        cache.get(vstup)?.let { hotovo(it); return }
+        if (zavreno) { chyba("překladač zavřený"); return }
+        runCatching {
+            translator.translate(vstup)
+                .addOnSuccessListener { hotovo(it) }
+                .addOnFailureListener { chyba(it.message ?: "Neznámá chyba") }
+        }.onFailure { chyba(it.message ?: "překladač zavřený") }''',
+                '''        cache.get(vstup)?.let { hotovo(it); return }
+        chyba("Rychlý náhled není v paměti; čeká se na online překlad")''')
+    text = once(text, 'prelozVTelevizi(t, ok, { err() })',
+                'prelozOnlineMiss(t, ok, { err() })')
+    text = once(text, 'prelozZalozne(vstup, hotovo, chyba)',
+                'chyba("Online překlad není dostupný")')
+    text = between(text, "    /** Záloha, když nic online nejde:", "    /** Neoficiální adresa Google Překladače", "")
+    text = once(text, '        runCatching { translator.close() }\n', '')
+    text = once(text, '    /** Jen rychlý překlad přímo v televizi (bez internetu) – na okamžitý náhled. */',
+                '    /** Rychlý náhled z lokální cache; síťový překlad běží samostatně. */')
+    text = once(text, '                    // nic online nejde → překlad v televizi',
+                '                    // All enabled online providers failed.')
+    text = once(text, '    /** Odkud byl poslední překlad: "google", "tv" nebo "paměť" (pro záznam). */',
+                '    /** Provider posledního úspěšného překladu (pro diagnostiku). */')
+    if FORBIDDEN_SOURCE.search(text):
+        raise RuntimeError("Offline translation implementation remains")
+    return text
+
+
+def tv_translator(text):
+    # Story fallback uses the alternative providers, not duplicate Google calls.
     text = once(text, '''    private fun prelozOnlineMiss(vstup: String, source: String, target: String,
                                  hotovo: (String) -> Unit, chyba: (String) -> Unit) {''',
                 '''    private fun prelozOnlineMiss(vstup: String, source: String, target: String,
@@ -99,16 +118,6 @@ def tv_translator(text):
                                  skipGoogle: Boolean = false) {''')
     text = once(text, 'var vysledek = guardedGoogle(vstup, target, source)',
                 'var vysledek = if (skipGoogle) null else guardedGoogle(vstup, target, source)')
-    text = once(text, 'prelozZalozne(vstup, source, target, hotovo, chyba)',
-                'chyba("Online překlad není dostupný")')
-    text = between(text, "    /** Záloha, když nic online nejde:", "    /** Neoficiální adresa Google Překladače", "")
-    text = once(text, '        runCatching { translator.close() }\n', '')
-    text = once(text, '    /** Jen rychlý překlad přímo v televizi (bez internetu) – na okamžitý náhled. */',
-                '    /** Rychlý náhled z lokální cache; síťový překlad běží samostatně. */')
-    text = once(text, '                    // nic online nejde → překlad v televizi',
-                '                    // All enabled online providers failed; no offline SDK on TV.')
-    text = once(text, '    /** Odkud byl poslední překlad: "google", "tv" nebo "paměť" (pro záznam). */',
-                '    /** Provider posledního úspěšného překladu (pro diagnostiku). */')
     if FORBIDDEN_SOURCE.search(text) or 'mlkit-v1' in text:
         raise RuntimeError("Restricted TV translation implementation remains")
     return text
@@ -116,11 +125,6 @@ def tv_translator(text):
 
 def finalize_tv(root, folder):
     tv_variant(root)  # validate branded variant
-    cache = folder / "GameLingoTranslationCache.kt"
-    text = cache.read_text(encoding="utf8")
-    text = once(text, 'listOf("google-gtx-v1", "microsoft-edge-v1", "mymemory-v1", "mlkit-v1")',
-                'listOf("google-gtx-v1", "microsoft-edge-v1", "mymemory-v1")')
-    cache.write_text(text, encoding="utf8")
     service = folder / "RemotePlayService.kt"
     text = service.read_text(encoding="utf8")
     text = once(text, '            prekladac.priprav(hotovo = { prekladac.preloz("Hello, friend.", {}, {}) }, chyba = {})',
