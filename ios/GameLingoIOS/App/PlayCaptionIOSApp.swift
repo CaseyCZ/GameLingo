@@ -389,7 +389,7 @@ final class CaptionAppModel: ObservableObject {
         processingChoices = false
         lastTranslatedChoiceItems = []
         lastChoicesSentAt = nil
-        Task { await pipeline.resetDialogue() }
+        Task { await pipeline.resetDialogue(); await pipeline.resetOptions() }
         UIApplication.shared.isIdleTimerDisabled = true
         status = "Navazuji Xbox Remote Play…"
         write("Start Remote Play: \(console.name)")
@@ -542,7 +542,7 @@ final class CaptionAppModel: ObservableObject {
         lastTranslatedChoiceItems = []
         lastChoicesSentAt = nil
         phoneSubtitle = ""
-        Task { await pipeline.resetDialogue() }
+        Task { await pipeline.resetDialogue(); await pipeline.resetOptions() }
         UIApplication.shared.isIdleTimerDisabled = true
         status = "Připojuji PlayStation…"
         write("PlayStation Remote Play: " + console.nickname)

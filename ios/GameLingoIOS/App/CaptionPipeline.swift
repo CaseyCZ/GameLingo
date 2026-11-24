@@ -87,12 +87,14 @@ actor CaptionPipeline {
     private var lastSettings = ""
     private var emptyReads = 0
     private var revision = 0
+    private var dialogueImageGate = OCRFrameGate(maximumSkip: 1.5)
 
     func resetDialogue() {
         lastText = ""
         lastRead = .distantPast
         lastSeen = .distantPast
         lastSettings = ""
+        dialogueImageGate.reset()
         emptyReads = 0
         revision += 1
     }
@@ -117,6 +119,7 @@ actor CaptionPipeline {
             lastText = ""
             lastRead = .distantPast
             lastSeen = .distantPast
+            dialogueImageGate.reset()
             emptyReads = 0
             revision += 1
         }
@@ -129,6 +132,9 @@ actor CaptionPipeline {
         let searchWide = expandOnEmpty && manualArea == nil &&
             mode != .classic && emptyReads >= 3 && emptyReads % 3 == 0
         let roi = searchWide ? SubtitleRegion.wide.rect : baseROI
+        let imageTime = ProcessInfo.processInfo.systemUptime
+        let fingerprint = OCRFrameFingerprint.read(buffer, visionROI: roi)
+        guard dialogueImageGate.shouldRead(fingerprint, now: imageTime) else { return nil }
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.recognitionLanguages = [gameLanguage.visionIdentifier]
@@ -137,6 +143,7 @@ actor CaptionPipeline {
 
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])
+            dialogueImageGate.recordSuccessfulRead(fingerprint, now: imageTime)
             let minLetters = mode == .street ? 2 : 3
             let lines = (request.results ?? []).compactMap { item -> String? in
                 guard let candidate = item.topCandidates(1).first else { return nil }
@@ -177,11 +184,13 @@ actor CaptionPipeline {
     private var lastOptions = [String]()
     private var lastOptionsRead = Date.distantPast
     private var lastOptionsSettings = ""
+    private var optionsImageGate = OCRFrameGate(maximumSkip: 2.0)
 
     func resetOptions() {
         lastOptions = []
         lastOptionsRead = .distantPast
         lastOptionsSettings = ""
+        optionsImageGate.reset()
     }
 
     /// The area uses top-left normalized screen coordinates, unlike Vision.
@@ -195,19 +204,24 @@ actor CaptionPipeline {
             lastOptionsSettings = signature
             lastOptions = []
             lastOptionsRead = .distantPast
+            optionsImageGate.reset()
         }
         guard Date().timeIntervalSince(lastOptionsRead) > 1.0 else { return nil }
         lastOptionsRead = Date()
 
+        let roi = CGRect(x: area.minX, y: 1 - area.maxY,
+                         width: area.width, height: area.height)
+        let imageTime = ProcessInfo.processInfo.systemUptime
+        let fingerprint = OCRFrameFingerprint.read(buffer, visionROI: roi)
+        guard optionsImageGate.shouldRead(fingerprint, now: imageTime) else { return nil }
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.recognitionLanguages = [gameLanguage.visionIdentifier]
         request.usesLanguageCorrection = true
-        request.regionOfInterest = CGRect(x: area.minX,
-                                           y: 1 - area.maxY,
-                                           width: area.width, height: area.height)
+        request.regionOfInterest = roi
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])
+            optionsImageGate.recordSuccessfulRead(fingerprint, now: imageTime)
             let lines = (request.results ?? [])
                 .sorted { $0.boundingBox.midY > $1.boundingBox.midY }
                 .compactMap { $0.topCandidates(1).first?.string

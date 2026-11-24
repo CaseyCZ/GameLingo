@@ -40,7 +40,7 @@ Datum: 2026-11-24. Stav: P0.1–P0.3 sestaveny, P0.4 čeká na CI.
 - [x] P0.2 ochrana proti replay (podepsaná sekvence/nonce, restart relace a ochrana pořadí) — CI success (45345559792), HW čeká.
 - [x] P0.3 Keystore na TV — CI success (45346535102), instrumentation zkompilována, runtime/HW čeká.
 - [x] P0.4 více telefonů a jednotlivé odpojení — poslední kumulativní CI 45348736716 success; HW čeká.
-- [ ] P0.5 konzole + HDMI; doplnit ruční QA matici
+- [x] P0.5 konzole + HDMI; ruční QA matice doplněna, CI 45349556066 success; HW čeká.
 - [ ] P1.1 obrazový otisk posledního OCR, periodická kontrola a krátké věty
 - [ ] P1.2 nejnovější snímek, omezená fronta
 - [ ] P1.3 SQLite LRU ~20k, engine/jazyky
@@ -178,3 +178,9 @@ Další krok: CI 45347464381 → cílená oprava P0.4 lease → CI → P0.5 impl
 - Přidány source contracts a kontroly vygenerovaného Android/TV kódu. Full CI po commitu. C08/C11/C14: PS4 implementace nyní čeká na CI a HW, neoznačovat za PASS. H10 čeká na výběr správného typu. P0.5 uzavřít až po CI; HW zůstává release gate. Žádný release, Master beze změny.
 
 - P0.5 commit `3efcdc7c7af6c68b9e093747e1c6d320552d3307`, [CI run 45349556066](https://github.com/CaseyCZ/GameLingo/actions/runs/45349556066). Poslední stav: quick / verify: in_progress. Před P1.1 ověřit všech šest jobů; pokud P0.5 selže, opravit nebo revertovat. Fyzická QA C01–C15 a H01–H10 dosud neprovedena. P1.1: nejprve potvrdit stávající Android OtiskOcr a implementovat vlastní otisk posledního přečteného snímku iOS, s periodickou kontrolou, nezávisle pro dialogy/herní texty.
+
+## P1.1 — obrazový otisk před OCR
+- P0.5 run 45349556066: všech šest jobů success. P0 implementováno a sestaveno; HW QA stále čeká, žádný release.
+- Android ověřen proti připnutému upstreamu: RemotePlayService.kt 846–868 porovnává otisk posledního OCR, 1381–1405 96×24 mřížka hran písma, nucená kontrola po 3 s, stabilizace 200 ms. Herní texty/volby 1741–1810 mají samostatný otisk a opakované čtení po 800 ms. OtiskOcr.kt navíc plný SHA-256 výřezu pro aplikační ochrany. Android implementace zůstává beze změny, nevytváříme duplicitní detektor.
+- iOS: vlastní OCRFrameFingerprint vzorkuje maximálně 192×64 jasových bodů pouze v ROI (NV12 video/full range a BGRA), bez kopie snímku; konzervativní prahy, lokální výrazná změna okamžitě vyžaduje OCR. Neznámý pixel formát, chyba locku nebo neplatná ROI → standardní OCR. Samostatný OCRFrameGate dialogy a žlutá oblast, porovnává pouze poslední úspěšně přečtený snímek včetně prázdného výsledku, nikdy přeskočený snímek; nucené nové OCR při první příležitosti po 1.5 s / 2 s, respektuje současné minimální intervaly. Reset při změně ROI/jazyka/režimu a startu relace. Nepřidává zpoždění úmyslným čekáním; detekce v mezích stávajících intervalů. Fallback širší ROI není potlačen otiskem jiné geometrie.
+- Přidán statický kontrakt a skutečný Swift executable test s umělými CVPixelBuffer snímky (NV12/BGRA, lokální změna, mimo ROI, drobný šum, pomalá kumulativní změna, reset, periodická kontrola, fail-open, nezávislé oblasti). CI na macOS test kompiluje a spustí před iOS buildem. Výsledek zatím nepotvrzen. Reálné krátké titulky, blikání, světlé scény, barevný text stejné luminance a spotřeba čekají na HW; pravidelná kontrola omezuje, ale nevylučuje ztrátu krátkého textu mezi vzorky. Neměníme OCR režimy/jazyky, překladač, cache, rozvržení ani fronty. P1.2 až po CI.

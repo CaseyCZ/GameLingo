@@ -432,6 +432,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("val vstup = PrijemService.bezi ||", patch)
         self.assertIn("ConnectInfo(ps5 = udaje.isPS5", verify)
 
+    def test_p1_1_ocr_fingerprint_is_last_successful_read_per_region(self):
+        fingerprint = code(IOS/"OCRFrameFingerprint.swift")
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        self.assertIn("CVPixelBufferLockBaseAddress(buffer, .readOnly)", fingerprint)
+        self.assertIn("CVPixelBufferUnlockBaseAddress(buffer, .readOnly)", fingerprint)
+        self.assertIn("now - readAt < maximumSkip", fingerprint)
+        self.assertIn("lastRead = fingerprint", fingerprint)
+        self.assertIn("OCRFrameGate(maximumSkip: 1.5)", pipeline)
+        self.assertIn("OCRFrameGate(maximumSkip: 2.0)", pipeline)
+        self.assertIn("dialogueImageGate.reset()", pipeline)
+        self.assertIn("optionsImageGate.reset()", pipeline)
+        self.assertEqual(pipeline.count("recordSuccessfulRead(fingerprint"), 2)
+        self.assertEqual(pipeline.count("shouldRead(fingerprint"), 2)
+
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
         tv_patch=code(TOOLS/"patch_tv_iphone.py")

@@ -59,6 +59,10 @@ jobs:
           python-version: "3.11"
       - name: Check iOS platform routing, device manager and PS4/PS5 OCR source contracts
         run: python tools/verify_gamelingo.py
+      - name: Run synthetic OCR image fingerprint tests
+        run: |
+          swiftc ios/GameLingoIOS/App/OCRFrameFingerprint.swift tests/OCRFrameFingerprintTests.swift -o "$RUNNER_TEMP/ocr-fingerprint-tests"
+          "$RUNNER_TEMP/ocr-fingerprint-tests"
       - name: Generate original GameLingo icon
         run: |
           python -m pip install pillow
