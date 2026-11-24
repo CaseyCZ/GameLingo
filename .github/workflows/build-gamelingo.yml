@@ -269,6 +269,31 @@ jobs:
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | head -n 1
           python kit/tools/package_license_notices.py tv --verify "$APK"
           cp "$APK" GameLingo-GoogleTV-v0.5.0-dev-TEST.apk
+      - name: Sign TV APK with persistent private update key
+        env:
+          GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
+          GAMELINGO_TV_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_TV_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=GameLingo-GoogleTV-v0.5.0-dev-TEST.apk
+          SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          if [[ -z "$GAMELINGO_TV_KEYSTORE_B64" && -z "$GAMELINGO_TV_KEYSTORE_PASSWORD" ]]; then
+            echo "::warning::Persistent TV signing key not configured; debug APK may require uninstall before update."
+          else
+            test -n "$GAMELINGO_TV_KEYSTORE_B64"
+            test -n "$GAMELINGO_TV_KEYSTORE_PASSWORD"
+            umask 077
+            KEYDIR="$(mktemp -d)"
+            trap 'rm -rf "$KEYDIR"' EXIT
+            printf '%s' "$GAMELINGO_TV_KEYSTORE_B64" | base64 --decode > "$KEYDIR/gamelingo-tv.p12"
+            "$SIGNER" sign --ks "$KEYDIR/gamelingo-tv.p12" --ks-type PKCS12 --ks-key-alias gamelingo-tv \
+              --ks-pass env:GAMELINGO_TV_KEYSTORE_PASSWORD --key-pass env:GAMELINGO_TV_KEYSTORE_PASSWORD \
+              --out "$KEYDIR/signed.apk" "$APK"
+            "$SIGNER" verify --verbose --print-certs "$KEYDIR/signed.apk"
+            mv "$KEYDIR/signed.apk" "$APK"
+          fi
+          "$SIGNER" verify --verbose --print-certs "$APK"
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-GoogleTV-v05-dev
