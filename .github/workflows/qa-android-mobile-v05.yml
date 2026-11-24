@@ -2,9 +2,6 @@ name: GameLingo 0.5 Android mobile compile QA
 # Final Android mobile parity QA: restrict PIN to Android TV and verify TV receiver before first-run completion.
 
 on:
-  push:
-    branches: [feature/gamelingo-v05-platform-rebuild]
-    paths: [".github/workflows/qa-android-mobile-v05.yml"]
   workflow_dispatch:
 
 permissions:
