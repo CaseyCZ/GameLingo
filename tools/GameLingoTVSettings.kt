@@ -144,7 +144,9 @@ object GameLingoTVSettings {
     }
     private fun diagnostics(a: Activity) {
         val info = PrijemService.statistikaPrijmu() + "\n\nVerze: " +
-            a.packageManager.getPackageInfo(a.packageName, 0).versionName
+            a.packageManager.getPackageInfo(a.packageName, 0).versionName +
+            "\nSamostatná TV: " + GameLingoScreenTranslationService.status +
+            "\nPřístup k textu: " + if (GameLingoSubtitleAccessibility.connected()) "Povolen" else "Nepovolen"
         AlertDialog.Builder(a).setTitle("Diagnostika TV").setMessage(info +
             "\nPřekryv: " + if (Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen")
             .setNeutralButton("Povolit překryv") { _, _ -> a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + a.packageName))) }
