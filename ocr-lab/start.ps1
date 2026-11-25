@@ -1,4 +1,4 @@
-param([switch]$Rapid,[switch]$Translate)
+param([switch]$Rapid,[switch]$Translate,[switch]$PrepareModel)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 if (-not (Test-Path '.venv\Scripts\python.exe')) {
@@ -16,10 +16,14 @@ if ($Rapid) {
     & $python -m pip install -r requirements-rapid.txt
     if ($LASTEXITCODE -ne 0) { throw 'RapidOCR installation failed.' }
 }
-if ($Translate) {
+if ($Translate -or $PrepareModel) {
     & $python -m pip install -r requirements-translate.txt
     if ($LASTEXITCODE -ne 0) { throw 'Argos installation failed.' }
 }
-& $python -m unittest -v test_core
+if ($PrepareModel) {
+    & $python prepare_model.py
+    if ($LASTEXITCODE -ne 0) { throw 'Model setup failed.' }
+}
+& $python -m unittest -v test_core test_translation_timing
 if ($LASTEXITCODE -ne 0) { throw 'Core tests failed.' }
 & $python lab.py

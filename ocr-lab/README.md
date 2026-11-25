@@ -51,3 +51,9 @@ Argos Translate je samostatný experiment, nikoli produkční překladač GameLi
 
 `python -m unittest -v test_core` testuje mezery, opakování, generace, překryv slov a známou referenci. `python -m compileall -q .` kontroluje syntaxi (spouštěj mimo .venv nebo explicitně soubory).
 První etapa: experimentální Windows nástroj, ne náhrada GameLingo. Finální rozhodnutí o algoritmu až po porovnání a měření na TCL C835.
+
+## Etapa 2 – měření skutečného překladu
+
+Spusť `powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1 -PrepareModel` pro explicitní instalaci Argos EN-CS a ověření zkušebního překladu. Zapni Offline překlad v GUI. Příště stačí start bez přepínače. Závislosti a model se stahují při přípravě; pro striktní offline test po přípravě odpoj internet a používej lokální video. Nepřidává se žádný online překladový provider. GameLingo TV používá jinou (online) cestu, proto nejde o její benchmark.
+
+CSV nově obsahuje OCR vzorky a události translation_completed, translation_stale a ui_displayed. Měří čekání, překlad, dobu od začátku zachycení snímku do výsledku a předání textu Tk UI (nikoli čas fyzického vykreslení nebo skutečného nástupu zdrojového titulku). Cold měření zahrnuje první inicializaci modelu; warm P95 je bez něj. Jedna aktivní úloha, jeden nejnovější čekající text. Výsledek může být zobrazen i při novějším OCR, maximálně do 3 sekund stáří, ne po potvrzeném prázdném snímku ani změně konfigurace. Počty jsou za relaci; pro nové nastavení spustit novou relaci. Zahozené/nahrazené OCR kandidáty nelze bez známé reference vydávat za vynechané věty. Při zastavení může poslední úloha zůstat nedokončená. Windows OCR a OneOCR zůstávají další etapou.

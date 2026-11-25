@@ -13,6 +13,7 @@ from PIL import Image,ImageTk
 import mss
 from core import Dialogue,percentile
 from engines import make_engine,preprocess,local_translator
+from translation_timing import Ticket,eligible,timings,run_job
 
 @dataclass(frozen=True)
 class Config:
@@ -45,6 +46,11 @@ class Session:
         self.messages=queue.Queue(maxsize=1)
         self.rows=deque(maxlen=10000)
         self.lock=threading.Lock()
+        self.epoch=0
+        self.displayed=-1
+        self.metrics=dict(submitted=0,completed=0,shown=0,stale=0,replaced=0,errors=0)
+        self.ui_times=deque(maxlen=1000)
+        self.trans_times=deque(maxlen=1000)
         self.thread=threading.Thread(target=self.run,daemon=True)
         self.thread.start()
 
@@ -52,6 +58,26 @@ class Session:
         try:self.messages.get_nowait()
         except queue.Empty:pass
         self.messages.put_nowait(data)
+
+    def record(self,row):
+        keys=("elapsed_ms","engine","filter","scale","interval_ms","psm","capture_prep_ms","ocr_ms",
+              "event","source","delta","translation","generation","translation_queue_ms","translation_ms",
+              "frame_to_result_ms","frame_to_ui_ms","cold_translation")
+        with self.lock:self.rows.append({k:row.get(k,"") for k in keys})
+
+    def note(self,key):
+        with self.lock:self.metrics[key]+=1
+
+    def accept_ui(self,result,now):
+        with self.lock:
+            if not eligible(result,self.epoch,self.displayed,now,self.config.translate):
+                return False
+            self.displayed=result.ticket.generation
+            self.metrics["shown"]+=1
+            if not result.cold:self.ui_times.append((now-result.ticket.frame_at)*1000)
+        self.record(dict(event="ui_displayed",source=result.ticket.source,
+                         translation=result.text,**timings(result,now)))
+        return True
 
     def run(self):
         engines={}
@@ -63,8 +89,8 @@ class Session:
         last_config=None
         generation=-1
         future=None
-        submitted=-1
-        latest=""
+        pending=None
+        result_for_ui=None
         translate_fn=None
         pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix="local-translation")
         start=time.perf_counter()
@@ -78,8 +104,10 @@ class Session:
                         times.clear()
                         counts=dict.fromkeys(counts,0)
                         generation+=1
-                        submitted=-1
-                        latest=translation=translation_error=""
+                        with self.lock:self.epoch+=1
+                        if pending is not None:self.note("replaced")
+                        pending=result_for_ui=None
+                        translation=translation_error=""
                         last_config=cfg
                     if cfg.engine not in engines:
                         self.emit({"status":"Načítám "+cfg.engine+"..."})
@@ -95,35 +123,57 @@ class Session:
                     counts[event.kind]+=1
                     if event.kind in ("new","clear"):
                         generation+=1
-                        latest=(event.delta or event.text) if event.kind=="new" else ""
-                        translation=""
+                        if pending is not None:self.note("replaced")
+                        pending=None
+                        if event.kind=="clear":
+                            with self.lock:self.epoch+=1
+                            result_for_ui=None
+                            translation=""
+                        elif cfg.translate:
+                            pending=Ticket(generation,self.epoch,event.text,tick,end)
                     ocr=(end-captured)*1000
                     times.append(ocr)
                     if future is not None and future.done():
                         try:
-                            ticket,text=future.result()
-                            if ticket==generation and cfg.translate:
-                                translation=text
+                            result=future.result()
+                            self.note("completed")
+                            with self.lock:
+                                if not result.cold:self.trans_times.append((result.finished_at-result.started_at)*1000)
+                                valid=eligible(result,self.epoch,self.displayed,time.perf_counter(),cfg.translate)
+                            self.record(dict(event="translation_completed" if valid else "translation_stale",
+                                             source=result.ticket.source,translation=result.text,**timings(result)))
+                            if valid:
+                                result_for_ui=result
+                                translation=result.text
+                            else:self.note("stale")
                         except Exception as exc:
-                            translation_error=str(exc)
+                            self.note("errors")
+                            translation_error=f"{type(exc).__name__}: {exc}"
                         future=None
-                    if cfg.translate and latest and generation!=submitted and future is None and not translation_error:
-                        # One active translation and latest pending text only. Never block OCR.
-                        submitted=generation
-                        def translate_job(ticket,source):
+                    if cfg.translate and pending is not None and future is None and not translation_error:
+                        ticket,pending=pending,None
+                        def work(ticket):
                             nonlocal translate_fn
-                            if translate_fn is None:translate_fn=local_translator()
-                            return ticket,translate_fn(source)
-                        future=pool.submit(translate_job,generation,latest)
+                            cold=translate_fn is None
+                            def translate(source):
+                                nonlocal translate_fn
+                                if translate_fn is None:translate_fn=local_translator()
+                                return translate_fn(source)
+                            return run_job(ticket,translate,cold)
+                        self.note("submitted")
+                        future=pool.submit(work,ticket)
+                    if result_for_ui is not None and time.perf_counter()-result_for_ui.ticket.frame_at>3:
+                        result_for_ui=None
+                        translation=""
                     if not cfg.translate:translation=""
                     row={"elapsed_ms":round((tick-start)*1000,1),"engine":cfg.engine,"filter":cfg.filter,
                          "scale":cfg.scale,"interval_ms":cfg.interval,"psm":cfg.psm,
                          "capture_prep_ms":round((captured-tick)*1000,1),"ocr_ms":round(ocr,1),
                          "event":event.kind,"source":event.text,"delta":event.delta,"translation":translation}
-                    with self.lock:self.rows.append(row)
+                    self.record(row)
                     self.emit({"status":f"OCR {ocr:.0f} ms | průměr {sum(times)/len(times):.0f} | P95 {percentile(times,.95):.0f} ms",
                                "counts":dict(counts),"source":event.text,"translation":translation,
-                               "warning":translation_error,"enabled":cfg.translate})
+                               "warning":translation_error,"enabled":cfg.translate,"result":result_for_ui})
                     self.stop.wait(max(0,cfg.interval/1000-(end-tick)))
         except Exception as exc:
             self.emit({"error":f"{type(exc).__name__}: {exc}"})
@@ -134,7 +184,7 @@ class Lab:
     def __init__(self,root):
         self.root=root
         root.title("GameLingo OCR Lab • Windows")
-        root.geometry("760x590")
+        root.geometry("900x730")
         self.session=None
         self.region=None
         self.overlay=None
@@ -143,9 +193,10 @@ class Lab:
         self.source=tk.StringVar()
         self.translation=tk.StringVar()
         self.counts=tk.StringVar()
+        self.translation_stats=tk.StringVar()
         self.warning=tk.StringVar()
         self.engine=tk.StringVar(value="tesseract")
-        self.filter=tk.StringVar(value="raw")
+        self.filter=tk.StringVar(value="binary")
         self.scale=tk.StringVar(value="100")
         self.interval=tk.StringVar(value="250")
         self.psm=tk.StringVar(value="6")
@@ -167,10 +218,11 @@ class Lab:
             ("Měřítko %",self.scale,["50","75","100","125","150"]),
             ("Interval ms",self.interval,["100","200","250","500","800","1000"]),
             ("Tesseract PSM",self.psm,["6","7","11"])]):
-            ttk.Label(settings,text=label).grid(row=0,column=i,sticky="w",padx=3)
-            ttk.Combobox(settings,textvariable=var,values=options,state="readonly",width=12).grid(row=1,column=i,padx=3)
+            row,col=divmod(i,3)
+            ttk.Label(settings,text=label).grid(row=row*2,column=col,sticky="w",padx=3)
+            ttk.Combobox(settings,textvariable=var,values=options,state="readonly",width=12).grid(row=row*2+1,column=col,padx=3,sticky="w")
         ttk.Checkbutton(top,text="Průběžné titulky – sledovat překryv slov (experiment)",variable=self.rolling).pack(anchor="w")
-        ttk.Checkbutton(top,text="Offline překlad EN → CS (volitelný Argos)",variable=self.translate).pack(anchor="w")
+        ttk.Checkbutton(top,text="Offline překlad EN → CS (volitelný Argos)",variable=self.translate,command=self.toggle_overlay).pack(anchor="w")
         ttk.Checkbutton(top,text="Zobrazit plovoucí okno mimo snímanou oblast",variable=self.show_overlay,command=self.toggle_overlay).pack(anchor="w")
         controls=ttk.Frame(top);controls.pack(fill="x",pady=10)
         self.start_button=ttk.Button(controls,text="Spustit",command=self.start)
@@ -179,6 +231,7 @@ class Lab:
         ttk.Button(controls,text="Export měření CSV",command=self.export).pack(side="left",padx=5)
         ttk.Label(top,textvariable=self.status,wraplength=710).pack(anchor="w")
         ttk.Label(top,textvariable=self.counts,wraplength=710).pack(anchor="w")
+        ttk.Label(top,textvariable=self.translation_stats,wraplength=710).pack(anchor="w")
         ttk.Label(top,text="Rozpoznaný text",font=("Segoe UI",11,"bold")).pack(anchor="w",pady=(12,0))
         ttk.Label(top,textvariable=self.source,wraplength=700,font=("Segoe UI",12)).pack(anchor="w")
         ttk.Label(top,text="Překlad",font=("Segoe UI",11,"bold")).pack(anchor="w",pady=(12,0))
@@ -186,7 +239,7 @@ class Lab:
         ttk.Label(top,textvariable=self.warning,wraplength=700,foreground="#a04000").pack(anchor="w")
         ttk.Label(top,text="Živé počty nejsou měření vynechaných vět; pro ně použij benchmark.py.",wraplength=700).pack(side="bottom",anchor="w")
         root.protocol("WM_DELETE_WINDOW",self.close)
-        root.after(100,self.poll)
+        root.after(50,self.poll)
 
     def config(self):
         return Config(self.engine.get(),self.filter.get(),int(self.scale.get()),int(self.interval.get()),
@@ -297,14 +350,26 @@ class Lab:
                         c=d["counts"]
                         self.counts.set(f"Nové: {c['new']} | stejné: {c['repeat']} | prázdné: {c['blank']} | vymazání: {c['clear']}")
                         self.source.set(d["source"])
-                        self.translation.set(d["translation"] or ("Čekám na překlad…" if d["enabled"] and d["source"] else ""))
+                        result=d.get("result")
+                        if result is not None:
+                            if self.session.accept_ui(result,time.perf_counter()):
+                                self.translation.set(result.text)
+                        else:
+                            self.translation.set("Čekám na překlad…" if d["enabled"] and d["source"] else "")
+                        with self.session.lock:
+                            m=dict(self.session.metrics)
+                            ui=list(self.session.ui_times)
+                            tr=list(self.session.trans_times)
+                        self.translation_stats.set(
+                            f"Překlad P95 {percentile(tr,.95):.0f} ms | Snímek → UI P95 {percentile(ui,.95):.0f} ms (warm)\n"
+                            f"Zahájeno {m['submitted']} | hotovo {m['completed']} | zobrazeno {m['shown']} | staré {m['stale']} | nahrazené {m['replaced']} | chyby {m['errors']}")
                         if d["warning"]:self.warning.set(d["warning"])
             except queue.Empty:pass
             if not self.session.thread.is_alive():
                 self.pick.state(["!disabled"]);self.start_button.state(["!disabled"])
                 self.status.set("Zastaveno. Výsledky můžeš exportovat.")
                 if self.overlay:self.overlay.destroy();self.overlay=None
-        self.root.after(100,self.poll)
+        self.root.after(50,self.poll)
 
     def export(self):
         if not self.session:return
