@@ -148,6 +148,8 @@ class GameLingoScreenTranslationService : Service() {
     private var lastAttemptAt = 0L
     private var epoch = 0L
     private var candidate = ""
+    // Reuse the same two-read dialogue stabilization as console OCR.
+    private val dialogueStability = StabilitaTextu()
     private var shown = ""
     private var blankFrames = 0
     private var darkFrames = 0
@@ -391,6 +393,7 @@ class GameLingoScreenTranslationService : Service() {
     }
     private fun resetText(preserveDisplay: Boolean = false) {
         epoch++; candidate = ""; shown = ""
+        dialogueStability.reset()
         candidateAt = 0L; currentBox = null; currentRows = 1
         if (!preserveDisplay) {
             translatedText = ""; shownAt = 0L; shownUntil = 0L
@@ -531,6 +534,7 @@ class GameLingoScreenTranslationService : Service() {
             if (++blankFrames >= 2 && blankSince == 0L) {
                 blankSince = now
                 if (storyMode) story.zmizelo(++storySequence,now)
+                else dialogueStability.reset()
                 // Invalidate in-flight translation without shortening or extending
                 // the existing display deadline. Explicit stop/context changes still clear immediately.
                 epoch++; candidate = ""; lastAttempt = ""; lastAttemptAt = 0L
@@ -545,6 +549,10 @@ class GameLingoScreenTranslationService : Service() {
             }
             return
         }
+        // Confirm suspicious shrinkage / unfinished extensions before replacing
+        // the recognized source. Distinct complete replies need no extra wait.
+        // Do not use fuzzy shared-word matching to suppress meaningful changes.
+        if (!dialogueStability.prijmi(value, radku = currentRows)) return
         if (value != candidate) {
             candidateAt = now
             candidate = value

@@ -569,6 +569,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("dialogueTranslationFailed", failure)
         self.assertIn("self.scheduleDialogueExpiry(seconds: displaySeconds", model)
 
+    def test_point3_standalone_reuses_console_dialogue_stabilization(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("private val dialogueStability = StabilitaTextu()", capture)
+        reset = capture.split("private fun resetText(", 1)[1].split("private fun setSource", 1)[0]
+        self.assertIn("dialogueStability.reset()", reset)
+        accept = capture.split("private fun accept(raw: String)", 1)[1].split("private fun translateLatest()", 1)[0]
+        self.assertIn("else dialogueStability.reset()", accept)
+        # Ordinary dialogue only: story still owns its original stabilization.
+        gate = "if (!dialogueStability.prijmi(value, radku = currentRows)) return"
+        self.assertIn(gate, accept)
+        self.assertLess(accept.index("story.prijmiOcr"), accept.index(gate))
+        self.assertLess(accept.index(gate), accept.rindex("candidate = value"))
+        self.assertNotIn("StabilitaTextu.opakovaneCteni", accept)
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")
