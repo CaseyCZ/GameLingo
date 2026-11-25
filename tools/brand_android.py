@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Rebrand the pinned Android/TV PlayCaption build without altering protocols."""
 import pathlib
+import json
 import os
 import re
 import sys
@@ -38,9 +39,13 @@ def main():
     run = int(os.environ.get("GITHUB_RUN_NUMBER", "0"))
     attempt = int(os.environ.get("GITHUB_RUN_ATTEMPT", "1"))
     revision = os.environ.get("GITHUB_SHA", "local")[:8]
-    version_code = 100000 + run * 100 + attempt
+    release = json.loads((pathlib.Path(__file__).resolve().parents[1] / "shared/version.json").read_text(encoding="utf8"))
+    # Reserve a separate range per release, including local builds and reruns.
+    if not (0 <= run < 10000 and 1 <= attempt < 100 and 1 <= release["build"] <= 2000):
+        raise ValueError("Build counter outside reserved range")
+    version_code = release["build"] * 1000000 + run * 100 + attempt
     exactly_one(gradle,'versionName = "0.22"',
-                f'versionName = "0.5.0-dev.{version_code}-{revision}"')
+                f'versionName = "{release["version"]}-dev.{version_code}-{revision}"')
     exactly_one(gradle, "versionCode = 35", f"versionCode = {version_code}")
     original=main.read_text(encoding="utf8")
     branded=original.replace('"PlayCaption"', '"GameLingo"')

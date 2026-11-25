@@ -43,7 +43,7 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 | **Xbox Series X/S a Xbox One** | Překlad přes iPhone a Android. |
 | **PlayStation 5 a PlayStation 4** | Vývojové implementace pro iPhone, Android a Google TV; fyzické testy čekají. |
 | **iPhone** | Vývojová IPA pro Xbox, PlayStation a výstup na TV; vyžaduje podpis. |
-| **Android telefon** | Vývojová APK pro Xbox a PlayStation; offline fallback s dostupným modelem. |
+| **Android telefon** | Vývojová APK pro Xbox a PlayStation; online překlad a lokální cache. Samostatný offline model není v aktuálním buildu obsažen. |
 | **Google TV / Android TV** | Vývojová APK: přijímač z telefonu nebo vlastní OCR a online překlad, bez offline modelu. |
 | **PC** | Možné rozšíření do budoucna. |
 
@@ -57,7 +57,7 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 
 GameLingo je nový projekt s vlastním vzhledem v **modrobílém stylu CaseyCZ**. Navazujeme na funkční základ, který jsme již vyzkoušeli při skutečném hraní, a postupně připravujeme nové aplikace pro telefon i televizi.
 
-**GameLingo 0.5 je vývojová verze.** Poslední společné automatické sestavení všech tří aplikací prošlo; fyzické testy, bezpečnostní a licenční podmínky jsou stále otevřené. Tato auditní větev není novým veřejným vydáním. Dostupnost starších veřejných verzí ověř v Releases.
+**GameLingo je ve vývoji.** Aktuální kandidát na větvi Master: viz [verze](shared/version.json) a [CI](https://github.com/CaseyCZ/GameLingo/actions/workflows/audit-0.5-ci.yml). Fyzické testy, bezpečnostní a licenční podmínky zůstávají otevřené. Dostupné instalátory najdeš v Releases.
 
 - [Aktuální stav a podporované funkce](docs/STATUS-0.5.md)
 - [Návod pro testery (iPhone / Android / TV)](docs/USER-GUIDE-0.5.md)

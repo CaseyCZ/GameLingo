@@ -293,6 +293,7 @@ struct GameLingoLicenseView: View {
 
 private struct GameLingoOCRSettingsView: View {
     @ObservedObject var model: CaptionAppModel
+    @State private var showAdvanced = false
 
     var body: some View {
         GLScreen(title: "Rozpoznávání", help:
@@ -311,6 +312,8 @@ private struct GameLingoOCRSettingsView: View {
             }
             GLCard {
                 Toggle("Filtrovat menu hry", isOn: $model.filterMenuText)
+                    .disabled(model.isRunning)
+                DisclosureGroup("Pokročilé OCR filtry", isExpanded: $showAdvanced) {
                 GLHeader(title: "Modrá oblast", help: "Filtry dialogů jsou nezávislé na herních textech.")
                 Text("Ignorované řádky (jeden výraz na řádek)").font(.caption)
                 TextField("Modrá oblast", text: $model.ignoredBlueLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
@@ -323,10 +326,8 @@ private struct GameLingoOCRSettingsView: View {
                     model.ignoredBlueLines = ""
                     model.minBlueHeight = 0
                 }.disabled(model.isRunning)
-            }
-            GLCard {
                 GLHeader(title: "Žlutá oblast", help: "Filtry herních textů neovlivňují dialogy.")
-                Toggle("Žlutá: filtrovat pokyny ovladače", isOn: $model.filterChoiceControls)
+                Toggle("Žlutá: filtrovat pokyny ovladače", isOn: $model.filterChoiceControls).disabled(model.isRunning)
                 TextField("Žlutá oblast", text: $model.ignoredYellowLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
                 Picker("Žlutá: minimální výška textu", selection: $model.minYellowHeight) {
                     Text("Automaticky").tag(0)
@@ -338,6 +339,7 @@ private struct GameLingoOCRSettingsView: View {
                     model.minYellowHeight = 0
                 }.disabled(model.isRunning)
                 Text("Pouze přesná shoda celého řádku, bez ohledu na velikost písmen.").font(.caption)
+                }
             }
             GLCard {
                 Toggle("Rozšířit hledání", isOn: $model.expandOnEmpty)
@@ -741,12 +743,14 @@ private struct GameLingoDiagnosticsView: View {
             "Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Technický log uchovává omezené kategorie událostí a metriky. Živý náhled níže obsahuje skutečné texty; není součástí sdíleného logu. Před sdílením log zkontroluj.") {
             GLCard {
                 GLHeader(title: "Stav")
-                status("Xbox", model.isRunning ? "Překládá" : "Neaktivní")
+                status("Překladová relace", model.isRunning ? (model.frameCount > 0 ? "Přijímá snímky" : "Čeká na snímky") : "Neaktivní")
                 status("Snímky", "\(model.frameCount)")
                 Text(model.performanceSummary)
                     .font(.caption2.monospaced()).foregroundStyle(GLStyle.muted)
                     .textSelection(.enabled)
-                status("Google TV", model.tv.ip.isEmpty ? "Nepřipojeno" : model.tv.ip)
+                status("Google TV", model.tv.receiverConnected ? "Ověřené spojení" : (model.tv.receiverPaired ? "Spárováno · bez spojení" : "Nespárováno"))
+                Text(model.tv.receiverStatus).font(.caption).foregroundStyle(GLStyle.muted)
+                if !model.tv.receiverConnected { Text("Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování.").font(.caption) }
                 Text(model.status).font(.caption).foregroundStyle(GLStyle.muted)
             }
             GLCard {
@@ -759,7 +763,7 @@ private struct GameLingoDiagnosticsView: View {
             GLCard {
                 GLPrimaryButton(title: "Zkusit titulek na TV",
                     systemImage: "tv",
-                    disabled: model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
+                    disabled: !model.tv.receiverPaired || !model.tv.receiverConnected) {
                     model.tv.sendSubtitle("Zkušební titulek GameLingo", duration: 8_000, preview: true)
                 }
             }

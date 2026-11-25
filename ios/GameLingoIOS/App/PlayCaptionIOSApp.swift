@@ -1142,7 +1142,8 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func shareLogs() -> String {
-        (["GameLingo iOS 0.5.0", isRunning ? "Relace aktivní" : "Relace neaktivní", performanceSummary] + logLines).joined(separator: "\n")
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        return (["GameLingo iOS \(version)", isRunning ? "Relace aktivní" : "Relace neaktivní", performanceSummary] + logLines).joined(separator: "\n")
     }
 }
 

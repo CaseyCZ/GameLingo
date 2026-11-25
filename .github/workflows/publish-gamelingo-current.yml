@@ -1,11 +1,6 @@
 name: Publish only newest GameLingo (verified installers)
 
 on:
-  push:
-    branches:
-      - Master
-    paths:
-      - ".github/workflows/publish-gamelingo-current.yml"
   workflow_dispatch:
 
 permissions:
@@ -49,19 +44,13 @@ jobs:
           done
           test "$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.conclusion')" = success
           test "$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.head_branch')" = Master
-          TAG="v0.5.0-test-${BUILD_SOURCE:0:8}-r$RUN"
-          # Original successful Beta 2 publishing flow: no checkout, no manual tag
-          # creation, ordinary GITHUB_TOKEN, explicit -R and target current SOURCE.
-          compare="$(gh api "repos/$REPO/compare/$BUILD_SOURCE...$SOURCE")"
-          test "$(jq -r .behind_by <<< "$compare")" = 0
-          test "$(jq -r .total_commits <<< "$compare")" -lt 250
-          if jq -r '.files[].filename' <<< "$compare" | grep -Ev '^(\.github/workflows/|docs/archive/)' | grep -q .; then
-            echo "::error::App source differs from the validated installers."
-            exit 1
-          fi
+          TAG="v0.5.1-test-${BUILD_SOURCE:0:8}-r$RUN"
+          # Publish only the exact tested source revision, never an older candidate.
+          test "$BUILD_SOURCE" = "$SOURCE"
+          test "$(gh api "repos/$REPO/branches/Master" --jq .commit.sha)" = "$SOURCE"
           mkdir -p release
-          gh run download "$RUN" -R "$REPO" -n "GameLingo-v0.5.0-dev-all-installers" -D release
-          files=(GameLingo-iOS-v0.5.0-dev-unsigned.ipa GameLingo-Android-v0.5.0-dev-TEST.apk GameLingo-GoogleTV-v0.5.0-dev-TEST.apk SHA256SUMS.txt)
+          gh run download "$RUN" -R "$REPO" -n "GameLingo-v0.5.1-dev-all-installers" -D release
+          files=(GameLingo-iOS-v0.5.1-dev-unsigned.ipa GameLingo-Android-v0.5.1-dev-TEST.apk GameLingo-GoogleTV-v0.5.1-dev-TEST.apk SHA256SUMS.txt)
           for name in "${files[@]}"; do test -s "release/$name"; done
           (cd release && sha256sum --strict -c SHA256SUMS.txt)
           for name in "${files[@]:0:3}"; do
@@ -69,18 +58,12 @@ jobs:
             (cd release && grep -Fx "$(sha256sum "$name")" SHA256SUMS.txt)
           done
           cat > release-notes.md <<EOF
-          # GameLingo 0.5.0 TEST — aktuální vydání
+          # GameLingo 0.5.1 TEST — aktuální vydání
           - iOS (nepodepsaná IPA), Android a Google TV (testovací APK).
-          - Android a Google TV: vizuální sjednocení podle současného SwiftUI kódu (ikony, karty, nápověda, profily, diagnostika a párování).
-          - TV: tlačítka Stáhnout aplikaci a Spravovat zařízení pod příslušnými režimy, QR na aktuální mobilní IPA/APK včetně testovacích vydání.
-          - TV: samostatné barevné oblasti, náhled titulků, barevné kruhy, nastavení časování a profily.
-          - iOS: zdrojový kód beze změny; nový instalační balíček ze stejného kódu.
-          - Samostatná TV: text titulků + OCR, bez zvuku a mikrofonu.
-          - TV: trvalý testovací titulek přes foreground službu, diagnostika překryvu a snímků bez ADB.
-          - TV: kompaktní volba zařízení a jazyků, výraznější D-pad fokus a snímání jen se souhlasem.
-          - TV: oprava pořadí aktivace služby mediaProjection, kontrola typu služby a diagnostika startu snímání; funkčnost na fyzické TV a HDMI zatím neověřena.
-          - Online překlad a lokální paměť; chráněný obsah není ověřen.
-          - Automatické kontroly prošly; fyzické testování a licenční audit zůstávají otevřené.
+          - Čtyři nezávislé oblasti OCR a výstupu, rychlost, stabilizace a časování dialogů, profily a diagnostika.
+          - Pouze vývojový kandidát: automatické sestavení nenahrazuje fyzickou QA ani licenční prověření.
+          - Párování používat v důvěryhodné domácí síti; přenos není šifrovaný.
+          - Přehled změn: https://github.com/$REPO/blob/$BUILD_SOURCE/docs/ROADMAP-051.md
           Zdroj sestavení: https://github.com/$REPO/tree/$BUILD_SOURCE
           Sestavení: https://github.com/$REPO/actions/runs/$RUN
           Licence a upstream: https://github.com/$REPO/blob/$BUILD_SOURCE/ATTRIBUTION.md
@@ -88,7 +71,7 @@ jobs:
           if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
             echo "Release exists; validate all assets before cleanup."
           else
-            gh release create "$TAG" release/GameLingo-iOS-v0.5.0-dev-unsigned.ipa release/GameLingo-Android-v0.5.0-dev-TEST.apk release/GameLingo-GoogleTV-v0.5.0-dev-TEST.apk release/SHA256SUMS.txt -R "$REPO" --target "$SOURCE" --title "GameLingo 0.5.0 TEST · ${BUILD_SOURCE:0:8}" --prerelease --notes-file release-notes.md
+            gh release create "$TAG" release/GameLingo-iOS-v0.5.1-dev-unsigned.ipa release/GameLingo-Android-v0.5.1-dev-TEST.apk release/GameLingo-GoogleTV-v0.5.1-dev-TEST.apk release/SHA256SUMS.txt -R "$REPO" --target "$SOURCE" --title "GameLingo 0.5.1 TEST · ${BUILD_SOURCE:0:8}" --prerelease --notes-file release-notes.md
           fi
           gh release view "$TAG" -R "$REPO" --json assets > published-assets.json
           test "$(jq '.assets | length' published-assets.json)" = 4

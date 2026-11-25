@@ -18,7 +18,9 @@ import android.widget.TextView
  * GameLingoOCRConfig or the existing persistent subtitle region store.
  */
 object GameLingoOCRSettings {
-    fun show(activity: Activity, onAreas: () -> Unit) {
+    fun show(activity: Activity, onAreas: () -> Unit) = showPage(activity, onAreas, false)
+
+    private fun showPage(activity: Activity, onAreas: () -> Unit, advanced: Boolean) {
         if (activity.isFinishing) return
         GameLingoOCRConfig.load(activity)
         OblastTitulku.nacti(activity)
@@ -123,7 +125,7 @@ object GameLingoOCRSettings {
                 GameLingoTVUi.select(activity, "Režim OCR", labels, keys.indexOf(GameLingoOCRConfig.mode)) { index ->
                     GameLingoOCRConfig.setMode(activity, keys[index])
                     dialog.dismiss()
-                    show(activity, onAreas)
+                    showPage(activity, onAreas, advanced)
                 }
                 return@action
             }
@@ -134,7 +136,7 @@ object GameLingoOCRSettings {
                     GameLingoOCRConfig.setMode(activity, keys[index])
                     picker.dismiss()
                     dialog.dismiss()
-                    show(activity, onAreas)
+                    showPage(activity, onAreas, advanced)
                 }.setNegativeButton("Zrušit", null).show()
         }
         val yellowModes = arrayOf("follow", "classic", "automatic", "street")
@@ -143,7 +145,7 @@ object GameLingoOCRSettings {
         action("Žlutá: režim OCR", yellowLabels[yellowModeIndex], canEdit) {
             fun save(index: Int) {
                 GameLingoOCRConfig.setYellowOCRMode(activity, yellowModes[index])
-                dialog.dismiss(); show(activity, onAreas)
+                dialog.dismiss(); showPage(activity, onAreas, advanced)
             }
             if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.select(activity, "Žlutá: režim OCR", yellowLabels, yellowModeIndex, ::save)
             else android.app.AlertDialog.Builder(activity).setTitle("Žlutá: režim OCR")
@@ -155,6 +157,11 @@ object GameLingoOCRSettings {
             GameLingoOCRConfig.filterMenuText) {
             GameLingoOCRConfig.setFilterMenu(activity, it)
         }
+        action(if (advanced) "Skrýt pokročilé filtry" else "Pokročilé OCR filtry",
+            "Ignorované řádky, minimální výška a filtry obou oblastí.") {
+            dialog.dismiss(); showPage(activity, onAreas, !advanced)
+        }
+        if (advanced) {
         toggle("Žlutá: filtrovat pokyny ovladače",
             "Volitelně vynechá anglické pokyny jako Press A nebo Hold R2. Běžné volby ponechá.",
             GameLingoOCRConfig.filterChoiceControls) {
@@ -174,7 +181,7 @@ object GameLingoOCRSettings {
                     .setView(input).setNegativeButton("Zrušit", null)
                     .setPositiveButton("Uložit") { _, _ ->
                         GameLingoOCRConfig.setIgnoredLines(activity, yellow, input.text.toString())
-                        dialog.dismiss(); show(activity, onAreas)
+                        dialog.dismiss(); showPage(activity, onAreas, advanced)
                     }.show()
             }
         }
@@ -182,7 +189,7 @@ object GameLingoOCRSettings {
             val labels = arrayOf("Automaticky", "1 %", "2 %", "3 %", "4 %", "5 %")
             fun save(index: Int) {
                 GameLingoOCRConfig.setMinBlueHeight(activity, index)
-                dialog.dismiss(); show(activity, onAreas)
+                dialog.dismiss(); showPage(activity, onAreas, advanced)
             }
             if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.select(activity, "Modrá: velikost textu", labels, GameLingoOCRConfig.minBlueHeight, ::save)
             else android.app.AlertDialog.Builder(activity).setTitle("Modrá: velikost textu")
@@ -193,7 +200,7 @@ object GameLingoOCRSettings {
             val labels = arrayOf("Automaticky", "1 %", "2 %", "3 %", "4 %", "5 %")
             fun save(index: Int) {
                 GameLingoOCRConfig.setMinYellowHeight(activity, index)
-                dialog.dismiss(); show(activity, onAreas)
+                dialog.dismiss(); showPage(activity, onAreas, advanced)
             }
             if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.select(activity, "Žlutá: velikost textu", labels, GameLingoOCRConfig.minYellowHeight, ::save)
             else android.app.AlertDialog.Builder(activity).setTitle("Žlutá: velikost textu")
@@ -204,13 +211,14 @@ object GameLingoOCRSettings {
             GameLingoOCRConfig.setFilterMenu(activity, true)
             GameLingoOCRConfig.setIgnoredLines(activity, false, "")
             GameLingoOCRConfig.setMinBlueHeight(activity, 0)
-            dialog.dismiss(); show(activity, onAreas)
+            dialog.dismiss(); showPage(activity, onAreas, advanced)
         }
         action("Obnovit filtry žluté oblasti", "Bez změny rámečků a modré oblasti.", canEdit) {
             GameLingoOCRConfig.setFilterChoiceControls(activity, false)
             GameLingoOCRConfig.setIgnoredLines(activity, true, "")
             GameLingoOCRConfig.setMinYellowHeight(activity, 0)
-            dialog.dismiss(); show(activity, onAreas)
+            dialog.dismiss(); showPage(activity, onAreas, advanced)
+        }
         }
         toggle("Rozšířit hledání",
             "Při automatickém režimu zahrne širší část obrazu.",
@@ -225,7 +233,7 @@ object GameLingoOCRSettings {
             OblastTitulku.rucne = it
             OblastTitulku.uloz(activity)
             dialog.dismiss()
-            show(activity, onAreas)
+            showPage(activity, onAreas, advanced)
         }
         if(GameLingoTVUi.isTV(activity)) {
             action("Výchozí oblast",GameLingoOCRConfig.regionLabels[GameLingoOCRConfig.regionKeys.indexOf(GameLingoOCRConfig.region(activity))],
@@ -251,7 +259,7 @@ object GameLingoOCRSettings {
             OblastTitulku.oblast = OblastTitulku.VYCHOZI.copyOf()
             OblastTitulku.uloz(activity)
             dialog.dismiss()
-            show(activity, onAreas)
+            showPage(activity, onAreas, advanced)
         }
         action("Hotovo", "Zpět do Nastavení") { dialog.dismiss() }
         val scroll = ScrollView(activity).apply {

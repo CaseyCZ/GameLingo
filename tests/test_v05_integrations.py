@@ -163,7 +163,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('let choices = Data("PCV1',tv)
         self.assertIn('let dialogue = Data([',tv)
         self.assertIn("devices.prepareTV(model.tv)", home)
-        self.assertIn("GameLingo iOS 0.5.0", model)
+        self.assertIn('GameLingo iOS \\(version)', model)
 
     def test_both_translation_lanes_require_verified_tv_receiver(self):
         model=code(IOS/"PlayCaptionIOSApp.swift")
@@ -1271,7 +1271,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('482611539977496cad047560c9bc1ebc5809a566',workflow)
         self.assertIn('Build native PlayStation',workflow)
         self.assertIn('GameLingoPSBridge.h',project)
-        self.assertIn('0.5.0',project)
+        self.assertIn(json.loads(code(ROOT/"shared/version.json"))["version"],project)
 
     def test_caption_retransmission_preserves_original_expiry(self):
         ios = code(IOS/"PlayCaptionTV.swift")
@@ -1394,6 +1394,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         yellow = pipeline.split("func recognizeOptions(", 1)[1]
         self.assertIn("YellowOCRFilter.hasReadableText($0)", yellow)
         self.assertIn(">= 2", code(IOS/"YellowOCRFilter.swift"))
+
+    def test_release_version_consistency(self):
+        subprocess.run([sys.executable, str(TOOLS/"sync_version.py"), "--check"], check=True, cwd=ROOT)
 
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))

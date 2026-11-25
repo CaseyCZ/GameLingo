@@ -76,16 +76,16 @@ jobs:
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")
           test "$ID" = "cz.caseycz.gamelingo.ios"
           test "$LABEL" = "GameLingo"
-          test "$VERSION" = "0.5.0"
+          test "$VERSION" = "0.5.1"
           file "$APP/GameLingoIOS"
           mkdir -p "$PWD/.build/ipa/Payload"
           cp -R "$APP" "$PWD/.build/ipa/Payload/"
-          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v0.5.0-dev-unsigned.ipa" Payload)
-          unzip -t GameLingo-iOS-v0.5.0-dev-unsigned.ipa >/dev/null
+          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v0.5.1-dev-unsigned.ipa" Payload)
+          unzip -t GameLingo-iOS-v0.5.1-dev-unsigned.ipa >/dev/null
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-iOS-v05-dev
-          path: GameLingo-iOS-v0.5.0-dev-unsigned.ipa
+          name: GameLingo-iOS-v0.5.1-dev
+          path: GameLingo-iOS-v0.5.1-dev-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
       - name: Preserve Xcode log if failed

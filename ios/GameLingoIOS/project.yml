@@ -47,8 +47,8 @@ targets:
         CFBundleDisplayName: GameLingo
         CFBundleDevelopmentRegion: cs
         CFBundleLocalizations: [cs, en, sk]
-        CFBundleShortVersionString: "0.5.0"
-        CFBundleVersion: "5"
+        CFBundleShortVersionString: "0.5.1"
+        CFBundleVersion: "6"
         LSRequiresIPhoneOS: true
         NSCameraUsageDescription: "Fotoaparát slouží pouze k načtení dočasného párovacího QR kódu z GameLingo TV."
         NSLocalNetworkUsageDescription: "Najde GameLingo TV v domácí síti a posílá do ní české titulky."

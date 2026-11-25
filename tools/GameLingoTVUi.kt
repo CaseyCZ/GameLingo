@@ -80,6 +80,7 @@ object GameLingoTVUi {
                 minimumHeight = dp(a, 50)
                 setPadding(dp(a, 14), dp(a, 7), dp(a, 14), dp(a, 7))
                 setTextColor(if (index == selected) Color.parseColor("#57EBA3") else Color.WHITE)
+                contentDescription = if (index == selected) "$label, vybráno" else label
                 rows.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(a, 7) })
             }
@@ -97,6 +98,7 @@ object GameLingoTVUi {
             button.nextFocusDownId = buttons.getOrNull(i+1)?.id ?: back.id
         }
         back.nextFocusUpId = buttons.lastOrNull()?.id ?: back.id
+        back.nextFocusDownId = back.id
         dialog.setContentView(body)
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
