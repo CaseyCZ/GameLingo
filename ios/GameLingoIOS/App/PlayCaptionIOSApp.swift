@@ -86,6 +86,12 @@ final class CaptionAppModel: ObservableObject {
             if oldValue != hideOnSourceGone { invalidateDialogue() }
         }
     }
+    @Published var sourceGoneDelay = min(2, max(0, UserDefaults.standard.integer(forKey: "sourceGoneDelay"))) {
+        didSet {
+            UserDefaults.standard.set(sourceGoneDelay, forKey: "sourceGoneDelay")
+            if oldValue != sourceGoneDelay { invalidateDialogue() }
+        }
+    }
     @Published var subtitleDuration: Double =
         (UserDefaults.standard.object(forKey: "subtitleDuration") as? Double) ?? 6 {
         didSet { UserDefaults.standard.set(subtitleDuration, forKey: "subtitleDuration") }
@@ -387,6 +393,7 @@ final class CaptionAppModel: ObservableObject {
     private var optionsTranslation: Task<Void, Never>?
     private var dialogueExpiry: Task<Void, Never>?
     private var dialogueDisplayRevision = 0
+    private var dialogueDisplayDeadline: TimeInterval?
     private typealias TimedFrame = (buffer: CVPixelBuffer, receivedAt: TimeInterval)
     private var dialogueFrames: LatestFrameMailbox<TimedFrame>?
     private var optionsFrames: LatestFrameMailbox<TimedFrame>?
@@ -449,6 +456,7 @@ final class CaptionAppModel: ObservableObject {
             showPreviousDialogue: showPreviousDialogue,
             previousDialogueCount: previousDialogueCount,
             hideOnSourceGone: hideOnSourceGone,
+            sourceGoneDelay: sourceGoneDelay,
             skipOldTranslations: skipOldTranslations,
             maxTranslationAge: maxTranslationAge,
             gameLanguage: gameLanguage.rawValue,
@@ -500,6 +508,7 @@ final class CaptionAppModel: ObservableObject {
         showPreviousDialogue = profile.showPreviousDialogue ?? false
         previousDialogueCount = min(2, max(1, profile.previousDialogueCount ?? 1))
         hideOnSourceGone = profile.hideOnSourceGone ?? false
+        sourceGoneDelay = min(2, max(0, profile.sourceGoneDelay ?? 0))
         skipOldTranslations = profile.skipOldTranslations
         maxTranslationAge = profile.maxTranslationAge
         if let savedSource = profile.gameLanguage,
@@ -740,6 +749,7 @@ final class CaptionAppModel: ObservableObject {
         dialogueTranslation = nil
         dialogueExpiry?.cancel()
         dialogueExpiry = nil
+        dialogueDisplayDeadline = nil
         dialogueDisplayRevision &+= 1
         lastEnglish = ""
         lastCzech = ""
@@ -888,6 +898,7 @@ final class CaptionAppModel: ObservableObject {
         dialogueDisplayRevision &+= 1
         dialogueExpiry?.cancel()
         dialogueExpiry = nil
+        dialogueDisplayDeadline = nil
         lastCzech = ""
         phoneSubtitle = ""
         if devices.subtitleOutput == .googleTV {
@@ -896,12 +907,24 @@ final class CaptionAppModel: ObservableObject {
         }
     }
 
-    private func scheduleDialogueExpiry(seconds: Double, currentSession: Int) {
+    private func hideAfterSourceGone(currentSession: Int) {
+        guard hideOnSourceGone, let deadline = dialogueDisplayDeadline else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        let target = min(deadline, now + Double(min(2, max(0, sourceGoneDelay))))
+        if target <= now { clearDialogueOutput() }
+        else { scheduleDialogueExpiry(seconds: target - now, currentSession: currentSession, latestDeadline: target) }
+    }
+
+    private func scheduleDialogueExpiry(seconds: Double, currentSession: Int, latestDeadline: TimeInterval? = nil) {
         dialogueExpiry?.cancel()
         dialogueDisplayRevision &+= 1
         let display = dialogueDisplayRevision
+        let now = ProcessInfo.processInfo.systemUptime
+        let deadline = min(now + seconds, latestDeadline ?? .infinity)
+        dialogueDisplayDeadline = deadline
+        let delay = max(0, deadline - now)
         dialogueExpiry = Task { @MainActor [weak self] in
-            do { try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000)) }
+            do { try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) }
             catch { return }
             guard let self, self.sessionRevision == currentSession,
                   self.dialogueDisplayRevision == display, !Task.isCancelled else { return }
@@ -948,7 +971,7 @@ final class CaptionAppModel: ObservableObject {
                 self.lastEnglish = reading.english
                 if reading.english.isEmpty {
                     // The revision/cancellation above rejects pending stale work.
-                    if self.hideOnSourceGone { self.clearDialogueOutput() }
+                    self.hideAfterSourceGone(currentSession: currentSession)
                     // By default, already visible dialogue retains its existing expiry;
                     // stop, source changes and explicit clears remain immediate.
                     return
@@ -1094,6 +1117,7 @@ final class CaptionAppModel: ObservableObject {
         dialogueWindow.reset()
         dialogueExpiry?.cancel()
         dialogueExpiry = nil
+        dialogueDisplayDeadline = nil
         dialogueDisplayRevision &+= 1
         dialogueFrames?.close()
         optionsFrames?.close()

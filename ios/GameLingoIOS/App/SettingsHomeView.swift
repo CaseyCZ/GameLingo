@@ -383,6 +383,13 @@ private struct GameLingoTranslationSettingsView: View {
                     }.disabled(model.isRunning)
                 }
                 Toggle("Skrýt po zmizení originálu", isOn: $model.hideOnSourceGone).disabled(model.isRunning)
+                if model.hideOnSourceGone {
+                    Picker("Prodleva po zmizení", selection: $model.sourceGoneDelay) {
+                        Text("Hned").tag(0)
+                        Text("1 s").tag(1)
+                        Text("2 s").tag(2)
+                    }.disabled(model.isRunning)
+                }
                 GLValueSlider(title: "Doba titulku",
                     value: "\(Int(model.subtitleDuration)) s",
                     selection: $model.subtitleDuration, range: 3...10, step: 1)
@@ -821,6 +828,7 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var showPreviousDialogue: Bool?
     var previousDialogueCount: Int?
     var hideOnSourceGone: Bool?
+    var sourceGoneDelay: Int?
     var skipOldTranslations: Bool
     var maxTranslationAge: Double
     /// Backwards compatible: older saved profiles did not contain languages.

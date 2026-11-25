@@ -184,6 +184,17 @@ object GameLingoSettings {
             }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 })
         }
+        button("Prodleva po zmizení: " + GameLingoOCRConfig.sourceGoneDelay(activity) + " s") {
+            val labels = arrayOf("Hned", "1 s", "2 s")
+            fun save(index: Int) {
+                GameLingoOCRConfig.setSourceGoneDelay(activity, index)
+                showTranslation(activity, settings, onAreas, onLanguage)
+            }
+            if (television) GameLingoTVUi.select(activity, "Prodleva po zmizení", labels, GameLingoOCRConfig.sourceGoneDelay(activity), ::save)
+            else android.app.AlertDialog.Builder(activity).setTitle("Prodleva po zmizení")
+                .setSingleChoiceItems(labels, GameLingoOCRConfig.sourceGoneDelay(activity)) { chooser, index -> chooser.dismiss(); save(index) }
+                .setNegativeButton("Zrušit", null).show()
+        }
         button("▣  Oblasti na obrazovce") { onAreas() }
         button("🌐  Jazyk překladu") { onLanguage() }
         button("Hotovo") {}

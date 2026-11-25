@@ -341,7 +341,9 @@ def main():
     # progressive correction. Bound ordinary dialogue lifetime; use the same
     # monotonic start on display and on source disappearance. Story is independent.
     s=once(s, '        if (ukazanoKdy == 0L || System.currentTimeMillis() - ukazanoKdy > 400) ukazanoKdy = System.currentTimeMillis()',
-        '        ukazanoKdy = android.os.SystemClock.elapsedRealtime()', service.name)
+        '        ukazanoKdy = android.os.SystemClock.elapsedRealtime()\n        sourceGoneDeadline = 0L', service.name)
+    s=once(s, '    private var ukazanoKdy = 0L',
+        '    private var ukazanoKdy = 0L\n    private var sourceGoneDeadline = 0L', service.name)
     s=once(s, '        ukaz(cesky, 15000, box, radku, barvyJmen)',
         '        ukaz(cesky, 4000, box, radku, barvyJmen)', service.name)
     s=once(s, '''        val minDoba = 1800L + 60L * ukazanaDelka
@@ -349,16 +351,16 @@ def main():
         ui.removeCallbacks(schovatCesky)
         ukazanoKdy = 0L
         if (zbyva <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, zbyva)''',
-        '''        if (GameLingoOCRConfig.hideOnSourceGone(this)) {
-            ui.removeCallbacks(schovatCesky)
-            ukaz("", 0)
-            return
-        }
-        val zbyva = if (ukazanoKdy == 0L) 0L else
+        '''        val zbyva = if (ukazanoKdy == 0L) 0L else
             (ukazanoKdy + 4000L - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)
         ui.removeCallbacks(schovatCesky)
         // Keep the original display start even on repeated empty observations.
-        if (zbyva <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, zbyva)''', service.name)
+        val remaining = if (GameLingoOCRConfig.hideOnSourceGone(this)) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (sourceGoneDeadline == 0L) sourceGoneDeadline = now + GameLingoOCRConfig.sourceGoneDelay(this) * 1000L
+            minOf(zbyva, (sourceGoneDeadline - now).coerceAtLeast(0L))
+        } else zbyva
+        if (remaining <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, remaining)''', service.name)
     # The old story and game-text timers intentionally stay independent.
     # P1.7: bounded rolling performance statistics in the existing local log.
     (folder/"GameLingoPerformance.kt").write_text(

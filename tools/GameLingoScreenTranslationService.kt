@@ -585,7 +585,9 @@ class GameLingoScreenTranslationService : Service() {
     }
     private fun hideAfterSourceGone() {
         if (!storyMode && GameLingoOCRConfig.hideOnSourceGone(this) && shownUntil != 0L) {
-            shownUntil = 0L; translatedText = ""; render("")
+            val now = SystemClock.elapsedRealtime()
+            shownUntil = minOf(shownUntil, now + GameLingoOCRConfig.sourceGoneDelay(this) * 1000L)
+            if (shownUntil <= now) { shownUntil = 0L; translatedText = ""; render("") }
         }
     }
     private fun accept(raw: String) {

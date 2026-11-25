@@ -523,8 +523,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("now - since >= 0.8", stability)
         self.assertIn("text.split(separator:", stability)
         self.assertIn("min(10.0, max(3.0, requested))", model)
-        empty_read = model.split("if reading.english.isEmpty {", 1)[1].split("}", 1)[0]
-        self.assertIn("if self.hideOnSourceGone { self.clearDialogueOutput()", empty_read)
+        empty_read = model.split("if reading.english.isEmpty {", 1)[1].split('self.write("OCR:', 1)[0]
+        self.assertIn("self.hideAfterSourceGone(currentSession: currentSession)", empty_read)
         self.assertIn("return", empty_read)
         self.assertIn("self.dialogueDisplayRevision == display", model)
         self.assertIn("self.clearDialogueOutput()", model)
@@ -541,7 +541,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('epoch++; candidate = ""', blank)
         self.assertNotIn("shownUntil =", blank)
         self.assertNotIn('render("")', blank)
-        self.assertIn("else resetText(preserveDisplay = true)", capture)
+        self.assertIn("else { hideAfterSourceGone(); resetText(preserveDisplay = true) }", capture)
         reset = capture.split("private fun resetText(", 1)[1].split("private fun setSource", 1)[0]
         self.assertIn("preserveDisplay: Boolean = false", reset)
         self.assertIn('if (!preserveDisplay) {\n            translatedText = ""; shownAt = 0L; shownUntil = 0L', reset)
@@ -1368,10 +1368,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         config = code(TOOLS/"GameLingoOCRConfig.kt")
         self.assertIn('getBoolean("hideOnSourceGone", false)', config)
         model = code(IOS/"PlayCaptionIOSApp.swift")
-        self.assertIn("if self.hideOnSourceGone { self.clearDialogueOutput()", model)
+        self.assertIn("guard hideOnSourceGone, let deadline = dialogueDisplayDeadline", model)
         self.assertIn("if (GameLingoOCRConfig.hideOnSourceGone(this))", code(TOOLS/"wire_gamelingo_languages.py"))
         standalone = code(TOOLS/"GameLingoScreenTranslationService.kt")
         self.assertIn("!storyMode && GameLingoOCRConfig.hideOnSourceGone(this)", standalone)
+
+    def test_point27_source_gone_delay_never_extends_display_deadline(self):
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn("let target = min(deadline, now + Double", model)
+        self.assertIn("latestDeadline: target", model)
+        self.assertIn("let deadline = min(now + seconds, latestDeadline ?? .infinity)", model)
+        android = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("sourceGoneDeadline == 0L", android)
+        self.assertIn("minOf(zbyva, (sourceGoneDeadline - now)", android)
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("shownUntil = minOf(shownUntil, now + GameLingoOCRConfig.sourceGoneDelay(this)", capture)
 
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))
