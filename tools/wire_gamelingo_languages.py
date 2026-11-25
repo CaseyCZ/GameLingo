@@ -466,6 +466,10 @@ def main():
         Path(__file__).with_name("GameLingoDialogueText.kt").read_text(encoding="utf8"),encoding="utf8")
     (unit_dir/"GameLingoDialogueTextTest.kt").write_text(
         Path(__file__).with_name("GameLingoDialogueTextTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    (folder/"GameLingoFrameGate.kt").write_text(
+        Path(__file__).with_name("GameLingoFrameGate.kt").read_text(encoding="utf8"),encoding="utf8")
+    (unit_dir/"GameLingoFrameGateTest.kt").write_text(
+        Path(__file__).with_name("GameLingoFrameGateTest.kt").read_text(encoding="utf8"),encoding="utf8")
     # P1.9: context snapshots at OCR/translation boundaries. The old
     # text-only game-choice map must never mix source or target languages.
     transport = folder/"Propojeni.kt"

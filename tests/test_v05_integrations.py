@@ -620,6 +620,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("nextYellow", capture)
         self.assertIn("blueSinceYellow >= 2", code(TOOLS/"GameLingoOCRCadence.kt"))
 
+    def test_point7_standalone_frame_gate_is_bounded_and_requires_settled_text(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("GameLingoFrameGate(650L)", capture)
+        self.assertIn("GameLingoFrameGate(850L)", capture)
+        self.assertIn("GameLingoFrameGate.mix(fingerprint, pixel)", capture)
+        self.assertIn("!storyMode && !hintsEnabled && !diagnostic && blankFrames == 0", capture)
+        self.assertIn("!translationBusy && candidate.isNotBlank() && candidate == shown", capture)
+        self.assertIn("blueFrameGate.record(fingerprint, ocrStarted)", capture)
+        self.assertIn("yellowFrameGate.record(fingerprint, started)", capture)
+        self.assertIn("blueFrameGate.reset()", capture)
+        self.assertIn("yellowFrameGate.reset()", capture)
+        self.assertIn("unit_dir/\"GameLingoFrameGateTest.kt\"", code(TOOLS/"wire_gamelingo_languages.py"))
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")

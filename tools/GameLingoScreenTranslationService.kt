@@ -143,6 +143,8 @@ class GameLingoScreenTranslationService : Service() {
     private var lastRenderAt = 0L
     private var blankSince = 0L
     private var ocrBusy = false
+    private val blueFrameGate = GameLingoFrameGate(650L)
+    private val yellowFrameGate = GameLingoFrameGate(850L)
     private var translationBusy = false
     private var lastAttempt = ""
     private var lastAttemptAt = 0L
@@ -398,6 +400,7 @@ class GameLingoScreenTranslationService : Service() {
     private fun resetText(preserveDisplay: Boolean = false) {
         epoch++; candidate = ""; shown = ""
         dialogueStability.reset()
+        blueFrameGate.reset()
         candidateAt = 0L; currentBox = null; currentRows = 1
         if (!preserveDisplay) {
             translatedText = ""; shownAt = 0L; shownUntil = 0L
@@ -442,6 +445,7 @@ class GameLingoScreenTranslationService : Service() {
         try {
             val image = images.acquireLatestImage() ?: return
             var yellow = false
+            var fingerprint = 0L
             val bitmap = try {
                 received.incrementAndGet()
                 val requested = wantFrame.getAndSet(0)
@@ -458,6 +462,7 @@ class GameLingoScreenTranslationService : Service() {
                 val bottom = (region[3] * h).toInt().coerceIn(y+1,h)
                 val cw = right-x; val ch = bottom-y
                 val pixels = IntArray(cw * ch)
+                fingerprint = GameLingoFrameGate.seed(cw, ch)
                 for (row in 0 until ch) {
                     val offset = (y+row)*plane.rowStride+x*4
                     require(offset >= 0 && offset + cw*4 <= buffer.limit())
@@ -466,7 +471,9 @@ class GameLingoScreenTranslationService : Service() {
                         val r = buffer.get(p).toInt() and 255
                         val g = buffer.get(p+1).toInt() and 255
                         val b = buffer.get(p+2).toInt() and 255
-                        pixels[row*cw+col] = (255 shl 24) or (r shl 16) or (g shl 8) or b
+                        val pixel = (255 shl 24) or (r shl 16) or (g shl 8) or b
+                        pixels[row*cw+col] = pixel
+                        fingerprint = GameLingoFrameGate.mix(fingerprint, pixel)
                     }
                 }
                 Bitmap.createBitmap(pixels,cw,ch,Bitmap.Config.ARGB_8888)
@@ -475,12 +482,20 @@ class GameLingoScreenTranslationService : Service() {
             ui.post {
                 if (capturePending) cancelSample()
                 if (!active || paused || blockedHome || ocrBusy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
-                else if (yellow) processYellow(bitmap) else process(bitmap)
+                else if (yellow) processYellow(bitmap, fingerprint) else process(bitmap, fingerprint)
             }
         } catch (e: Exception) { frameError = e.javaClass.simpleName + ": " + (e.message ?: "").take(120) }
     }
 
-    private fun process(cropped: Bitmap) {
+    private fun process(cropped: Bitmap, fingerprint: Long) {
+        val settled = !storyMode && !hintsEnabled && !diagnostic && blankFrames == 0 &&
+            !translationBusy && candidate.isNotBlank() && candidate == shown
+        val now = SystemClock.elapsedRealtime()
+        if (settled && blueFrameGate.canSkip(fingerprint, now)) {
+            lastTextAt = now
+            cropped.recycle()
+            return
+        }
         var light = 0
         for (y in 0 until cropped.height step 8) for (x in 0 until cropped.width step 8) {
             val pixel = cropped.getPixel(x,y)
@@ -524,12 +539,15 @@ class GameLingoScreenTranslationService : Service() {
                     if (dialogueEnabled) {
                         if (raw.isNotBlank()) { currentBox = normalized; currentRows = result.radku.coerceAtLeast(1) }
                         accept(raw)
+                        if (!storyMode && raw.isNotBlank() && GameLingoDialogueText.normalize(raw) == candidate)
+                            blueFrameGate.record(fingerprint, ocrStarted)
+                        else blueFrameGate.reset()
                     }
                 }
-            }, chyba = { cropped.recycle(); ui.post { ocrBusy=false; ocrState = "Chyba OCR" } },
+            }, chyba = { cropped.recycle(); ui.post { ocrBusy=false; blueFrameGate.reset(); ocrState = "Chyba OCR" } },
                 sourceLanguage = sourceLanguage, standaloneScreen = true)
         } catch (e: Exception) {
-            cropped.recycle(); ocrBusy=false; ocrState = "Chyba OCR: " + e.javaClass.simpleName
+            cropped.recycle(); ocrBusy=false; blueFrameGate.reset(); ocrState = "Chyba OCR: " + e.javaClass.simpleName
         }
     }
     private fun accept(raw: String) {
@@ -656,6 +674,7 @@ class GameLingoScreenTranslationService : Service() {
     }
     private fun clearYellow() {
         yellowEpoch++
+        yellowFrameGate.reset()
         yellowCandidate = emptyList(); yellowShown = emptyList(); yellowSelected = -1
         yellowLastAt = 0L; yellowLastAttempt = emptyList(); yellowAttemptAt = 0L
         renderYellow(emptyList(), -1)
@@ -670,7 +689,14 @@ class GameLingoScreenTranslationService : Service() {
             .putExtra(OverlayService.EXTRA_RAMECEK, false)
             .putExtra(OverlayService.EXTRA_VYSTUP_VOLEB, orangeOutput))
     }
-    private fun processYellow(cropped: Bitmap) {
+    private fun processYellow(cropped: Bitmap, fingerprint: Long) {
+        val started = SystemClock.elapsedRealtime()
+        if (!diagnostic && !yellowRequest && yellowShown.isNotEmpty() &&
+            yellowFrameGate.canSkip(fingerprint, started)) {
+            yellowLastAt = started
+            cropped.recycle()
+            return
+        }
         val read = ocr ?: run { cropped.recycle(); return }
         ocrBusy = true
         val ticket = yellowEpoch
@@ -684,7 +710,11 @@ class GameLingoScreenTranslationService : Service() {
                 ui.post {
                     ocrBusy = false
                     if (!active || paused || ticket != yellowEpoch) return@post
-                    if (words.isEmpty() || (!yellowTextMode && selected < 0 && words != yellowCandidate)) return@post
+                    if (words.isEmpty() || (!yellowTextMode && selected < 0 && words != yellowCandidate)) {
+                        yellowFrameGate.reset()
+                        return@post
+                    }
+                    yellowFrameGate.record(fingerprint, started)
                     yellowLastAt = SystemClock.elapsedRealtime()
                     if (words != yellowCandidate) {
                         yellowEpoch++
@@ -695,8 +725,8 @@ class GameLingoScreenTranslationService : Service() {
                     if (yellowShown.isNotEmpty()) renderYellow(yellowShown,yellowSelected)
                     else translateYellow()
                 }
-            }, { cropped.recycle(); ui.post { ocrBusy=false } })
-        } catch (e: Exception) { cropped.recycle(); ocrBusy=false }
+            }, { cropped.recycle(); ui.post { ocrBusy=false; yellowFrameGate.reset() } })
+        } catch (e: Exception) { cropped.recycle(); ocrBusy=false; yellowFrameGate.reset() }
     }
     // Same brightness-based selection principle as the game choice reader.
     private fun yellowHighlight(b: Bitmap, boxes: List<android.graphics.Rect>): Int {
