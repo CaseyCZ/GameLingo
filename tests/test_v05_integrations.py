@@ -1324,6 +1324,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for profile in ("GameLingoProfiles.kt", "GameLingoTVProfiles.kt"):
             self.assertIn('optInt("minBlueHeight", 0)', code(TOOLS/profile))
 
+    def test_point21_yellow_minimum_height_is_persistent_and_opt_in(self):
+        config = code(TOOLS/"GameLingoOCRConfig.kt")
+        self.assertIn('store.getInt("minYellowHeight", 0).coerceIn(0, 5)', config)
+        self.assertIn("GameLingoOCRConfig.minYellowHeight", code(TOOLS/"redesign_gamelingo.py"))
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        lane = pipeline.split("func recognizeOptions(", 1)[1]
+        self.assertIn("if minimumHeight > 0 { request.minimumTextHeight", lane)
+        self.assertIn("minimumHeight: Int = 0", lane)
+        for profile in ("GameLingoProfiles.kt", "GameLingoTVProfiles.kt"):
+            self.assertIn('optInt("minYellowHeight", 0)', code(TOOLS/profile))
+
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))
         self.assertNotIn('PS5 – coming soon',all_ios)

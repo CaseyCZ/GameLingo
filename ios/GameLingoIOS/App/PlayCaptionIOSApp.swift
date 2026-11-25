@@ -180,6 +180,12 @@ final class CaptionAppModel: ObservableObject {
             if oldValue != ignoredBlueLines { invalidateDialogue() }
         }
     }
+    @Published var minYellowHeight = UserDefaults.standard.integer(forKey: "minYellowHeight") {
+        didSet {
+            UserDefaults.standard.set(minYellowHeight, forKey: "minYellowHeight")
+            if oldValue != minYellowHeight { invalidateOptions() }
+        }
+    }
     @Published var ignoredYellowLines = UserDefaults.standard.string(forKey: "ignoredYellowLines") ?? "" {
         didSet {
             UserDefaults.standard.set(ignoredYellowLines, forKey: "ignoredYellowLines")
@@ -406,6 +412,7 @@ final class CaptionAppModel: ObservableObject {
             ignoredBlueLines: ignoredBlueLines,
             minBlueHeight: minBlueHeight,
             ignoredYellowLines: ignoredYellowLines,
+            minYellowHeight: minYellowHeight,
             choicesArea: choicesArea,
             choicesLocked: choicesLocked,
             choicesOutputArea: choicesOutputArea,
@@ -452,6 +459,7 @@ final class CaptionAppModel: ObservableObject {
         ignoredBlueLines = profile.ignoredBlueLines ?? ""
         minBlueHeight = min(5, max(0, profile.minBlueHeight ?? 0))
         ignoredYellowLines = profile.ignoredYellowLines ?? ""
+        minYellowHeight = min(5, max(0, profile.minYellowHeight ?? 0))
         choicesLocked = profile.choicesLocked
         choicesEnabled = profile.choicesEnabled
         if let rect = profile.choicesOutputArea { choicesOutputArea = rect }
@@ -736,6 +744,7 @@ final class CaptionAppModel: ObservableObject {
         let asText = choicesTextMode
         let filterControls = filterChoiceControls
         let ignoredLines = ignoredYellowLines
+        let minimumHeight = minYellowHeight
         let activeGameLanguage = gameLanguage
         let activeTargetLanguage = targetLanguage
         defer {
@@ -749,7 +758,7 @@ final class CaptionAppModel: ObservableObject {
         let optionsStarted = ProcessInfo.processInfo.systemUptime
         guard let englishChoices = await self.pipeline.recognizeOptions(
             buffer, area: area, asText: asText,
-            gameLanguage: activeGameLanguage, mode: self.ocrMode, filterControls: filterControls, ignoredLines: ignoredLines
+            gameLanguage: activeGameLanguage, mode: self.ocrMode, filterControls: filterControls, ignoredLines: ignoredLines, minimumHeight: minimumHeight
         ), self.isRunning,
            self.sessionRevision == currentSession,
            self.choicesEnabled,
@@ -760,13 +769,13 @@ final class CaptionAppModel: ObservableObject {
         optionsTranslation = Task { @MainActor [weak self] in
             guard let self, !Task.isCancelled,
                   self.optionsRevision.accepts(readingRevision) else { return }
-            await self.translateOptions(englishChoices, area: area, asText: asText, filterControls: filterControls, ignoredLines: ignoredLines,
+            await self.translateOptions(englishChoices, area: area, asText: asText, filterControls: filterControls, ignoredLines: ignoredLines, minimumHeight: minimumHeight,
                 activeGameLanguage: activeGameLanguage, activeTargetLanguage: activeTargetLanguage,
                 currentSession: currentSession, readingRevision: readingRevision, optionsStarted: optionsStarted)
         }
     }
 
-    private func translateOptions(_ englishChoices: [String], area: CGRect, asText: Bool, filterControls: Bool, ignoredLines: String,
+    private func translateOptions(_ englishChoices: [String], area: CGRect, asText: Bool, filterControls: Bool, ignoredLines: String, minimumHeight: Int,
                                   activeGameLanguage: GLGameLanguage, activeTargetLanguage: GLTargetLanguage,
                                   currentSession: Int, readingRevision: UInt64, optionsStarted: TimeInterval) async {
         let optionsTranslateStarted = ProcessInfo.processInfo.systemUptime
@@ -805,7 +814,7 @@ final class CaptionAppModel: ObservableObject {
                 self.recordPerformance("Herní text překlad", milliseconds: (ProcessInfo.processInfo.systemUptime - optionsTranslateStarted) * 1000)
                 self.write("Volby: chyba překladu (\(error.diagnostic))")
                 await self.pipeline.optionsTranslationFailed(englishChoices,
-                    area: area, asText: asText, gameLanguage: activeGameLanguage, filterControls: filterControls, ignoredLines: ignoredLines)
+                    area: area, asText: asText, gameLanguage: activeGameLanguage, filterControls: filterControls, ignoredLines: ignoredLines, minimumHeight: minimumHeight)
                 return
             }
         }

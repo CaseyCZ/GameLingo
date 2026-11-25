@@ -315,6 +315,10 @@ private struct GameLingoOCRSettingsView: View {
                     ForEach(1...5, id: \.self) { value in Text("\(value) %").tag(value) }
                 }.disabled(model.isRunning)
                 TextField("Žlutá oblast", text: $model.ignoredYellowLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
+                Picker("Žlutá: minimální výška textu", selection: $model.minYellowHeight) {
+                    Text("Automaticky").tag(0)
+                    ForEach(1...5, id: \.self) { value in Text("\(value) %").tag(value) }
+                }.disabled(model.isRunning)
                 Text("Pouze přesná shoda celého řádku, bez ohledu na velikost písmen.").font(.caption)
                 Toggle("Rozšířit hledání", isOn: $model.expandOnEmpty)
                     .disabled(model.ocrMode == .classic || model.manualOCR)
@@ -335,6 +339,7 @@ private struct GameLingoOCRSettingsView: View {
                     model.ignoredBlueLines = ""
                     model.minBlueHeight = 0
                     model.ignoredYellowLines = ""
+                    model.minYellowHeight = 0
                 }
                 .disabled(model.isRunning)
             }
@@ -774,6 +779,7 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var ignoredBlueLines: String?
     var minBlueHeight: Int?
     var ignoredYellowLines: String?
+    var minYellowHeight: Int?
     var choicesArea: CGRect
     var choicesLocked: Bool
     /// Optional to preserve previously saved 0.2.0 game profiles.

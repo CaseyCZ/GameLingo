@@ -131,8 +131,8 @@ actor CaptionPipeline {
     }
 
     func optionsTranslationFailed(_ options: [String], area: CGRect,
-                                  asText: Bool, gameLanguage: GLGameLanguage, filterControls: Bool = false, ignoredLines: String = "") {
-        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)|\(ignoredLines)"
+                                  asText: Bool, gameLanguage: GLGameLanguage, filterControls: Bool = false, ignoredLines: String = "", minimumHeight: Int = 0) {
+        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)|\(ignoredLines)|\(minimumHeight)"
         guard lastOptionsSettings == signature, lastOptions == options,
               !options.isEmpty else { return }
         optionsRetryAt = ProcessInfo.processInfo.systemUptime + 2
@@ -245,13 +245,13 @@ actor CaptionPipeline {
                           area: CGRect,
                           asText: Bool,
                           gameLanguage: GLGameLanguage = .english,
-                          mode: OCRMode = .classic, filterControls: Bool = false, ignoredLines: String = "") -> [String]? {
+                          mode: OCRMode = .classic, filterControls: Bool = false, ignoredLines: String = "", minimumHeight: Int = 0) -> [String]? {
         if optionsMode != mode {
             optionsMode = mode
             lastOptionsRead = nil
             optionsRecentCost = 0
         }
-        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)|\(ignoredLines)"
+        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)|\(ignoredLines)|\(minimumHeight)"
         if signature != lastOptionsSettings {
             lastOptionsSettings = signature
             lastOptions = []
@@ -275,6 +275,7 @@ actor CaptionPipeline {
         request.recognitionLanguages = [gameLanguage.visionIdentifier]
         request.usesLanguageCorrection = true
         request.regionOfInterest = roi
+        if minimumHeight > 0 { request.minimumTextHeight = Float(min(5, minimumHeight)) / 100 }
         let workStarted = ProcessInfo.processInfo.systemUptime
         defer {
             let cost = ProcessInfo.processInfo.systemUptime - workStarted

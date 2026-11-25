@@ -176,6 +176,17 @@ object GameLingoOCRSettings {
                 .setSingleChoiceItems(labels, GameLingoOCRConfig.minBlueHeight) { chooser, index -> chooser.dismiss(); save(index) }
                 .setNegativeButton("Zrušit", null).show()
         }
+        action("Žlutá: minimální výška textu", if (GameLingoOCRConfig.minYellowHeight == 0) "Automaticky" else "${GameLingoOCRConfig.minYellowHeight} %", canEdit) {
+            val labels = arrayOf("Automaticky", "1 %", "2 %", "3 %", "4 %", "5 %")
+            fun save(index: Int) {
+                GameLingoOCRConfig.setMinYellowHeight(activity, index)
+                dialog.dismiss(); show(activity, onAreas)
+            }
+            if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.select(activity, "Žlutá: velikost textu", labels, GameLingoOCRConfig.minYellowHeight, ::save)
+            else android.app.AlertDialog.Builder(activity).setTitle("Žlutá: velikost textu")
+                .setSingleChoiceItems(labels, GameLingoOCRConfig.minYellowHeight) { chooser, index -> chooser.dismiss(); save(index) }
+                .setNegativeButton("Zrušit", null).show()
+        }
         toggle("Rozšířit hledání",
             "Při automatickém režimu zahrne širší část obrazu.",
             GameLingoOCRConfig.expandSearch,
