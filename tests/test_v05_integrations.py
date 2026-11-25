@@ -633,6 +633,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("yellowFrameGate.reset()", capture)
         self.assertIn("unit_dir/\"GameLingoFrameGateTest.kt\"", code(TOOLS/"wire_gamelingo_languages.py"))
 
+    def test_point8_standalone_admission_yields_yellow_between_items(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("if (!storyMode && (yellowRequest || hintBusy)) return", capture)
+        self.assertIn("if (!storyMode && (translationBusy || hintBusy || dialogueReady(now)))", capture)
+        self.assertIn("if (!storyMode && (translationBusy || yellowRequest || dialogueReady(now)))", capture)
+        self.assertIn("if (!storyMode && dialogueReady(SystemClock.elapsedRealtime()))", capture)
+        self.assertIn("yellowPartial.clear(); yellowPartial.addAll(results)", capture)
+        self.assertIn("if (yellowPartialEpoch != ticket)", capture)
+        self.assertIn("next(results.size)", capture)
+        self.assertIn("if (!storyMode && !translationBusy) translateYellow()", capture)
+        self.assertIn("yellowShown.isNotEmpty() || value.isEmpty()", capture)
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")

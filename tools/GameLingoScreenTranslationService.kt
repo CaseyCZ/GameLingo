@@ -217,6 +217,9 @@ class GameLingoScreenTranslationService : Service() {
     private var yellowRequest = false
     private var yellowAttemptAt = 0L
     private var yellowLastAttempt = emptyList<String>()
+    // Partial results are session-local and belong to one yellow revision.
+    private var yellowPartialEpoch = -1L
+    private val yellowPartial = mutableListOf<String>()
     private val tick = object : Runnable {
         override fun run() {
             if (!active) return
@@ -535,7 +538,7 @@ class GameLingoScreenTranslationService : Service() {
                     if (raw.isNotBlank()) ocrHits.incrementAndGet()
                     ocrState = if (raw.isBlank()) "Bez textu" else "Text rozpoznán"
                     if (diagnostic && raw.isNotBlank()) lastRaw = raw.take(300)
-                    if (hintsEnabled && !hint.isNullOrBlank() && hintBox != null) acceptHint(hint,hintBox)
+                    if (storyMode && hintsEnabled && !hint.isNullOrBlank() && hintBox != null) acceptHint(hint,hintBox)
                     if (dialogueEnabled) {
                         if (raw.isNotBlank()) { currentBox = normalized; currentRows = result.radku.coerceAtLeast(1) }
                         accept(raw)
@@ -543,6 +546,7 @@ class GameLingoScreenTranslationService : Service() {
                             blueFrameGate.record(fingerprint, ocrStarted)
                         else blueFrameGate.reset()
                     }
+                    if (!storyMode && hintsEnabled && !hint.isNullOrBlank() && hintBox != null) acceptHint(hint,hintBox)
                 }
             }, chyba = { cropped.recycle(); ui.post { ocrBusy=false; blueFrameGate.reset(); ocrState = "Chyba OCR" } },
                 sourceLanguage = sourceLanguage, standaloneScreen = true)
@@ -594,9 +598,16 @@ class GameLingoScreenTranslationService : Service() {
         if (value == shown) return
         translateLatest()
     }
-    /** Independent OCR + one translation in flight; never queue stale dialogue. */
+    private fun dialogueReady(now: Long): Boolean =
+        active && !paused && !blockedHome && !storyMode && candidate.isNotBlank() &&
+            candidate != shown && lastTextAt != 0L && now - lastTextAt <= 1800L &&
+            (candidate != lastAttempt || now - lastAttemptAt >= 1000L) &&
+            !GameLingoOCRConfig.expired(this, now - candidateAt)
+
+    /** Independent OCR; ordinary standalone work shares one provider admission slot. */
     private fun translateLatest() {
         if (!active || paused || blockedHome || translationBusy || candidate.isBlank()) return
+        if (!storyMode && (yellowRequest || hintBusy)) return
         val now = SystemClock.elapsedRealtime()
         if (lastTextAt == 0L || now - lastTextAt > 1800L || candidate == shown) return
         if (candidate == lastAttempt && now - lastAttemptAt < 1000L) return
@@ -633,6 +644,7 @@ class GameLingoScreenTranslationService : Service() {
                 // Restart only for a changed generation. The newest candidate
                 // may have the same spelling as the obsolete request.
                 if (active && !paused && !blockedHome && ticket != epoch) translateLatest()
+                if (!storyMode && !translationBusy) translateYellow()
             }
         }
         try { p.preloz(value, { completed(it) }, { completed(null) }) }
@@ -657,6 +669,10 @@ class GameLingoScreenTranslationService : Service() {
             renderHint("",null)
         }
         if (hintBusy || (text == hintAttempt && now-hintAttemptAt < 1500L)) return
+        if (!storyMode && (translationBusy || yellowRequest || dialogueReady(now))) {
+            translateLatest()
+            return
+        }
         val p = translator ?: return
         val ticket = hintEpoch
         hintBusy=true; hintAttempt=text; hintAttemptAt=now
@@ -668,6 +684,10 @@ class GameLingoScreenTranslationService : Service() {
                     renderHint(result,box)
                     hintAttemptAt=Long.MAX_VALUE
                 }
+                if (!storyMode) {
+                    translateLatest()
+                    if (!translationBusy) translateYellow()
+                }
             }
         }
         try { p.preloz(text,{ finish(it) },{ finish(null) }) } catch (e: Exception) { finish(null) }
@@ -675,6 +695,7 @@ class GameLingoScreenTranslationService : Service() {
     private fun clearYellow() {
         yellowEpoch++
         yellowFrameGate.reset()
+        yellowPartial.clear(); yellowPartialEpoch = -1L
         yellowCandidate = emptyList(); yellowShown = emptyList(); yellowSelected = -1
         yellowLastAt = 0L; yellowLastAttempt = emptyList(); yellowAttemptAt = 0L
         renderYellow(emptyList(), -1)
@@ -718,6 +739,7 @@ class GameLingoScreenTranslationService : Service() {
                     yellowLastAt = SystemClock.elapsedRealtime()
                     if (words != yellowCandidate) {
                         yellowEpoch++
+                        yellowPartial.clear(); yellowPartialEpoch = -1L
                         yellowLastAttempt = emptyList(); yellowAttemptAt = 0L
                         yellowCandidate = words; yellowShown = emptyList(); renderYellow(emptyList(),-1)
                     }
@@ -745,25 +767,42 @@ class GameLingoScreenTranslationService : Service() {
     private fun translateYellow() {
         val value = yellowCandidate
         val now = SystemClock.elapsedRealtime()
-        if (!active || paused || blockedHome || yellowRequest || value.isEmpty() || now-yellowLastAt > 1800L ||
+        if (!active || paused || blockedHome || yellowRequest || yellowShown.isNotEmpty() || value.isEmpty() || now-yellowLastAt > 1800L ||
             (value == yellowLastAttempt && now-yellowAttemptAt < 1000L)) return
+        if (!storyMode && (translationBusy || hintBusy || dialogueReady(now))) {
+            translateLatest()
+            return
+        }
         val p = translator ?: return
         val ticket = yellowEpoch
         yellowRequest = true; yellowLastAttempt = value; yellowAttemptAt = now
-        val results = mutableListOf<String>()
+        if (yellowPartialEpoch != ticket) { yellowPartial.clear(); yellowPartialEpoch = ticket }
+        val results = yellowPartial.toMutableList()
         fun current() = active && !paused && !blockedHome && ticket == yellowEpoch && value == yellowCandidate &&
             SystemClock.elapsedRealtime()-yellowLastAt <= 1800L
         fun finish() {
             yellowRequest=false
+            if (!storyMode) translateLatest()
             if (active && !paused && !blockedHome && ticket != yellowEpoch) translateYellow()
         }
         fun next(index: Int) {
             if (!current()) { finish(); return }
             if (index == value.size) {
                 yellowShown = results.toList()
+                yellowPartial.clear(); yellowPartialEpoch = -1L
                 GameLingoTranslationHistory.append(if(yellowTextMode)"Herní text" else "Volby",sourceLanguage,GameLingoLanguages.target(this),value.joinToString("\n"),yellowShown.joinToString("\n"))
                 renderYellow(yellowShown, yellowSelected)
                 finish(); return
+            }
+            // Yield between items, never in the middle of a provider call.
+            // Preserve the accepted prefix even when the persistent cache is disabled.
+            if (!storyMode && dialogueReady(SystemClock.elapsedRealtime())) {
+                yellowPartial.clear(); yellowPartial.addAll(results)
+                yellowPartialEpoch = ticket
+                yellowAttemptAt = 0L
+                yellowRequest = false
+                translateLatest()
+                return
             }
             try {
                 p.preloz(value[index], { result ->
@@ -774,7 +813,7 @@ class GameLingoScreenTranslationService : Service() {
                 }, { ui.post { finish() } })
             } catch (e: Exception) { finish() }
         }
-        next(0)
+        next(results.size)
     }
     private fun render(text: String, duration: Long = 1800L) {
         lastRenderAt = android.os.SystemClock.elapsedRealtime()
