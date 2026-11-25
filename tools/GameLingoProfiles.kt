@@ -86,6 +86,7 @@ object GameLingoProfiles {
     private fun snapshot(c: Context, settings: Nastaveni) = JSONObject().apply {
         put("dialogy", settings.dialogy)
         put("showPreviousDialogue", GameLingoOCRConfig.showPreviousDialogue(c))
+        put("previousDialogueCount", GameLingoOCRConfig.previousDialogueCount(c))
         put("pribehovy", settings.pribehovy)
         put("cas", settings.casPribehuProcenta)
         put("prekryvat", settings.prekryvat)
@@ -126,6 +127,7 @@ object GameLingoProfiles {
     private fun restore(c: Context, settings: Nastaveni, data: JSONObject) {
         settings.dialogy = data.optBoolean("dialogy", settings.dialogy)
         GameLingoOCRConfig.setShowPreviousDialogue(c, data.optBoolean("showPreviousDialogue", false))
+        GameLingoOCRConfig.setPreviousDialogueCount(c, data.optInt("previousDialogueCount", 1))
         settings.pribehovy = data.optBoolean("pribehovy", settings.pribehovy)
         settings.casPribehuProcenta = data.optInt("cas", settings.casPribehuProcenta)
         settings.prekryvat = data.optBoolean("prekryvat", settings.prekryvat)

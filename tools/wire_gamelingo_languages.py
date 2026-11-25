@@ -654,7 +654,7 @@ def main():
             if (dobry) GameLingoTranslationHistory.append("Dialog", translationContext.source, translationContext.target, original, corrected)
             val displayText = if (dobry) dialogueWindow.render(original, corrected,
                 GameLingoOCRConfig.showPreviousDialogue(this) && !nast.prekryvat,
-                android.os.SystemClock.elapsedRealtime(), translationContext.toString() + "|" + oblast, oprava)
+                android.os.SystemClock.elapsedRealtime(), translationContext.toString() + "|" + oblast, oprava, GameLingoOCRConfig.previousDialogueCount(this))
                 else corrected
             ukazCesky(displayText, box, radku, if (displayText == corrected) barvyJmen else intArrayOf())''', service.name)
     s=once(s, '''            GameLingoTranslationHistory.append("Herní text", context.source, context.target, text, it)

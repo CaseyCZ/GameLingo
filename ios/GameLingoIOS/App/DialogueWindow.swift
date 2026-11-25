@@ -11,7 +11,7 @@ struct DialogueWindow {
 
     mutating func reset() { entries.removeAll() }
 
-    mutating func render(source: String, translation: String, enabled: Bool, now: TimeInterval) -> String {
+    mutating func render(source: String, translation: String, enabled: Bool, now: TimeInterval, previousCount: Int = 1) -> String {
         guard enabled, !translation.isEmpty else { reset(); return translation }
         let key = source.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ").lowercased()
         entries.removeAll { now - $0.time > 12 || now < $0.time }
@@ -20,10 +20,15 @@ struct DialogueWindow {
             entries.removeLast()
         }
         entries.append(Entry(source: key, translation: translation, time: now))
-        entries = Array(entries.suffix(2))
-        if entries.count == 2, entries[0].translation != translation {
-            return entries[0].translation + "\n" + translation
+        entries = Array(entries.suffix(min(2, max(1, previousCount)) + 1))
+        var seen: Set<String> = [translation]
+        var previous: [String] = []
+        var remaining = 300
+        for entry in entries.dropLast().reversed() {
+            guard seen.insert(entry.translation).inserted, entry.translation.count <= remaining else { continue }
+            previous.append(entry.translation)
+            remaining -= entry.translation.count
         }
-        return translation
+        return (Array(previous.reversed()) + [translation]).joined(separator: "\n")
     }
 }

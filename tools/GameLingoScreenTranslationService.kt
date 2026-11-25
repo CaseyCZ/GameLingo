@@ -664,7 +664,8 @@ class GameLingoScreenTranslationService : Service() {
                     shown = value; translatedText = corrected
                     val displayText = dialogueWindow.render(value, corrected,
                         GameLingoOCRConfig.showPreviousDialogue(this@GameLingoScreenTranslationService) && !coverOriginal && !useAutomaticOutput,
-                        SystemClock.elapsedRealtime(), sourceLanguage + "|" + GameLingoLanguages.target(this@GameLingoScreenTranslationService))
+                        SystemClock.elapsedRealtime(), sourceLanguage + "|" + GameLingoLanguages.target(this@GameLingoScreenTranslationService),
+                        previousCount = GameLingoOCRConfig.previousDialogueCount(this@GameLingoScreenTranslationService))
                     shownAt = SystemClock.elapsedRealtime()
                     val duration = GameLingoOCRConfig.displayMs(this@GameLingoScreenTranslationService,((1800L+60L*corrected.length)*durationPercent/100L).coerceIn(800L,15000L))
                     shownUntil = shownAt + duration

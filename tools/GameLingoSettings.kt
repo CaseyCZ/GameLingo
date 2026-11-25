@@ -86,6 +86,8 @@ object GameLingoSettings {
             settings.dialogy) { settings.dialogy = it })
         add(row(activity, "Zobrazit i předchozí repliku", "V běžném režimu bez překrývání originálu; nemění příběhovou frontu.",
             GameLingoOCRConfig.showPreviousDialogue(activity)) { GameLingoOCRConfig.setShowPreviousDialogue(activity, it) })
+        add(row(activity, "Dvě předchozí repliky", "Pokud je zapnutý předchozí dialog, zobrazí až dva nedávné překlady místo jednoho.",
+            GameLingoOCRConfig.previousDialogueCount(activity) == 2) { GameLingoOCRConfig.setPreviousDialogueCount(activity, if (it) 2 else 1) })
         add(row(activity, "Herní texty a volby", "Samostatná žlutá oblast OCR.",
             Volby.zapnuto) { Volby.zapnuto = it; Volby.uloz(activity) })
         add(row(activity, "Dopisy a zprávy", "Překládat celý text místo seznamu voleb.",

@@ -4,6 +4,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoOCRCadenceTest {
+    @Test fun previousDialogueCountIsBounded() {
+        val window = GameLingoDialogueWindow()
+        window.render("1", "A", true, 1000, "A", previousCount = 2)
+        window.render("2", "B", true, 2000, "A", previousCount = 2)
+        assertEquals("A\nB\nC", window.render("3", "C", true, 3000, "A", previousCount = 2))
+        assertEquals("C\nD", window.render("4", "D", true, 4000, "A", previousCount = 1))
+    }
     @Test fun previousDialogueIsBoundedAndContextLocal() {
         val window = GameLingoDialogueWindow()
         assertEquals("První", window.render("First", "První", true, 1000, "A"))

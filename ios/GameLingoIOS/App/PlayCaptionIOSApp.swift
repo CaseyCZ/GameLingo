@@ -73,6 +73,12 @@ final class CaptionAppModel: ObservableObject {
             if oldValue != showPreviousDialogue { invalidateDialogue() }
         }
     }
+    @Published var previousDialogueCount = max(1, min(2, UserDefaults.standard.integer(forKey: "previousDialogueCount"))) {
+        didSet {
+            UserDefaults.standard.set(previousDialogueCount, forKey: "previousDialogueCount")
+            if oldValue != previousDialogueCount { invalidateDialogue() }
+        }
+    }
     private var dialogueWindow = DialogueWindow()
     @Published var subtitleDuration: Double =
         (UserDefaults.standard.object(forKey: "subtitleDuration") as? Double) ?? 6 {
@@ -435,6 +441,7 @@ final class CaptionAppModel: ObservableObject {
             choicesOutputFont: choicesOutputFont,
             subtitleDuration: subtitleDuration,
             showPreviousDialogue: showPreviousDialogue,
+            previousDialogueCount: previousDialogueCount,
             skipOldTranslations: skipOldTranslations,
             maxTranslationAge: maxTranslationAge,
             gameLanguage: gameLanguage.rawValue,
@@ -484,6 +491,7 @@ final class CaptionAppModel: ObservableObject {
         choicesOutputFont = profile.choicesOutputFont ?? 1.0
         subtitleDuration = profile.subtitleDuration
         showPreviousDialogue = profile.showPreviousDialogue ?? false
+        previousDialogueCount = min(2, max(1, profile.previousDialogueCount ?? 1))
         skipOldTranslations = profile.skipOldTranslations
         maxTranslationAge = profile.maxTranslationAge
         if let savedSource = profile.gameLanguage,
@@ -979,7 +987,7 @@ final class CaptionAppModel: ObservableObject {
                     let displaySeconds = min(10.0, max(3.0, requested))
                     self.lastCzech = czech
                     let displayText = self.dialogueWindow.render(source: reading.english, translation: czech,
-                        enabled: self.showPreviousDialogue, now: ProcessInfo.processInfo.systemUptime)
+                        enabled: self.showPreviousDialogue, now: ProcessInfo.processInfo.systemUptime, previousCount: self.previousDialogueCount)
                     self.translationHistory.append(kind: "Dialog",
                         source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue,
                         original: reading.english, translated: czech)
