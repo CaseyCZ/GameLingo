@@ -137,6 +137,19 @@ object GameLingoOCRSettings {
                     show(activity, onAreas)
                 }.setNegativeButton("Zrušit", null).show()
         }
+        val yellowModes = arrayOf("follow", "classic", "automatic", "street")
+        val yellowLabels = arrayOf("Stejný jako modrá", "Původní · stabilní", "Automatický · vyvážený", "Krátké dialogy · rychlý")
+        val yellowModeIndex = yellowModes.indexOf(GameLingoOCRConfig.yellowOCRMode).coerceAtLeast(0)
+        action("Žlutá: režim OCR", yellowLabels[yellowModeIndex], canEdit) {
+            fun save(index: Int) {
+                GameLingoOCRConfig.setYellowOCRMode(activity, yellowModes[index])
+                dialog.dismiss(); show(activity, onAreas)
+            }
+            if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.select(activity, "Žlutá: režim OCR", yellowLabels, yellowModeIndex, ::save)
+            else android.app.AlertDialog.Builder(activity).setTitle("Žlutá: režim OCR")
+                .setSingleChoiceItems(yellowLabels, yellowModeIndex) { chooser, index -> chooser.dismiss(); save(index) }
+                .setNegativeButton("Zrušit", null).show()
+        }
         toggle("Filtrovat menu hry",
             "Modrá oblast: omezí velké nadpisy, tlačítka a krátké sloupce menu. Žluté oblasti se netýká.",
             GameLingoOCRConfig.filterMenuText) {

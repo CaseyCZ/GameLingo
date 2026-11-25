@@ -19,6 +19,8 @@ object GameLingoOCRConfig {
         private set
     @Volatile var ignoredBlueLines: String = ""
         private set
+    @Volatile var yellowOCRMode: String = "follow"
+        private set
     @Volatile var minYellowHeight: Int = 0
         private set
     @Volatile var ignoredYellowLines: String = ""
@@ -64,6 +66,7 @@ object GameLingoOCRConfig {
         filterChoiceControls = store.getBoolean("filterChoiceControls", false)
         minBlueHeight = store.getInt("minBlueHeight", 0).coerceIn(0, 5)
         ignoredBlueLines = store.getString("ignoredBlueLines", "").orEmpty()
+        yellowOCRMode = store.getString("yellowOCRMode", "follow")?.takeIf { it in modes } ?: "follow"
         minYellowHeight = store.getInt("minYellowHeight", 0).coerceIn(0, 5)
         ignoredYellowLines = store.getString("ignoredYellowLines", "").orEmpty()
         ignoredBlueEntries = GameLingoIgnoredLines.entries(ignoredBlueLines)
@@ -80,7 +83,10 @@ object GameLingoOCRConfig {
         GameLingoOCRCadence.dialogue(mode, false, lowPower)
 
     fun gameTextIntervalMs(asText: Boolean, lowPower: Boolean, recentCostMs: Long): Long =
-        GameLingoOCRCadence.gameText(mode, asText, lowPower, recentCostMs)
+        GameLingoOCRCadence.gameText(if (yellowOCRMode == "follow") mode else yellowOCRMode, asText, lowPower, recentCostMs)
+
+    fun standaloneYellowReady(ageMs: Long): Boolean = yellowOCRMode == "follow" ||
+        ageMs >= GameLingoOCRCadence.standaloneYellowInterval(yellowOCRMode)
 
     fun minimumDialogueLength(): Int = if (mode == "street") 2 else 4
 
@@ -114,6 +120,11 @@ object GameLingoOCRConfig {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt("minBlueHeight", minBlueHeight).apply()
     }
 
+    fun setYellowOCRMode(context: Context, value: String) {
+        yellowOCRMode = value.takeIf { it in modes } ?: "follow"
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("yellowOCRMode", yellowOCRMode).apply()
+    }
+
     fun setMinYellowHeight(context: Context, value: Int) {
         minYellowHeight = value.coerceIn(0, 5)
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt("minYellowHeight", minYellowHeight).apply()
@@ -142,6 +153,7 @@ object GameLingoOCRConfig {
         filterChoiceControls = false
         minBlueHeight = 0
         minYellowHeight = 0
+        yellowOCRMode = "follow"
         ignoredBlueLines = ""; ignoredYellowLines = ""
         ignoredBlueEntries = emptySet(); ignoredYellowEntries = emptySet()
         expandSearch = false

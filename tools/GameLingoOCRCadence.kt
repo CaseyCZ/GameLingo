@@ -17,6 +17,15 @@ internal object GameLingoOCRCadence {
         return if (blueSinceYellow >= 2 || (blueSinceYellow > 0 && yellowAgeMs >= 1200L)) 2 else 1
     }
 
+    // Direct-on-TV uses a single shared reader. This is a minimum gap,
+    // not a guarantee that OCR can complete at this rate.
+    fun standaloneYellowInterval(mode: String): Long = when (mode) {
+        "classic" -> 800L
+        "automatic" -> 500L
+        "street" -> 250L
+        else -> 0L
+    }
+
     fun gameText(mode: String, asText: Boolean, lowPower: Boolean, recentCostMs: Long): Long {
         val base = when (mode) { "automatic" -> 200L; "street" -> 150L; else -> 250L }
         val floor = maxOf(if (lowPower) 600L else 0L, if (asText) base * 5 / 4 else base)

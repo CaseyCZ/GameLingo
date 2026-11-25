@@ -253,11 +253,14 @@ class GameLingoScreenTranslationService : Service() {
             if (!paused && !ocrBusy && !capturePending && wantFrame.get() == 0) {
                 val blueEnabled = dialogueEnabled || hintsEnabled
                 val now = SystemClock.elapsedRealtime()
-                val region = GameLingoOCRCadence.standaloneRegion(blueEnabled, yellowEnabled,
-                    blueSamplesSinceYellow, now - lastYellowSampleAt)
-                if (region == 1) blueSamplesSinceYellow = (blueSamplesSinceYellow + 1).coerceAtMost(2)
-                else { blueSamplesSinceYellow = 0; lastYellowSampleAt = now }
-                requestSample(region)
+                val yellowReady = yellowEnabled && GameLingoOCRConfig.standaloneYellowReady(now - lastYellowSampleAt)
+                if (blueEnabled || yellowReady) {
+                    val region = GameLingoOCRCadence.standaloneRegion(blueEnabled, yellowReady,
+                        blueSamplesSinceYellow, now - lastYellowSampleAt)
+                    if (region == 1) blueSamplesSinceYellow = (blueSamplesSinceYellow + 1).coerceAtMost(2)
+                    else { blueSamplesSinceYellow = 0; lastYellowSampleAt = now }
+                    requestSample(region)
+                }
             }
             if (!paused && storyMode) {
                 story.nastavCasovani(CasovaniPribehu.priZpozdeni(durationPercent,

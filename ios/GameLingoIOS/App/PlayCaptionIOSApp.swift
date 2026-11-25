@@ -186,6 +186,13 @@ final class CaptionAppModel: ObservableObject {
             if oldValue != minYellowHeight { invalidateOptions() }
         }
     }
+    @Published var yellowOCRMode = UserDefaults.standard.string(forKey: "yellowOCRMode") ?? "follow" {
+        didSet {
+            UserDefaults.standard.set(yellowOCRMode, forKey: "yellowOCRMode")
+            if oldValue != yellowOCRMode { invalidateOptions() }
+        }
+    }
+    private var ocrModeForYellow: OCRMode { OCRMode(rawValue: yellowOCRMode) ?? ocrMode }
     @Published var ignoredYellowLines = UserDefaults.standard.string(forKey: "ignoredYellowLines") ?? "" {
         didSet {
             UserDefaults.standard.set(ignoredYellowLines, forKey: "ignoredYellowLines")
@@ -413,6 +420,7 @@ final class CaptionAppModel: ObservableObject {
             minBlueHeight: minBlueHeight,
             ignoredYellowLines: ignoredYellowLines,
             minYellowHeight: minYellowHeight,
+            yellowOCRMode: yellowOCRMode,
             choicesArea: choicesArea,
             choicesLocked: choicesLocked,
             choicesOutputArea: choicesOutputArea,
@@ -460,6 +468,7 @@ final class CaptionAppModel: ObservableObject {
         minBlueHeight = min(5, max(0, profile.minBlueHeight ?? 0))
         ignoredYellowLines = profile.ignoredYellowLines ?? ""
         minYellowHeight = min(5, max(0, profile.minYellowHeight ?? 0))
+        yellowOCRMode = OCRMode(rawValue: profile.yellowOCRMode ?? "")?.rawValue ?? "follow"
         choicesLocked = profile.choicesLocked
         choicesEnabled = profile.choicesEnabled
         if let rect = profile.choicesOutputArea { choicesOutputArea = rect }
@@ -575,7 +584,7 @@ final class CaptionAppModel: ObservableObject {
         status = "Navazuji Xbox Remote Play…"
         write("Start Remote Play: \(console.name)")
         let play = XboxRemotePlay(authorization: xbox,
-                                  minimumFrameInterval: ocrMode.minimumFrameInterval)
+                                  minimumFrameInterval: choicesEnabled ? min(ocrMode.minimumFrameInterval, ocrModeForYellow.minimumFrameInterval) : ocrMode.minimumFrameInterval)
         remotePlay = play
         play.onStatus = { [weak self] status in
             Task { @MainActor in
@@ -758,7 +767,7 @@ final class CaptionAppModel: ObservableObject {
         let optionsStarted = ProcessInfo.processInfo.systemUptime
         guard let englishChoices = await self.pipeline.recognizeOptions(
             buffer, area: area, asText: asText,
-            gameLanguage: activeGameLanguage, mode: self.ocrMode, filterControls: filterControls, ignoredLines: ignoredLines, minimumHeight: minimumHeight
+            gameLanguage: activeGameLanguage, mode: self.ocrModeForYellow, filterControls: filterControls, ignoredLines: ignoredLines, minimumHeight: minimumHeight
         ), self.isRunning,
            self.sessionRevision == currentSession,
            self.choicesEnabled,

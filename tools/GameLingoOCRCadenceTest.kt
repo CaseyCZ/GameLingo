@@ -4,6 +4,12 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoOCRCadenceTest {
+    @Test fun standaloneYellowModeSetsOnlyMinimumSamplingGap() {
+        assertEquals(0L, GameLingoOCRCadence.standaloneYellowInterval("follow"))
+        assertEquals(800L, GameLingoOCRCadence.standaloneYellowInterval("classic"))
+        assertEquals(500L, GameLingoOCRCadence.standaloneYellowInterval("automatic"))
+        assertEquals(250L, GameLingoOCRCadence.standaloneYellowInterval("street"))
+    }
     @Test fun ignoredRowsMatchOnlyWholeNormalizedLine() {
         val ignored = GameLingoIgnoredLines.entries("  SAVE  GAME\nLoading\n")
         assertFalse(GameLingoIgnoredLines.keeps("save game", ignored))

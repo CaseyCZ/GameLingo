@@ -299,11 +299,15 @@ private struct GameLingoOCRSettingsView: View {
             "Rychlost OCR ovlivňuje čtení herních titulků. Klasický režim vychází z ověřené verze. Rozšířené hledání může zachytit také mapu, nápisy a HUD. Při ruční oblasti se rozšíření nepoužívá. Filtr menu může odstranit i některé skutečné dialogy psané velkými písmeny.") {
             GLCard {
                 GLHeader(title: "OCR", help: "Během běžícího překladu nelze změnit rychlost čtení.")
-                Picker("Režim", selection: $model.ocrMode) {
+                Picker("Modrá: režim OCR", selection: $model.ocrMode) {
                     ForEach(OCRMode.allCases) { mode in Text(mode.title).tag(mode) }
                 }
                 .pickerStyle(.menu)
                 .disabled(model.isRunning)
+                Picker("Žlutá: režim OCR", selection: $model.yellowOCRMode) {
+                    Text("Stejný jako modrá").tag("follow")
+                    ForEach(OCRMode.allCases) { mode in Text(mode.title).tag(mode.rawValue) }
+                }.pickerStyle(.menu).disabled(model.isRunning)
             }
             GLCard {
                 Toggle("Filtrovat menu hry", isOn: $model.filterMenuText)
@@ -340,6 +344,7 @@ private struct GameLingoOCRSettingsView: View {
                     model.minBlueHeight = 0
                     model.ignoredYellowLines = ""
                     model.minYellowHeight = 0
+                    model.yellowOCRMode = "follow"
                 }
                 .disabled(model.isRunning)
             }
@@ -780,6 +785,7 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var minBlueHeight: Int?
     var ignoredYellowLines: String?
     var minYellowHeight: Int?
+    var yellowOCRMode: String?
     var choicesArea: CGRect
     var choicesLocked: Bool
     /// Optional to preserve previously saved 0.2.0 game profiles.
