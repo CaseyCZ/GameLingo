@@ -494,6 +494,71 @@ def main() -> None:
          '                } else setTextColor(ZLUTA)\n',
          '                } else setTextColor(GameLingoTVCaptionStyle.textColor(this@OverlayService))\n')
 
+    # Point 9: do not rebuild unchanged orange output. Keep the preview
+    # frame handling and story/receiver timers above this fast path intact.
+    once(overlay,
+         '    private var seznamVoleb: android.widget.LinearLayout? = null\n',
+         '''    private var seznamVoleb: android.widget.LinearLayout? = null
+    private data class ChoiceRenderKey(
+        val items: List<String>, val input: List<Float>, val output: List<Float>?,
+        val width: Float, val height: Float, val density: Float, val scaledDensity: Float,
+        val color: Int, val background: Int
+    )
+    private var lastChoiceRender: ChoiceRenderKey? = null
+    private var lastChoiceSelected = -1
+''')
+    once(overlay,
+         '''        // The orange translated game-text overlay uses the same style
+        // as dialogue captions, independently from the yellow OCR box.
+''',
+         '''        val renderKey = ChoiceRenderKey(volby.toList(), o.toList(), vystup?.toList(),
+            w, h, d, obr.scaledDensity, GameLingoTVCaptionStyle.textColor(this),
+            GameLingoTVCaptionStyle.background(this))
+        if (volby.isEmpty()) {
+            lastChoiceRender = null
+            lastChoiceSelected = -1
+            seznam.visibility = android.view.View.INVISIBLE
+            return
+        }
+        if (lastChoiceRender == renderKey && seznam.isAttachedToWindow &&
+            seznam.visibility == android.view.View.VISIBLE && seznam.childCount == volby.size) {
+            // Selection alone changes at most two rows; no text measuring or window relayout.
+            if (lastChoiceSelected != vybrana) {
+                for (index in listOf(lastChoiceSelected, vybrana).distinct()) {
+                    if (index !in volby.indices) continue
+                    val row = seznam.getChildAt(index) as? TextView ?: continue
+                    val selected = index == vybrana
+                    row.setTextColor(if (selected) Color.BLACK else renderKey.color)
+                    row.background = if (selected) android.graphics.drawable.GradientDrawable().apply {
+                        setColor(ZLUTA); cornerRadius = 6 * d
+                    } else null
+                    row.setPadding((10 * d).toInt(), (5 * d).toInt(), (10 * d).toInt(), (5 * d).toInt())
+                }
+                lastChoiceSelected = vybrana
+            }
+            return
+        }
+        // The orange translated game-text overlay uses the same style
+        // as dialogue captions, independently from the yellow OCR box.
+''')
+    once(overlay,
+         '        if (volby.isEmpty()) { seznam.visibility = android.view.View.INVISIBLE; return }\n',
+         '')
+    once(overlay,
+         '        okno("volby") { wm.updateViewLayout(seznam, lp) }\n        seznam.visibility = android.view.View.VISIBLE\n',
+         '''        okno("volby") { wm.updateViewLayout(seznam, lp) }
+        seznam.visibility = android.view.View.VISIBLE
+        lastChoiceRender = renderKey
+        lastChoiceSelected = vybrana
+''')
+    # Preserve text styling (including speaker spans) and every hide timer.
+    # Only avoid assigning an identical plain string to the existing view.
+    once(overlay,
+         '            setTextColor(GameLingoTVCaptionStyle.textColor(this@OverlayService))\n            this.text = text\n',
+         '            setTextColor(GameLingoTVCaptionStyle.textColor(this@OverlayService))\n'
+         '            if (text !is String || this.text !is String || this.text != text) this.text = text\n')
+
+
     # GameLingo audit P0.1: authenticate every game-data packet before any renderer.
     # Legacy compatibility is explicit, receiver-only and disabled by default.
     once(networking,

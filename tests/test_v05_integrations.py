@@ -645,6 +645,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("if (!storyMode && !translationBusy) translateYellow()", capture)
         self.assertIn("yellowShown.isNotEmpty() || value.isEmpty()", capture)
 
+    def test_point9_tv_overlay_reuses_unchanged_choice_views(self):
+        patch = code(TOOLS/"patch_tv_iphone.py")
+        point = patch.split("# Point 9:", 1)[1]
+        self.assertIn("ChoiceRenderKey(volby.toList(), o.toList(), vystup?.toList()", point)
+        self.assertIn("GameLingoTVCaptionStyle.background(this)", point)
+        self.assertIn("lastChoiceRender == renderKey && seznam.isAttachedToWindow", point)
+        self.assertIn("seznam.childCount == volby.size", point)
+        self.assertIn("listOf(lastChoiceSelected, vybrana).distinct()", point)
+        self.assertIn("lastChoiceRender = null", point)
+        self.assertIn("lastChoiceRender = renderKey", point)
+        self.assertIn("if (text !is String || this.text !is String || this.text != text)", point)
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")
