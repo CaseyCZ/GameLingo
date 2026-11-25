@@ -1,0 +1,28 @@
+name: OCR Lab • isolated Windows checks
+on:
+  push:
+    branches: [feature/ocr-lab]
+    paths:
+      - 'ocr-lab/**'
+      - '.github/workflows/ocr-lab-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ocr-lab
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest -v test_core
+      - run: python -m py_compile core.py engines.py benchmark.py lab.py
+      - run: python -m pip install -r requirements.txt
+      - run: python -c "import lab, benchmark, engines; from PIL import Image; assert engines.preprocess(Image.new('RGB',(100,40)),'contrast',75).size == (75,30)"
