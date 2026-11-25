@@ -168,6 +168,12 @@ final class CaptionAppModel: ObservableObject {
     @Published var outputLocked = UserDefaults.standard.bool(forKey: "outputLocked") {
         didSet { UserDefaults.standard.set(outputLocked, forKey: "outputLocked") }
     }
+    @Published var filterChoiceControls = UserDefaults.standard.bool(forKey: "filterChoiceControls") {
+        didSet {
+            UserDefaults.standard.set(filterChoiceControls, forKey: "filterChoiceControls")
+            if oldValue != filterChoiceControls { invalidateOptions() }
+        }
+    }
     // Independent yellow answer-choice region, equivalent to Android's Volby.
     // Disabled by default: dialogue OCR remains unchanged until user enables it.
     @Published var choicesEnabled = UserDefaults.standard.bool(forKey: "choicesEnabled") {
@@ -378,6 +384,7 @@ final class CaptionAppModel: ObservableObject {
             outputLocked: outputLocked,
             choicesEnabled: choicesEnabled,
             choicesTextMode: choicesTextMode,
+            filterChoiceControls: filterChoiceControls,
             choicesArea: choicesArea,
             choicesLocked: choicesLocked,
             choicesOutputArea: choicesOutputArea,
@@ -420,6 +427,7 @@ final class CaptionAppModel: ObservableObject {
         outputLocked = profile.outputLocked
         choicesArea = profile.choicesArea
         choicesTextMode = profile.choicesTextMode
+        filterChoiceControls = profile.filterChoiceControls ?? false
         choicesLocked = profile.choicesLocked
         choicesEnabled = profile.choicesEnabled
         if let rect = profile.choicesOutputArea { choicesOutputArea = rect }
@@ -702,6 +710,7 @@ final class CaptionAppModel: ObservableObject {
         let contextRevision = optionsRevision.value
         let area = choicesArea
         let asText = choicesTextMode
+        let filterControls = filterChoiceControls
         let activeGameLanguage = gameLanguage
         let activeTargetLanguage = targetLanguage
         defer {
@@ -715,7 +724,7 @@ final class CaptionAppModel: ObservableObject {
         let optionsStarted = ProcessInfo.processInfo.systemUptime
         guard let englishChoices = await self.pipeline.recognizeOptions(
             buffer, area: area, asText: asText,
-            gameLanguage: activeGameLanguage, mode: self.ocrMode
+            gameLanguage: activeGameLanguage, mode: self.ocrMode, filterControls: filterControls
         ), self.isRunning,
            self.sessionRevision == currentSession,
            self.choicesEnabled,
@@ -726,13 +735,13 @@ final class CaptionAppModel: ObservableObject {
         optionsTranslation = Task { @MainActor [weak self] in
             guard let self, !Task.isCancelled,
                   self.optionsRevision.accepts(readingRevision) else { return }
-            await self.translateOptions(englishChoices, area: area, asText: asText,
+            await self.translateOptions(englishChoices, area: area, asText: asText, filterControls: filterControls,
                 activeGameLanguage: activeGameLanguage, activeTargetLanguage: activeTargetLanguage,
                 currentSession: currentSession, readingRevision: readingRevision, optionsStarted: optionsStarted)
         }
     }
 
-    private func translateOptions(_ englishChoices: [String], area: CGRect, asText: Bool,
+    private func translateOptions(_ englishChoices: [String], area: CGRect, asText: Bool, filterControls: Bool,
                                   activeGameLanguage: GLGameLanguage, activeTargetLanguage: GLTargetLanguage,
                                   currentSession: Int, readingRevision: UInt64, optionsStarted: TimeInterval) async {
         let optionsTranslateStarted = ProcessInfo.processInfo.systemUptime
@@ -771,7 +780,7 @@ final class CaptionAppModel: ObservableObject {
                 self.recordPerformance("Herní text překlad", milliseconds: (ProcessInfo.processInfo.systemUptime - optionsTranslateStarted) * 1000)
                 self.write("Volby: chyba překladu (\(error.diagnostic))")
                 await self.pipeline.optionsTranslationFailed(englishChoices,
-                    area: area, asText: asText, gameLanguage: activeGameLanguage)
+                    area: area, asText: asText, gameLanguage: activeGameLanguage, filterControls: filterControls)
                 return
             }
         }

@@ -4,6 +4,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoOCRCadenceTest {
+    @Test fun yellowFilterOnlyRemovesExplicitControllerPrompts() {
+        for (prompt in listOf("Press A", "Hold R2", "TAP [X] to continue.", "Press button LB to go back")) {
+            assertTrue(GameLingoYellowOCRFilter.keeps(prompt, false))
+            assertFalse(GameLingoYellowOCRFilter.keeps(prompt, true))
+        }
+        for (option in listOf("YES", "NO", "LEAVE", "Hold on", "Press X to open the door", "A", "Inventory"))
+            assertTrue(GameLingoYellowOCRFilter.keeps(option, true))
+    }
     @Test fun captureWatchdogDistinguishesNoFrameAndSlowOcr() {
         assertEquals("Bez zjištěného výpadku", GameLingoCaptureWatchdog.state(100,false,0))
         assertTrue(GameLingoCaptureWatchdog.state(5000,false,0).contains("Nepřicházejí"))

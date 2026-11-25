@@ -142,6 +142,11 @@ object GameLingoOCRSettings {
             GameLingoOCRConfig.filterMenuText) {
             GameLingoOCRConfig.setFilterMenu(activity, it)
         }
+        toggle("Žlutá: filtrovat pokyny ovladače",
+            "Volitelně vynechá anglické pokyny jako Press A nebo Hold R2. Běžné volby ponechá.",
+            GameLingoOCRConfig.filterChoiceControls) {
+            GameLingoOCRConfig.setFilterChoiceControls(activity, it)
+        }
         toggle("Rozšířit hledání",
             "Při automatickém režimu zahrne širší část obrazu.",
             GameLingoOCRConfig.expandSearch,

@@ -15,6 +15,13 @@ struct OCRCadenceTests {
         precondition(fast.gameTextInterval(asText: true, recentCost: 20) == 1.5)
         precondition(fast.gameTextInterval(asText: false, recentCost: .nan) == 0.30)
         precondition(OCRCadence.preset("unknown").dialogue == stable.dialogue)
-        print("OCRCadence: mode order, independent adaptive budget and fallback passed")
+        for prompt in ["Press A", "Hold R2", "TAP [X] to continue.", "Press button LB to go back"] {
+            precondition(YellowOCRFilter.keeps(prompt, enabled: false))
+            precondition(!YellowOCRFilter.keeps(prompt, enabled: true))
+        }
+        for option in ["YES", "NO", "LEAVE", "Hold on", "Press X to open the door", "A", "Inventory"] {
+            precondition(YellowOCRFilter.keeps(option, enabled: true))
+        }
+        print("OCRCadence: mode order, independent adaptive budget, fallback and yellow filter passed")
     }
 }

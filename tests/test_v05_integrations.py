@@ -1299,6 +1299,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("if filterMenus && looksLikeMenu", ios)
         self.assertNotIn("filterMenus", ios.split("func recognizeOptions(", 1)[1].split("private func looksLikeMenu", 1)[0])
 
+    def test_point18_yellow_filter_is_opt_in_and_independent(self):
+        import runpy
+        patch = runpy.run_path(str(TOOLS/"redesign_gamelingo.py"))["wire_yellow_control_filter"]
+        yellow = "    fun prectiVolby() {\n                })\n            }\n            .addOnFailureListener"
+        dialogue = "    class Titulek(\n                })\n            }\n            .addOnFailureListener"
+        result = patch(yellow + "\n" + dialogue)
+        self.assertTrue(result.endswith(dialogue))
+        self.assertIn("GameLingoYellowOCRFilter.keeps(it.first, GameLingoOCRConfig.filterChoiceControls)", result)
+        self.assertIn('store.getBoolean("filterChoiceControls", false)', code(TOOLS/"GameLingoOCRConfig.kt"))
+        self.assertIn("YellowOCRFilter.keeps($0, enabled: filterControls)", code(IOS/"CaptionPipeline.swift"))
+        self.assertIn("if oldValue != filterChoiceControls { invalidateOptions() }", code(IOS/"PlayCaptionIOSApp.swift"))
+        for profile in ("GameLingoTVProfiles.kt", "GameLingoProfiles.kt"):
+            self.assertIn('optBoolean("filterChoiceControls", false)', code(TOOLS/profile))
+
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))
         self.assertNotIn('PS5 – coming soon',all_ios)

@@ -48,7 +48,7 @@ jobs:
           "$RUNNER_TEMP/performance-window-tests"
       - name: Test independent adaptive OCR cadence
         run: |
-          swiftc ios/GameLingoIOS/App/OCRCadence.swift tests/OCRCadenceTests.swift -o "$RUNNER_TEMP/ocr-cadence-tests"
+          swiftc ios/GameLingoIOS/App/OCRCadence.swift ios/GameLingoIOS/App/YellowOCRFilter.swift tests/OCRCadenceTests.swift -o "$RUNNER_TEMP/ocr-cadence-tests"
           "$RUNNER_TEMP/ocr-cadence-tests"
       - name: Test independent translation generations
         run: |

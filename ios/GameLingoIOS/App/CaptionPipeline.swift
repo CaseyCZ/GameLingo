@@ -131,8 +131,8 @@ actor CaptionPipeline {
     }
 
     func optionsTranslationFailed(_ options: [String], area: CGRect,
-                                  asText: Bool, gameLanguage: GLGameLanguage) {
-        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)"
+                                  asText: Bool, gameLanguage: GLGameLanguage, filterControls: Bool = false) {
+        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)"
         guard lastOptionsSettings == signature, lastOptions == options,
               !options.isEmpty else { return }
         optionsRetryAt = ProcessInfo.processInfo.systemUptime + 2
@@ -243,13 +243,13 @@ actor CaptionPipeline {
                           area: CGRect,
                           asText: Bool,
                           gameLanguage: GLGameLanguage = .english,
-                          mode: OCRMode = .classic) -> [String]? {
+                          mode: OCRMode = .classic, filterControls: Bool = false) -> [String]? {
         if optionsMode != mode {
             optionsMode = mode
             lastOptionsRead = nil
             optionsRecentCost = 0
         }
-        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)"
+        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)"
         if signature != lastOptionsSettings {
             lastOptionsSettings = signature
             lastOptions = []
@@ -286,6 +286,7 @@ actor CaptionPipeline {
                 .compactMap { $0.topCandidates(1).first?.string
                     .trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { $0.filter { $0.isLetter }.count >= 3 }
+                .filter { YellowOCRFilter.keeps($0, enabled: filterControls) }
 
             let output = asText
                 ? (lines.isEmpty ? [] : [lines.joined(separator: " ")])

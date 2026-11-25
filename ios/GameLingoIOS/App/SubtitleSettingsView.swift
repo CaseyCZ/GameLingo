@@ -325,6 +325,7 @@ struct SubtitleSettingsView: View {
             GLHeader(title: "Herní texty", help: "Žlutá oblast čte originální anglické herní texty, nabídky nebo možnosti odpovědí. Jejich překlad se zobrazuje samostatně v oranžové oblasti.")
             Toggle("Překládat volby / texty", isOn: $model.choicesEnabled)
             if model.choicesEnabled {
+                Toggle("Filtrovat pokyny ovladače", isOn: $model.filterChoiceControls)
                 Picker("Typ obsahu", selection: $model.choicesTextMode) {
                     Text("Volby odpovědí").tag(false)
                     Text("Text (dopisy, SMS)").tag(true)

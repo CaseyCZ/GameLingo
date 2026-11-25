@@ -578,6 +578,18 @@ def wire_dialogue_menu_filter(source: str) -> str:
         raise RuntimeError("Android dialogue menu column anchor changed")
     return source.replace(before, after, 1)
 
+def wire_yellow_control_filter(source: str) -> str:
+    # Filter the paired text/rectangle result before either consumer computes
+    # the highlighted index. Dialogue OCR and its existing filters are untouched.
+    start = source.index("    fun prectiVolby(")
+    end = source.index("    class Titulek(", start)
+    before = "                })\n            }\n            .addOnFailureListener"
+    after = "                }.filter { GameLingoYellowOCRFilter.keeps(it.first, GameLingoOCRConfig.filterChoiceControls) })\n            }\n            .addOnFailureListener"
+    lane = source[start:end]
+    if lane.count(before) != 1:
+        raise RuntimeError("Android yellow OCR result anchor changed")
+    return source[:start] + lane.replace(before, after, 1) + source[end:]
+
 def main():
     if len(sys.argv)!=3 or sys.argv[1] not in ("mobile","tv"):
         raise SystemExit("Usage: redesign_gamelingo.py mobile|tv <upstream_checkout>")
@@ -603,7 +615,7 @@ def main():
         raise RuntimeError("Android OCR native reader source changed")
     select.write_text(code.replace(before,after,1),encoding="utf8")
     reader=base/SRC/"Ctecka.kt"
-    reader.write_text(wire_dialogue_menu_filter(reader.read_text(encoding="utf8")),encoding="utf8")
+    reader.write_text(wire_yellow_control_filter(wire_dialogue_menu_filter(reader.read_text(encoding="utf8"))),encoding="utf8")
 
     service=base/SRC/"RemotePlayService.kt"
     code=service.read_text(encoding="utf8")
@@ -619,7 +631,7 @@ def main():
         code=code.replace(old,new,1)
     service.write_text(code,encoding="utf8")
 
-    for module in ("GameLingoOCRConfig.kt", "GameLingoOCRCadence.kt"):
+    for module in ("GameLingoOCRConfig.kt", "GameLingoOCRCadence.kt", "GameLingoYellowOCRFilter.kt"):
         source=Path(__file__).with_name(module)
         (base/SRC/source.name).write_text(source.read_text(encoding="utf8"),encoding="utf8")
     if mode=="mobile":

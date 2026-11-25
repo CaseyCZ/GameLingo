@@ -13,6 +13,8 @@ object GameLingoOCRConfig {
         private set
     @Volatile var filterMenuText: Boolean = true
         private set
+    @Volatile var filterChoiceControls: Boolean = false
+        private set
     @Volatile var expandSearch: Boolean = false
         private set
 
@@ -47,6 +49,7 @@ object GameLingoOCRConfig {
         mode = store.getString("mode", "classic")
             ?.takeIf { it in modes } ?: "classic"
         filterMenuText = store.getBoolean("filterMenuText", true)
+        filterChoiceControls = store.getBoolean("filterChoiceControls", false)
         expandSearch = store.getBoolean("expandSearch", false)
     }
 
@@ -82,6 +85,12 @@ object GameLingoOCRConfig {
             .edit().putBoolean("filterMenuText", selected).apply()
     }
 
+    fun setFilterChoiceControls(context: Context, selected: Boolean) {
+        filterChoiceControls = selected
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean("filterChoiceControls", selected).apply()
+    }
+
     fun setExpandSearch(context: Context, selected: Boolean) {
         expandSearch = selected
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -93,6 +102,7 @@ object GameLingoOCRConfig {
             .edit().clear().apply()
         mode = "classic"
         filterMenuText = true
+        filterChoiceControls = false
         expandSearch = false
     }
 }

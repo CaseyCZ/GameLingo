@@ -20,6 +20,7 @@ object GameLingoTVProfiles {
         return JSONObject().apply {
             put("source", GameLingoLanguages.game(a)); put("target", GameLingoLanguages.target(a))
             put("ocr", GameLingoOCRConfig.mode); put("filter", GameLingoOCRConfig.filterMenuText); put("expand", GameLingoOCRConfig.expandSearch)
+            put("filterChoiceControls", GameLingoOCRConfig.filterChoiceControls)
             put("dialogues", n.dialogy); put("hints", n.napovedy); put("cover", n.prekryvat); put("story", n.pribehovy); put("duration", n.casPribehuProcenta)
             put("autoRegion",GameLingoOCRConfig.region(a))
             put("fixedTiming",GameLingoOCRConfig.fixedTiming(a));put("seconds",GameLingoOCRConfig.seconds(a))
@@ -53,6 +54,7 @@ object GameLingoTVProfiles {
         val mode = p.optString("ocr")
         if (mode in setOf("classic", "automatic", "street")) GameLingoOCRConfig.setMode(a, mode)
         GameLingoOCRConfig.setFilterMenu(a, p.optBoolean("filter", true))
+        GameLingoOCRConfig.setFilterChoiceControls(a, p.optBoolean("filterChoiceControls", false))
         GameLingoOCRConfig.setExpandSearch(a, p.optBoolean("expand", false))
         GameLingoOCRConfig.setRegion(a,p.optString("autoRegion","legacy").takeIf { it in GameLingoOCRConfig.regionKeys } ?: "legacy")
         GameLingoOCRConfig.saveTiming(a,p.optBoolean("fixedTiming"),p.optInt("seconds",6),p.optBoolean("skipOld"),p.optInt("maxAge",5))
