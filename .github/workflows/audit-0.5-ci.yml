@@ -38,6 +38,11 @@ jobs:
   native:
     needs: quick
     uses: ./.github/workflows/build-gamelingo.yml
+    secrets:
+      GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
+      GAMELINGO_TV_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_TV_KEYSTORE_PASSWORD }}
+      GAMELINGO_MOBILE_KEYSTORE_B64: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_B64 }}
+      GAMELINGO_MOBILE_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_PASSWORD }}
 
   build_status:
     name: Report candidate build result

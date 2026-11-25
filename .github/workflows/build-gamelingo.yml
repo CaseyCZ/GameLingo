@@ -3,6 +3,15 @@ name: GameLingo • iOS / Android / Google TV
 on:
   workflow_dispatch:
   workflow_call:
+    secrets:
+      GAMELINGO_TV_KEYSTORE_B64:
+        required: false
+      GAMELINGO_TV_KEYSTORE_PASSWORD:
+        required: false
+      GAMELINGO_MOBILE_KEYSTORE_B64:
+        required: false
+      GAMELINGO_MOBILE_KEYSTORE_PASSWORD:
+        required: false
 
 # A single current candidate per branch: outdated queued native builds
 # must not consume resources or be mistaken for the latest release candidate.
@@ -197,6 +206,10 @@ jobs:
           APK=GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
           SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           if [[ -z "$GAMELINGO_MOBILE_KEYSTORE_B64" && -z "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD" ]]; then
+            if [[ "$GITHUB_REPOSITORY" == "CaseyCZ/GameLingo" && "$GITHUB_REF" == "refs/heads/Master" ]]; then
+              echo "::error::Persistent APK signing secrets missing on Master."
+              exit 1
+            fi
             echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
           else
             test -n "$GAMELINGO_MOBILE_KEYSTORE_B64"
@@ -313,6 +326,10 @@ jobs:
           APK=GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
           SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           if [[ -z "$GAMELINGO_TV_KEYSTORE_B64" && -z "$GAMELINGO_TV_KEYSTORE_PASSWORD" ]]; then
+            if [[ "$GITHUB_REPOSITORY" == "CaseyCZ/GameLingo" && "$GITHUB_REF" == "refs/heads/Master" ]]; then
+              echo "::error::Persistent APK signing secrets missing on Master."
+              exit 1
+            fi
             echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
           else
             test -n "$GAMELINGO_TV_KEYSTORE_B64"

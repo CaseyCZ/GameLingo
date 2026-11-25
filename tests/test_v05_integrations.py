@@ -999,6 +999,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 module.metadata(apk,tag,"1.2.3",badging.replace(".tv",".mobile"),cert,cert)
 
+    def test_audit_forwards_only_explicit_signing_secrets(self):
+        caller = code(ROOT/".github/workflows/audit-0.5-ci.yml")
+        callee = code(ROOT/".github/workflows/build-gamelingo.yml")
+        for platform in ("TV", "MOBILE"):
+            for suffix in ("KEYSTORE_B64", "KEYSTORE_PASSWORD"):
+                name = f"GAMELINGO_{platform}_{suffix}"
+                self.assertIn("      " + name + ": ${{ secrets." + name + " }}", caller)
+                self.assertIn("      " + name + ":\n        required: false", callee)
+        self.assertEqual(callee.count("Persistent APK signing secrets missing on Master."), 2)
+
     def test_mobile_and_ios_updates_share_release_contract(self):
         import runpy
         import tempfile
