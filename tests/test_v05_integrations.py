@@ -615,7 +615,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
 
     def test_point6_standalone_dialogue_priority_keeps_single_reader(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
-        self.assertIn("GameLingoOCRCadence.standaloneRegion(blueEnabled, yellowEnabled,", capture)
+        self.assertIn("GameLingoOCRCadence.standaloneRegion(blueEnabled, yellowReady,", capture)
+        self.assertIn("yellowEnabled && GameLingoOCRConfig.standaloneYellowReady", capture)
+        self.assertIn("if (blueEnabled || yellowReady)", capture)
         self.assertIn("!ocrBusy && !capturePending && wantFrame.get() == 0", capture)
         self.assertNotIn("nextYellow", capture)
         self.assertIn("blueSinceYellow >= 2", code(TOOLS/"GameLingoOCRCadence.kt"))
@@ -1334,6 +1336,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("minimumHeight: Int = 0", lane)
         for profile in ("GameLingoProfiles.kt", "GameLingoTVProfiles.kt"):
             self.assertIn('optInt("minYellowHeight", 0)', code(TOOLS/profile))
+
+    def test_point23_filter_resets_preserve_other_area_and_geometry(self):
+        android = code(TOOLS/"GameLingoOCRSettings.kt")
+        blue = android.split('action("Obnovit filtry modré oblasti"', 1)[1].split('action("Obnovit filtry žluté oblasti"', 1)[0]
+        yellow = android.split('action("Obnovit filtry žluté oblasti"', 1)[1].split('toggle("Rozšířit hledání"', 1)[0]
+        self.assertIn("setIgnoredLines(activity, false", blue)
+        self.assertIn("setIgnoredLines(activity, true", yellow)
+        self.assertNotIn("setMinYellowHeight", blue)
+        self.assertNotIn("setMinBlueHeight", yellow)
+        self.assertNotIn("OblastTitulku", blue + yellow)
+        self.assertNotIn("Volby.oblast", blue + yellow)
+        ios = code(IOS/"SettingsHomeView.swift")
+        self.assertIn('Button("Obnovit filtry modré oblasti")', ios)
+        self.assertIn('Button("Obnovit filtry žluté oblasti")', ios)
 
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))

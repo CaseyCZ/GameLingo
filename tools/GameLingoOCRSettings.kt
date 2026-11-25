@@ -200,6 +200,18 @@ object GameLingoOCRSettings {
                 .setSingleChoiceItems(labels, GameLingoOCRConfig.minYellowHeight) { chooser, index -> chooser.dismiss(); save(index) }
                 .setNegativeButton("Zrušit", null).show()
         }
+        action("Obnovit filtry modré oblasti", "Bez změny rámečků a žluté oblasti.", canEdit) {
+            GameLingoOCRConfig.setFilterMenu(activity, true)
+            GameLingoOCRConfig.setIgnoredLines(activity, false, "")
+            GameLingoOCRConfig.setMinBlueHeight(activity, 0)
+            dialog.dismiss(); show(activity, onAreas)
+        }
+        action("Obnovit filtry žluté oblasti", "Bez změny rámečků a modré oblasti.", canEdit) {
+            GameLingoOCRConfig.setFilterChoiceControls(activity, false)
+            GameLingoOCRConfig.setIgnoredLines(activity, true, "")
+            GameLingoOCRConfig.setMinYellowHeight(activity, 0)
+            dialog.dismiss(); show(activity, onAreas)
+        }
         toggle("Rozšířit hledání",
             "Při automatickém režimu zahrne širší část obrazu.",
             GameLingoOCRConfig.expandSearch,

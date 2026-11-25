@@ -311,19 +311,35 @@ private struct GameLingoOCRSettingsView: View {
             }
             GLCard {
                 Toggle("Filtrovat menu hry", isOn: $model.filterMenuText)
-                Toggle("Žlutá: filtrovat pokyny ovladače", isOn: $model.filterChoiceControls)
+                GLHeader(title: "Modrá oblast", help: "Filtry dialogů jsou nezávislé na herních textech.")
                 Text("Ignorované řádky (jeden výraz na řádek)").font(.caption)
                 TextField("Modrá oblast", text: $model.ignoredBlueLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
                 Picker("Modrá: minimální výška textu", selection: $model.minBlueHeight) {
                     Text("Automaticky").tag(0)
                     ForEach(1...5, id: \.self) { value in Text("\(value) %").tag(value) }
                 }.disabled(model.isRunning)
+                Button("Obnovit filtry modré oblasti") {
+                    model.filterMenuText = true
+                    model.ignoredBlueLines = ""
+                    model.minBlueHeight = 0
+                }.disabled(model.isRunning)
+            }
+            GLCard {
+                GLHeader(title: "Žlutá oblast", help: "Filtry herních textů neovlivňují dialogy.")
+                Toggle("Žlutá: filtrovat pokyny ovladače", isOn: $model.filterChoiceControls)
                 TextField("Žlutá oblast", text: $model.ignoredYellowLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
                 Picker("Žlutá: minimální výška textu", selection: $model.minYellowHeight) {
                     Text("Automaticky").tag(0)
                     ForEach(1...5, id: \.self) { value in Text("\(value) %").tag(value) }
                 }.disabled(model.isRunning)
+                Button("Obnovit filtry žluté oblasti") {
+                    model.filterChoiceControls = false
+                    model.ignoredYellowLines = ""
+                    model.minYellowHeight = 0
+                }.disabled(model.isRunning)
                 Text("Pouze přesná shoda celého řádku, bez ohledu na velikost písmen.").font(.caption)
+            }
+            GLCard {
                 Toggle("Rozšířit hledání", isOn: $model.expandOnEmpty)
                     .disabled(model.ocrMode == .classic || model.manualOCR)
                 HStack {
