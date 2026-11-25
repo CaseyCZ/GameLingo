@@ -233,6 +233,7 @@ struct GameLingoLanguageSettingsView: View {
 }
 
 struct GameLingoLicenseView: View {
+    @StateObject private var updates = GameLingoUpdateModel()
     @State private var showNotices = false
     var body: some View {
         GLScreen(title: "O aplikaci", help:
@@ -243,13 +244,14 @@ struct GameLingoLicenseView: View {
                     Text("Překlad herních dialogů a textů")
                         .font(.subheadline)
                         .foregroundStyle(GLNeon.mist)
-                    Text("Verze 0.5 Beta")
+                    Text("Verze " + GameLingoUpdateModel.currentVersion)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(GLNeon.cyan)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(25)
             }
+            GameLingoUpdatePanel(updates: updates)
             GLCard {
                 GLHeader(title: "Licence")
                 Text("GameLingo je otevřený projekt využívající části PlayCaptionu a Chiaki. Zdrojové kódy a změny jsou dostupné podle podmínek GNU AGPLv3.")

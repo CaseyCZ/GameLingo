@@ -999,6 +999,49 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 module.metadata(apk,tag,"1.2.3",badging.replace(".tv",".mobile"),cert,cert)
 
+    def test_mobile_and_ios_updates_share_release_contract(self):
+        import runpy
+        import tempfile
+        import zipfile
+        import plistlib
+        android = code(TOOLS/"wire_mobile_update.py")
+        self.assertIn("GameLingoTVUpdater.kt", android)
+        self.assertIn("cz.caseycz.gamelingo.mobile", android)
+        self.assertIn("GameLingo-Android-update.json", android)
+        self.assertIn("patch_mobile_update(folder)", code(TOOLS/"wire_gamelingo_languages.py"))
+        self.assertIn("GAMELINGO_MOBILE_KEYSTORE_B64", code(ROOT/".github/workflows/build-gamelingo.yml"))
+        publish = code(ROOT/".github/workflows/publish-gamelingo-current.yml")
+        self.assertIn("GameLingo-iOS-update.json", publish)
+        self.assertIn("GameLingo-Android-update.json", publish)
+        ios = code(IOS/"GameLingoUpdates.swift")
+        self.assertIn("actual == update.metadata.sha256", ios)
+        self.assertIn("manifest.versionCode > build", ios)
+        self.assertIn("ShareLink(item: file)", ios)
+        self.assertIn("updates.checkAtStartup()", code(IOS/"GameLingoHome.swift"))
+        metadata = runpy.run_path(str(TOOLS/"create_ios_update_manifest.py"))["metadata"]
+        with tempfile.TemporaryDirectory() as tmp:
+            ipa = Path(tmp)/"GameLingo-iOS-v1.2.3-dev-unsigned.ipa"
+            tag = "v1.2.3-test-abcdef12-r123"
+            with zipfile.ZipFile(ipa, "w") as archive:
+                archive.writestr("Payload/Test.app/Info.plist", plistlib.dumps({
+                    "CFBundleIdentifier": "cz.caseycz.gamelingo.ios",
+                    "CFBundleShortVersionString": "1.2.3", "CFBundleVersion": "7"}))
+            manifest = metadata(ipa,tag,"1.2.3",7)
+            self.assertEqual(manifest["versionCode"],7)
+            self.assertEqual(manifest["size"],ipa.stat().st_size)
+            with self.assertRaises(ValueError):
+                metadata(ipa,tag,"1.2.3",8)
+            with self.assertRaises(ValueError):
+                metadata(ipa,tag,"1.2.4",7)
+            apk = Path(tmp)/"GameLingo-Android-v1.2.3-dev-TEST.apk"
+            apk.write_bytes(b"mobile fixture")
+            apk_metadata = runpy.run_path(str(TOOLS/"create_tv_update_manifest.py"))["metadata"]
+            badging = "package: name='cz.caseycz.gamelingo.mobile' versionCode='123' versionName='1.2.3-dev.123-abcdef12'"
+            cert = "a"*64
+            self.assertEqual(apk_metadata(apk,tag,"1.2.3",badging,cert,cert,"mobile")["package"],"cz.caseycz.gamelingo.mobile")
+            with self.assertRaises(ValueError):
+                apk_metadata(apk,tag,"1.2.3",badging,cert,"b"*64,"mobile")
+
     def test_tv_remote_control_and_receiver_modes(self):
         screen=code(TOOLS/"polish_all_screens.py")
         receiver=code(TOOLS/"redesign_gamelingo.py")

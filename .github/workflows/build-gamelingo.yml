@@ -187,6 +187,31 @@ jobs:
           python kit/tools/verify_tv_translation_apk.py mobile "$APK"
           python kit/tools/package_license_notices.py mobile --verify "$APK"
           cp "$APK" GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
+      - name: Sign mobile APK with persistent private update key
+        env:
+          GAMELINGO_MOBILE_KEYSTORE_B64: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_B64 }}
+          GAMELINGO_MOBILE_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
+          SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          if [[ -z "$GAMELINGO_MOBILE_KEYSTORE_B64" && -z "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD" ]]; then
+            echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
+          else
+            test -n "$GAMELINGO_MOBILE_KEYSTORE_B64"
+            test -n "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD"
+            umask 077
+            KEYDIR="$(mktemp -d)"
+            trap 'rm -rf "$KEYDIR"' EXIT
+            printf '%s' "$GAMELINGO_MOBILE_KEYSTORE_B64" | base64 --decode > "$KEYDIR/gamelingo-mobile.p12"
+            "$SIGNER" sign --ks "$KEYDIR/gamelingo-mobile.p12" --ks-type PKCS12 --ks-key-alias gamelingo-mobile \
+              --ks-pass env:GAMELINGO_MOBILE_KEYSTORE_PASSWORD --key-pass env:GAMELINGO_MOBILE_KEYSTORE_PASSWORD \
+              --out "$KEYDIR/signed.apk" "$APK"
+            "$SIGNER" verify --verbose --print-certs "$KEYDIR/signed.apk"
+            mv "$KEYDIR/signed.apk" "$APK"
+          fi
+          "$SIGNER" verify --verbose --print-certs "$APK"
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-Android-v${{ env.GAMELINGO_VERSION }}-dev

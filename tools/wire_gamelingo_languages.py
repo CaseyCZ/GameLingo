@@ -9,6 +9,7 @@ import re
 import sys
 from tv_translation_policy import tv_variant, strip_offline_translator, tv_translator, finalize_tv
 from direct_tv_mode import patch_direct_tv
+from wire_mobile_update import patch_mobile_update
 from translation_backpressure import bound_translator, bound_choices
 from translation_privacy import protect_cache_writes, restrict_service_log, restrict_provider_transport
 
@@ -698,6 +699,8 @@ def main():
     if tv_variant(root):
         patch_direct_tv(folder)
         install_tv_theme(root)
+    else:
+        patch_mobile_update(folder)
     finalize_tv(root, folder)
     print("GameLingo source and target languages connected to real Android translation")
 

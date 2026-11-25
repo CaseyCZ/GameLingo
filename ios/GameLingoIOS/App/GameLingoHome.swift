@@ -19,6 +19,7 @@ struct GameLingoHome: View {
     @EnvironmentObject private var model: CaptionAppModel
     @ObservedObject var devices: GameLingoDevices
 
+    @StateObject private var updates = GameLingoUpdateModel()
     @State private var tab: Page = .home
     @State private var xboxSheet = false
     @State private var playStationSheet = false
@@ -77,6 +78,7 @@ struct GameLingoHome: View {
             GameLingoSetupView(devices: devices, onFinished: {})
                 .environmentObject(model)
         }
+        .task { if !model.isRunning { updates.checkAtStartup() } }
         .onAppear {
             devices.refreshXbox(model.xbox.consoles)
             devices.refreshPlayStation(model.playStation.registered)
@@ -525,13 +527,14 @@ struct GameLingoHome: View {
                     Text("Překlad herních dialogů a textů")
                         .font(.subheadline)
                         .foregroundStyle(GLNeon.mist)
-                    Text("Verze 0.5 Beta")
+                    Text("Verze " + GameLingoUpdateModel.currentVersion)
                         .font(.caption.bold())
                         .foregroundStyle(GLNeon.cyan)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(23)
             }
+            GameLingoUpdatePanel(updates: updates, running: model.isRunning)
             Button {
                 licenseSheet = true
             } label: {

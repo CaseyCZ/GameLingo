@@ -191,7 +191,7 @@ object GameLingoTVUpdater {
     private fun download(a: Activity, next: Update) {
         if (!alive(a)) return
         if (busy()) { message(a, "Nejprve zastav překlad a příjem."); return }
-        if (!a.packageManager.canRequestPackageInstalls()) {
+        if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
             AlertDialog.Builder(a).setTitle("Povolení instalace")
                 .setMessage("Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace.")
                 .setNegativeButton("Zrušit", null).setPositiveButton("Otevřít nastavení") { _, _ ->
