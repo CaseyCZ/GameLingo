@@ -316,6 +316,8 @@ final class CaptionAppModel: ObservableObject {
     private var psStatusListener: AnyCancellable?
     private let pipeline = CaptionPipeline()
     private var remotePlay: XboxRemotePlay?
+    private var xboxReconnectTask: Task<Void, Never>?
+    private var xboxReconnectAttempts = 0
     private var processingChoices = false
     private var processingOCR = false
     private var choicesStartedAt = 0.0
@@ -509,6 +511,12 @@ final class CaptionAppModel: ObservableObject {
 
     func start(_ console: XboxConsole) {
         guard !isRunning, !cacheChanging else { return }
+        xboxReconnectAttempts = 0
+        startXbox(console)
+    }
+
+    private func startXbox(_ console: XboxConsole) {
+        guard !isRunning, !cacheChanging else { return }
         frameCount = 0
         lastEnglish = ""
         lastCzech = ""
@@ -537,6 +545,19 @@ final class CaptionAppModel: ObservableObject {
             }
         }
         play.onFrame = receiveFrame
+        play.onInterrupted = { [weak self, weak play] reason, retry in
+            Task { @MainActor in
+                guard let self, let play, self.remotePlay === play,
+                      self.isRunning, self.sessionRevision == currentSession else { return }
+                if retry {
+                    self.scheduleXboxReconnect(console, currentSession: currentSession, reason: reason)
+                } else {
+                    self.stop()
+                    self.status = reason
+                    self.write(reason)
+                }
+            }
+        }
         Task {
             do { try await play.connect(console: console) }
             catch {
@@ -546,6 +567,42 @@ final class CaptionAppModel: ObservableObject {
                 self.status = failure
                 write("CHYBA: " + failure)
             }
+        }
+    }
+
+    /// Retry the exact authorized console only after an established transport failure.
+    /// The ordinary Stop path invalidates pending OCR, releases the old remote
+    /// session and cancels any scheduled reconnect. A server stop never retries.
+    private func scheduleXboxReconnect(_ console: XboxConsole, currentSession: Int, reason: String) {
+        guard isRunning, sessionRevision == currentSession else { return }
+        guard xboxReconnectAttempts < 2 else {
+            stop()
+            status = reason + " · automatické obnovení vyčerpáno"
+            write(status)
+            return
+        }
+        xboxReconnectAttempts += 1
+        let attempt = xboxReconnectAttempts
+        stop()
+        let waitingRevision = sessionRevision
+        // Keep the normal Stop button available during the reconnect delay.
+        isRunning = true
+        UIApplication.shared.isIdleTimerDisabled = true
+        status = "Obnovuji Xbox · pokus \(attempt)/2"
+        write(reason + " · " + status)
+        xboxReconnectTask = Task { @MainActor [weak self] in
+            do { try await Task.sleep(nanoseconds: UInt64(attempt) * 4_000_000_000) }
+            catch { return }
+            guard let self, self.isRunning, self.sessionRevision == waitingRevision,
+                  !Task.isCancelled else { return }
+            self.xboxReconnectTask = nil
+            self.isRunning = false
+            guard !self.cacheChanging else {
+                self.stop()
+                self.status = "Obnovení Xbox zrušeno – mění se cache"
+                return
+            }
+            self.startXbox(console)
         }
     }
 
@@ -940,6 +997,8 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func stop() {
+        xboxReconnectTask?.cancel()
+        xboxReconnectTask = nil
         dialogueRevision.advance()
         optionsRevision.advance()
         dialogueTranslation?.cancel()

@@ -706,6 +706,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("watchdogState", capture)
         self.assertIn("processingOCR && now - ocrStartedAt >= 5", code(IOS/"PlayCaptionIOSApp.swift"))
 
+    def test_point14_xbox_reconnect_is_bounded_same_console_and_cancellable(self):
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        xbox = code(IOS/"XboxRemotePlay.swift")
+        self.assertIn("guard xboxReconnectAttempts < 2", model)
+        self.assertIn("self.sessionRevision == waitingRevision", model)
+        self.assertIn("self.startXbox(console)", model)
+        self.assertIn("self.remotePlay === play", model)
+        self.assertIn("xboxReconnectTask?.cancel()", model.split("func stop() {", 1)[1])
+        self.assertIn("guard markEstablished() else { return }", xbox)
+        self.assertIn("!retry || established", xbox)
+        self.assertIn("if age >= 30", xbox)
+        self.assertIn('signalInterruption("Xbox ukončil vzdálené hraní", retry: false)', xbox)
+        self.assertIn("interruptionSent = true", xbox)
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")

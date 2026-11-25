@@ -7,12 +7,32 @@ import CoreVideo
 final class XboxRemotePlay: NSObject {
     var onStatus: ((String) -> Void)?
     var onFrame: ((CVPixelBuffer) -> Void)?
+    /// A server-initiated stop is terminal; only transport failures may retry.
+    var onInterrupted: ((String, Bool) -> Void)?
 
     private let authorization: XboxAuthorization
     // Serialize ownership of a created server session with Stop, including a late POST response.
     private let lifecycleLock = NSLock()
     private var serverSession: (url: String, access: XboxStreamingAccess)?
     private var stopped = false
+    private var established = false
+    private var interruptionSent = false
+    private func markEstablished() -> Bool {
+        lifecycleLock.lock(); defer { lifecycleLock.unlock() }
+        guard !stopped else { return false }
+        established = true
+        return true
+    }
+    private func signalInterruption(_ reason: String, retry: Bool) {
+        lifecycleLock.lock()
+        guard !stopped, !interruptionSent, !retry || established else {
+            lifecycleLock.unlock(); return
+        }
+        interruptionSent = true
+        let callback = onInterrupted
+        lifecycleLock.unlock()
+        callback?(reason, retry)
+    }
     private var ended: Bool {
         lifecycleLock.lock(); defer { lifecycleLock.unlock() }
         return stopped
@@ -206,7 +226,8 @@ final class XboxRemotePlay: NSObject {
                 Int(item["sdpMLineIndex"] as? String ?? "0") ?? 0)
             try await peer.add(RTCIceCandidate(sdp: text, sdpMLineIndex: index, sdpMid: mid))
         }
-        guard !ended else { return }
+        guard markEstablished() else { return }
+        let negotiatedAt = ProcessInfo.processInfo.systemUptime
         info("WebRTC navázáno · čekám na obraz")
         keepalive = Task { [weak self] in
             while let self, !Task.isCancelled, !self.ended {
@@ -219,6 +240,12 @@ final class XboxRemotePlay: NSObject {
             while let self, !Task.isCancelled, !self.ended {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 guard !self.ended, !Task.isCancelled else { break }
+                let now = ProcessInfo.processInfo.systemUptime
+                let age = self.videoSink.frameAge(now: now) ?? (now - negotiatedAt)
+                if age >= 30 {
+                    self.signalInterruption("Xbox neposílá obraz déle než 30 s", retry: true)
+                    return
+                }
                 self.requestNetworkStats()
                 // Xbox needs ongoing client activity even when reading only subtitles.
                 if Date().timeIntervalSince(self.lastKeyframe) > 4.5 {
@@ -447,6 +474,11 @@ private final class XboxVideoSink: NSObject, RTCVideoRenderer {
     private let metricsLock = NSLock()
     private var metrics = XboxDecodedVideoWindow()
 
+    func frameAge(now: TimeInterval) -> TimeInterval? {
+        metricsLock.lock()
+        defer { metricsLock.unlock() }
+        return metrics.frameAge(now: now)
+    }
     func metricsSummary() -> String {
         metricsLock.lock()
         defer { metricsLock.unlock() }
@@ -480,7 +512,10 @@ extension XboxRemotePlay: RTCPeerConnectionDelegate {
     func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         info("ICE: \(newState.rawValue)")
-        if newState == .failed { info("ICE selhalo, ověř síť a NAT") }
+        if newState == .failed {
+            info("ICE selhalo, ověř síť a NAT")
+            signalInterruption("Spojení Xbox selhalo (ICE)", retry: true)
+        }
         if newState == .disconnected { info("ICE odpojeno") }
     }
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {}
@@ -523,7 +558,7 @@ extension XboxRemotePlay: RTCDataChannelDelegate {
             let target = payload["target"] as? String ?? ""
             if target.hasSuffix("serverInitiatedDisconnect") {
                 info("Xbox ukončil Remote Play (serverInitiatedDisconnect)")
-                stop()
+                signalInterruption("Xbox ukončil vzdálené hraní", retry: false)
             }
         }
     }
