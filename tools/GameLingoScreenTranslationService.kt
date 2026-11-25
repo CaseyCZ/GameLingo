@@ -528,7 +528,9 @@ class GameLingoScreenTranslationService : Service() {
         }
     }
     private fun accept(raw: String) {
-        val value = raw.trim().take(240)
+        // Keep the story reader's existing input; ordinary dialogue ignores
+        // purely visual line wrapping and repeated whitespace.
+        val value = if (storyMode) raw.trim().take(240) else GameLingoDialogueText.normalize(raw)
         val now = SystemClock.elapsedRealtime()
         if (value.isBlank()) {
             if (++blankFrames >= 2 && blankSince == 0L) {

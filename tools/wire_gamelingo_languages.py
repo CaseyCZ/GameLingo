@@ -462,6 +462,10 @@ def main():
     s=s.replace('text.length < 4', 'text.length < GameLingoOCRConfig.minimumDialogueLength()')
     (unit_dir/"GameLingoOCRCadenceTest.kt").write_text(
         Path(__file__).with_name("GameLingoOCRCadenceTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    (folder/"GameLingoDialogueText.kt").write_text(
+        Path(__file__).with_name("GameLingoDialogueText.kt").read_text(encoding="utf8"),encoding="utf8")
+    (unit_dir/"GameLingoDialogueTextTest.kt").write_text(
+        Path(__file__).with_name("GameLingoDialogueTextTest.kt").read_text(encoding="utf8"),encoding="utf8")
     # P1.9: context snapshots at OCR/translation boundaries. The old
     # text-only game-choice map must never mix source or target languages.
     transport = folder/"Propojeni.kt"

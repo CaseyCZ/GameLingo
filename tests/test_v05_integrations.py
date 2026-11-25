@@ -583,6 +583,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(accept.index(gate), accept.rindex("candidate = value"))
         self.assertNotIn("StabilitaTextu.opakovaneCteni", accept)
 
+    def test_point4_dialogue_deduplicates_only_equivalent_whitespace(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        accept = capture.split("private fun accept(raw: String)", 1)[1].split("private fun translateLatest()", 1)[0]
+        self.assertIn("else GameLingoDialogueText.normalize(raw)", accept)
+        self.assertLess(accept.index("GameLingoDialogueText.normalize(raw)"), accept.index("if (value != candidate)"))
+        self.assertIn("if (value == shown) return", accept)
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn('folder/"GameLingoDialogueText.kt"', wiring)
+        self.assertIn('unit_dir/"GameLingoDialogueTextTest.kt"', wiring)
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")
