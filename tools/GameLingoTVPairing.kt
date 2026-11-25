@@ -233,6 +233,61 @@ object GameLingoTVPairing {
         }
     }
 
+    private val activeProbeLock = Any()
+    private var activeProbeInFlight = false
+    private var lastActiveProbeIp = ""
+    private var lastActiveProbeAt = 0L
+
+    /** Actual sender heartbeat, only during an active translation session.
+     * UDP send success and unsigned port discovery are not liveness proof. */
+    fun verifyActive(ip: String, generation: Long) {
+        val context = appContext ?: return
+        val now = SystemClock.elapsedRealtime()
+        synchronized(activeProbeLock) {
+            if (activeProbeInFlight || (lastActiveProbeIp == ip && now - lastActiveProbeAt < 5000L)) return
+            activeProbeInFlight = true
+            lastActiveProbeIp = ip
+            lastActiveProbeAt = now
+        }
+        Thread {
+            try {
+                val secret = token(context, ip) ?: return@Thread
+                if (!RemotePlayService.aktivni || Propojeni.Vysilac.cilIp != ip ||
+                    Propojeni.Vysilac.outputGeneration() != generation) return@Thread
+                val clientId = pairingId(context)
+                val result = runCatching {
+                    val nonce = UUID.randomUUID().toString()
+                    val message = freshBody("PING\t$clientId\t$nonce")
+                    val data = ("PCPAIR1\t$message\t" + sign(secret, message)).toByteArray(Charsets.UTF_8)
+                    val address = InetAddress.getByName(ip)
+                    val port = portFor(ip)
+                    DatagramSocket().use { socket ->
+                        socket.soTimeout = 3000
+                        socket.send(DatagramPacket(data, data.size, address, port))
+                        val reply = DatagramPacket(ByteArray(2048), 2048)
+                        socket.receive(reply)
+                        val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
+                        reply.address == address && reply.port == port && MessageDigest.isEqual(
+                            expected.toByteArray(Charsets.UTF_8),
+                            reply.data.copyOfRange(reply.offset, reply.offset + reply.length))
+                    }
+                }.getOrDefault(false)
+                main.post {
+                    if (!RemotePlayService.aktivni || Propojeni.Vysilac.cilIp != ip ||
+                        Propojeni.Vysilac.outputGeneration() != generation || token(context, ip) != secret) return@post
+                    if (result) {
+                        lastVerifiedIp = ip
+                        lastVerifiedAt = SystemClock.elapsedRealtime()
+                    } else {
+                        if (lastVerifiedIp == ip) { lastVerifiedIp = ""; lastVerifiedAt = 0L }
+                        // Force the next active send to rediscover the receiver port.
+                        synchronized(portLock) { if (lastPortIp == ip) checkedPortAt = 0L }
+                    }
+                }
+            } finally { synchronized(activeProbeLock) { activeProbeInFlight = false } }
+        }.apply { name = "gamelingo-tv-live-ping"; isDaemon = true }.start()
+    }
+
     /** Verifies a TV receiver using the same signed PCPAIR1 PING as iPhone. */
     fun verify(activity: Activity, tv: TvProfil, onResult: (Boolean) -> Unit) {
         val secret = token(activity, tv.ip)

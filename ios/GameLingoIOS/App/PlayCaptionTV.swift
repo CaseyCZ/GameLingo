@@ -62,6 +62,7 @@ final class PlayCaptionTV: ObservableObject {
                 // A new IP must never leave old dialogue or game-text overlays
                 // behind. Send an explicit clear to the former receiver first.
                 clearOverlays(at: oldValue)
+                receiverRetrySeconds = 3
                 startReceiverHeartbeat()
             }
         }
@@ -83,6 +84,9 @@ final class PlayCaptionTV: ObservableObject {
     private var pairingRetryTask: Task<Void, Never>?
     private var liveReceiver: NWConnection?
     private var receiverHeartbeatTask: Task<Void, Never>?
+    private var receiverReconnectTask: Task<Void, Never>?
+    private var receiverRetrySeconds = 3
+    private var receiverGeneration = 0
     private var liveReceiverReady = false
     private var liveReceiverTarget = ""
     private var lastPong: Date?
@@ -361,6 +365,10 @@ final class PlayCaptionTV: ObservableObject {
     }
 
     private func startReceiverHeartbeat() {
+        receiverReconnectTask?.cancel()
+        receiverReconnectTask = nil
+        receiverGeneration &+= 1
+        let generation = receiverGeneration
         receiverHeartbeatTask?.cancel()
         liveReceiver?.cancel()
         liveReceiver = nil
@@ -377,10 +385,32 @@ final class PlayCaptionTV: ObservableObject {
         }
         receiverStatus = "Vyhledávám přijímač na TV…"
         discoverReceiverPort(target) { [weak self] port in
-            guard let self, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target,
+            guard let self, self.receiverGeneration == generation,
+                  self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target,
                   ReceiverSecretStore.load(target) != nil
             else { return }
             self.connectLiveReceiver(target: target, port: port)
+        }
+    }
+
+    /// Recreate a failed UDP socket, even when the receiver returns on the same port.
+    /// The saved HMAC key is never replaced by an unauthenticated discovery reply.
+    private func scheduleReceiverReconnect(_ conn: NWConnection, target: String) {
+        guard liveReceiver === conn, ip == target, ReceiverSecretStore.load(target) != nil,
+              receiverReconnectTask == nil else { return }
+        let generation = receiverGeneration
+        let delay = receiverRetrySeconds
+        receiverRetrySeconds = min(30, delay * 2)
+        receiverReconnectTask = Task { [weak self, weak conn] in
+            do { try await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000_000) }
+            catch { return }
+            guard let self, let conn, self.receiverGeneration == generation,
+                  self.liveReceiver === conn, self.ip == target,
+                  ReceiverSecretStore.load(target) != nil, !Task.isCancelled else { return }
+            self.receiverReconnectTask = nil
+            if let pong = self.lastPong, Date().timeIntervalSince(pong) < 9,
+               self.liveReceiverReady { return }
+            self.startReceiverHeartbeat()
         }
     }
 
@@ -402,7 +432,8 @@ final class PlayCaptionTV: ObservableObject {
             switch state {
             case .ready:
                 Task { @MainActor in
-                    guard let self, self.liveReceiver === conn, self.ip == target else { return }
+                    guard let self, self.liveReceiver === conn, self.ip == target,
+                          !self.liveReceiverReady else { return }
                     self.liveReceiverReady = true
                     self.readReceiverReply(on: conn, target: target)
                     // Reapply this phone's TV style after reconnect or pairing;
@@ -435,10 +466,7 @@ final class PlayCaptionTV: ObservableObject {
                                 if let checked = self.portCheckAt,
                                    Date().timeIntervalSince(checked) > 12 {
                                     self.portCheckAt = Date()
-                                    self.discoverReceiverPort(target) { [weak self] found in
-                                        guard let self, self.liveReceiver === conn else { return }
-                                        if found != port { self.startReceiverHeartbeat() }
-                                    }
+                                    self.scheduleReceiverReconnect(conn, target: target)
                                 }
                             }
                         }
@@ -450,6 +478,15 @@ final class PlayCaptionTV: ObservableObject {
                     self.liveReceiverReady = false
                     self.receiverConnected = false
                     self.receiverStatus = "TV neodpovídá: \(error.localizedDescription)"
+                    self.receiverHeartbeatTask?.cancel()
+                    self.scheduleReceiverReconnect(conn, target: target)
+                }
+            case .waiting:
+                Task { @MainActor in
+                    guard let self, self.liveReceiver === conn else { return }
+                    self.receiverConnected = false
+                    self.receiverStatus = "Čekám na síť TV"
+                    self.scheduleReceiverReconnect(conn, target: target)
                 }
             case .cancelled:
                 Task { @MainActor in
@@ -475,6 +512,9 @@ final class PlayCaptionTV: ObservableObject {
                        fields[3] == expected {
                         self.pendingPingNonce = nil
                         self.lastPong = Date()
+                        self.receiverRetrySeconds = 3
+                        self.receiverReconnectTask?.cancel()
+                        self.receiverReconnectTask = nil
                         self.receiverConnected = true
                         self.receiverStatus = "TV spárovaná · spojení aktivní"
                     }
@@ -482,6 +522,12 @@ final class PlayCaptionTV: ObservableObject {
                     // reception or rendering. Only a signed PONG proves liveness.
                 }
                 if error == nil { self.readReceiverReply(on: conn, target: target) }
+                else {
+                    self.receiverConnected = false
+                    self.liveReceiverReady = false
+                    self.receiverHeartbeatTask?.cancel()
+                    self.scheduleReceiverReconnect(conn, target: target)
+                }
             }
         }
     }

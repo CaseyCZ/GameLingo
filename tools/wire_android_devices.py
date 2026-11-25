@@ -235,6 +235,7 @@ def main():
             '''                                    if (!pribehRidi) {
                                         val data = zprava()''',
             '''                                    val live = RemotePlayService.aktivni
+                                    if (live) GameLingoTVPairing.verifyActive(ip, relace)
                                     val now = System.currentTimeMillis()
                                     val repeatDialogue = !pribehRidi && (live || now < upravaDo)
                                     val repeatChoices = cisloVoleb > 0 && (live || now < volbyUpravaDo)

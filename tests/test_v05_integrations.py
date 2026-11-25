@@ -720,6 +720,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('signalInterruption("Xbox ukončil vzdálené hraní", retry: false)', xbox)
         self.assertIn("interruptionSent = true", xbox)
 
+    def test_point15_receiver_reconnect_keeps_auth_and_session_generation(self):
+        ios = code(IOS/"PlayCaptionTV.swift")
+        self.assertIn("self.receiverGeneration == generation", ios)
+        self.assertIn("receiverRetrySeconds = min(30, delay * 2)", ios)
+        self.assertIn("self.scheduleReceiverReconnect(conn, target: target)", ios)
+        self.assertIn("ReceiverSecretStore.load(target) != nil", ios)
+        self.assertIn("fields[3] == expected", ios)
+        self.assertIn("self.receiverRetrySeconds = 3", ios)
+        android = code(TOOLS/"GameLingoTVPairing.kt")
+        self.assertIn("Propojeni.Vysilac.outputGeneration() != generation", android)
+        self.assertIn("MessageDigest.isEqual(", android)
+        self.assertIn("reply.port == port", android)
+        self.assertIn("checkedPortAt = 0L", android)
+        self.assertIn("if (live) GameLingoTVPairing.verifyActive(ip, relace)", code(TOOLS/"wire_android_devices.py"))
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")
