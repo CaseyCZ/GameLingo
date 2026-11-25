@@ -90,6 +90,7 @@ object GameLingoDiagnostics {
             val selectedXbox = activity.getSharedPreferences(
                 "gamelingo_devices", Activity.MODE_PRIVATE
             ).getString("selectedXboxId", null)
+            value("Překladová fronta", GameLingoNetworkPerformance.summary())
             value("Remote Play", if (RemotePlayService.aktivni)
                 "Relace spuštěna – snímky se ověřují zvlášť" else "Relace není spuštěna")
             value("Xbox – účet", if (xboxLogged) "Přihlášený" else "Nepřihlášený")

@@ -18,7 +18,10 @@ def bound_translator(text):
         """        val queuedAt = android.os.SystemClock.elapsedRealtime()
         val queuedLanguageRevision = GameLingoLanguages.revision
         if (runCatching { sit.execute {
-            if (queuedLanguageRevision != GameLingoLanguages.revision || android.os.SystemClock.elapsedRealtime() - queuedAt > 5000L) {
+            val waited = android.os.SystemClock.elapsedRealtime() - queuedAt
+            GameLingoNetworkPerformance.waitMs(waited)
+            if (queuedLanguageRevision != GameLingoLanguages.revision || waited > 5000L) {
+                GameLingoNetworkPerformance.discard()
                 ui.post { chyba("Překlad čekal příliš dlouho") }
                 return@execute
             }

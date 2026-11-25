@@ -28,6 +28,22 @@ internal class GameLingoPerformanceWindow(private val capacity: Int = 128) {
     }
 }
 
+/** Fixed-cardinality, in-memory phase windows. No text or device IDs. */
+internal class GameLingoPhaseMetrics(names: List<String>) {
+    private val windows = names.distinct().associateWith { GameLingoPerformanceWindow() }
+    fun record(name: String, ms: Long) { windows[name]?.record(ms) }
+    fun summary(): String = windows.entries.joinToString("\n") { (name, window) -> "$name: ${window.summary()}" }
+}
+
+/** Shared process-local queue measurements for ordinary online cache misses. */
+internal object GameLingoNetworkPerformance {
+    private val queue = GameLingoPerformanceWindow()
+    private val discarded = java.util.concurrent.atomic.AtomicLong()
+    fun waitMs(value: Long) = queue.record(value)
+    fun discard() { discarded.incrementAndGet() }
+    fun summary() = "Síťová fronta (online, od spuštění aplikace): ${queue.summary()}; zahozeno: ${discarded.get()}"
+}
+
 internal class GameLingoPerformance {
     private val windows = linkedMapOf<String, GameLingoPerformanceWindow>()
     private var generation = 0L
@@ -63,7 +79,7 @@ internal class GameLingoPerformance {
             "Herní text OCR", "Herní text překlad", "Herní text celkem k výstupu", "Story překlad")
         return "[Diagnostika průměr/P95: " + names.joinToString("; ") {
             "$it=${windows[it]?.summary() ?: "–"}"
-        } + "; chyby=$failures]"
+        } + "; chyby=$failures] " + GameLingoNetworkPerformance.summary()
     }
     fun device(context: Context): String {
         val pss = runCatching { Debug.getPss() / 1024 }.getOrNull()

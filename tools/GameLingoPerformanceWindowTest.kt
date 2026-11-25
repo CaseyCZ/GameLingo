@@ -4,6 +4,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoPerformanceWindowTest {
+    @Test fun phasesRemainSeparateAndUnknownNamesAreIgnored() {
+        val phases = GameLingoPhaseMetrics(listOf("OCR", "Queue"))
+        phases.record("OCR", 20L)
+        phases.record("Queue", 5L)
+        phases.record("unregistered", 900L)
+        assertEquals("OCR: 20 / 20 ms (n=1)\nQueue: 5 / 5 ms (n=1)", phases.summary())
+    }
     @Test fun boundedWindowAndPercentile() {
         val window = GameLingoPerformanceWindow(3)
         assertEquals("–", window.summary())

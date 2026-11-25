@@ -457,8 +457,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("guard !closed, enabled", mailbox)
         self.assertIn("play.onFrame = receiveFrame", model)
         self.assertIn("playStation.start(console: console, onFrame: receiveFrame", model)
-        self.assertIn("if dialogue.offer(buffer)", model)
-        self.assertIn("if options.offer(buffer)", model)
+        self.assertIn("if dialogue.offer(timed)", model)
+        self.assertIn("if options.offer(timed)", model)
         self.assertIn("while let frame = dialogue.takeNext()", model)
         self.assertIn("while let frame = options.takeNext()", model)
         self.assertIn("optionsFrames?.setEnabled(choicesEnabled)", model)
@@ -656,6 +656,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("lastChoiceRender = null", point)
         self.assertIn("lastChoiceRender = renderKey", point)
         self.assertIn("if (text !is String || this.text !is String || this.text != text)", point)
+
+    def test_point10_pipeline_metrics_are_measured_at_real_boundaries(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        for marker in ("postedAt - cropStarted", "SystemClock.elapsedRealtime() - postedAt",
+                       "phases.record(\"Dialog OCR\", lastOcrMs)",
+                       "phases.record(\"Dialog čekání po OCR\", now - started)",
+                       "phases.record(\"Dialog od přijetí textu k předání\"", "currentPhases = phases"):
+            self.assertIn(marker, capture)
+        self.assertIn("frame.receivedAt", model)
+        self.assertIn("reading.ocrMilliseconds", model)
+        self.assertIn("GameLingoNetworkPerformance.waitMs(waited)", code(TOOLS/"translation_backpressure.py"))
+        self.assertIn("GameLingoNetworkPerformance.summary()", code(TOOLS/"GameLingoDiagnostics.kt"))
 
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")

@@ -327,8 +327,9 @@ final class CaptionAppModel: ObservableObject {
     private var optionsTranslation: Task<Void, Never>?
     private var dialogueExpiry: Task<Void, Never>?
     private var dialogueDisplayRevision = 0
-    private var dialogueFrames: LatestFrameMailbox<CVPixelBuffer>?
-    private var optionsFrames: LatestFrameMailbox<CVPixelBuffer>?
+    private typealias TimedFrame = (buffer: CVPixelBuffer, receivedAt: TimeInterval)
+    private var dialogueFrames: LatestFrameMailbox<TimedFrame>?
+    private var optionsFrames: LatestFrameMailbox<TimedFrame>?
     // Cache only the translation already visible on TV. Moving the orange
     // rectangle must not trigger a fresh OCR/translation or show demo text.
     private var lastTranslatedChoiceItems: [String] = []
@@ -475,7 +476,8 @@ final class CaptionAppModel: ObservableObject {
     }
 
     private func refreshPerformance() {
-        let names = ["Dialog OCR", "Dialog překlad", "Dialog celkem k výstupu",
+        let names = ["Dialog čekání snímku", "Dialog OCR", "Dialog čekání po OCR",
+                     "Dialog překlad", "Dialog celkem k výstupu", "Herní text čekání snímku",
                      "Herní text OCR", "Herní text překlad", "Herní text celkem k výstupu"]
         let lines = names.map { "\($0): \(performance[$0]?.summary ?? "–")" }
         performanceSummary = (["Průměr / P95 (posledních 128 vzorků)"] + lines +
@@ -546,8 +548,8 @@ final class CaptionAppModel: ObservableObject {
     private func makeFrameReceiver(currentSession: Int) -> @Sendable (CVPixelBuffer) -> Void {
         dialogueFrames?.close()
         optionsFrames?.close()
-        let dialogue = LatestFrameMailbox<CVPixelBuffer>()
-        let options = LatestFrameMailbox<CVPixelBuffer>(enabled: choicesEnabled)
+        let dialogue = LatestFrameMailbox<TimedFrame>()
+        let options = LatestFrameMailbox<TimedFrame>(enabled: choicesEnabled)
         dialogueFrames = dialogue
         optionsFrames = options
         let reset = Task {
@@ -556,7 +558,8 @@ final class CaptionAppModel: ObservableObject {
         }
 
         return { [weak self] buffer in
-            if dialogue.offer(buffer) {
+            let timed = (buffer: buffer, receivedAt: ProcessInfo.processInfo.systemUptime)
+            if dialogue.offer(timed) {
                 Task { @MainActor [weak self] in
                     await reset.value
                     while let frame = dialogue.takeNext() {
@@ -565,12 +568,14 @@ final class CaptionAppModel: ObservableObject {
                             dialogue.close()
                             return
                         }
-                        await self.processFrame(frame, currentSession: currentSession)
+                        self.recordPerformance("Dialog čekání snímku", milliseconds:
+                            (ProcessInfo.processInfo.systemUptime - frame.receivedAt) * 1000)
+                        await self.processFrame(frame.buffer, currentSession: currentSession)
                         await Task.yield()
                     }
                 }
             }
-            if options.offer(buffer) {
+            if options.offer(timed) {
                 Task { @MainActor [weak self] in
                     await reset.value
                     while let frame = options.takeNext() {
@@ -579,7 +584,9 @@ final class CaptionAppModel: ObservableObject {
                             options.close()
                             return
                         }
-                        await self.processChoicesFrame(frame, currentSession: currentSession)
+                        self.recordPerformance("Herní text čekání snímku", milliseconds:
+                            (ProcessInfo.processInfo.systemUptime - frame.receivedAt) * 1000)
+                        await self.processChoicesFrame(frame.buffer, currentSession: currentSession)
                         await Task.yield()
                     }
                 }
@@ -807,6 +814,8 @@ final class CaptionAppModel: ObservableObject {
                     guard let self, !Task.isCancelled,
                           self.dialogueRevision.accepts(readingRevision) else { return }
                     let translateStarted = ProcessInfo.processInfo.systemUptime
+                    self.recordPerformance("Dialog čekání po OCR", milliseconds:
+                        max(0, (translateStarted - reading.ocrStartedAt) * 1000 - reading.ocrMilliseconds))
                     let outcome = await self.pipeline.translate(
                         reading.english, from: activeGameLanguage,
                         to: activeTargetLanguage)

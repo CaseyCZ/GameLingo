@@ -104,7 +104,8 @@ object GameLingoTVSettings {
         val info = PrijemService.statistikaPrijmu() + "\n\nVerze: " +
             a.packageManager.getPackageInfo(a.packageName, 0).versionName +
             "\nSamostatná TV: " + GameLingoScreenTranslationService.status +
-            "\nOCR obrazovky: pouze MediaProjection"
+            "\nOCR obrazovky: pouze MediaProjection" +
+            "\n\n" + GameLingoScreenTranslationService.phaseSummary()
         val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
         body.addView(GameLingoTVUi.title(a,"Stav",24f))
         body.addView(GameLingoTVUi.title(a,info+"\nPřekryv: "+if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen",20f).apply {

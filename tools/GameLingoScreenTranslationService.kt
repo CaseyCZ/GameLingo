@@ -123,6 +123,7 @@ class GameLingoScreenConsentActivity : Activity() {
 /** Experimental continuous OCR for capturable TV apps. Only one frame and one translation in flight. */
 class GameLingoScreenTranslationService : Service() {
     private val ui = Handler(Looper.getMainLooper())
+    private val phases = newPhaseMetrics()
     private var projection: MediaProjection? = null
     private var display: VirtualDisplay? = null
     private var reader: ImageReader? = null
@@ -383,6 +384,7 @@ class GameLingoScreenTranslationService : Service() {
             displayState = "Vytvořen"
             ocr = Ctecka().apply { cilovyJazyk = GameLingoLanguages.target(this@GameLingoScreenTranslationService) }
             startedAt = SystemClock.elapsedRealtime()
+            currentPhases = phases
             translator = Prekladac(this, GameLingoLanguages.target(this), GameLingoLanguages.game(this))
             active = true; starting = false; status = source
             // Only start the independent overlay after MediaProjection and VirtualDisplay exist.
@@ -449,10 +451,12 @@ class GameLingoScreenTranslationService : Service() {
             val image = images.acquireLatestImage() ?: return
             var yellow = false
             var fingerprint = 0L
+            var cropStarted = 0L
             val bitmap = try {
                 received.incrementAndGet()
                 val requested = wantFrame.getAndSet(0)
                 if (requested == 0) return
+                cropStarted = SystemClock.elapsedRealtime()
                 yellow = requested == 2
                 val region = if (yellow) yellowRoi else roi
                 val plane = image.planes[0]
@@ -482,7 +486,10 @@ class GameLingoScreenTranslationService : Service() {
                 Bitmap.createBitmap(pixels,cw,ch,Bitmap.Config.ARGB_8888)
             } finally { image.close() }
             decoded.incrementAndGet()
+            val postedAt = SystemClock.elapsedRealtime()
+            phases.record("Kopie výřezu", postedAt - cropStarted)
             ui.post {
+                if (active && !paused) phases.record("Čekání výřezu na UI", SystemClock.elapsedRealtime() - postedAt)
                 if (capturePending) cancelSample()
                 if (!active || paused || blockedHome || ocrBusy || RemotePlayService.aktivni || PrijemService.bezi) bitmap.recycle()
                 else if (yellow) processYellow(bitmap, fingerprint) else process(bitmap, fingerprint)
@@ -533,6 +540,7 @@ class GameLingoScreenTranslationService : Service() {
                 ui.post {
                     ocrBusy = false
                     lastOcrMs = SystemClock.elapsedRealtime() - ocrStarted
+                    phases.record("Dialog OCR", lastOcrMs)
                     if (!active || paused || blockedHome || ticket != epoch) return@post
                     ocrCalls.incrementAndGet()
                     if (raw.isNotBlank()) ocrHits.incrementAndGet()
@@ -616,6 +624,7 @@ class GameLingoScreenTranslationService : Service() {
         val started = candidateAt
         if (GameLingoOCRConfig.expired(this,now-started)) return
         val ticket = epoch
+        phases.record("Dialog čekání po OCR", now - started)
         lastAttempt = value; lastAttemptAt = now
         translationBusy = true
         translationState = "Překládám"
@@ -623,6 +632,7 @@ class GameLingoScreenTranslationService : Service() {
             ui.post {
                 translationBusy = false
                 lastTranslationMs = SystemClock.elapsedRealtime() - now
+                phases.record("Dialog překlad včetně služby", lastTranslationMs)
                 val current = active && !paused && !blockedHome && ticket == epoch && value == candidate &&
                     lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt <= 1800L
                 if (current && !translated.isNullOrBlank() && !GameLingoOCRConfig.expired(this@GameLingoScreenTranslationService,SystemClock.elapsedRealtime()-started)) {
@@ -635,6 +645,7 @@ class GameLingoScreenTranslationService : Service() {
                     val duration = GameLingoOCRConfig.displayMs(this@GameLingoScreenTranslationService,((1800L+60L*corrected.length)*durationPercent/100L).coerceIn(800L,15000L))
                     shownUntil = shownAt + duration
                     render(corrected, duration)
+                    phases.record("Dialog od přijetí textu k předání", SystemClock.elapsedRealtime() - started)
                 } else if (current) {
                     translationState = if(GameLingoOCRConfig.expired(this@GameLingoScreenTranslationService,SystemClock.elapsedRealtime()-started)) "Starý výsledek zahozen" else "Chyba překladu"
                     // A failed replacement neither clears nor renews the old caption.
@@ -730,6 +741,7 @@ class GameLingoScreenTranslationService : Service() {
                 cropped.recycle()
                 ui.post {
                     ocrBusy = false
+                    phases.record("Herní text OCR", SystemClock.elapsedRealtime() - started)
                     if (!active || paused || ticket != yellowEpoch) return@post
                     if (words.isEmpty() || (!yellowTextMode && selected < 0 && words != yellowCandidate)) {
                         yellowFrameGate.reset()
@@ -804,9 +816,11 @@ class GameLingoScreenTranslationService : Service() {
                 translateLatest()
                 return
             }
+            val itemStarted = SystemClock.elapsedRealtime()
             try {
                 p.preloz(value[index], { result ->
                     ui.post {
+                        phases.record("Herní text překlad položky", SystemClock.elapsedRealtime() - itemStarted)
                         if (!current() || result.isBlank()) finish()
                         else { results.add(GameLingoGlossaryStore.apply(this@GameLingoScreenTranslationService,value[index],result,sourceLanguage,GameLingoLanguages.target(this@GameLingoScreenTranslationService))); next(index+1) }
                     }
@@ -870,6 +884,13 @@ class GameLingoScreenTranslationService : Service() {
         super.onDestroy()
     }
     companion object {
+        private fun newPhaseMetrics() = GameLingoPhaseMetrics(listOf(
+            "Kopie výřezu", "Čekání výřezu na UI", "Dialog OCR", "Dialog čekání po OCR",
+            "Dialog překlad včetně služby", "Dialog od přijetí textu k předání",
+            "Herní text OCR", "Herní text překlad položky"))
+        @Volatile private var currentPhases = newPhaseMetrics()
+        fun phaseSummary() = "Samostatná TV – průměr/P95 (předání není potvrzené zobrazení):\n" +
+            currentPhases.summary() + "\n" + GameLingoNetworkPerformance.summary()
         @Volatile var running = false
             private set
         @Volatile var startupFailed = false
@@ -902,7 +923,7 @@ class GameLingoScreenTranslationService : Service() {
             startupFailed=false; foregroundState="Nezahájena"
             projectionState="Nezahájeno"; displayState="Nevytvořen"; resolution="—"; capturedSize="—"
             frameError="—"; ocrState="Čeká"; translationState="Čeká"; layoutState="—"
-            lastOcrMs=0L; lastTranslationMs=0L; clearPreview()
+            lastOcrMs=0L; lastTranslationMs=0L; currentPhases=newPhaseMetrics(); clearPreview()
         }
         private fun clearPreview() { preview=null; lastRaw=""; lastTranslated="" }
         fun report(): String = "Stav: $status\nForeground služba: $foregroundState\nSouhlas / projekce: $projectionState\nVirtualDisplay: $displayState" +
@@ -910,6 +931,7 @@ class GameLingoScreenTranslationService : Service() {
             "\nChyba snímku: $frameError\nOCR: $ocrState (${ocrHits.get()}/${ocrCalls.get()})" +
             "\nPřekladač: $translationState (${translationHits.get()})" +
             "\nOCR: $lastOcrMs ms · překlad: $lastTranslationMs ms\nRozložení: $layoutState" +
+            "\n" + phaseSummary() +
             "\nPřekryv: " + (if (OverlayService.chyba != null) "hlášená chyba" else "bez hlášené chyby") +
             (if (lastRaw.isNotBlank()) "\nOCR: $lastRaw" else "") +
             (if (lastTranslated.isNotBlank()) "\nPřeklad: $lastTranslated" else "")
