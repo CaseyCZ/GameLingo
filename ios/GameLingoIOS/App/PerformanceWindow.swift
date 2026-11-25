@@ -25,3 +25,37 @@ struct PerformanceWindow {
         return "\(Int(average.rounded())) / \(Int(sorted[rank].rounded())) ms (n=\(count))"
     }
 }
+
+ 
+/// Decoder-delivered frames; excludes the later OCR throttle.
+struct XboxDecodedVideoWindow {
+    private var start: TimeInterval?
+    private var last: TimeInterval?
+    private var frames = 0
+    private var rate: Double?
+    private(set) var width = 0
+    private(set) var height = 0
+    mutating func record(width: Int, height: Int, now: TimeInterval) {
+        guard width > 0, height > 0, now.isFinite else { return }
+        self.width = width; self.height = height
+        defer { last = now }
+        guard let start, let last, now >= last, now - last <= 2 else {
+            self.start = now; frames = 0; rate = nil; return
+        }
+        frames += 1
+        let elapsed = now - start
+        if elapsed >= 1 {
+            rate = Double(frames) / elapsed
+            self.start = now; frames = 0
+        }
+    }
+    func fps(now: TimeInterval) -> Double? {
+        guard let last, now >= last, now - last <= 2 else { return nil }
+        return rate
+    }
+    func summary(now: TimeInterval) -> String {
+        let size = width > 0 && height > 0 ? "\(width)×\(height)" : "–"
+        let frameRate = fps(now: now).map { String(format: "%.1f", $0) } ?? "–"
+        return "Xbox dekódovaný obraz: \(size) · \(frameRate) FPS"
+    }
+}

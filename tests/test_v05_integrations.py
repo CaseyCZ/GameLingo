@@ -670,6 +670,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoNetworkPerformance.waitMs(waited)", code(TOOLS/"translation_backpressure.py"))
         self.assertIn("GameLingoNetworkPerformance.summary()", code(TOOLS/"GameLingoDiagnostics.kt"))
 
+    def test_point11_xbox_metrics_precede_ocr_sampling(self):
+        xbox = code(IOS/"XboxRemotePlay.swift")
+        self.assertLess(xbox.index("metrics.record(width: Int(frame.width)"), xbox.index("guard now - lastSent > minimumFrameInterval"))
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("videoMetrics.frame(sirka, vyska, android.os.SystemClock.elapsedRealtime())", wiring)
+        self.assertIn("GameLingoXboxDiagnostics.begin(videoMetrics)", wiring)
+        self.assertIn("videoMetrics.stop()", wiring)
+        self.assertIn("remotePlay.streamSummary()", code(IOS/"PlayCaptionIOSApp.swift"))
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")

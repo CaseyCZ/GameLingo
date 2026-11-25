@@ -479,7 +479,8 @@ final class CaptionAppModel: ObservableObject {
         let names = ["Dialog čekání snímku", "Dialog OCR", "Dialog čekání po OCR",
                      "Dialog překlad", "Dialog celkem k výstupu", "Herní text čekání snímku",
                      "Herní text OCR", "Herní text překlad", "Herní text celkem k výstupu"]
-        let lines = names.map { "\($0): \(performance[$0]?.summary ?? "–")" }
+        var lines = names.map { "\($0): \(performance[$0]?.summary ?? "–")" }
+        if let remotePlay { lines.append(remotePlay.streamSummary()) }
         performanceSummary = (["Průměr / P95 (posledních 128 vzorků)"] + lines +
             ["Chyby překladu: \(translationFailures)", LocalDeviceDiagnostics.sample()]).joined(separator: "\n")
     }

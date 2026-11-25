@@ -105,6 +105,7 @@ object GameLingoTVSettings {
             a.packageManager.getPackageInfo(a.packageName, 0).versionName +
             "\nSamostatná TV: " + GameLingoScreenTranslationService.status +
             "\nOCR obrazovky: pouze MediaProjection" +
+            "\n" + GameLingoXboxDiagnostics.summary() +
             "\n\n" + GameLingoScreenTranslationService.phaseSummary()
         val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
         body.addView(GameLingoTVUi.title(a,"Stav",24f))

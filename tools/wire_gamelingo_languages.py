@@ -361,6 +361,20 @@ def main():
     unit_dir=folder.parents[4]/"test/java/cz/titulky/tv"
     (unit_dir/"GameLingoPerformanceWindowTest.kt").write_text(
         Path(__file__).with_name("GameLingoPerformanceWindowTest.kt").read_text(encoding="utf8"),encoding="utf8")
+    # Xbox metrics observe decoded frames before any OCR sampling.
+    xbox = folder/"XboxSpojeni.kt"
+    xbox_text = xbox.read_text(encoding="utf8")
+    xbox_text = once(xbox_text, '        private val h = android.os.Handler(vlakno.looper)',
+        '        private val h = android.os.Handler(vlakno.looper)\n'
+        '        private val videoMetrics = GameLingoXboxVideoMetrics()', xbox.name)
+    xbox_text = once(xbox_text, '        fun spust() {\n            bezi = true',
+        '        fun spust() {\n            GameLingoXboxDiagnostics.begin(videoMetrics)\n            bezi = true', xbox.name)
+    xbox_text = once(xbox_text, '            sirka = f.rotatedWidth; vyska = f.rotatedHeight',
+        '            sirka = f.rotatedWidth; vyska = f.rotatedHeight\n'
+        '            videoMetrics.frame(sirka, vyska, android.os.SystemClock.elapsedRealtime())', xbox.name)
+    xbox_text = once(xbox_text, '            konec = true\n            bezi = false',
+        '            konec = true\n            videoMetrics.stop()\n            bezi = false', xbox.name)
+    xbox.write_text(xbox_text, encoding="utf8")
     s=once(s, '    private var stOd = 0L',
         '    private val performance = GameLingoPerformance()\n    private var stOd = 0L', service.name)
     s=once(s, '        ui.post { zapis(zprava) }\n        stCteni = 0;',

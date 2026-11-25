@@ -44,6 +44,48 @@ internal object GameLingoNetworkPerformance {
     fun summary() = "Síťová fronta (online, od spuštění aplikace): ${queue.summary()}; zahozeno: ${discarded.get()}"
 }
 
+/** Decoder-delivered frame rate, not the OCR sampler rate or requested resolution. */
+internal class GameLingoXboxVideoMetrics {
+    private var windowStart: Long? = null
+    private var frames = 0L
+    private var lastFrame: Long? = null
+    private var width = 0
+    private var height = 0
+    private var rate: Double? = null
+    private var stopped = false
+    @Synchronized fun frame(w: Int, h: Int, now: Long) {
+        if (stopped || w <= 0 || h <= 0) return
+        width = w; height = h
+        val start = windowStart
+        val previous = lastFrame
+        lastFrame = now
+        if (start == null || previous == null || now < previous || now - previous > 2000L) {
+            windowStart = now; frames = 0L; rate = null; return
+        }
+        frames++
+        val elapsed = now - start
+        if (elapsed >= 1000L) {
+            rate = frames * 1000.0 / elapsed
+            windowStart = now; frames = 0L
+        }
+    }
+    @Synchronized fun fps(now: Long): Double? {
+        val last = lastFrame ?: return null
+        return if (!stopped && now >= last && now - last <= 2000L) rate else null
+    }
+    @Synchronized fun stop() { stopped = true }
+    @Synchronized fun summary(now: Long): String {
+        val size = if (width > 0 && height > 0) "${width}×${height}" else "–"
+        val fps = fps(now)?.let { String.format(java.util.Locale.ROOT, "%.1f", it) } ?: "–"
+        return "Xbox dekódovaný obraz: $size · $fps FPS" + if (stopped) " (poslední relace ukončena)" else ""
+    }
+}
+internal object GameLingoXboxDiagnostics {
+    @Volatile private var current: GameLingoXboxVideoMetrics? = null
+    fun begin(metrics: GameLingoXboxVideoMetrics) { current = metrics }
+    fun summary() = current?.summary(SystemClock.elapsedRealtime()) ?: "Xbox dekódovaný obraz: –"
+}
+
 internal class GameLingoPerformance {
     private val windows = linkedMapOf<String, GameLingoPerformanceWindow>()
     private var generation = 0L
@@ -79,7 +121,7 @@ internal class GameLingoPerformance {
             "Herní text OCR", "Herní text překlad", "Herní text celkem k výstupu", "Story překlad")
         return "[Diagnostika průměr/P95: " + names.joinToString("; ") {
             "$it=${windows[it]?.summary() ?: "–"}"
-        } + "; chyby=$failures] " + GameLingoNetworkPerformance.summary()
+        } + "; chyby=$failures] " + GameLingoNetworkPerformance.summary() + " · " + GameLingoXboxDiagnostics.summary()
     }
     fun device(context: Context): String {
         val pss = runCatching { Debug.getPss() / 1024 }.getOrNull()
