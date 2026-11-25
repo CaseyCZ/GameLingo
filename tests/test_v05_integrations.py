@@ -1271,7 +1271,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('482611539977496cad047560c9bc1ebc5809a566',workflow)
         self.assertIn('Build native PlayStation',workflow)
         self.assertIn('GameLingoPSBridge.h',project)
-        self.assertIn(json.loads(code(ROOT/"shared/version.json"))["version"],project)
+        self.assertIn('CFBundleShortVersionString: "$(MARKETING_VERSION)"', project)
 
     def test_caption_retransmission_preserves_original_expiry(self):
         ios = code(IOS/"PlayCaptionTV.swift")
@@ -1411,6 +1411,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
 
     def test_release_version_consistency(self):
         subprocess.run([sys.executable, str(TOOLS/"sync_version.py"), "--check"], check=True, cwd=ROOT)
+        sys.path.insert(0, str(TOOLS))
+        try:
+            from sync_version import bumped, ios_project
+            self.assertEqual(bumped({"version": "0.5.9", "build": 9}, "patch"), {"version": "0.5.10", "build": 10})
+            self.assertEqual(bumped({"version": "0.5.9", "build": 9}, "minor"), {"version": "0.6.0", "build": 10})
+            self.assertEqual(bumped({"version": "0.5.9", "build": 9}, "major"), {"version": "1.0.0", "build": 10})
+            prepared = ios_project(code(ROOT/"ios/GameLingoIOS/project.yml"), {"version": "9.8.7", "build": 42})
+            self.assertIn('CFBundleShortVersionString: "9.8.7"', prepared)
+            self.assertIn('CFBundleVersion: "42"', prepared)
+            with self.assertRaises(ValueError):
+                bumped({"version": "0.5.9", "build": 2000}, "patch")
+        finally:
+            sys.path.pop(0)
 
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))

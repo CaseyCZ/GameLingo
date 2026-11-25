@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebrand the pinned Android/TV PlayCaption build without altering protocols."""
 import pathlib
-import json
+from sync_version import load_release
 import os
 import re
 import sys
@@ -39,7 +39,7 @@ def main():
     run = int(os.environ.get("GITHUB_RUN_NUMBER", "0"))
     attempt = int(os.environ.get("GITHUB_RUN_ATTEMPT", "1"))
     revision = os.environ.get("GITHUB_SHA", "local")[:8]
-    release = json.loads((pathlib.Path(__file__).resolve().parents[1] / "shared/version.json").read_text(encoding="utf8"))
+    release = load_release()
     # Reserve a separate range per release, including local builds and reruns.
     if not (0 <= run < 10000 and 1 <= attempt < 100 and 1 <= release["build"] <= 2000):
         raise ValueError("Build counter outside reserved range")

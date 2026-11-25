@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Read shared version
+        run: python3 tools/sync_version.py --github-env
       - name: Check iOS platform routing, device manager and PS4/PS5 OCR source contracts
         run: python tools/verify_gamelingo.py
       - name: Generate original GameLingo icon
@@ -53,6 +55,7 @@ jobs:
           file ps-core/ios/.build/iphoneos/libTPPlayCore.a
       - name: Prepare Xcode project
         run: |
+          python3 tools/sync_version.py --prepare-ios
           xcodebuild -version
           cd ios/GameLingoIOS
           xcodegen generate
@@ -76,16 +79,17 @@ jobs:
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")
           test "$ID" = "cz.caseycz.gamelingo.ios"
           test "$LABEL" = "GameLingo"
-          test "$VERSION" = "0.5.1"
+          test "$VERSION" = "$GAMELINGO_VERSION"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")" = "$GAMELINGO_BUILD"
           file "$APP/GameLingoIOS"
           mkdir -p "$PWD/.build/ipa/Payload"
           cp -R "$APP" "$PWD/.build/ipa/Payload/"
-          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v0.5.1-dev-unsigned.ipa" Payload)
-          unzip -t GameLingo-iOS-v0.5.1-dev-unsigned.ipa >/dev/null
+          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" Payload)
+          unzip -t GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa >/dev/null
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-iOS-v0.5.1-dev
-          path: GameLingo-iOS-v0.5.1-dev-unsigned.ipa
+          name: GameLingo-iOS-v${{ env.GAMELINGO_VERSION }}-dev
+          path: GameLingo-iOS-v${{ env.GAMELINGO_VERSION }}-dev-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
       - name: Preserve Xcode log if failed

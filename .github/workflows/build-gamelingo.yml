@@ -15,7 +15,7 @@ concurrency:
 # UDP fallback Android sender checkpoint: scope Vysilac rewrites to mobile sender only, avoid receiver code collisions; full compile. No GitHub Release.
 # Run full integration matrix only when this workflow is explicitly revised.
 # This prevents expensive native Chiaki builds for every draft source change.
-# QA v0.5.1: tests + PS4/PS5 core + iPhone + Android + Google TV.
+# QA candidate: tests + PS4/PS5 core + iPhone + Android + Google TV.
 # One-source full matrix checkpoint: native iPhone PS core + latest P0/P1 navigation and TV focus.
 # Final source checkpoint includes session-revision OCR isolation and shared iOS theme.
 # Candidate validation: unified TV setup, Xbox/PlayStation selection, safe OCR output, native dashboard.
@@ -52,6 +52,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Read shared version
+        run: python3 tools/sync_version.py --github-env
       - name: Check iOS platform routing, device manager and PS4/PS5 OCR source contracts
         run: python tools/verify_gamelingo.py
       - name: Run synthetic OCR image fingerprint tests
@@ -84,6 +86,7 @@ jobs:
           file ps-core/ios/.build/iphoneos/libTPPlayCore.a
       - name: Prepare Xcode project
         run: |
+          python3 tools/sync_version.py --prepare-ios
           xcodebuild -version
           cd ios/GameLingoIOS
           xcodegen generate
@@ -107,18 +110,19 @@ jobs:
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")
           test "$ID" = "cz.caseycz.gamelingo.ios"
           test "$LABEL" = "GameLingo"
-          test "$VERSION" = "0.5.1"
+          test "$VERSION" = "$GAMELINGO_VERSION"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")" = "$GAMELINGO_BUILD"
           file "$APP/GameLingoIOS"
           python tools/package_license_notices.py ios --kit . --upstream ps-core --output "$APP"
           mkdir -p "$PWD/.build/ipa/Payload"
           cp -R "$APP" "$PWD/.build/ipa/Payload/"
-          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v0.5.1-dev-unsigned.ipa" Payload)
-          unzip -t GameLingo-iOS-v0.5.1-dev-unsigned.ipa >/dev/null
-          python tools/package_license_notices.py ios --verify GameLingo-iOS-v0.5.1-dev-unsigned.ipa
+          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" Payload)
+          unzip -t GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa >/dev/null
+          python tools/package_license_notices.py ios --verify GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-iOS-v0.5.1-dev
-          path: GameLingo-iOS-v0.5.1-dev-unsigned.ipa
+          name: GameLingo-iOS-v${{ env.GAMELINGO_VERSION }}-dev
+          path: GameLingo-iOS-v${{ env.GAMELINGO_VERSION }}-dev-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
       - name: Preserve Xcode log if failed
@@ -152,6 +156,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Read shared version
+        run: python3 kit/tools/sync_version.py --github-env
       - name: Brand independent Android mobile app
         run: |
           python -m pip install pillow
@@ -177,14 +183,14 @@ jobs:
           set -euo pipefail
           APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
           test -s "$APK"
-          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.mobile'"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.mobile'" | grep -F "versionName='${GAMELINGO_VERSION}-dev."
           python kit/tools/verify_tv_translation_apk.py mobile "$APK"
           python kit/tools/package_license_notices.py mobile --verify "$APK"
-          cp "$APK" GameLingo-Android-v0.5.1-dev-TEST.apk
+          cp "$APK" GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-Android-v0.5.1-dev
-          path: GameLingo-Android-v0.5.1-dev-TEST.apk
+          name: GameLingo-Android-v${{ env.GAMELINGO_VERSION }}-dev
+          path: GameLingo-Android-v${{ env.GAMELINGO_VERSION }}-dev-TEST.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -211,6 +217,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Read shared version
+        run: python3 kit/tools/sync_version.py --github-env
       - name: Apply tested receiver and GameLingo branding
         run: |
           python -m pip install pillow
@@ -267,9 +275,9 @@ jobs:
           python kit/tools/verify_tv_ui_apk.py "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > tv-manifest.txt
           python -c 'import pathlib,re; s=pathlib.Path("tv-manifest.txt").read_text(); assert "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" in s; blocks=re.split(r"(?m)^\s*E: service ",s); match=[b for b in blocks[1:] if "GameLingoScreenTranslationService" in b.split("E: ",1)[0]]; assert len(match)==1 and re.search(r"foregroundServiceType.*(?:0x0*20)\b",match[0].split("E: ",1)[0]), "APK missing mediaProjection service type"'
-          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | head -n 1
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'" | grep -F "versionName='${GAMELINGO_VERSION}-dev."
           python kit/tools/package_license_notices.py tv --verify "$APK"
-          cp "$APK" GameLingo-GoogleTV-v0.5.1-dev-TEST.apk
+          cp "$APK" GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
       - name: Sign TV APK with persistent private update key
         env:
           GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
@@ -277,7 +285,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK=GameLingo-GoogleTV-v0.5.1-dev-TEST.apk
+          APK=GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
           SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
           if [[ -z "$GAMELINGO_TV_KEYSTORE_B64" && -z "$GAMELINGO_TV_KEYSTORE_PASSWORD" ]]; then
             echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
@@ -304,8 +312,8 @@ jobs:
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-GoogleTV-v0.5.1-dev
-          path: GameLingo-GoogleTV-v0.5.1-dev-TEST.apk
+          name: GameLingo-GoogleTV-v${{ env.GAMELINGO_VERSION }}-dev
+          path: GameLingo-GoogleTV-v${{ env.GAMELINGO_VERSION }}-dev-TEST.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -315,22 +323,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+      - name: Read shared version
+        run: python3 tools/sync_version.py --github-env
       - uses: actions/download-artifact@v4
         with:
-          pattern: GameLingo-*-v0.5.1-dev
+          pattern: GameLingo-*-v${{ env.GAMELINGO_VERSION }}-dev
           merge-multiple: true
           path: release
       - name: Verify all outputs and calculate SHA-256
         run: |
           set -euo pipefail
-          test -s release/GameLingo-iOS-v0.5.1-dev-unsigned.ipa
-          test -s release/GameLingo-Android-v0.5.1-dev-TEST.apk
-          test -s release/GameLingo-GoogleTV-v0.5.1-dev-TEST.apk
-          (cd release && sha256sum *.ipa *.apk > SHA256SUMS.txt)
+          test -s release/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa
+          test -s release/GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
+          test -s release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
+          (cd release && sha256sum "GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" "GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk" "GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk" > SHA256SUMS.txt)
           cat release/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-v0.5.1-dev-all-installers
+          name: GameLingo-v${{ env.GAMELINGO_VERSION }}-dev-all-installers
           path: release/
           if-no-files-found: error
           retention-days: 30

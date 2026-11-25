@@ -46,3 +46,9 @@ Veřejný web GameLingo se připraví až později. README v kořeni repozitář
 
 ## Aktuální pravidla 0.5 (auditní větev)
 [STATUS-0.5.md](STATUS-0.5.md) a [RELEASE_GATES_0.5.md](RELEASE_GATES_0.5.md) jsou závazný stav. QA balíčky pouze z jedné společné revize, s novými checksumy a označením dev/TEST. Nepoužívat historické hardcoded Beta2/Beta3 workflow ani automaticky mazat starší releases. Před veřejnou distribucí uzavřít bezpečnostní/licenční nálezy a fyzické testy. Release až po explicitním souhlasu. 
+
+## Current versioning procedure
+
+The authoritative version is `shared/version.json`. For a new release, run `python3 tools/sync_version.py --bump patch` (or minor/major). Commit only that version file together with intentional changes. CI loads the version and build counter directly, creates versioned IPA/APK/artifact names, prepares iOS metadata in the build checkout, and validates the resulting versions. Android reads the same metadata. To verify the contracts without building, run `python3 tools/sync_version.py --check`.
+
+Publication remains explicit: dispatch `publish-gamelingo-current.yml` on Master after the matching full audit CI succeeds. It checks the exact source SHA and checksums before replacing older test releases. No automatic release on ordinary commits. Physical QA and provider/licensing gates still apply.

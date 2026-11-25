@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Read shared version
+        run: python3 kit/tools/sync_version.py --github-env
       - name: Assemble GameLingo mobile-only modules
         run: |
           set -euo pipefail
@@ -62,10 +64,10 @@ jobs:
         run: |
           set -euo pipefail
           APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
-          cp "$APK" GameLingo-Android-v0.5.1-dev-TEST.apk
+          cp "$APK" GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-Android-v05-mobile-compile-QA
-          path: GameLingo-Android-v0.5.1-dev-TEST.apk
+          name: GameLingo-Android-v${{ env.GAMELINGO_VERSION }}-mobile-compile-QA
+          path: GameLingo-Android-v${{ env.GAMELINGO_VERSION }}-dev-TEST.apk
           if-no-files-found: error
           retention-days: 14

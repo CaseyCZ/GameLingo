@@ -37,6 +37,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Read shared version
+        run: python3 kit/tools/sync_version.py --github-env
       - name: Validate source and apply GameLingo UI
         env:
           MODE: ${{ matrix.mode }}
@@ -72,10 +74,10 @@ jobs:
         run: |
           APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
           python kit/tools/verify_tv_translation_apk.py "$MODE" "$APK"
-          cp "$APK" "GameLingo-$MODE-v0.5.1-dev-TEST.apk"
+          cp "$APK" "GameLingo-$MODE-v${GAMELINGO_VERSION}-dev-TEST.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: GameLingo-v05-${{ matrix.mode }}-UI-candidate
+          name: GameLingo-v${{ env.GAMELINGO_VERSION }}-${{ matrix.mode }}-UI-candidate
           path: GameLingo-*.apk
           if-no-files-found: error
           retention-days: 14
