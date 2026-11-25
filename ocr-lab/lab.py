@@ -83,7 +83,7 @@ class Session:
             if self.result is not None and self.result.ticket.generation>self.displayed:
                 self.metrics["stale"]+=1
             self.result=None
-        if self.pending.clear():self.note("replaced")
+        if self.ready.is_set() and self.pending.clear():self.note("replaced")
 
     def take_ui(self,now):
         with self.lock:
@@ -152,7 +152,8 @@ class Session:
         try:
             with mss.mss() as sct:
                 while not self.stop.is_set():
-                    cfg=self.config
+                    with self.lock:
+                        cfg=self.config
                     if cfg!=last_config:
                         tracker=Dialogue()
                         stabilizer=Stabilizer()
@@ -163,12 +164,15 @@ class Session:
                     if cfg.translate and not self.ready.is_set():
                         self.emit({"status":"Připravuji lokální překladač – snímání ještě neběží."})
                         self.pending.put("warmup")
-                        while not self.stop.is_set() and not self.ready.wait(.05):pass
+                        while not self.stop.is_set() and cfg==self.config and not self.ready.wait(.05):pass
                         if self.stop.is_set():break
                         if cfg!=self.config:continue
                     if cfg.engine not in engines:
                         self.emit({"status":"Načítám "+cfg.engine+"..."})
                         engines[cfg.engine]=make_engine(cfg.engine)
+                    with self.lock:
+                        if cfg!=self.config:continue
+                        capture_epoch=self.epoch
                     tick=time.perf_counter()
                     image=grab(sct,self.region)
                     prep=preprocess(image,cfg.filter,cfg.scale)
@@ -192,7 +196,7 @@ class Session:
                         elif kind=="new":
                             generation+=1
                             if cfg.translate and not self.error:
-                                ticket=Ticket(generation,self.epoch,source,tick,end)
+                                ticket=Ticket(generation,capture_epoch,source,tick,end)
                                 if self.pending.put(ticket):self.note("replaced")
                     counts[kind]+=1
                     ocr=(end-captured)*1000
@@ -270,7 +274,7 @@ class Lab:
         ttk.Label(top,textvariable=self.warning,wraplength=700,foreground="#a04000").pack(anchor="w")
         ttk.Label(top,text="Živé počty nejsou měření vynechaných vět; pro ně použij benchmark.py.",wraplength=700).pack(side="bottom",anchor="w")
         root.protocol("WM_DELETE_WINDOW",self.close)
-        root.after(50,self.poll)
+        root.after(25,self.poll)
 
     def config(self):
         return Config(self.engine.get(),self.filter.get(),int(self.scale.get()),int(self.interval.get()),
@@ -374,7 +378,7 @@ class Lab:
             s=self.session
             cfg=self.config()
             if cfg!=s.config:
-                s.config=cfg
+                with s.lock:s.config=cfg
                 s.invalidate()
                 self.translation.set("")
             try:
