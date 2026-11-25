@@ -593,6 +593,26 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('folder/"GameLingoDialogueText.kt"', wiring)
         self.assertIn('unit_dir/"GameLingoDialogueTextTest.kt"', wiring)
 
+    def test_point5_standalone_aba_generations_guard_delayed_results(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        accept = capture.split("private fun accept(raw: String)", 1)[1].split("private fun translateLatest()", 1)[0]
+        change = accept.rsplit("if (value != candidate) {", 1)[1]
+        self.assertLess(change.index("epoch++"), change.index("candidate = value"))
+        self.assertIn('lastAttempt = ""; lastAttemptAt = 0L', change)
+        self.assertNotIn("shownUntil =", change)
+        dialogue = capture.split("private fun translateLatest()", 1)[1].split("private fun clearHint()", 1)[0]
+        self.assertIn("ticket == epoch && value == candidate", dialogue)
+        self.assertIn("ticket != epoch) translateLatest()", dialogue)
+        self.assertNotIn("candidate != value) translateLatest()", dialogue)
+        yellow = capture.split("private fun processYellow(", 1)[1].split("private fun yellowHighlight", 1)[0]
+        change = yellow.split("if (words != yellowCandidate) {", 1)[1]
+        self.assertLess(change.index("yellowEpoch++"), change.index("yellowCandidate = words"))
+        self.assertIn("yellowLastAttempt = emptyList(); yellowAttemptAt = 0L", change)
+        yellow_translate = capture.split("private fun translateYellow()", 1)[1].split("private fun render(", 1)[0]
+        self.assertIn("ticket == yellowEpoch && value == yellowCandidate", yellow_translate)
+        self.assertIn("ticket != yellowEpoch) translateYellow()", yellow_translate)
+        self.assertIn('hintText=text; hintEpoch++; hintAttempt=""; hintAttemptAt=0L', capture)
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")

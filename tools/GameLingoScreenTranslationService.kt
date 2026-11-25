@@ -556,6 +556,10 @@ class GameLingoScreenTranslationService : Service() {
         // Do not use fuzzy shared-word matching to suppress meaningful changes.
         if (!dialogueStability.prijmi(value, radku = currentRows)) return
         if (value != candidate) {
+            // A -> B -> A is a new generation, even when the spelling matches
+            // a request that is still running. Do not cancel the reading timer.
+            epoch++
+            lastAttempt = ""; lastAttemptAt = 0L
             candidateAt = now
             candidate = value
             // A new OCR source invalidates only the previous source marker.
@@ -569,7 +573,7 @@ class GameLingoScreenTranslationService : Service() {
     }
     /** Independent OCR + one translation in flight; never queue stale dialogue. */
     private fun translateLatest() {
-        if (!active || paused || translationBusy || candidate.isBlank()) return
+        if (!active || paused || blockedHome || translationBusy || candidate.isBlank()) return
         val now = SystemClock.elapsedRealtime()
         if (lastTextAt == 0L || now - lastTextAt > 1800L || candidate == shown) return
         if (candidate == lastAttempt && now - lastAttemptAt < 1000L) return
@@ -585,7 +589,7 @@ class GameLingoScreenTranslationService : Service() {
             ui.post {
                 translationBusy = false
                 lastTranslationMs = SystemClock.elapsedRealtime() - now
-                val current = active && !paused && ticket == epoch && value == candidate &&
+                val current = active && !paused && !blockedHome && ticket == epoch && value == candidate &&
                     lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt <= 1800L
                 if (current && !translated.isNullOrBlank() && !GameLingoOCRConfig.expired(this@GameLingoScreenTranslationService,SystemClock.elapsedRealtime()-started)) {
                     translationState = "Přeloženo"; translationHits.incrementAndGet()
@@ -603,8 +607,9 @@ class GameLingoScreenTranslationService : Service() {
                 } else {
                     translationState = "Starý výsledek zahozen"
                 }
-                // If a newer subtitle arrived during the request, translate only that one.
-                if (active && !paused && candidate != value) translateLatest()
+                // Restart only for a changed generation. The newest candidate
+                // may have the same spelling as the obsolete request.
+                if (active && !paused && !blockedHome && ticket != epoch) translateLatest()
             }
         }
         try { p.preloz(value, { completed(it) }, { completed(null) }) }
@@ -624,7 +629,10 @@ class GameLingoScreenTranslationService : Service() {
     private fun acceptHint(text: String, box: FloatArray) {
         val now = SystemClock.elapsedRealtime()
         hintLastAt=now
-        if (text != hintText) { hintText=text; hintEpoch++; renderHint("",null) }
+        if (text != hintText) {
+            hintText=text; hintEpoch++; hintAttempt=""; hintAttemptAt=0L
+            renderHint("",null)
+        }
         if (hintBusy || (text == hintAttempt && now-hintAttemptAt < 1500L)) return
         val p = translator ?: return
         val ticket = hintEpoch
@@ -673,7 +681,11 @@ class GameLingoScreenTranslationService : Service() {
                     if (!active || paused || ticket != yellowEpoch) return@post
                     if (words.isEmpty() || (!yellowTextMode && selected < 0 && words != yellowCandidate)) return@post
                     yellowLastAt = SystemClock.elapsedRealtime()
-                    if (words != yellowCandidate) { yellowCandidate = words; yellowShown = emptyList(); renderYellow(emptyList(),-1) }
+                    if (words != yellowCandidate) {
+                        yellowEpoch++
+                        yellowLastAttempt = emptyList(); yellowAttemptAt = 0L
+                        yellowCandidate = words; yellowShown = emptyList(); renderYellow(emptyList(),-1)
+                    }
                     if (selected >= 0 || yellowTextMode) yellowSelected = selected
                     if (yellowShown.isNotEmpty()) renderYellow(yellowShown,yellowSelected)
                     else translateYellow()
@@ -698,17 +710,17 @@ class GameLingoScreenTranslationService : Service() {
     private fun translateYellow() {
         val value = yellowCandidate
         val now = SystemClock.elapsedRealtime()
-        if (!active || paused || yellowRequest || value.isEmpty() || now-yellowLastAt > 1800L ||
+        if (!active || paused || blockedHome || yellowRequest || value.isEmpty() || now-yellowLastAt > 1800L ||
             (value == yellowLastAttempt && now-yellowAttemptAt < 1000L)) return
         val p = translator ?: return
         val ticket = yellowEpoch
         yellowRequest = true; yellowLastAttempt = value; yellowAttemptAt = now
         val results = mutableListOf<String>()
-        fun current() = active && !paused && ticket == yellowEpoch && value == yellowCandidate &&
+        fun current() = active && !paused && !blockedHome && ticket == yellowEpoch && value == yellowCandidate &&
             SystemClock.elapsedRealtime()-yellowLastAt <= 1800L
         fun finish() {
             yellowRequest=false
-            if (active && !paused && yellowCandidate != value) translateYellow()
+            if (active && !paused && !blockedHome && ticket != yellowEpoch) translateYellow()
         }
         fun next(index: Int) {
             if (!current()) { finish(); return }
