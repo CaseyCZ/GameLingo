@@ -70,7 +70,49 @@ final class XboxRemotePlay: NSObject {
         }
     }
 
-    func streamSummary() -> String { videoSink.metricsSummary() }
+    private let statsLock = NSLock()
+    private var statsPending = false
+    private var networkMetrics = XboxNetworkWindow()
+
+    func streamSummary() -> String {
+        let video = videoSink.metricsSummary()
+        statsLock.lock()
+        defer { statsLock.unlock() }
+        return video + "\n" + networkMetrics.summary(now: ProcessInfo.processInfo.systemUptime)
+    }
+
+    private func requestNetworkStats() {
+        guard !ended, let peer else { return }
+        statsLock.lock()
+        if statsPending { statsLock.unlock(); return }
+        statsPending = true
+        statsLock.unlock()
+        peer.statistics(completionHandler: { [weak self] report in
+            guard let self else { return }
+            let all = report.statistics
+            func num(_ values: [String: NSObject], _ key: String) -> Double? {
+                (values[key] as? NSNumber)?.doubleValue
+            }
+            let video = all.values.filter {
+                $0.type == "inbound-rtp" && (($0.values["kind"] ?? $0.values["mediaType"]) as? String) == "video"
+            }.max { (num($0.values,"bytesReceived") ?? -1) < (num($1.values,"bytesReceived") ?? -1) }
+            let active = !self.ended
+            self.statsLock.lock()
+            defer { self.statsPending = false; self.statsLock.unlock() }
+            guard active, let video else { return }
+            let v = video.values
+            let transport = (v["transportId"] as? String).flatMap { all[$0] }
+            let pairID = transport?.values["selectedCandidatePairId"] as? String
+            let nominated = all.values.filter {
+                $0.type == "candidate-pair" && ($0.values["state"] as? String) == "succeeded" &&
+                    ($0.values["nominated"] as? NSNumber)?.boolValue == true
+            }
+            let pair = pairID.flatMap { all[$0] } ?? (nominated.count == 1 ? nominated.first : nil)
+            self.networkMetrics.record(.init(id: video.id, now: ProcessInfo.processInfo.systemUptime,
+                bytes: num(v,"bytesReceived"), received: num(v,"packetsReceived"), lost: num(v,"packetsLost"),
+                jitter: num(v,"jitter"), rtt: pair.flatMap { num($0.values,"currentRoundTripTime") }))
+        })
+    }
 
     private func info(_ message: String) {
         onStatus?(message)
@@ -177,6 +219,7 @@ final class XboxRemotePlay: NSObject {
             while let self, !Task.isCancelled, !self.ended {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 guard !self.ended, !Task.isCancelled else { break }
+                self.requestNetworkStats()
                 // Xbox needs ongoing client activity even when reading only subtitles.
                 if Date().timeIntervalSince(self.lastKeyframe) > 4.5 {
                     self.requestKeyframe()

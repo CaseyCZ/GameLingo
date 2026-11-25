@@ -44,8 +44,44 @@ internal object GameLingoNetworkPerformance {
     fun summary() = "Síťová fronta (online, od spuštění aplikace): ${queue.summary()}; zahozeno: ${discarded.get()}"
 }
 
+/** Numeric inbound video statistics only. Internal stream ID distinguishes counter resets;
+ * no addresses, raw reports or device identifiers are exposed or persisted. */
+internal class GameLingoXboxNetworkMetrics {
+    data class Sample(val id: String, val atMs: Long, val bytes: Double?,
+                      val received: Double?, val lost: Double?, val jitterSeconds: Double?, val rttSeconds: Double?)
+    private var previous: Sample? = null
+    private var kbps: Double? = null
+    private var loss: Double? = null
+    private var lostInWindow: Double? = null
+    private fun delta(a: Double?, b: Double?): Double? =
+        if (a != null && b != null && a.isFinite() && b.isFinite() && a >= b) a - b else null
+    @Synchronized fun record(sample: Sample) {
+        val old = previous
+        previous = sample
+        kbps = null; loss = null; lostInWindow = null
+        if (old == null || old.id != sample.id || sample.atMs <= old.atMs) return
+        val elapsed = sample.atMs - old.atMs
+        kbps = delta(sample.bytes, old.bytes)?.let { it * 8.0 / elapsed }
+        val r = delta(sample.received, old.received)
+        val l = delta(sample.lost, old.lost)
+        if (r != null && l != null) {
+            lostInWindow = l
+            if (r + l > 0) loss = 100.0 * l / (r + l)
+        }
+    }
+    @Synchronized fun summary(now: Long): String {
+        val s = previous
+        if (s == null || now < s.atMs || now - s.atMs > 15000L) return "Xbox síť: nedostupná"
+        fun fmt(v: Double?, unit: String) =
+            if (v != null && v.isFinite() && v >= 0) String.format(java.util.Locale.ROOT, "%.1f %s", v, unit) else "–"
+        return "Xbox síť (video): ${fmt(kbps,"kb/s")} · ztráta ${fmt(loss,"%")} (${fmt(lostInWindow,"paketů")})" +
+            " · jitter ${fmt(s.jitterSeconds?.times(1000),"ms")} · RTT ${fmt(s.rttSeconds?.times(1000),"ms")}"
+    }
+}
+
 /** Decoder-delivered frame rate, not the OCR sampler rate or requested resolution. */
 internal class GameLingoXboxVideoMetrics {
+    val network = GameLingoXboxNetworkMetrics()
     private var windowStart: Long? = null
     private var frames = 0L
     private var lastFrame: Long? = null
@@ -77,7 +113,8 @@ internal class GameLingoXboxVideoMetrics {
     @Synchronized fun summary(now: Long): String {
         val size = if (width > 0 && height > 0) "${width}×${height}" else "–"
         val fps = fps(now)?.let { String.format(java.util.Locale.ROOT, "%.1f", it) } ?: "–"
-        return "Xbox dekódovaný obraz: $size · $fps FPS" + if (stopped) " (poslední relace ukončena)" else ""
+        return "Xbox dekódovaný obraz: $size · $fps FPS" +
+            if (stopped) " (poslední relace ukončena)" else "\n" + network.summary(now)
     }
 }
 internal object GameLingoXboxDiagnostics {

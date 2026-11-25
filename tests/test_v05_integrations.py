@@ -679,6 +679,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("videoMetrics.stop()", wiring)
         self.assertIn("remotePlay.streamSummary()", code(IOS/"PlayCaptionIOSApp.swift"))
 
+    def test_point12_native_webrtc_stats_use_video_counters_and_selected_pair(self):
+        xbox = code(IOS/"XboxRemotePlay.swift")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        for marker in ("inbound-rtp", "bytesReceived", "packetsReceived", "packetsLost",
+                       "jitter", "selectedCandidatePairId", "currentRoundTripTime"):
+            self.assertIn(marker, xbox)
+            self.assertIn(marker, wiring)
+        self.assertIn("peer.statistics(completionHandler:", xbox)
+        self.assertIn("peer.getStats", wiring)
+        self.assertIn("statsPending", xbox)
+        self.assertIn("statsPending", wiring)
+        self.assertIn("h.postDelayed(poll, 5000L)", wiring)
+        self.assertIn("old.id == sample.id", code(IOS/"PerformanceWindow.swift"))
+        self.assertIn("old.id != sample.id", code(TOOLS/"GameLingoPerformance.kt"))
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")

@@ -374,6 +374,56 @@ def main():
         '            videoMetrics.frame(sirka, vyska, android.os.SystemClock.elapsedRealtime())', xbox.name)
     xbox_text = once(xbox_text, '            konec = true\n            bezi = false',
         '            konec = true\n            videoMetrics.stop()\n            bezi = false', xbox.name)
+    # Non-blocking native WebRTC reports every 5 s, scoped to this Xbox session.
+    xbox_text = once(xbox_text, '        private val videoMetrics = GameLingoXboxVideoMetrics()',
+        '''        private val videoMetrics = GameLingoXboxVideoMetrics()
+        private val statsLock = Any()
+        private var statsPending = false
+
+        private fun startNetworkStats(peer: PeerConnection) {
+            val poll = object : Runnable {
+                override fun run() {
+                    if (konec) return
+                    synchronized(statsLock) {
+                        if (!konec && pc === peer && !statsPending) {
+                            statsPending = true
+                            runCatching {
+                                peer.getStats { report ->
+                                    h.post {
+                                        statsPending = false
+                                        if (!konec && pc === peer) readNetworkStats(report)
+                                    }
+                                }
+                            }.onFailure { statsPending = false }
+                        }
+                    }
+                    if (!konec) h.postDelayed(this, 5000L)
+                }
+            }
+            h.postDelayed(poll, 5000L)
+        }
+        private fun readNetworkStats(report: org.webrtc.RTCStatsReport) {
+            val all = report.statsMap
+            fun number(m: Map<String, Any>, key: String) = (m[key] as? Number)?.toDouble()
+            val video = all.values.filter { it.type == "inbound-rtp" &&
+                (it.members["kind"] ?: it.members["mediaType"]) == "video" }
+                .maxByOrNull { number(it.members,"bytesReceived") ?: -1.0 } ?: return
+            val v = video.members
+            val transport = (v["transportId"] as? String)?.let { all[it] }
+            val pairId = transport?.members?.get("selectedCandidatePairId") as? String
+            val pair = pairId?.let { all[it] } ?: all.values.filter { it.type == "candidate-pair" &&
+                it.members["state"] == "succeeded" && it.members["nominated"] == true }.singleOrNull()
+            videoMetrics.network.record(GameLingoXboxNetworkMetrics.Sample(video.id,
+                android.os.SystemClock.elapsedRealtime(), number(v,"bytesReceived"), number(v,"packetsReceived"),
+                number(v,"packetsLost"), number(v,"jitter"), pair?.members?.let { number(it,"currentRoundTripTime") }))
+        }
+''', xbox.name)
+    xbox_text = once(xbox_text, '            pc = p\n            // kanály jako webový přehrávač Xboxu',
+        '            pc = p\n            startNetworkStats(p)\n            // kanály jako webový přehrávač Xboxu', xbox.name)
+    xbox_text = once(xbox_text, '                runCatching { pc?.close() }',
+        '                synchronized(statsLock) { runCatching { pc?.close() } }', xbox.name)
+    xbox_text = once(xbox_text, '                runCatching { pc?.dispose() }\n                pc = null',
+        '                synchronized(statsLock) { runCatching { pc?.dispose() }; pc = null }', xbox.name)
     xbox.write_text(xbox_text, encoding="utf8")
     s=once(s, '    private var stOd = 0L',
         '    private val performance = GameLingoPerformance()\n    private var stOd = 0L', service.name)

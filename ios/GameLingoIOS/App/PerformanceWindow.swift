@@ -59,3 +59,44 @@ struct XboxDecodedVideoWindow {
         return "Xbox dekódovaný obraz: \(size) · \(frameRate) FPS"
     }
 }
+
+
+/// Numeric video statistics from native WebRTC. Never stores a raw report.
+struct XboxNetworkWindow {
+    struct Sample {
+        let id: String
+        let now: TimeInterval
+        let bytes: Double?
+        let received: Double?
+        let lost: Double?
+        let jitter: Double?
+        let rtt: Double?
+    }
+    private var previous: Sample?
+    private var kbps: Double?
+    private var loss: Double?
+    private var lostInWindow: Double?
+    private func delta(_ new: Double?, _ old: Double?) -> Double? {
+        guard let new, let old, new.isFinite, old.isFinite, new >= old else { return nil }
+        return new - old
+    }
+    mutating func record(_ sample: Sample) {
+        let old = previous
+        previous = sample
+        kbps = nil; loss = nil; lostInWindow = nil
+        guard let old, old.id == sample.id, sample.now > old.now else { return }
+        kbps = delta(sample.bytes, old.bytes).map { $0 * 8 / (sample.now - old.now) / 1000 }
+        if let r = delta(sample.received, old.received), let l = delta(sample.lost, old.lost) {
+            lostInWindow = l
+            if r + l > 0 { loss = 100 * l / (r + l) }
+        }
+    }
+    func summary(now: TimeInterval) -> String {
+        guard let s = previous, now >= s.now, now - s.now <= 15 else { return "Xbox síť: nedostupná" }
+        func fmt(_ value: Double?, _ unit: String) -> String {
+            guard let value, value.isFinite, value >= 0 else { return "–" }
+            return String(format: "%.1f", locale: Locale(identifier: "en_US_POSIX"), value) + " " + unit
+        }
+        return "Xbox síť (video): \(fmt(kbps,"kb/s")) · ztráta \(fmt(loss,"%")) (\(fmt(lostInWindow,"paketů"))) · jitter \(fmt(s.jitter.map { $0 * 1000 },"ms")) · RTT \(fmt(s.rtt.map { $0 * 1000 },"ms"))"
+    }
+}
