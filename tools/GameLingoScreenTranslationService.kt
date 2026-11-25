@@ -602,7 +602,9 @@ class GameLingoScreenTranslationService : Service() {
                 else { dialogueStability.reset(); hideAfterSourceGone() }
                 // Invalidate in-flight translation without shortening or extending
                 // the existing display deadline. Explicit stop/context changes still clear immediately.
-                epoch++; candidate = ""; lastAttempt = ""; lastAttemptAt = 0L
+                // Forget the source marker, not the displayed text or its deadline.
+                // A repeated line after confirmed absence is a new occurrence.
+                epoch++; candidate = ""; shown = ""; lastAttempt = ""; lastAttemptAt = 0L
             }
             return
         }

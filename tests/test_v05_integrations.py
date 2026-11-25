@@ -1384,6 +1384,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
         self.assertIn("shownUntil = minOf(shownUntil, now + GameLingoOCRConfig.sourceGoneDelay(this)", capture)
 
+    def test_review_confirmed_absence_rearms_same_dialogue_and_short_yellow_choices(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        blank = capture.split("if (value.isBlank()) {", 1)[1].split("blankFrames = 0;", 1)[0]
+        self.assertIn('epoch++; candidate = ""; shown = ""', blank)
+        self.assertNotIn("shownUntil =", blank)
+        self.assertNotIn('render("")', blank)
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        yellow = pipeline.split("func recognizeOptions(", 1)[1]
+        self.assertIn("YellowOCRFilter.hasReadableText($0)", yellow)
+        self.assertIn(">= 2", code(IOS/"YellowOCRFilter.swift"))
+
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))
         self.assertNotIn('PS5 – coming soon',all_ios)

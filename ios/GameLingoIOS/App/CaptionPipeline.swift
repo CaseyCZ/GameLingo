@@ -289,7 +289,7 @@ actor CaptionPipeline {
                 .sorted { $0.boundingBox.midY > $1.boundingBox.midY }
                 .compactMap { $0.topCandidates(1).first?.string
                     .trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { $0.filter { $0.isLetter }.count >= 3 }
+                .filter { YellowOCRFilter.hasReadableText($0) }
                 .filter { YellowOCRFilter.keeps($0, enabled: filterControls) && OCRIgnoredLines.keeps($0, entries: ignored) }
 
             let output = asText

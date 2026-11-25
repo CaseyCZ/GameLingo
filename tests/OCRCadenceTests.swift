@@ -22,6 +22,12 @@ struct OCRCadenceTests {
         for option in ["YES", "NO", "LEAVE", "Hold on", "Press X to open the door", "A", "Inventory"] {
             precondition(YellowOCRFilter.keeps(option, enabled: true))
         }
+        for shortChoice in ["NO", "OK", "NE", "はい", "YES"] {
+            precondition(YellowOCRFilter.hasReadableText(shortChoice))
+        }
+        for noise in ["", "X", "1", "A!", "..."] {
+            precondition(!YellowOCRFilter.hasReadableText(noise))
+        }
         let ignored = OCRIgnoredLines.entries("  SAVE  GAME\nLoading\n")
         precondition(!OCRIgnoredLines.keeps("save game", entries: ignored))
         precondition(OCRIgnoredLines.keeps("Please save game now", entries: ignored))
