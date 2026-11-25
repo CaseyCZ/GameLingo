@@ -168,6 +168,12 @@ final class CaptionAppModel: ObservableObject {
     @Published var outputLocked = UserDefaults.standard.bool(forKey: "outputLocked") {
         didSet { UserDefaults.standard.set(outputLocked, forKey: "outputLocked") }
     }
+    @Published var minBlueHeight = UserDefaults.standard.integer(forKey: "minBlueHeight") {
+        didSet {
+            UserDefaults.standard.set(minBlueHeight, forKey: "minBlueHeight")
+            if oldValue != minBlueHeight { invalidateDialogue() }
+        }
+    }
     @Published var ignoredBlueLines = UserDefaults.standard.string(forKey: "ignoredBlueLines") ?? "" {
         didSet {
             UserDefaults.standard.set(ignoredBlueLines, forKey: "ignoredBlueLines")
@@ -398,6 +404,7 @@ final class CaptionAppModel: ObservableObject {
             choicesTextMode: choicesTextMode,
             filterChoiceControls: filterChoiceControls,
             ignoredBlueLines: ignoredBlueLines,
+            minBlueHeight: minBlueHeight,
             ignoredYellowLines: ignoredYellowLines,
             choicesArea: choicesArea,
             choicesLocked: choicesLocked,
@@ -443,6 +450,7 @@ final class CaptionAppModel: ObservableObject {
         choicesTextMode = profile.choicesTextMode
         filterChoiceControls = profile.filterChoiceControls ?? false
         ignoredBlueLines = profile.ignoredBlueLines ?? ""
+        minBlueHeight = min(5, max(0, profile.minBlueHeight ?? 0))
         ignoredYellowLines = profile.ignoredYellowLines ?? ""
         choicesLocked = profile.choicesLocked
         choicesEnabled = profile.choicesEnabled
@@ -878,7 +886,7 @@ final class CaptionAppModel: ObservableObject {
             let reading = await self.pipeline.recognize(
                 buffer, region: self.subtitleRegion,
                 manualArea: self.manualOCR ? self.manualOCRBox : nil,
-                filterMenus: self.filterMenuText, ignoredLines: self.ignoredBlueLines,
+                filterMenus: self.filterMenuText, ignoredLines: self.ignoredBlueLines, minimumHeight: self.minBlueHeight,
                 mode: self.ocrMode,
                 expandOnEmpty: self.expandOnEmpty,
                 gameLanguage: activeGameLanguage

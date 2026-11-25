@@ -590,6 +590,13 @@ def wire_yellow_control_filter(source: str) -> str:
         raise RuntimeError("Android yellow OCR result anchor changed")
     return source[:start] + lane.replace(before, after, 1) + source[end:]
 
+def wire_blue_minimum_height(source: str) -> str:
+    before = "OcrKus(l.text.trim(), it.left, it.top, it.right, it.bottom, blok)"
+    after = "if (GameLingoOCRConfig.minBlueHeight == 0 || (it.bottom - it.top).toLong() * 100 >= obraz.height.toLong() * GameLingoOCRConfig.minBlueHeight) OcrKus(l.text.trim(), it.left, it.top, it.right, it.bottom, blok) else null"
+    if source.count(before) != 1:
+        raise RuntimeError("Android blue OCR height anchor changed")
+    return source.replace(before, after, 1)
+
 def main():
     if len(sys.argv)!=3 or sys.argv[1] not in ("mobile","tv"):
         raise SystemExit("Usage: redesign_gamelingo.py mobile|tv <upstream_checkout>")
@@ -616,7 +623,7 @@ def main():
         raise RuntimeError("Android OCR native reader source changed")
     select.write_text(code.replace(before,after,1),encoding="utf8")
     reader=base/SRC/"Ctecka.kt"
-    reader.write_text(wire_yellow_control_filter(wire_dialogue_menu_filter(reader.read_text(encoding="utf8"))),encoding="utf8")
+    reader.write_text(wire_blue_minimum_height(wire_yellow_control_filter(wire_dialogue_menu_filter(reader.read_text(encoding="utf8")))),encoding="utf8")
 
     service=base/SRC/"RemotePlayService.kt"
     code=service.read_text(encoding="utf8")

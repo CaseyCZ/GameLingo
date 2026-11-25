@@ -15,6 +15,8 @@ object GameLingoOCRConfig {
         private set
     @Volatile var filterChoiceControls: Boolean = false
         private set
+    @Volatile var minBlueHeight: Int = 0
+        private set
     @Volatile var ignoredBlueLines: String = ""
         private set
     @Volatile var ignoredYellowLines: String = ""
@@ -58,6 +60,7 @@ object GameLingoOCRConfig {
             ?.takeIf { it in modes } ?: "classic"
         filterMenuText = store.getBoolean("filterMenuText", true)
         filterChoiceControls = store.getBoolean("filterChoiceControls", false)
+        minBlueHeight = store.getInt("minBlueHeight", 0).coerceIn(0, 5)
         ignoredBlueLines = store.getString("ignoredBlueLines", "").orEmpty()
         ignoredYellowLines = store.getString("ignoredYellowLines", "").orEmpty()
         ignoredBlueEntries = GameLingoIgnoredLines.entries(ignoredBlueLines)
@@ -103,6 +106,11 @@ object GameLingoOCRConfig {
             .edit().putBoolean("filterChoiceControls", selected).apply()
     }
 
+    fun setMinBlueHeight(context: Context, value: Int) {
+        minBlueHeight = value.coerceIn(0, 5)
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt("minBlueHeight", minBlueHeight).apply()
+    }
+
     fun setIgnoredLines(context: Context, yellow: Boolean, raw: String) {
         val value = raw.take(8192)
         val entries = GameLingoIgnoredLines.entries(value)
@@ -124,6 +132,7 @@ object GameLingoOCRConfig {
         mode = "classic"
         filterMenuText = true
         filterChoiceControls = false
+        minBlueHeight = 0
         ignoredBlueLines = ""; ignoredYellowLines = ""
         ignoredBlueEntries = emptySet(); ignoredYellowEntries = emptySet()
         expandSearch = false

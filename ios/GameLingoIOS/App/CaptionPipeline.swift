@@ -141,14 +141,14 @@ actor CaptionPipeline {
     func recognize(_ buffer: CVPixelBuffer,
                    region: SubtitleRegion,
                    manualArea: CGRect?,
-                   filterMenus: Bool, ignoredLines: String = "",
+                   filterMenus: Bool, ignoredLines: String = "", minimumHeight: Int = 0,
                    mode: OCRMode = .classic,
                    expandOnEmpty: Bool = false,
                    gameLanguage: GLGameLanguage = .english) -> RecognizedCaption? {
         let baseROI = manualArea.map { CGRect(
             x: $0.minX, y: 1 - $0.maxY, width: $0.width, height: $0.height
         ) } ?? region.rect
-        let settings = "\(baseROI)|\(filterMenus)|\(mode.rawValue)|\(expandOnEmpty)|\(gameLanguage.rawValue)|\(ignoredLines)"
+        let settings = "\(baseROI)|\(filterMenus)|\(mode.rawValue)|\(expandOnEmpty)|\(gameLanguage.rawValue)|\(ignoredLines)|\(minimumHeight)"
         if settings != lastSettings {
             lastSettings = settings
             lastText = ""
@@ -177,6 +177,7 @@ actor CaptionPipeline {
         request.recognitionLanguages = [gameLanguage.visionIdentifier]
         request.usesLanguageCorrection = true
         request.regionOfInterest = roi
+        if minimumHeight > 0 { request.minimumTextHeight = Float(min(5, minimumHeight)) / 100 }
 
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])

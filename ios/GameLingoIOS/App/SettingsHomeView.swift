@@ -310,6 +310,10 @@ private struct GameLingoOCRSettingsView: View {
                 Toggle("Žlutá: filtrovat pokyny ovladače", isOn: $model.filterChoiceControls)
                 Text("Ignorované řádky (jeden výraz na řádek)").font(.caption)
                 TextField("Modrá oblast", text: $model.ignoredBlueLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
+                Picker("Modrá: minimální výška textu", selection: $model.minBlueHeight) {
+                    Text("Automaticky").tag(0)
+                    ForEach(1...5, id: \.self) { value in Text("\(value) %").tag(value) }
+                }.disabled(model.isRunning)
                 TextField("Žlutá oblast", text: $model.ignoredYellowLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
                 Text("Pouze přesná shoda celého řádku, bez ohledu na velikost písmen.").font(.caption)
                 Toggle("Rozšířit hledání", isOn: $model.expandOnEmpty)
@@ -329,6 +333,7 @@ private struct GameLingoOCRSettingsView: View {
                     model.filterMenuText = true
                     model.filterChoiceControls = false
                     model.ignoredBlueLines = ""
+                    model.minBlueHeight = 0
                     model.ignoredYellowLines = ""
                 }
                 .disabled(model.isRunning)
@@ -767,6 +772,7 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var choicesTextMode: Bool
     var filterChoiceControls: Bool?
     var ignoredBlueLines: String?
+    var minBlueHeight: Int?
     var ignoredYellowLines: String?
     var choicesArea: CGRect
     var choicesLocked: Bool
