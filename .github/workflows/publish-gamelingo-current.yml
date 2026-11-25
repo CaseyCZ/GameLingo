@@ -73,6 +73,7 @@ jobs:
           cat > release-notes.md <<EOF
           # GameLingo ${GAMELINGO_VERSION} TEST — aktuální vydání
           - iOS (nepodepsaná IPA), Android a Google TV (testovací APK).
+          - Aktualizace přímo v aplikaci, trvalé podpisy obou APK; iOS IPA k vlastnímu podepsání.
           - Čtyři nezávislé oblasti OCR a výstupu, rychlost, stabilizace a časování dialogů, profily a diagnostika.
           - Pouze vývojový kandidát: automatické sestavení nenahrazuje fyzickou QA ani licenční prověření.
           - Párování používat v důvěryhodné domácí síti; přenos není šifrovaný.
@@ -81,10 +82,19 @@ jobs:
           Sestavení: https://github.com/$REPO/actions/runs/$RUN
           Licence a upstream: https://github.com/$REPO/blob/$BUILD_SOURCE/ATTRIBUTION.md
           EOF
-          if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
-            echo "Release exists; validate all assets before cleanup."
-          else
-            gh release create "$TAG" release/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa release/GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk release/SHA256SUMS.txt release/GameLingo-TV-update.json release/GameLingo-Android-update.json release/GameLingo-iOS-update.json -R "$REPO" --target "$SOURCE" --title "GameLingo ${GAMELINGO_VERSION} TEST · ${BUILD_SOURCE:0:8}" --prerelease --notes-file release-notes.md
+          # Resume a draft after a failed upload; never expose partial assets.
+          if ! gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" -R "$REPO" --target "$SOURCE" --title "GameLingo ${GAMELINGO_VERSION} TEST · ${BUILD_SOURCE:0:8}" --draft --prerelease --notes-file release-notes.md
+          fi
+          if [ "$(gh release view "$TAG" -R "$REPO" --json isDraft --jq .isDraft)" = true ]; then
+            for name in "${files[@]}"; do
+              actual="$(gh release view "$TAG" -R "$REPO" --json assets | jq -r --arg name "$name" '.assets[] | select(.name == $name and .state == "uploaded") | .size')"
+              if [ "$actual" != "$(stat -c%s "release/$name")" ]; then
+                gh release upload "$TAG" "release/$name" -R "$REPO" --clobber || echo "::warning::Upload reported failure; checking stored asset."
+                actual="$(gh release view "$TAG" -R "$REPO" --json assets | jq -r --arg name "$name" '.assets[] | select(.name == $name and .state == "uploaded") | .size')"
+                test "$actual" = "$(stat -c%s "release/$name")"
+              fi
+            done
           fi
           gh release view "$TAG" -R "$REPO" --json assets > published-assets.json
           test "$(jq '.assets | length' published-assets.json)" = 7
@@ -95,6 +105,11 @@ jobs:
           mkdir -p published
           gh release download "$TAG" -R "$REPO" -D published
           for name in "${files[@]}"; do cmp "release/$name" "published/$name"; done
+          test "$(gh api "repos/$REPO/branches/Master" --jq .commit.sha)" = "$SOURCE"
+          if [ "$(gh release view "$TAG" -R "$REPO" --json isDraft --jq .isDraft)" = true ]; then
+            gh release edit "$TAG" -R "$REPO" --draft=false --prerelease=true
+          fi
+          test "$(gh release view "$TAG" -R "$REPO" --json isDraft --jq .isDraft)" = false
           gh release list -R "$REPO" --limit 100 --json tagName --jq '.[].tagName' > old-releases.txt
           while IFS= read -r old; do
             [ -n "$old" ] || continue

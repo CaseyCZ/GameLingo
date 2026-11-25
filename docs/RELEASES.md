@@ -64,3 +64,7 @@ Publikace se zastaví, pokud nejsou nastaveny soukromé GitHub Actions secrets G
 Android telefon používá tentýž aktualizátor jako TV, ale vlastní identitu APK, metadata a podpis. iOS načítá manifest GameLingo-iOS-update.json, vyžaduje novější verzi/build, kontroluje velikost a SHA-256 a nabídne staženou nepodepsanou IPA přes systémové sdílení. Podpis a instalaci IPA řeší uživatel. Nejde o automatickou instalaci iOS.
 
 Pro mobilní Android vytvoř samostatný PKCS12 klíč s aliasem gamelingo-mobile; do GitHub Actions Secrets patří GAMELINGO_MOBILE_KEYSTORE_B64 a GAMELINGO_MOBILE_KEYSTORE_PASSWORD. TV používá dosavadní alias gamelingo-tv a GAMELINGO_TV_* secrets. Klíče uchovej bezpečně mimo repozitář a chat, se zálohou. Vydání blokuje chybějící nebo nesouhlasící podpis obou APK. Po prvním přechodu na trvalý podpis aktualizuj bez odinstalace. Při každém novém vydání zvyš verzi/build jedním příkazem. Release stále ručně po CI a fyzických testech.
+
+## Aktivní CI
+
+Čtyři workflow: `audit-0.5-ci.yml` (hlavní kontrola), `fast-gamelingo-checks.yml` (rychlé testy), `build-gamelingo.yml` (všechny tři platformy), `publish-gamelingo-current.yml` (ručně schválené vydání). Samostatná historická sestavení nahrazuje společné CI. Publikace nejprve připraví draft, ověří všechny nahrané soubory a zveřejní jej až po porovnání obsahu. Historické běhy zůstávají zachované.

@@ -999,6 +999,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 module.metadata(apk,tag,"1.2.3",badging.replace(".tv",".mobile"),cert,cert)
 
+    def test_publisher_verifies_draft_before_exposing_and_cleanup(self):
+        workflow = code(ROOT/".github/workflows/publish-gamelingo-current.yml")
+        self.assertIn("--draft --prerelease", workflow)
+        self.assertIn('gh release upload "$TAG" "release/$name"', workflow)
+        self.assertLess(workflow.index('cmp "release/$name" "published/$name"'),
+                        workflow.index('gh release edit "$TAG"'))
+        self.assertLess(workflow.index('gh release edit "$TAG"'),
+                        workflow.index('gh release delete "$old"'))
+
     def test_audit_forwards_only_explicit_signing_secrets(self):
         caller = code(ROOT/".github/workflows/audit-0.5-ci.yml")
         callee = code(ROOT/".github/workflows/build-gamelingo.yml")
