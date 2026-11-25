@@ -5,7 +5,6 @@ import queue
 import threading
 import time
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 import tkinter as tk
 from tkinter import ttk,messagebox,filedialog
@@ -14,6 +13,8 @@ import mss
 from core import Dialogue,percentile
 from engines import make_engine,preprocess,local_translator
 from translation_timing import Ticket,eligible,timings,run_job
+from stabilizer import Stabilizer
+from latest_slot import LatestSlot
 
 @dataclass(frozen=True)
 class Config:
@@ -24,6 +25,7 @@ class Config:
     psm:int
     rolling:bool
     translate:bool
+    stabilize:bool=False
 
 def dpi_aware():
     try:
@@ -48,10 +50,17 @@ class Session:
         self.lock=threading.Lock()
         self.epoch=0
         self.displayed=-1
-        self.metrics=dict(submitted=0,completed=0,shown=0,stale=0,replaced=0,errors=0)
+        self.metrics=dict(submitted=0,completed=0,shown=0,stale=0,replaced=0,errors=0,held=0)
         self.ui_times=deque(maxlen=1000)
         self.trans_times=deque(maxlen=1000)
+        self.pending=LatestSlot()
+        self.result=None
+        self.error=""
+        self.ready=threading.Event()
+        self.warmup_ms=None
+        self.worker=threading.Thread(target=self.translate_loop,daemon=True)
         self.thread=threading.Thread(target=self.run,daemon=True)
+        self.worker.start()
         self.thread.start()
 
     def emit(self,data):
@@ -62,53 +71,101 @@ class Session:
     def record(self,row):
         keys=("elapsed_ms","engine","filter","scale","interval_ms","psm","capture_prep_ms","ocr_ms",
               "event","source","delta","translation","generation","translation_queue_ms","translation_ms",
-              "frame_to_result_ms","frame_to_ui_ms","cold_translation")
+              "frame_to_result_ms","frame_to_ui_ms","cold_translation","warmup_ms","stabilize","raw_source")
         with self.lock:self.rows.append({k:row.get(k,"") for k in keys})
 
     def note(self,key):
         with self.lock:self.metrics[key]+=1
 
-    def accept_ui(self,result,now):
+    def invalidate(self):
         with self.lock:
+            self.epoch+=1
+            if self.result is not None and self.result.ticket.generation>self.displayed:
+                self.metrics["stale"]+=1
+            self.result=None
+        if self.pending.clear():self.note("replaced")
+
+    def take_ui(self,now):
+        with self.lock:
+            result=self.result
+            if result is None:return None
+            if result.ticket.generation<=self.displayed:return None
             if not eligible(result,self.epoch,self.displayed,now,self.config.translate):
-                return False
+                self.metrics["stale"]+=1
+                self.result=None
+                return None
             self.displayed=result.ticket.generation
             self.metrics["shown"]+=1
-            if not result.cold:self.ui_times.append((now-result.ticket.frame_at)*1000)
+            self.ui_times.append((now-result.ticket.frame_at)*1000)
         self.record(dict(event="ui_displayed",source=result.ticket.source,
                          translation=result.text,**timings(result,now)))
-        return True
+        return result.text
+
+    def translate_loop(self):
+        translator=None
+        try:
+            while not self.stop.is_set():
+                ticket=self.pending.take()
+                if ticket is None:break
+                if ticket=="warmup":
+                    if translator is None:
+                        t=time.perf_counter()
+                        translator=local_translator()
+                        translator("Please wait here.")
+                        with self.lock:self.warmup_ms=(time.perf_counter()-t)*1000
+                        self.record(dict(event="model_warmup",warmup_ms=round(self.warmup_ms,1)))
+                    self.ready.set()
+                    continue
+                if self.stop.is_set():break
+                with self.lock:
+                    valid=ticket.epoch==self.epoch and self.config.translate
+                if not valid:
+                    self.note("stale")
+                    continue
+                self.note("submitted")
+                result=run_job(ticket,translator,False)
+                self.note("completed")
+                with self.lock:
+                    self.trans_times.append((result.finished_at-result.started_at)*1000)
+                    valid=not self.stop.is_set() and eligible(result,self.epoch,self.displayed,time.perf_counter(),self.config.translate)
+                    if valid:
+                        if self.result is not None and self.result.ticket.generation>self.displayed:
+                            self.metrics["stale"]+=1
+                        self.result=result
+                    else:self.metrics["stale"]+=1
+                self.record(dict(event="translation_completed" if valid else "translation_stale",
+                                 source=ticket.source,translation=result.text,**timings(result)))
+        except Exception as exc:
+            self.note("errors")
+            with self.lock:self.error=f"{type(exc).__name__}: {exc}"
+            self.ready.set()
 
     def run(self):
         engines={}
         tracker=Dialogue()
+        stabilizer=Stabilizer()
         times=deque(maxlen=1000)
-        counts={"new":0,"repeat":0,"blank":0,"clear":0}
-        translation=""
-        translation_error=""
+        counts={"new":0,"repeat":0,"blank":0,"clear":0,"held":0}
         last_config=None
-        generation=-1
-        future=None
-        pending=None
-        result_for_ui=None
-        translate_fn=None
-        pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix="local-translation")
+        generation=0
         start=time.perf_counter()
         try:
             with mss.mss() as sct:
                 while not self.stop.is_set():
                     cfg=self.config
                     if cfg!=last_config:
-                        # Do not combine statistics across different settings.
                         tracker=Dialogue()
+                        stabilizer=Stabilizer()
                         times.clear()
                         counts=dict.fromkeys(counts,0)
-                        generation+=1
-                        with self.lock:self.epoch+=1
-                        if pending is not None:self.note("replaced")
-                        pending=result_for_ui=None
-                        translation=translation_error=""
+                        self.invalidate()
                         last_config=cfg
+                    if cfg.translate and not self.ready.is_set():
+                        self.emit({"status":"Připravuji lokální překladač – snímání ještě neběží."})
+                        self.pending.put("warmup")
+                        while not self.stop.is_set() and not self.ready.wait(.05):pass
+                        if self.stop.is_set():break
+                        if cfg!=self.config:continue
                     if cfg.engine not in engines:
                         self.emit({"status":"Načítám "+cfg.engine+"..."})
                         engines[cfg.engine]=make_engine(cfg.engine)
@@ -119,66 +176,38 @@ class Session:
                     raw=engines[cfg.engine].read(prep,cfg.psm)
                     end=time.perf_counter()
                     if self.stop.is_set():break
-                    event=tracker.accept(raw,cfg.rolling)
-                    counts[event.kind]+=1
-                    if event.kind in ("new","clear"):
-                        generation+=1
-                        if pending is not None:self.note("replaced")
-                        pending=None
-                        if event.kind=="clear":
-                            with self.lock:self.epoch+=1
-                            result_for_ui=None
-                            translation=""
-                        elif cfg.translate:
-                            pending=Ticket(generation,self.epoch,event.text,tick,end)
+                    if cfg!=self.config:continue
+                    filtered=stabilizer.accept(raw) if cfg.stabilize else raw
+                    if filtered is None:
+                        kind="held"
+                        source=tracker.current
+                        delta=""
+                        self.note("held")
+                    else:
+                        event=tracker.accept(filtered,cfg.rolling)
+                        kind,source,delta=event.kind,event.text,event.delta
+                        if kind=="clear":
+                            self.invalidate()
+                            stabilizer.reset()
+                        elif kind=="new":
+                            generation+=1
+                            if cfg.translate and not self.error:
+                                ticket=Ticket(generation,self.epoch,source,tick,end)
+                                if self.pending.put(ticket):self.note("replaced")
+                    counts[kind]+=1
                     ocr=(end-captured)*1000
                     times.append(ocr)
-                    if future is not None and future.done():
-                        try:
-                            result=future.result()
-                            self.note("completed")
-                            with self.lock:
-                                if not result.cold:self.trans_times.append((result.finished_at-result.started_at)*1000)
-                                valid=eligible(result,self.epoch,self.displayed,time.perf_counter(),cfg.translate)
-                            self.record(dict(event="translation_completed" if valid else "translation_stale",
-                                             source=result.ticket.source,translation=result.text,**timings(result)))
-                            if valid:
-                                result_for_ui=result
-                                translation=result.text
-                            else:self.note("stale")
-                        except Exception as exc:
-                            self.note("errors")
-                            translation_error=f"{type(exc).__name__}: {exc}"
-                        future=None
-                    if cfg.translate and pending is not None and future is None and not translation_error:
-                        ticket,pending=pending,None
-                        def work(ticket):
-                            nonlocal translate_fn
-                            cold=translate_fn is None
-                            def translate(source):
-                                nonlocal translate_fn
-                                if translate_fn is None:translate_fn=local_translator()
-                                return translate_fn(source)
-                            return run_job(ticket,translate,cold)
-                        self.note("submitted")
-                        future=pool.submit(work,ticket)
-                    if result_for_ui is not None and time.perf_counter()-result_for_ui.ticket.frame_at>3:
-                        result_for_ui=None
-                        translation=""
-                    if not cfg.translate:translation=""
-                    row={"elapsed_ms":round((tick-start)*1000,1),"engine":cfg.engine,"filter":cfg.filter,
+                    self.record({"elapsed_ms":round((tick-start)*1000,1),"engine":cfg.engine,"filter":cfg.filter,
                          "scale":cfg.scale,"interval_ms":cfg.interval,"psm":cfg.psm,
                          "capture_prep_ms":round((captured-tick)*1000,1),"ocr_ms":round(ocr,1),
-                         "event":event.kind,"source":event.text,"delta":event.delta,"translation":translation}
-                    self.record(row)
+                         "event":kind,"source":source,"delta":delta,"raw_source":raw,"stabilize":int(cfg.stabilize)})
                     self.emit({"status":f"OCR {ocr:.0f} ms | průměr {sum(times)/len(times):.0f} | P95 {percentile(times,.95):.0f} ms",
-                               "counts":dict(counts),"source":event.text,"translation":translation,
-                               "warning":translation_error,"enabled":cfg.translate,"result":result_for_ui})
+                               "counts":dict(counts),"source":source,"enabled":cfg.translate})
                     self.stop.wait(max(0,cfg.interval/1000-(end-tick)))
         except Exception as exc:
             self.emit({"error":f"{type(exc).__name__}: {exc}"})
         finally:
-            pool.shutdown(wait=False,cancel_futures=True)
+            self.pending.close()
 
 class Lab:
     def __init__(self,root):
@@ -201,6 +230,7 @@ class Lab:
         self.interval=tk.StringVar(value="250")
         self.psm=tk.StringVar(value="6")
         self.rolling=tk.BooleanVar(value=False)
+        self.stabilize=tk.BooleanVar(value=False)
         self.translate=tk.BooleanVar(value=False)
         self.show_overlay=tk.BooleanVar(value=True)
         top=ttk.Frame(root,padding=16)
@@ -221,6 +251,7 @@ class Lab:
             row,col=divmod(i,3)
             ttk.Label(settings,text=label).grid(row=row*2,column=col,sticky="w",padx=3)
             ttk.Combobox(settings,textvariable=var,values=options,state="readonly",width=12).grid(row=row*2+1,column=col,padx=3,sticky="w")
+        ttk.Checkbutton(top,text="Stabilizace: potvrdit text dvěma shodnými snímky",variable=self.stabilize).pack(anchor="w")
         ttk.Checkbutton(top,text="Průběžné titulky – sledovat překryv slov (experiment)",variable=self.rolling).pack(anchor="w")
         ttk.Checkbutton(top,text="Offline překlad EN → CS (volitelný Argos)",variable=self.translate,command=self.toggle_overlay).pack(anchor="w")
         ttk.Checkbutton(top,text="Zobrazit plovoucí okno mimo snímanou oblast",variable=self.show_overlay,command=self.toggle_overlay).pack(anchor="w")
@@ -243,7 +274,7 @@ class Lab:
 
     def config(self):
         return Config(self.engine.get(),self.filter.get(),int(self.scale.get()),int(self.interval.get()),
-                      int(self.psm.get()),self.rolling.get(),self.translate.get())
+                      int(self.psm.get()),self.rolling.get(),self.translate.get(),self.stabilize.get())
 
     def select_region(self):
         if self.session and self.session.thread.is_alive():return
@@ -331,16 +362,23 @@ class Lab:
         self.overlay=window
 
     def stop(self):
-        if self.session:self.session.stop.set()
+        if self.session:
+            self.session.stop.set()
+            self.session.pending.close()
         if self.overlay:
             self.overlay.destroy();self.overlay=None
         self.status.set("Zastavuji…")
 
     def poll(self):
         if self.session:
-            self.session.config=self.config()
+            s=self.session
+            cfg=self.config()
+            if cfg!=s.config:
+                s.config=cfg
+                s.invalidate()
+                self.translation.set("")
             try:
-                d=self.session.messages.get_nowait()
+                d=s.messages.get_nowait()
                 if "error" in d:
                     self.warning.set(d["error"])
                     self.stop()
@@ -348,28 +386,33 @@ class Lab:
                     self.status.set(d["status"])
                     if "counts" in d:
                         c=d["counts"]
-                        self.counts.set(f"Nové: {c['new']} | stejné: {c['repeat']} | prázdné: {c['blank']} | vymazání: {c['clear']}")
+                        self.counts.set(f"Nové: {c['new']} | stejné: {c['repeat']} | prázdné: {c['blank']} | čeká: {c['held']}")
                         self.source.set(d["source"])
-                        result=d.get("result")
-                        if result is not None:
-                            if self.session.accept_ui(result,time.perf_counter()):
-                                self.translation.set(result.text)
-                        else:
-                            self.translation.set("Čekám na překlad…" if d["enabled"] and d["source"] else "")
-                        with self.session.lock:
-                            m=dict(self.session.metrics)
-                            ui=list(self.session.ui_times)
-                            tr=list(self.session.trans_times)
-                        self.translation_stats.set(
-                            f"Překlad P95 {percentile(tr,.95):.0f} ms | Snímek → UI P95 {percentile(ui,.95):.0f} ms (warm)\n"
-                            f"Zahájeno {m['submitted']} | hotovo {m['completed']} | zobrazeno {m['shown']} | staré {m['stale']} | nahrazené {m['replaced']} | chyby {m['errors']}")
-                        if d["warning"]:self.warning.set(d["warning"])
             except queue.Empty:pass
-            if not self.session.thread.is_alive():
+            # Independent result polling: no dependency on capture/OCR completion.
+            if not s.stop.is_set():
+                text=s.take_ui(time.perf_counter())
+                if text is not None:self.translation.set(text)
+                with s.lock:
+                    m=dict(s.metrics)
+                    ui=list(s.ui_times)
+                    tr=list(s.trans_times)
+                    error=s.error
+                    warm=s.warmup_ms
+                    result=s.result
+                if not cfg.translate or result is None:
+                    self.translation.set("")
+                elif time.perf_counter()-result.ticket.frame_at>3:
+                    self.translation.set("")
+                if error:self.warning.set(error)
+                self.translation_stats.set(
+                    f"Překlad P95 {percentile(tr,.95):.0f} ms | Snímek → UI P95 {percentile(ui,.95):.0f} ms | Příprava {warm or 0:.0f} ms\n"
+                    f"Zahájeno {m['submitted']} | hotovo {m['completed']} | zobrazeno {m['shown']} | staré {m['stale']} | nahrazené {m['replaced']} | chyby {m['errors']}")
+            if not s.thread.is_alive():
                 self.pick.state(["!disabled"]);self.start_button.state(["!disabled"])
                 self.status.set("Zastaveno. Výsledky můžeš exportovat.")
                 if self.overlay:self.overlay.destroy();self.overlay=None
-        self.root.after(50,self.poll)
+        self.root.after(25,self.poll)
 
     def export(self):
         if not self.session:return
@@ -380,7 +423,7 @@ class Lab:
         if path:
             # Neutralize spreadsheet formulas in captured text.
             for row in rows:
-                for k in ("source","delta","translation"):
+                for k in ("source","delta","translation","raw_source"):
                     v=row[k]
                     if v.lstrip().startswith(("=","+","-","@")):row[k]="'"+v
             with open(path,"w",encoding="utf-8-sig",newline="") as f:

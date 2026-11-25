@@ -24,6 +24,6 @@ if ($PrepareModel) {
     & $python prepare_model.py
     if ($LASTEXITCODE -ne 0) { throw 'Model setup failed.' }
 }
-& $python -m unittest -v test_core test_translation_timing
+& $python -m unittest -v test_core test_translation_timing test_pipeline
 if ($LASTEXITCODE -ne 0) { throw 'Core tests failed.' }
 & $python lab.py
