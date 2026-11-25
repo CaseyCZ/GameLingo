@@ -1281,6 +1281,24 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('text = ""; doba = 0L; barvy = null; captionDeadline = 0L', android)
         self.assertIn("checkedPortAt == 0L", code(TOOLS/"GameLingoTVPairing.kt"))
 
+    def test_point17_blue_menu_switch_controls_android_column_rejection(self):
+        import runpy
+        patch = runpy.run_path(str(TOOLS/"redesign_gamelingo.py"))["wire_dialogue_menu_filter"]
+        condition = "if (vybrane.size >= 3 && vybrane.count { VyberTitulku.pocetSlov(it.text) <= 2 } >= vybrane.size - 1) {"
+        yellow = "fun prectiVolby(obraz: Bitmap, hotovo: (List<Pair<String, Rect>>) -> Unit, chyba: (String) -> Unit) {}"
+        fixture = yellow + "\nfun prectiPosledniTitulek() {\n    " + condition + "\n    }\n}"
+        patched = patch(fixture)
+        self.assertEqual(patched, fixture.replace("if (vybrane.size", "if (GameLingoOCRConfig.filterMenuText && vybrane.size"))
+        self.assertIn(yellow, patched)
+        with self.assertRaises(RuntimeError):
+            patch(yellow)
+        with self.assertRaises(RuntimeError):
+            patch(fixture + fixture)
+        self.assertIn("wire_dialogue_menu_filter(reader.read_text", code(TOOLS/"redesign_gamelingo.py"))
+        ios = code(IOS/"CaptionPipeline.swift")
+        self.assertIn("if filterMenus && looksLikeMenu", ios)
+        self.assertNotIn("filterMenus", ios.split("func recognizeOptions(", 1)[1].split("private func looksLikeMenu", 1)[0])
+
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))
         self.assertNotIn('PS5 – coming soon',all_ios)

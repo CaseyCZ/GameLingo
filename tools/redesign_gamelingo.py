@@ -568,6 +568,16 @@ def redesign_tv(s: str) -> str:
 '''
     return splice_once(s,start,end,new)
 
+def wire_dialogue_menu_filter(source: str) -> str:
+    # The user-facing blue-area menu switch also controls the upstream
+    # short-row column rejection. Keep hint extraction and OCR quality
+    # checks separate, and never modify prectiVolby (yellow area).
+    before = "if (vybrane.size >= 3 && vybrane.count { VyberTitulku.pocetSlov(it.text) <= 2 } >= vybrane.size - 1) {"
+    after = "if (GameLingoOCRConfig.filterMenuText && vybrane.size >= 3 && vybrane.count { VyberTitulku.pocetSlov(it.text) <= 2 } >= vybrane.size - 1) {"
+    if source.count(before) != 1:
+        raise RuntimeError("Android dialogue menu column anchor changed")
+    return source.replace(before, after, 1)
+
 def main():
     if len(sys.argv)!=3 or sys.argv[1] not in ("mobile","tv"):
         raise SystemExit("Usage: redesign_gamelingo.py mobile|tv <upstream_checkout>")
@@ -592,6 +602,8 @@ def main():
     if code.count(before)!=1:
         raise RuntimeError("Android OCR native reader source changed")
     select.write_text(code.replace(before,after,1),encoding="utf8")
+    reader=base/SRC/"Ctecka.kt"
+    reader.write_text(wire_dialogue_menu_filter(reader.read_text(encoding="utf8")),encoding="utf8")
 
     service=base/SRC/"RemotePlayService.kt"
     code=service.read_text(encoding="utf8")

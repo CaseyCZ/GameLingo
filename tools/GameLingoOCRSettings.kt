@@ -138,7 +138,7 @@ object GameLingoOCRSettings {
                 }.setNegativeButton("Zrušit", null).show()
         }
         toggle("Filtrovat menu hry",
-            "Omezí velké nadpisy a tlačítka hry.",
+            "Modrá oblast: omezí velké nadpisy, tlačítka a krátké sloupce menu. Žluté oblasti se netýká.",
             GameLingoOCRConfig.filterMenuText) {
             GameLingoOCRConfig.setFilterMenu(activity, it)
         }
