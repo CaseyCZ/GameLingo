@@ -963,6 +963,42 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                      '"none"', '"dark"', '"translucent"'):
             self.assertIn(item,style)
 
+    def test_tv_updater_requires_signed_newer_apk_and_system_consent(self):
+        updater = code(TOOLS/"GameLingoTVUpdater.kt")
+        wiring = code(TOOLS/"direct_tv_mode.py")
+        publisher = code(ROOT/".github/workflows/publish-gamelingo-current.yml")
+        for marker in ("code(archive) > code(current)", "archive.packageName == ID",
+                       "signers(archive) == setOf(next.cert)", "signers(current) == setOf(next.cert)",
+                       "hex(digest.digest()) == next.hash", "canRequestPackageInstalls()",
+                       "FLAG_GRANT_READ_URI_PERMISSION", "MAX_APK", "instanceFollowRedirects = false"):
+            self.assertIn(marker, updater)
+        for marker in ("GameLingoTVUpdater.checkAtStartup", "GameLingoTVUpdater.show",
+                       "REQUEST_INSTALL_PACKAGES", "gamelingo-updates/", 'android:exported="false"'):
+            self.assertIn(marker, wiring)
+        self.assertIn("create_tv_update_manifest.py", publisher)
+        self.assertIn("GameLingo-TV-update.json", publisher)
+        self.assertIn("GameLingoTVUpdater", code(TOOLS/"verify_tv_ui_apk.py"))
+
+    def test_tv_update_manifest_rejects_wrong_cert_and_package(self):
+        import importlib.util
+        import tempfile
+        spec = importlib.util.spec_from_file_location("tv_update_metadata", TOOLS/"create_tv_update_manifest.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            apk = Path(directory)/"GameLingo-GoogleTV-v1.2.3-dev-TEST.apk"
+            apk.write_bytes(b"test fixture only")
+            tag = "v1.2.3-test-abcdef12-r123"
+            badging = "package: name='cz.caseycz.gamelingo.tv' versionCode='123' versionName='1.2.3-dev.123-abcdef12'"
+            cert = "a"*64
+            info = module.metadata(apk,tag,"1.2.3",badging,cert,cert)
+            self.assertEqual(info["versionCode"],123)
+            self.assertEqual(info["size"],len(b"test fixture only"))
+            with self.assertRaises(ValueError):
+                module.metadata(apk,tag,"1.2.3",badging,cert,"b"*64)
+            with self.assertRaises(ValueError):
+                module.metadata(apk,tag,"1.2.3",badging.replace(".tv",".mobile"),cert,cert)
+
     def test_tv_remote_control_and_receiver_modes(self):
         screen=code(TOOLS/"polish_all_screens.py")
         receiver=code(TOOLS/"redesign_gamelingo.py")

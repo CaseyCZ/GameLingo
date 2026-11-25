@@ -31,6 +31,8 @@ jobs:
       - name: Verify new builds and publish GameLingo
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
+          GAMELINGO_TV_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_TV_KEYSTORE_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
@@ -62,6 +64,8 @@ jobs:
             unzip -t "release/$name" >/dev/null
             (cd release && grep -Fx "$(sha256sum "$name")" SHA256SUMS.txt)
           done
+          python3 tools/create_tv_update_manifest.py "release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk" "$TAG" "$GAMELINGO_VERSION" release/GameLingo-TV-update.json
+          files+=(GameLingo-TV-update.json)
           cat > release-notes.md <<EOF
           # GameLingo ${GAMELINGO_VERSION} TEST — aktuální vydání
           - iOS (nepodepsaná IPA), Android a Google TV (testovací APK).
@@ -76,10 +80,10 @@ jobs:
           if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
             echo "Release exists; validate all assets before cleanup."
           else
-            gh release create "$TAG" release/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa release/GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk release/SHA256SUMS.txt -R "$REPO" --target "$SOURCE" --title "GameLingo ${GAMELINGO_VERSION} TEST · ${BUILD_SOURCE:0:8}" --prerelease --notes-file release-notes.md
+            gh release create "$TAG" release/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa release/GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk release/SHA256SUMS.txt release/GameLingo-TV-update.json -R "$REPO" --target "$SOURCE" --title "GameLingo ${GAMELINGO_VERSION} TEST · ${BUILD_SOURCE:0:8}" --prerelease --notes-file release-notes.md
           fi
           gh release view "$TAG" -R "$REPO" --json assets > published-assets.json
-          test "$(jq '.assets | length' published-assets.json)" = 4
+          test "$(jq '.assets | length' published-assets.json)" = 5
           for name in "${files[@]}"; do
             actual="$(jq -r --arg name "$name" '.assets[] | select(.name == $name) | .size' published-assets.json)"
             test "$actual" = "$(stat -c%s "release/$name")"

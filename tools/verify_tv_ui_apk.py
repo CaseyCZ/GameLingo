@@ -8,6 +8,8 @@ from pathlib import Path
 REQUIRED = (
     "Lcz/titulky/tv/GameLingoTVFit;",
     "Lcz/titulky/tv/GameLingoTVSettings;",
+    "Lcz/titulky/tv/GameLingoTVUpdater;",
+    "Zkontrolovat aktualizace",
     "Lcz/titulky/tv/GameLingoTVProfiles;",
     "Lcz/titulky/tv/GameLingoScreenConsentActivity;",
     "Lcz/titulky/tv/GameLingoScreenTranslationService;",

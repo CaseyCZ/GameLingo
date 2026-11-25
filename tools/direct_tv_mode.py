@@ -186,9 +186,21 @@ def patch_direct_tv(folder):
 
     # Install all TV-only screens and services in the actual generated workspace.
     for name in ("GameLingoTVSettings.kt", "GameLingoTVProfiles.kt",
-                 "GameLingoScreenTranslationService.kt", "GameLingoTVFit.kt",
+                 "GameLingoScreenTranslationService.kt", "GameLingoTVFit.kt", "GameLingoTVUpdater.kt",
                  "GameLingoSettings.kt", "GameLingoOCRSettings.kt"):
         (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
+
+    # TV updater lives inside the existing About page, not the dashboard grid.
+    about = folder / "GameLingoAbout.kt"
+    about_text = about.read_text(encoding="utf8")
+    update_anchor = '        page.addView(label("Licence a původní autoři", 19f, true))'
+    if about_text.count(update_anchor) != 1:
+        raise RuntimeError("TV About update anchor changed")
+    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoTVUi.action(activity, "Zkontrolovat aktualizace") {
+            GameLingoTVUpdater.show(activity)
+        })
+''' + update_anchor, 1)
+    about.write_text(about_text, encoding="utf8")
 
     # The translation and OCR panels are shared; the other destinations use the
     # TV's local stores, not the phone's paired-receiver preferences or sender.
@@ -212,6 +224,8 @@ def patch_direct_tv(folder):
             raise RuntimeError("TV main anchor changed: " + old[:90])
         m = m.replace(old, new, 1)
 
+    patch_main("        GameLingoTVPairing.initialize(this)",
+               "        GameLingoTVPairing.initialize(this)\n        GameLingoTVUpdater.checkAtStartup(this)")
     patch_main("GameLingoTVUi.showSettings(this) { ukazHlavni() }",
         """GameLingoTVSettings.show(this,
                     onDevices = {
@@ -356,13 +370,23 @@ def patch_direct_tv(folder):
     xml = manifest.read_text(encoding="utf8")
     if xml.count("</application>") != 1:
         raise RuntimeError("TV manifest application anchor changed")
-    for permission in ("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"):
+    for permission in ("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION", "android.permission.REQUEST_INSTALL_PACKAGES"):
         if f'android:name="{permission}"' not in xml:
             xml = xml.replace("<application", f'<uses-permission android:name="{permission}"/>\n    <application', 1)
     xml = xml.replace("</application>", """    <activity android:name=".GameLingoScreenConsentActivity" android:exported="false"/>
         <service android:name=".GameLingoScreenTranslationService" android:exported="false"
             android:foregroundServiceType="mediaProjection"/>
     </application>""", 1)
+    xml = xml.replace("</application>", """    <provider android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates" android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/gamelingo_update_paths"/>
+        </provider>
+    </application>""", 1)
+    paths = manifest.parent / "res" / "xml" / "gamelingo_update_paths.xml"
+    paths.parent.mkdir(parents=True, exist_ok=True)
+    paths.write_text('<paths xmlns:android="http://schemas.android.com/apk/res/android"><cache-path name="updates" path="gamelingo-updates/"/></paths>', encoding="utf8")
     manifest.write_text(xml, encoding="utf8")
     # Reuse the actual game dialogue reader; no second ML Kit selection pipeline.
     reader = folder / "Ctecka.kt"
