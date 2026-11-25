@@ -576,7 +576,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         reset = capture.split("private fun resetText(", 1)[1].split("private fun setSource", 1)[0]
         self.assertIn("dialogueStability.reset()", reset)
         accept = capture.split("private fun accept(raw: String)", 1)[1].split("private fun translateLatest()", 1)[0]
-        self.assertIn("else dialogueStability.reset()", accept)
+        self.assertIn("else { dialogueStability.reset(); hideAfterSourceGone() }", accept)
         # Ordinary dialogue only: story still owns its original stabilization.
         gate = "if (!dialogueStability.prijmi(value, radku = currentRows)) return"
         self.assertIn(gate, accept)
