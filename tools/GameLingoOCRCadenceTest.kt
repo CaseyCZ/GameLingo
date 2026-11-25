@@ -4,6 +4,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoOCRCadenceTest {
+    @Test fun previousDialogueIsBoundedAndContextLocal() {
+        val window = GameLingoDialogueWindow()
+        assertEquals("První", window.render("First", "První", true, 1000, "A"))
+        assertEquals("První\nDruhý", window.render("Second", "Druhý", true, 2000, "A"))
+        assertEquals("První\nDruhá", window.render("Second", "Druhá", true, 3000, "A", true))
+        assertEquals("Třetí", window.render("Third", "Třetí", true, 4000, "B"))
+        assertEquals("Čtvrtý", window.render("Fourth", "Čtvrtý", true, 20000, "B"))
+    }
     @Test fun standaloneYellowModeSetsOnlyMinimumSamplingGap() {
         assertEquals(0L, GameLingoOCRCadence.standaloneYellowInterval("follow"))
         assertEquals(800L, GameLingoOCRCadence.standaloneYellowInterval("classic"))

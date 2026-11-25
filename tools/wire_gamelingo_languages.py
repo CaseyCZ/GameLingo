@@ -549,6 +549,7 @@ def main():
         Propojeni.Vysilac.outputGeneration(), relaceCteni.get())
     private fun currentTranslation(context: TranslationContext) =
         bezi && context == translationContext()
+    private val dialogueWindow = GameLingoDialogueWindow()
     private data class GameTextKey(val source: String, val target: String, val text: String)
     private fun gameTextKey(context: TranslationContext, text: String) =
         GameTextKey(context.source, context.target, text)
@@ -638,7 +639,7 @@ def main():
         '            GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), prelozene.joinToString("\\n"))\n'
         '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)', service.name)
     # P2.4: local postprocessing, provider cache and raw choice map stay clean.
-    for name in ("GameLingoGlossary.kt", "GameLingoGlossaryStore.kt", "GameLingoGlossaryUi.kt"):
+    for name in ("GameLingoGlossary.kt", "GameLingoGlossaryStore.kt", "GameLingoGlossaryUi.kt", "GameLingoDialogueWindow.kt"):
         (folder/name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"),encoding="utf8")
     (unit_dir/"GameLingoGlossaryTest.kt").write_text(
         Path(__file__).with_name("GameLingoGlossaryTest.kt").read_text(encoding="utf8"),encoding="utf8")
@@ -651,7 +652,11 @@ def main():
         '''            val original = repliky.joinToString("\\n")
             val corrected = GameLingoGlossaryStore.apply(this, original, cesky, translationContext.source, translationContext.target)
             if (dobry) GameLingoTranslationHistory.append("Dialog", translationContext.source, translationContext.target, original, corrected)
-            ukazCesky(corrected, box, radku, barvyJmen)''', service.name)
+            val displayText = if (dobry) dialogueWindow.render(original, corrected,
+                GameLingoOCRConfig.showPreviousDialogue(this) && !nast.prekryvat,
+                android.os.SystemClock.elapsedRealtime(), translationContext.toString() + "|" + oblast, oprava)
+                else corrected
+            ukazCesky(displayText, box, radku, if (displayText == corrected) barvyJmen else intArrayOf())''', service.name)
     s=once(s, '''            GameLingoTranslationHistory.append("Herní text", context.source, context.target, text, it)
             Propojeni.Vysilac.nastavVolby(listOf(it), Volby.VYBRANA_TEXT)''',
         '''            val corrected = GameLingoGlossaryStore.apply(this, text, it, context.source, context.target)

@@ -26,6 +26,12 @@ struct OCRCadenceTests {
         precondition(!OCRIgnoredLines.keeps("save game", entries: ignored))
         precondition(OCRIgnoredLines.keeps("Please save game now", entries: ignored))
         precondition(OCRIgnoredLines.keeps("Loading", entries: []))
+        var window = DialogueWindow()
+        precondition(window.render(source: "First", translation: "První", enabled: true, now: 1) == "První")
+        precondition(window.render(source: "Second", translation: "Druhý", enabled: true, now: 2) == "První\nDruhý")
+        precondition(window.render(source: "Second", translation: "Druhá", enabled: true, now: 3) == "První\nDruhá")
+        precondition(window.render(source: "Third", translation: "Třetí", enabled: true, now: 20) == "Třetí")
+        precondition(window.render(source: "Fourth", translation: "Čtvrtý", enabled: false, now: 21) == "Čtvrtý")
         print("OCRCadence: mode order, independent adaptive budget, fallback and yellow filter passed")
     }
 }

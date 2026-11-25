@@ -44,6 +44,10 @@ object GameLingoOCRConfig {
         "wide" -> floatArrayOf(.04f,.63f,.96f,.97f)
         else -> null
     }
+    fun showPreviousDialogue(context: Context) = tv(context).getBoolean("showPreviousDialogue", false)
+    fun setShowPreviousDialogue(context: Context, value: Boolean) {
+        tv(context).edit().putBoolean("showPreviousDialogue", value).apply()
+    }
     fun fixedTiming(context: Context) = tv(context).getBoolean("fixedTiming",false)
     fun seconds(context: Context) = tv(context).getInt("seconds",6).coerceIn(3,10)
     fun skipOld(context: Context) = tv(context).getBoolean("skipOld",false)

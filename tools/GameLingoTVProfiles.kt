@@ -25,6 +25,7 @@ object GameLingoTVProfiles {
             put("yellowOCRMode", GameLingoOCRConfig.yellowOCRMode)
             put("minBlueHeight", GameLingoOCRConfig.minBlueHeight)
             put("ignoredBlueLines", GameLingoOCRConfig.ignoredBlueLines); put("ignoredYellowLines", GameLingoOCRConfig.ignoredYellowLines)
+            put("showPreviousDialogue", GameLingoOCRConfig.showPreviousDialogue(a))
             put("dialogues", n.dialogy); put("hints", n.napovedy); put("cover", n.prekryvat); put("story", n.pribehovy); put("duration", n.casPribehuProcenta)
             put("autoRegion",GameLingoOCRConfig.region(a))
             put("fixedTiming",GameLingoOCRConfig.fixedTiming(a));put("seconds",GameLingoOCRConfig.seconds(a))
@@ -67,6 +68,7 @@ object GameLingoTVProfiles {
         GameLingoOCRConfig.setExpandSearch(a, p.optBoolean("expand", false))
         GameLingoOCRConfig.setRegion(a,p.optString("autoRegion","legacy").takeIf { it in GameLingoOCRConfig.regionKeys } ?: "legacy")
         GameLingoOCRConfig.saveTiming(a,p.optBoolean("fixedTiming"),p.optInt("seconds",6),p.optBoolean("skipOld"),p.optInt("maxAge",5))
+        GameLingoOCRConfig.setShowPreviousDialogue(a, p.optBoolean("showPreviousDialogue", false))
         Nastaveni(a).apply { dialogy = p.optBoolean("dialogues", true); napovedy = p.optBoolean("hints", true); prekryvat = p.optBoolean("cover"); pribehovy = p.optBoolean("story"); casPribehuProcenta = p.optInt("duration", casPribehuProcenta).coerceIn(CasovaniPribehu.MIN_PROCENT, CasovaniPribehu.MAX_PROCENT) }
         OblastTitulku.zamceno = p.optBoolean("blueLocked"); Volby.zamceno = p.optBoolean("yellowLocked")
         OblastTitulku.rucne = p.optBoolean("manual"); OblastTitulku.oblast = blue; OblastTitulku.uloz(a)

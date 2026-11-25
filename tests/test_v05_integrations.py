@@ -561,7 +561,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn('render("")', failure)
         self.assertNotIn("shownUntil =", failure)
         self.assertIn("shownUntil = shownAt + duration", translate)
-        self.assertIn("render(corrected, duration)", translate)
+        self.assertIn("render(displayText, duration)", translate)
+        self.assertIn("dialogueWindow.render(value, corrected", translate)
         model = code(IOS/"PlayCaptionIOSApp.swift")
         failure = model.split("guard case .success(let rawTranslation) = outcome else {", 1)[1].split("let czech =", 1)[0]
         self.assertNotIn("clearDialogueOutput()", failure)
@@ -1350,6 +1351,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         ios = code(IOS/"SettingsHomeView.swift")
         self.assertIn('Button("Obnovit filtry modré oblasti")', ios)
         self.assertIn('Button("Obnovit filtry žluté oblasti")', ios)
+
+    def test_point24_previous_dialogue_only_changes_display(self):
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn("self.dialogueWindow.render(source: reading.english, translation: czech", model)
+        self.assertIn("original: reading.english, translated: czech", model)
+        self.assertIn("self.tv.sendSubtitle(displayText", model)
+        self.assertIn("dialogueWindow.reset()", model)
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("if (dobry) dialogueWindow.render(original, corrected", wiring)
+        self.assertIn("!nast.prekryvat", wiring)
+        self.assertIn("translationContext.toString()", wiring)
+        self.assertIn("!coverOriginal && !useAutomaticOutput", code(TOOLS/"GameLingoScreenTranslationService.kt"))
 
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))

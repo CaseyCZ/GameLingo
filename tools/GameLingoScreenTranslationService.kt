@@ -144,6 +144,7 @@ class GameLingoScreenTranslationService : Service() {
     private var diagnostic = false
     private var lastTextAt = 0L
     private var translatedText = ""
+    private val dialogueWindow = GameLingoDialogueWindow()
     private var lastRenderAt = 0L
     private var blankSince = 0L
     private var ocrBusy = false
@@ -424,6 +425,7 @@ class GameLingoScreenTranslationService : Service() {
         blueFrameGate.reset()
         candidateAt = 0L; currentBox = null; currentRows = 1
         if (!preserveDisplay) {
+            dialogueWindow.reset()
             translatedText = ""; shownAt = 0L; shownUntil = 0L
             blueSamplesSinceYellow = 0; lastYellowSampleAt = SystemClock.elapsedRealtime()
         }
@@ -660,10 +662,13 @@ class GameLingoScreenTranslationService : Service() {
                     GameLingoTranslationHistory.append("Dialog",sourceLanguage,GameLingoLanguages.target(this@GameLingoScreenTranslationService),value,corrected)
                     if (diagnostic) lastTranslated = corrected.take(300)
                     shown = value; translatedText = corrected
+                    val displayText = dialogueWindow.render(value, corrected,
+                        GameLingoOCRConfig.showPreviousDialogue(this@GameLingoScreenTranslationService) && !coverOriginal && !useAutomaticOutput,
+                        SystemClock.elapsedRealtime(), sourceLanguage + "|" + GameLingoLanguages.target(this@GameLingoScreenTranslationService))
                     shownAt = SystemClock.elapsedRealtime()
                     val duration = GameLingoOCRConfig.displayMs(this@GameLingoScreenTranslationService,((1800L+60L*corrected.length)*durationPercent/100L).coerceIn(800L,15000L))
                     shownUntil = shownAt + duration
-                    render(corrected, duration)
+                    render(displayText, duration)
                     phases.record("Dialog od přijetí textu k předání", SystemClock.elapsedRealtime() - started)
                 } else if (current) {
                     translationState = if(GameLingoOCRConfig.expired(this@GameLingoScreenTranslationService,SystemClock.elapsedRealtime()-started)) "Starý výsledek zahozen" else "Chyba překladu"

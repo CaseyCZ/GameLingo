@@ -67,6 +67,13 @@ final class CaptionAppModel: ObservableObject {
             if oldValue != expandOnEmpty { invalidateDialogue() }
         }
     }
+    @Published var showPreviousDialogue = UserDefaults.standard.bool(forKey: "showPreviousDialogue") {
+        didSet {
+            UserDefaults.standard.set(showPreviousDialogue, forKey: "showPreviousDialogue")
+            if oldValue != showPreviousDialogue { invalidateDialogue() }
+        }
+    }
+    private var dialogueWindow = DialogueWindow()
     @Published var subtitleDuration: Double =
         (UserDefaults.standard.object(forKey: "subtitleDuration") as? Double) ?? 6 {
         didSet { UserDefaults.standard.set(subtitleDuration, forKey: "subtitleDuration") }
@@ -427,6 +434,7 @@ final class CaptionAppModel: ObservableObject {
             choicesOutputLocked: choicesOutputLocked,
             choicesOutputFont: choicesOutputFont,
             subtitleDuration: subtitleDuration,
+            showPreviousDialogue: showPreviousDialogue,
             skipOldTranslations: skipOldTranslations,
             maxTranslationAge: maxTranslationAge,
             gameLanguage: gameLanguage.rawValue,
@@ -475,6 +483,7 @@ final class CaptionAppModel: ObservableObject {
         if let locked = profile.choicesOutputLocked { choicesOutputLocked = locked }
         choicesOutputFont = profile.choicesOutputFont ?? 1.0
         subtitleDuration = profile.subtitleDuration
+        showPreviousDialogue = profile.showPreviousDialogue ?? false
         skipOldTranslations = profile.skipOldTranslations
         maxTranslationAge = profile.maxTranslationAge
         if let savedSource = profile.gameLanguage,
@@ -709,6 +718,7 @@ final class CaptionAppModel: ObservableObject {
     /// Independent yellow-area drain. A slow options translation cannot block
     /// dialogue OCR or enqueue a backlog of decoded images.
     private func invalidateDialogue(clearTV: Bool = true) {
+        dialogueWindow.reset()
         dialogueRevision.advance()
         dialogueTranslation?.cancel()
         dialogueTranslation = nil
@@ -968,16 +978,18 @@ final class CaptionAppModel: ObservableObject {
                     let requested = self.subtitleDuration.isFinite ? self.subtitleDuration : 6
                     let displaySeconds = min(10.0, max(3.0, requested))
                     self.lastCzech = czech
+                    let displayText = self.dialogueWindow.render(source: reading.english, translation: czech,
+                        enabled: self.showPreviousDialogue, now: ProcessInfo.processInfo.systemUptime)
                     self.translationHistory.append(kind: "Dialog",
                         source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue,
                         original: reading.english, translated: czech)
                     self.scheduleDialogueExpiry(seconds: displaySeconds, currentSession: currentSession)
                     if self.devices.subtitleOutput == .phone {
-                        self.phoneSubtitle = czech
+                        self.phoneSubtitle = displayText
                     } else {
                         self.devices.prepareTV(self.tv)
                         if self.verifiedTelevisionOutput {
-                            self.tv.sendSubtitle(czech,
+                            self.tv.sendSubtitle(displayText,
                                                  duration: Int(displaySeconds * 1000))
                         }
                     }
@@ -1062,6 +1074,7 @@ final class CaptionAppModel: ObservableObject {
         if isRunning { refreshPerformance(); write("Diagnostika: " + performanceSummary.replacingOccurrences(of: "\n", with: " | ")) }
         UserDefaults.standard.removeObject(forKey: sessionMarker)
         sessionRevision += 1
+        dialogueWindow.reset()
         dialogueExpiry?.cancel()
         dialogueExpiry = nil
         dialogueDisplayRevision &+= 1

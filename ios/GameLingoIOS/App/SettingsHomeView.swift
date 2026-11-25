@@ -375,6 +375,7 @@ private struct GameLingoTranslationSettingsView: View {
         GLScreen(title: "Překlad", help:
             "Doba zobrazení určuje, jak dlouho titulek zůstane na televizi. Starší překlady může GameLingo zahodit po zobrazení nového dialogu. Jazyk hry a překladu lze změnit v sekci Jazyky.") {
             GLCard {
+                Toggle("Zobrazit i předchozí repliku", isOn: $model.showPreviousDialogue).disabled(model.isRunning)
                 GLValueSlider(title: "Doba titulku",
                     value: "\(Int(model.subtitleDuration)) s",
                     selection: $model.subtitleDuration, range: 3...10, step: 1)
@@ -810,6 +811,7 @@ struct GameSubtitleProfile: Codable, Identifiable {
     /// Optional for backward-compatible 0.3.2 saved game profiles.
     var choicesOutputFont: Double?
     var subtitleDuration: Double
+    var showPreviousDialogue: Bool?
     var skipOldTranslations: Bool
     var maxTranslationAge: Double
     /// Backwards compatible: older saved profiles did not contain languages.

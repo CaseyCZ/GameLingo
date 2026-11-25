@@ -84,6 +84,8 @@ object GameLingoSettings {
         }
         add(row(activity, "Překládat dialogy", "České titulky pro rozhovory ve hrách.",
             settings.dialogy) { settings.dialogy = it })
+        add(row(activity, "Zobrazit i předchozí repliku", "V běžném režimu bez překrývání originálu; nemění příběhovou frontu.",
+            GameLingoOCRConfig.showPreviousDialogue(activity)) { GameLingoOCRConfig.setShowPreviousDialogue(activity, it) })
         add(row(activity, "Herní texty a volby", "Samostatná žlutá oblast OCR.",
             Volby.zapnuto) { Volby.zapnuto = it; Volby.uloz(activity) })
         add(row(activity, "Dopisy a zprávy", "Překládat celý text místo seznamu voleb.",
