@@ -102,8 +102,9 @@ class WindowsOCR:
         writer=DataWriter()
         try:
             writer.write_bytes(rgba.tobytes())
+            # PyWinRT exposes the four-argument overload on some releases.
             bitmap=SoftwareBitmap.create_copy_from_buffer(writer.detach_buffer(),BitmapPixelFormat.RGBA8,
-                      rgba.width,rgba.height,BitmapAlphaMode.STRAIGHT)
+                      rgba.width,rgba.height)
             try:
                 async def read_async():
                     return await self.engine.recognize_async(bitmap)

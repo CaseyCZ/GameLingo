@@ -1,5 +1,5 @@
 """Deterministic generated subtitle scenes with ground truth."""
-import argparse,json,os,random,time
+import argparse,json,os,random,time,traceback
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont
 from core import normalize,percentile
@@ -43,15 +43,19 @@ def main():
     p.add_argument("--engine",choices=["tesseract","rapid","windows"],required=True)
     p.add_argument("--output",type=Path,required=True)
     p.add_argument("--translate",action="store_true")
+    p.add_argument("--public",action="store_true",help="Use public GeekLink reference frames instead of synthetic images.")
     a=p.parse_args()
     a.output.mkdir(parents=True,exist_ok=True)
     scenes=fixtures()
-    report=dict(engine=a.engine,fixtures=len(scenes),rows=[],errors=[])
+    if a.public:
+        from public_fixtures import load_public
+        scenes=load_public()
+    report=dict(engine=a.engine,fixtures=len(scenes),dataset="geeklink-bottom35" if a.public else "synthetic",rows=[],errors=[])
     try:
         engine=make_engine(a.engine)
         t=time.perf_counter()
         smoke=engine.read(scenes[6][2],6)
-        report["smoke"]=dict(expected=CUES[6],actual=smoke,ms=round((time.perf_counter()-t)*1000,1))
+        report["smoke"]=dict(expected=scenes[6][1],actual=smoke,ms=round((time.perf_counter()-t)*1000,1))
         print("SMOKE",json.dumps(report["smoke"]),flush=True)
         for mode in FILTERS:
             trace=[]
@@ -64,6 +68,7 @@ def main():
                     trace.append(dict(scene=scene,expected=cue,actual=raw,ms=round(ms,1),
                                   errors=distance(expected,actual),chars=len(expected),exact=expected==actual))
                 except Exception as exc:
+                    traceback.print_exc()
                     report["errors"].append(dict(filter=mode,scene=scene,error=repr(exc)))
                     break
             if len(trace)!=len(scenes):continue
@@ -80,6 +85,7 @@ def main():
             print("BENCH",json.dumps(row),flush=True)
         if hasattr(engine,"close"):engine.close()
     except Exception as exc:
+        traceback.print_exc()
         report["errors"].append(dict(stage="init/smoke",error=repr(exc)))
         print("ENGINE_ERROR",repr(exc),flush=True)
     if a.translate:

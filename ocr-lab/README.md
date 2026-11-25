@@ -71,3 +71,5 @@ Záložky OCR a obraz / Text a stabilizace / Překlad a výstup. Filtry raw, gra
 ## Automatické porovnání
 
 OCR Lab automatic comparison: 48 stejných generovaných snímků na každý filtr a engine, známé titulky, prázdné snímky, čtyři druhy pozadí. Výsledky v Actions summary a JSON artefaktech. Přesná shoda, CER, falešná pozitiva, P95. Chyby engine jsou explicitní; chybějící Windows OCR jazyk není úspěšný test. Syntetické scény nejsou skutečné hry. Volitelný --translate měří lokálně nainstalovaný Argos odděleně. Žádná uživatelská videa se nenahrávají do GitHubu.
+
+GeekLink public benchmark: pinned reference frames, stratified sample of English clean/watermarked scenes (up to 24), fixed bottom 35% ROI, same images across all engines. ROI is not annotated and may miss nonstandard subtitle placement. Reference images downloaded temporarily from public repository, not uploaded; only text and scores retained. Tesseract runs on Ubuntu after Windows Chocolatey feed outage; cross-OS latency is not an apples-to-apples hardware comparison. Accuracy can be compared with font/rasterization caveat for synthetic scenes; public images identical. No external AI API.
