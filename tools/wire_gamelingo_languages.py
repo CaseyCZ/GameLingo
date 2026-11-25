@@ -349,7 +349,12 @@ def main():
         ui.removeCallbacks(schovatCesky)
         ukazanoKdy = 0L
         if (zbyva <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, zbyva)''',
-        '''        val zbyva = if (ukazanoKdy == 0L) 0L else
+        '''        if (GameLingoOCRConfig.hideOnSourceGone(this)) {
+            ui.removeCallbacks(schovatCesky)
+            ukaz("", 0)
+            return
+        }
+        val zbyva = if (ukazanoKdy == 0L) 0L else
             (ukazanoKdy + 4000L - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)
         ui.removeCallbacks(schovatCesky)
         // Keep the original display start even on repeated empty observations.

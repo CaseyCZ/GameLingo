@@ -285,7 +285,7 @@ class GameLingoScreenTranslationService : Service() {
                 // Losing the OCR source invalidates pending work, not the reading
                 // time already granted to a displayed ordinary dialogue.
                 if (storyMode) { resetText(); render("") }
-                else resetText(preserveDisplay = true)
+                else { hideAfterSourceGone(); resetText(preserveDisplay = true) }
             }
             if (active) ui.postDelayed(this, GameLingoOCRConfig.tvIntervalMs(false).coerceIn(if (cleanCapture) 450L else 200L, 800L))
         }
@@ -425,8 +425,8 @@ class GameLingoScreenTranslationService : Service() {
         blueFrameGate.reset()
         candidateAt = 0L; currentBox = null; currentRows = 1
         if (!preserveDisplay) {
-            dialogueWindow.reset()
             translatedText = ""; shownAt = 0L; shownUntil = 0L
+            dialogueWindow.reset()
             blueSamplesSinceYellow = 0; lastYellowSampleAt = SystemClock.elapsedRealtime()
         }
         story.reset(); storyPage = null
@@ -583,6 +583,11 @@ class GameLingoScreenTranslationService : Service() {
             cropped.recycle(); ocrBusy=false; blueFrameGate.reset(); ocrState = "Chyba OCR: " + e.javaClass.simpleName
         }
     }
+    private fun hideAfterSourceGone() {
+        if (!storyMode && GameLingoOCRConfig.hideOnSourceGone(this) && shownUntil != 0L) {
+            shownUntil = 0L; translatedText = ""; render("")
+        }
+    }
     private fun accept(raw: String) {
         // Keep the story reader's existing input; ordinary dialogue ignores
         // purely visual line wrapping and repeated whitespace.
@@ -592,7 +597,7 @@ class GameLingoScreenTranslationService : Service() {
             if (++blankFrames >= 2 && blankSince == 0L) {
                 blankSince = now
                 if (storyMode) story.zmizelo(++storySequence,now)
-                else dialogueStability.reset()
+                else { dialogueStability.reset(); hideAfterSourceGone() }
                 // Invalidate in-flight translation without shortening or extending
                 // the existing display deadline. Explicit stop/context changes still clear immediately.
                 epoch++; candidate = ""; lastAttempt = ""; lastAttemptAt = 0L

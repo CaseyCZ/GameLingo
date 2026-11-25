@@ -80,6 +80,12 @@ final class CaptionAppModel: ObservableObject {
         }
     }
     private var dialogueWindow = DialogueWindow()
+    @Published var hideOnSourceGone = UserDefaults.standard.bool(forKey: "hideOnSourceGone") {
+        didSet {
+            UserDefaults.standard.set(hideOnSourceGone, forKey: "hideOnSourceGone")
+            if oldValue != hideOnSourceGone { invalidateDialogue() }
+        }
+    }
     @Published var subtitleDuration: Double =
         (UserDefaults.standard.object(forKey: "subtitleDuration") as? Double) ?? 6 {
         didSet { UserDefaults.standard.set(subtitleDuration, forKey: "subtitleDuration") }
@@ -442,6 +448,7 @@ final class CaptionAppModel: ObservableObject {
             subtitleDuration: subtitleDuration,
             showPreviousDialogue: showPreviousDialogue,
             previousDialogueCount: previousDialogueCount,
+            hideOnSourceGone: hideOnSourceGone,
             skipOldTranslations: skipOldTranslations,
             maxTranslationAge: maxTranslationAge,
             gameLanguage: gameLanguage.rawValue,
@@ -492,6 +499,7 @@ final class CaptionAppModel: ObservableObject {
         subtitleDuration = profile.subtitleDuration
         showPreviousDialogue = profile.showPreviousDialogue ?? false
         previousDialogueCount = min(2, max(1, profile.previousDialogueCount ?? 1))
+        hideOnSourceGone = profile.hideOnSourceGone ?? false
         skipOldTranslations = profile.skipOldTranslations
         maxTranslationAge = profile.maxTranslationAge
         if let savedSource = profile.gameLanguage,
@@ -940,7 +948,8 @@ final class CaptionAppModel: ObservableObject {
                 self.lastEnglish = reading.english
                 if reading.english.isEmpty {
                     // The revision/cancellation above rejects pending stale work.
-                    // Already visible dialogue retains its existing expiry;
+                    if self.hideOnSourceGone { self.clearDialogueOutput() }
+                    // By default, already visible dialogue retains its existing expiry;
                     // stop, source changes and explicit clears remain immediate.
                     return
                 }

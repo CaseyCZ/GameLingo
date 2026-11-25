@@ -524,7 +524,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("text.split(separator:", stability)
         self.assertIn("min(10.0, max(3.0, requested))", model)
         empty_read = model.split("if reading.english.isEmpty {", 1)[1].split("}", 1)[0]
-        self.assertNotIn("clearDialogueOutput()", empty_read)
+        self.assertIn("if self.hideOnSourceGone { self.clearDialogueOutput()", empty_read)
         self.assertIn("return", empty_read)
         self.assertIn("self.dialogueDisplayRevision == display", model)
         self.assertIn("self.clearDialogueOutput()", model)
@@ -1363,6 +1363,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("!nast.prekryvat", wiring)
         self.assertIn("translationContext.toString()", wiring)
         self.assertIn("!coverOriginal && !useAutomaticOutput", code(TOOLS/"GameLingoScreenTranslationService.kt"))
+
+    def test_point26_source_disappearance_is_opt_in(self):
+        config = code(TOOLS/"GameLingoOCRConfig.kt")
+        self.assertIn('getBoolean("hideOnSourceGone", false)', config)
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn("if self.hideOnSourceGone { self.clearDialogueOutput()", model)
+        self.assertIn("if (GameLingoOCRConfig.hideOnSourceGone(this))", code(TOOLS/"wire_gamelingo_languages.py"))
+        standalone = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("!storyMode && GameLingoOCRConfig.hideOnSourceGone(this)", standalone)
 
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))
