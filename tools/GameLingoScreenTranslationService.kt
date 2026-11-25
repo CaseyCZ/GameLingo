@@ -548,9 +548,10 @@ class GameLingoScreenTranslationService : Service() {
         if (value != candidate) {
             candidateAt = now
             candidate = value
-            if (shown != value && translatedText.isNotEmpty()) {
-                shown = ""; translatedText = ""; render("")
-            }
+            // A new OCR source invalidates only the previous source marker.
+            // Keep the already displayed text and its deadline until a valid
+            // replacement arrives (or its own timer expires).
+            if (shown != value) shown = ""
         }
         // Do not keep restarting the timer for the same OCR text.
         if (value == shown) return
@@ -587,7 +588,8 @@ class GameLingoScreenTranslationService : Service() {
                     shownUntil = shownAt + duration
                     render(corrected, duration)
                 } else if (current) {
-                    translationState = if(GameLingoOCRConfig.expired(this@GameLingoScreenTranslationService,SystemClock.elapsedRealtime()-started)) "Starý výsledek zahozen" else "Chyba překladu"; render("")
+                    translationState = if(GameLingoOCRConfig.expired(this@GameLingoScreenTranslationService,SystemClock.elapsedRealtime()-started)) "Starý výsledek zahozen" else "Chyba překladu"
+                    // A failed replacement neither clears nor renews the old caption.
                 } else {
                     translationState = "Starý výsledek zahozen"
                 }

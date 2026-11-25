@@ -830,8 +830,8 @@ final class CaptionAppModel: ObservableObject {
                     guard case .success(let rawTranslation) = outcome else {
                         if case .failure(let error) = outcome {
                             self.write("Chyba překladu (\(error.diagnostic))")
-                            // Do not present an old or original line as this translation.
-                            self.clearDialogueOutput()
+                            // Keep only the previously displayed translation until its
+                            // own expiry. Never publish the failed or original text.
                             await self.pipeline.dialogueTranslationFailed(revision: reading.revision)
                         }
                         return

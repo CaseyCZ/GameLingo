@@ -549,8 +549,25 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('paused = !paused; cancelSample(); resetText(); render("")', capture)
         self.assertIn('shownUntil = 0L; translatedText = ""; render("")', capture)
         self.assertIn('if (wasActive) { render(""); clearYellow(); clearHint() }', capture)
-        # Point 2 is deliberately deferred: the current new-source branch still clears.
-        self.assertIn('shown = ""; translatedText = ""; render("")', capture)
+    def test_point2_dialogue_replacement_preserves_old_deadline_until_success(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        accept = capture.split("private fun accept(raw: String)", 1)[1].split("private fun translateLatest()", 1)[0]
+        change = accept.rsplit("if (value != candidate) {", 1)[1]
+        self.assertIn('if (shown != value) shown = ""', change)
+        self.assertNotIn('render("")', change)
+        self.assertNotIn("shownUntil =", change)
+        translate = capture.split("private fun translateLatest()", 1)[1].split("private fun clearHint()", 1)[0]
+        failure = translate.split("} else if (current) {", 1)[1].split("} else {", 1)[0]
+        self.assertNotIn('render("")', failure)
+        self.assertNotIn("shownUntil =", failure)
+        self.assertIn("shownUntil = shownAt + duration", translate)
+        self.assertIn("render(corrected, duration)", translate)
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        failure = model.split("guard case .success(let rawTranslation) = outcome else {", 1)[1].split("let czech =", 1)[0]
+        self.assertNotIn("clearDialogueOutput()", failure)
+        self.assertNotIn("scheduleDialogueExpiry", failure)
+        self.assertIn("dialogueTranslationFailed", failure)
+        self.assertIn("self.scheduleDialogueExpiry(seconds: displaySeconds", model)
 
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
