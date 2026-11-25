@@ -102,8 +102,12 @@ object GameLingoDiagnostics {
                 if (consoles.any { it.selected }) "jedna vybraná" else "žádná vybraná")
             value("Výstup titulků", if (tvStore.pouzeTelefon)
                 "Telefon" else savedTv?.jmeno ?: "Televize nevybrána")
-            value("Párování TV", if (savedTv == null) "Bez uloženého profilu"
-                else "Profil uložen – spojení neověřeno")
+            value("Párování TV", when {
+                savedTv == null -> "Bez uloženého profilu"
+                !GameLingoTVPairing.paired(activity, savedTv.ip) -> "Nespárováno"
+                GameLingoTVPairing.connected(savedTv.ip) -> "Ověřené spojení"
+                else -> "Spárováno – bez čerstvého potvrzení"
+            })
             value("Jazyk hry → překlad",
                 GameLingoLanguages.name(
                     GameLingoLanguages.gameLanguages,
@@ -129,6 +133,25 @@ object GameLingoDiagnostics {
             ).apply { bottomMargin = d(10) })
         }
         action("Aktualizovat stav") { refresh() }
+        var verifying = false
+        action("Ověřit spojení s TV") {
+            if (!verifying) {
+                val store = TvProfily(activity)
+                val selected = store.posledniId?.let { store.najdi(it) }
+                if (selected == null || !GameLingoTVPairing.paired(activity, selected.ip)) {
+                    android.widget.Toast.makeText(activity, "Nejdříve vyber a spáruj TV.", android.widget.Toast.LENGTH_LONG).show()
+                } else {
+                    verifying = true
+                    GameLingoTVPairing.verify(activity, selected) { ok ->
+                        verifying = false
+                        if (dialog.isShowing) {
+                            refresh()
+                            android.widget.Toast.makeText(activity, if (ok) "Spojení ověřeno." else "TV neodpovídá. Zkontroluj domácí síť a přijímač.", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
         action("Vymazat místní log překladu") {
             if (RemotePlayService.aktivni || PrijemService.bezi) {
                 android.app.AlertDialog.Builder(activity).setMessage("Nejdříve zastav překlad a příjem.")

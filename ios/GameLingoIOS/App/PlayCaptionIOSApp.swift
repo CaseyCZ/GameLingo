@@ -716,7 +716,7 @@ final class CaptionAppModel: ObservableObject {
                         }
                         self.recordPerformance("Dialog čekání snímku", milliseconds:
                             (ProcessInfo.processInfo.systemUptime - frame.receivedAt) * 1000)
-                        await self.processFrame(frame.buffer, currentSession: currentSession)
+                        await self.processFrame(frame.buffer, currentSession: currentSession, frameReceivedAt: frame.receivedAt)
                         await Task.yield()
                     }
                 }
@@ -732,7 +732,7 @@ final class CaptionAppModel: ObservableObject {
                         }
                         self.recordPerformance("Herní text čekání snímku", milliseconds:
                             (ProcessInfo.processInfo.systemUptime - frame.receivedAt) * 1000)
-                        await self.processChoicesFrame(frame.buffer, currentSession: currentSession)
+                        await self.processChoicesFrame(frame.buffer, currentSession: currentSession, frameReceivedAt: frame.receivedAt)
                         await Task.yield()
                     }
                 }
@@ -779,7 +779,7 @@ final class CaptionAppModel: ObservableObject {
         }
     }
 
-    private func processChoicesFrame(_ buffer: CVPixelBuffer, currentSession: Int) async {
+    private func processChoicesFrame(_ buffer: CVPixelBuffer, currentSession: Int, frameReceivedAt: TimeInterval) async {
         guard isRunning, sessionRevision == currentSession, choicesEnabled,
               !processingChoices else { return }
         processingChoices = true
@@ -816,13 +816,13 @@ final class CaptionAppModel: ObservableObject {
                   self.optionsRevision.accepts(readingRevision) else { return }
             await self.translateOptions(englishChoices, area: area, asText: asText, filterControls: filterControls, ignoredLines: ignoredLines, minimumHeight: minimumHeight,
                 activeGameLanguage: activeGameLanguage, activeTargetLanguage: activeTargetLanguage,
-                currentSession: currentSession, readingRevision: readingRevision, optionsStarted: optionsStarted)
+                currentSession: currentSession, readingRevision: readingRevision, optionsStarted: optionsStarted, frameReceivedAt: frameReceivedAt)
         }
     }
 
     private func translateOptions(_ englishChoices: [String], area: CGRect, asText: Bool, filterControls: Bool, ignoredLines: String, minimumHeight: Int,
                                   activeGameLanguage: GLGameLanguage, activeTargetLanguage: GLTargetLanguage,
-                                  currentSession: Int, readingRevision: UInt64, optionsStarted: TimeInterval) async {
+                                  currentSession: Int, readingRevision: UInt64, optionsStarted: TimeInterval, frameReceivedAt: TimeInterval) async {
         let optionsTranslateStarted = ProcessInfo.processInfo.systemUptime
         recordPerformance("Herní text OCR", milliseconds: (optionsTranslateStarted - optionsStarted) * 1000)
         var translated = [String]()
@@ -889,6 +889,7 @@ final class CaptionAppModel: ObservableObject {
         }
         if !translated.isEmpty && (self.devices.subtitleOutput == .phone || self.verifiedTelevisionOutput) {
             self.recordPerformance("Herní text celkem k výstupu", milliseconds: (ProcessInfo.processInfo.systemUptime - optionsStarted) * 1000)
+            self.recordPerformance("Herní text od snímku k předání", milliseconds: (ProcessInfo.processInfo.systemUptime - frameReceivedAt) * 1000)
         }
         self.write("Volby: \(translated.count) rozpoznaných položek")
     }
@@ -933,7 +934,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     /// Both Xbox WebRTC and PS4/PS5 Chiaki video feed the same latest-frame OCR.
-    private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int) async {
+    private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int, frameReceivedAt: TimeInterval) async {
         guard isRunning, sessionRevision == currentSession else { return }
         self.frameCount += 1
         let activeGameLanguage = self.gameLanguage
@@ -1035,6 +1036,7 @@ final class CaptionAppModel: ObservableObject {
                     }
                     if self.devices.subtitleOutput == .phone || self.verifiedTelevisionOutput {
                         self.recordPerformance("Dialog celkem k výstupu", milliseconds: (ProcessInfo.processInfo.systemUptime - reading.ocrStartedAt) * 1000)
+                        self.recordPerformance("Dialog od snímku k předání", milliseconds: (ProcessInfo.processInfo.systemUptime - frameReceivedAt) * 1000)
                     }
                     self.write("Překlad (\(activeTargetLanguage.rawValue)): \(czech)")
                 }

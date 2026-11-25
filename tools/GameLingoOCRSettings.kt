@@ -241,7 +241,7 @@ object GameLingoOCRSettings {
                 GameLingoTVUi.select(activity,"Výchozí oblast",GameLingoOCRConfig.regionLabels,
                     GameLingoOCRConfig.regionKeys.indexOf(GameLingoOCRConfig.region(activity))) { i ->
                     GameLingoOCRConfig.setRegion(activity,GameLingoOCRConfig.regionKeys[i])
-                    dialog.dismiss();show(activity,onAreas)
+                    dialog.dismiss();showPage(activity,onAreas,advanced)
                 }
             }
         }

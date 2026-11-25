@@ -1395,6 +1395,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("YellowOCRFilter.hasReadableText($0)", yellow)
         self.assertIn(">= 2", code(IOS/"YellowOCRFilter.swift"))
 
+    def test_051_bounded_discovery_diagnostics_and_frame_latency(self):
+        pairing = code(TOOLS/"GameLingoTVPairing.kt")
+        self.assertIn("val remaining = deadline - SystemClock.elapsedRealtime()", pairing)
+        self.assertIn("if (remaining <= 0L) return@use cached", pairing)
+        self.assertIn("packet.address == address && packet.port == port", pairing)
+        diagnostics = code(TOOLS/"GameLingoDiagnostics.kt")
+        self.assertIn("GameLingoTVPairing.connected(savedTv.ip)", diagnostics)
+        self.assertIn("GameLingoTVPairing.verify(activity, selected)", diagnostics)
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertEqual(model.count("frameReceivedAt: frame.receivedAt"), 2)
+        self.assertEqual(model.count("systemUptime - frameReceivedAt"), 2)
+        self.assertIn("Dialog od snímku k předání", model)
+        self.assertIn("Herní text od snímku k předání", model)
+
     def test_release_version_consistency(self):
         subprocess.run([sys.executable, str(TOOLS/"sync_version.py"), "--check"], check=True, cwd=ROOT)
 

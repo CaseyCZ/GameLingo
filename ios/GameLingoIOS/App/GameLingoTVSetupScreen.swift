@@ -234,6 +234,8 @@ private struct GameLingoTVPairingPanel: View {
                 Text("1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš šestimístný kód. 3. Zvol Spárovat.")
                     .font(.caption)
                     .foregroundStyle(GLNeon.mist)
+                Text("Používej jen důvěryhodnou domácí síť. Párování a titulky nejsou šifrované.")
+                    .font(.caption).foregroundStyle(GLStyle.muted)
                 HStack(spacing: 10) {
                     Image(systemName: tv.receiverConnected
                           ? "checkmark.circle.fill" : "link.circle")

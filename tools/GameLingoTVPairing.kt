@@ -118,7 +118,7 @@ object GameLingoTVPairing {
         val cached = if (lastPortIp == ip) lastPort else PORT
         val discovered = runCatching {
             DatagramSocket().use { socket ->
-                socket.soTimeout = 1_500
+                val deadline = SystemClock.elapsedRealtime() + 1_500L
                 val address = InetAddress.getByName(ip)
                 val query = "GLPORT1\tQUERY".toByteArray(Charsets.UTF_8)
                 for (port in availablePorts) {
@@ -126,6 +126,10 @@ object GameLingoTVPairing {
                 }
                 val buffer = ByteArray(256)
                 while (true) {
+                    // A stream of invalid replies cannot extend discovery forever.
+                    val remaining = deadline - SystemClock.elapsedRealtime()
+                    if (remaining <= 0L) return@use cached
+                    socket.soTimeout = remaining.toInt().coerceAtLeast(1)
                     val reply = DatagramPacket(buffer, buffer.size)
                     socket.receive(reply)
                     if (reply.address != address) continue
@@ -305,12 +309,13 @@ object GameLingoTVPairing {
                     socket.soTimeout = 3_000
                     val address = InetAddress.getByName(tv.ip)
                     val data = packetText.toByteArray(Charsets.UTF_8)
-                    socket.send(DatagramPacket(data, data.size, address, receiverPort(tv.ip)))
+                    val port = receiverPort(tv.ip)
+                    socket.send(DatagramPacket(data, data.size, address, port))
                     val buf = ByteArray(2048)
                     val reply = DatagramPacket(buf, buf.size)
                     socket.receive(reply)
                     val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
-                    reply.address == address && MessageDigest.isEqual(
+                    reply.address == address && reply.port == port && MessageDigest.isEqual(
                         expected.toByteArray(Charsets.UTF_8),
                         reply.data.copyOfRange(reply.offset, reply.offset + reply.length))
                 }
@@ -338,11 +343,12 @@ object GameLingoTVPairing {
             socket.soTimeout = 10_000
             val address = InetAddress.getByName(ip)
             val payload = "PCPAIR1\tPAIR\t$pin\t$clientId\tAndroid".toByteArray(Charsets.UTF_8)
-            socket.send(DatagramPacket(payload, payload.size, address, receiverPort(ip)))
+            val port = receiverPort(ip)
+            socket.send(DatagramPacket(payload, payload.size, address, port))
             val buffer = ByteArray(2048)
             val packet = DatagramPacket(buffer, buffer.size)
             socket.receive(packet)
-            require(packet.address == address) { "Odpověď nepřišla od vybrané TV." }
+            require(packet.address == address && packet.port == port) { "Odpověď nepřišla od vybrané TV." }
             val fields = String(packet.data, 0, packet.length, Charsets.UTF_8).split("\t")
             if (fields.size >= 2 && fields[0] == "PCPAIR1" && fields[1] == "ERROR")
                 throw IllegalArgumentException("TV kód odmítla. Vytvoř nový kód.")
@@ -381,7 +387,7 @@ object GameLingoTVPairing {
             orientation=android.widget.LinearLayout.VERTICAL
             val pad=d(13);setPadding(pad,pad,pad,pad);background=GameLingoVisualKit.card(activity)
             addView(android.widget.TextView(activity).apply {
-                text="Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování."
+                text="Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování. Používej jen důvěryhodnou domácí síť; párování a titulky nejsou šifrované."
                 textSize=14f;setTextColor(android.graphics.Color.parseColor("#92A4C7"))
             })
             pinInput.setTextColor(android.graphics.Color.WHITE)
