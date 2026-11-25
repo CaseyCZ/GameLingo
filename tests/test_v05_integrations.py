@@ -522,11 +522,35 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('RecognizedCaption(english: "", revision: revision', pipeline)
         self.assertIn("now - since >= 0.8", stability)
         self.assertIn("text.split(separator:", stability)
-        self.assertIn("min(4.0, max(0.1, requested))", model)
+        self.assertIn("min(10.0, max(3.0, requested))", model)
+        empty_read = model.split("if reading.english.isEmpty {", 1)[1].split("}", 1)[0]
+        self.assertNotIn("clearDialogueOutput()", empty_read)
+        self.assertIn("return", empty_read)
         self.assertIn("self.dialogueDisplayRevision == display", model)
         self.assertIn("self.clearDialogueOutput()", model)
         self.assertIn("ukaz(cesky, 4000, box, radku, barvyJmen)", wiring)
-        self.assertIn("coerceIn(0L, 800L)", wiring)
+        self.assertIn("ukazanoKdy = android.os.SystemClock.elapsedRealtime()", wiring)
+        self.assertIn("(ukazanoKdy + 4000L - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)", wiring)
+        self.assertNotIn("coerceIn(0L, 800L)", wiring)
+        direct = code(TOOLS/"direct_tv_mode.py")
+        self.assertIn("GameLingoOCRConfig.displayMs(this,4000L)) - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)", direct)
+
+    def test_point1_standalone_empty_ocr_preserves_reading_deadline(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        blank = capture.split("if (value.isBlank()) {", 1)[1].split("blankFrames = 0;", 1)[0]
+        self.assertIn('epoch++; candidate = ""', blank)
+        self.assertNotIn("shownUntil =", blank)
+        self.assertNotIn('render("")', blank)
+        self.assertIn("else resetText(preserveDisplay = true)", capture)
+        reset = capture.split("private fun resetText(", 1)[1].split("private fun setSource", 1)[0]
+        self.assertIn("preserveDisplay: Boolean = false", reset)
+        self.assertIn('if (!preserveDisplay) {\n            translatedText = ""; shownAt = 0L; shownUntil = 0L', reset)
+        self.assertIn('cancelSample(); resetText(); clearYellow(); clearHint(); render("")', capture)
+        self.assertIn('paused = !paused; cancelSample(); resetText(); render("")', capture)
+        self.assertIn('shownUntil = 0L; translatedText = ""; render("")', capture)
+        self.assertIn('if (wasActive) { render(""); clearYellow(); clearHint() }', capture)
+        # Point 2 is deliberately deferred: the current new-source branch still clears.
+        self.assertIn('shown = ""; translatedText = ""; render("")', capture)
 
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")

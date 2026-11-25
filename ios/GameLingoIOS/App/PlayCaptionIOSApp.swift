@@ -797,7 +797,9 @@ final class CaptionAppModel: ObservableObject {
                 self.recordPerformance("Dialog OCR", milliseconds: reading.ocrMilliseconds)
                 self.lastEnglish = reading.english
                 if reading.english.isEmpty {
-                    self.clearDialogueOutput()
+                    // The revision/cancellation above rejects pending stale work.
+                    // Already visible dialogue retains its existing expiry;
+                    // stop, source changes and explicit clears remain immediate.
                     return
                 }
                 self.write("OCR: \(reading.english)")
@@ -836,10 +838,9 @@ final class CaptionAppModel: ObservableObject {
                     }
                     let czech = self.glossaryTranslation(original: reading.english, translated: rawTranslation,
                         source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue)
-                    // Cap an unchanged dialogue at about four seconds, while
-                    // respecting a shorter user-selected display duration.
-                    let requested = self.subtitleDuration.isFinite ? self.subtitleDuration : 4
-                    let displaySeconds = min(4.0, max(0.1, requested))
+                    // Honor the existing 3–10 s setting; expiry starts when shown.
+                    let requested = self.subtitleDuration.isFinite ? self.subtitleDuration : 6
+                    let displaySeconds = min(10.0, max(3.0, requested))
                     self.lastCzech = czech
                     self.translationHistory.append(kind: "Dialog",
                         source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue,

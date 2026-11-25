@@ -49,8 +49,8 @@ def patch_direct_tv(folder):
     # The common language integration already bounds ordinary captions to four seconds.
     one("        ukaz(cesky, 4000, box, radku, barvyJmen)",
         "        ukaz(cesky, if (telefon) 4000L else GameLingoOCRConfig.displayMs(this,4000L), box, radku, barvyJmen)")
-    one("        val zbyva = (ukazanoKdy + 4000L - System.currentTimeMillis()).coerceIn(0L, 800L)",
-        "        val zbyva = (ukazanoKdy + (if (telefon) 4000L else GameLingoOCRConfig.displayMs(this,4000L)) - System.currentTimeMillis()).coerceIn(0L, 800L)")
+    one("            (ukazanoKdy + 4000L - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)",
+        "            (ukazanoKdy + (if (telefon) 4000L else GameLingoOCRConfig.displayMs(this,4000L)) - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)")
     one("        val token = platnostPrekladu.novy()\n        val oblast =",
         "        val token = platnostPrekladu.novy()\n        val tvTranslationStarted = android.os.SystemClock.elapsedRealtime()\n        val oblast =")
     one("            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika",

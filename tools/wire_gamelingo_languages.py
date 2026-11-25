@@ -338,8 +338,10 @@ def main():
             }
         })''', service.name)
     # P1.5: retain the pinned Android two-read stabilization and
-    # progressive correction. Bound standard dialogue lifetime only;
-    # story pages and long game text retain their own timing.
+    # progressive correction. Bound ordinary dialogue lifetime; use the same
+    # monotonic start on display and on source disappearance. Story is independent.
+    s=once(s, '        if (ukazanoKdy == 0L || System.currentTimeMillis() - ukazanoKdy > 400) ukazanoKdy = System.currentTimeMillis()',
+        '        ukazanoKdy = android.os.SystemClock.elapsedRealtime()', service.name)
     s=once(s, '        ukaz(cesky, 15000, box, radku, barvyJmen)',
         '        ukaz(cesky, 4000, box, radku, barvyJmen)', service.name)
     s=once(s, '''        val minDoba = 1800L + 60L * ukazanaDelka
@@ -347,9 +349,10 @@ def main():
         ui.removeCallbacks(schovatCesky)
         ukazanoKdy = 0L
         if (zbyva <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, zbyva)''',
-        '''        val zbyva = (ukazanoKdy + 4000L - System.currentTimeMillis()).coerceIn(0L, 800L)
+        '''        val zbyva = if (ukazanoKdy == 0L) 0L else
+            (ukazanoKdy + 4000L - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)
         ui.removeCallbacks(schovatCesky)
-        ukazanoKdy = 0L
+        // Keep the original display start even on repeated empty observations.
         if (zbyva <= 0) ukaz("", 0) else ui.postDelayed(schovatCesky, zbyva)''', service.name)
     # The old story and game-text timers intentionally stay independent.
     # P1.7: bounded rolling performance statistics in the existing local log.

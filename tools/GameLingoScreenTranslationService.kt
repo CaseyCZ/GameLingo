@@ -253,7 +253,10 @@ class GameLingoScreenTranslationService : Service() {
             if (!paused && received.get() == 0L && SystemClock.elapsedRealtime() - startedAt > 5000L)
                 setSource("MediaProjection běží, ale nedorazil žádný snímek")
             if (!paused && lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt > 1800L) {
-                resetText(); render("")
+                // Losing the OCR source invalidates pending work, not the reading
+                // time already granted to a displayed ordinary dialogue.
+                if (storyMode) { resetText(); render("") }
+                else resetText(preserveDisplay = true)
             }
             if (active) ui.postDelayed(this, GameLingoOCRConfig.tvIntervalMs(false).coerceIn(if (cleanCapture) 450L else 200L, 800L))
         }
@@ -386,9 +389,12 @@ class GameLingoScreenTranslationService : Service() {
         starting = false
         stopSelf()
     }
-    private fun resetText() {
-        epoch++; candidate = ""; shown = ""; translatedText = ""
-        candidateAt = 0L; shownAt = 0L; shownUntil = 0L; currentBox = null; currentRows = 1
+    private fun resetText(preserveDisplay: Boolean = false) {
+        epoch++; candidate = ""; shown = ""
+        candidateAt = 0L; currentBox = null; currentRows = 1
+        if (!preserveDisplay) {
+            translatedText = ""; shownAt = 0L; shownUntil = 0L
+        }
         story.reset(); storyPage = null
         lastAttempt = ""; lastAttemptAt = 0L
         lastTextAt = 0; blankFrames = 0; blankSince = 0
@@ -525,9 +531,9 @@ class GameLingoScreenTranslationService : Service() {
             if (++blankFrames >= 2 && blankSince == 0L) {
                 blankSince = now
                 if (storyMode) story.zmizelo(++storySequence,now)
-                // Invalidate in-flight translation. The display timer is never extended by blank frames.
+                // Invalidate in-flight translation without shortening or extending
+                // the existing display deadline. Explicit stop/context changes still clear immediately.
                 epoch++; candidate = ""; lastAttempt = ""; lastAttemptAt = 0L
-                if (!storyMode) { shownUntil = minOf(shownUntil, now + 700L) }
             }
             return
         }
