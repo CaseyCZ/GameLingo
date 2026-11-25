@@ -7,7 +7,7 @@ class TimingTests(unittest.TestCase):
         self.result=Result(self.ticket,1.4,1.9,"Počkej tady.",False)
     def test_timings(self):
         self.assertEqual(timings(self.result,2.0),dict(generation=3,translation_queue_ms=200.0,
-            translation_ms=500.0,frame_to_result_ms=900.0,frame_to_ui_ms=1000.0,cold_translation=0))
+            translation_ms=500.0,frame_to_result_ms=900.0,frame_to_ui_ms=1000.0,cold_translation=0,first_seen_to_ui_ms=""))
     def test_eligibility(self):
         self.assertTrue(eligible(self.result,1,2,2.0))
         self.assertFalse(eligible(self.result,2,2,2.0))

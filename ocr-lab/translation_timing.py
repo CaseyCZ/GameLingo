@@ -9,6 +9,9 @@ class Ticket:
     source: str
     frame_at: float
     accepted_at: float
+    settings: str=""
+    segment: int=0
+    first_seen: float|None=None
 
 @dataclass(frozen=True)
 class Result:
@@ -28,7 +31,8 @@ def timings(result, ui_at=None):
                 translation_ms=round((result.finished_at-result.started_at)*1000,1),
                 frame_to_result_ms=round((result.finished_at-t.frame_at)*1000,1),
                 frame_to_ui_ms="" if ui_at is None else round((ui_at-t.frame_at)*1000,1),
-                cold_translation=int(result.cold))
+                cold_translation=int(result.cold),
+                first_seen_to_ui_ms="" if ui_at is None or t.first_seen is None else round((ui_at-t.first_seen)*1000,1))
 
 def run_job(ticket, translate, cold, clock=time.perf_counter):
     start=clock()

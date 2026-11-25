@@ -1,4 +1,4 @@
-param([switch]$Rapid,[switch]$Translate,[switch]$PrepareModel)
+param([switch]$Rapid,[switch]$Translate,[switch]$PrepareModel,[switch]$WindowsOCR)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 if (-not (Test-Path '.venv\Scripts\python.exe')) {
@@ -12,6 +12,10 @@ if (-not (Test-Path '.venv\Scripts\python.exe')) {
 $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 & $python -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw 'Base dependencies failed.' }
+if ($WindowsOCR) {
+    & $python -m pip install -r requirements-windows.txt
+    if ($LASTEXITCODE -ne 0) { Write-Warning 'Windows OCR installation failed; other engines remain available.' }
+}
 if ($Rapid) {
     & $python -m pip install -r requirements-rapid.txt
     if ($LASTEXITCODE -ne 0) { throw 'RapidOCR installation failed.' }
@@ -24,6 +28,6 @@ if ($PrepareModel) {
     & $python prepare_model.py
     if ($LASTEXITCODE -ne 0) { throw 'Model setup failed.' }
 }
-& $python -m unittest -v test_core test_translation_timing test_pipeline
+& $python -m unittest -v test_core test_translation_timing test_pipeline test_experiments
 if ($LASTEXITCODE -ne 0) { throw 'Core tests failed.' }
 & $python lab.py
