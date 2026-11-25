@@ -83,7 +83,7 @@ class Session:
     def record(self,row):
         keys=("elapsed_ms","engine","filter","scale","interval_ms","psm","capture_prep_ms","ocr_ms",
               "event","source","delta","translation","generation","translation_queue_ms","translation_ms",
-              "frame_to_result_ms","frame_to_ui_ms","cold_translation","warmup_ms","stabilize","raw_source","settings","segment","first_seen_to_ui_ms")
+              "frame_to_result_ms","frame_to_ui_ms","cold_translation","warmup_ms","stabilize","raw_source","settings","segment","first_seen_to_ui_ms","error")
         with self.lock:self.rows.append({k:row.get(k,"") for k in keys})
 
     def note(self,key):
@@ -191,6 +191,7 @@ class Session:
                         self.emit({"status":"Načítám "+cfg.engine+"..."})
                         try:engines[cfg.engine]=make_engine(cfg.engine)
                         except Exception as exc:
+                            self.record(dict(event="engine_error",engine=cfg.engine,settings=settings,segment=segment,error=repr(exc)))
                             self.emit({"status":f"OCR {cfg.engine} nedostupné: {exc}. Vyber jiný engine."})
                             self.stop.wait(.5)
                             continue
@@ -210,6 +211,7 @@ class Session:
                     try:
                         raw=engines[cfg.engine].read(prep,cfg.psm,cfg.geometry,cfg.confidence)
                     except Exception as exc:
+                        self.record(dict(event="ocr_error",engine=cfg.engine,settings=settings,segment=segment,error=repr(exc)))
                         self.emit({"status":f"OCR chyba: {exc}. Změň nastavení nebo engine."})
                         self.stop.wait(.5)
                         continue
@@ -546,14 +548,14 @@ class Lab:
 
     def export(self):
         if not self.session:return
-        with self.session.lock:rows=list(self.session.rows)
+        with self.session.lock:rows=[dict(row) for row in self.session.rows]
         if not rows:return
         if not messagebox.askyesno("Export","CSV obsahuje rozpoznaný text i překlad. Uložit lokálně?"):return
         path=filedialog.asksaveasfilename(defaultextension=".csv",filetypes=[("CSV","*.csv")])
         if path:
             # Neutralize spreadsheet formulas in captured text.
             for row in rows:
-                for k in ("source","delta","translation","raw_source"):
+                for k in ("source","delta","translation","raw_source","error"):
                     v=row[k]
                     if v.lstrip().startswith(("=","+","-","@")):row[k]="'"+v
             with open(path,"w",encoding="utf-8-sig",newline="") as f:
