@@ -168,6 +168,18 @@ final class CaptionAppModel: ObservableObject {
     @Published var outputLocked = UserDefaults.standard.bool(forKey: "outputLocked") {
         didSet { UserDefaults.standard.set(outputLocked, forKey: "outputLocked") }
     }
+    @Published var ignoredBlueLines = UserDefaults.standard.string(forKey: "ignoredBlueLines") ?? "" {
+        didSet {
+            UserDefaults.standard.set(ignoredBlueLines, forKey: "ignoredBlueLines")
+            if oldValue != ignoredBlueLines { invalidateDialogue() }
+        }
+    }
+    @Published var ignoredYellowLines = UserDefaults.standard.string(forKey: "ignoredYellowLines") ?? "" {
+        didSet {
+            UserDefaults.standard.set(ignoredYellowLines, forKey: "ignoredYellowLines")
+            if oldValue != ignoredYellowLines { invalidateOptions() }
+        }
+    }
     @Published var filterChoiceControls = UserDefaults.standard.bool(forKey: "filterChoiceControls") {
         didSet {
             UserDefaults.standard.set(filterChoiceControls, forKey: "filterChoiceControls")
@@ -385,6 +397,8 @@ final class CaptionAppModel: ObservableObject {
             choicesEnabled: choicesEnabled,
             choicesTextMode: choicesTextMode,
             filterChoiceControls: filterChoiceControls,
+            ignoredBlueLines: ignoredBlueLines,
+            ignoredYellowLines: ignoredYellowLines,
             choicesArea: choicesArea,
             choicesLocked: choicesLocked,
             choicesOutputArea: choicesOutputArea,
@@ -428,6 +442,8 @@ final class CaptionAppModel: ObservableObject {
         choicesArea = profile.choicesArea
         choicesTextMode = profile.choicesTextMode
         filterChoiceControls = profile.filterChoiceControls ?? false
+        ignoredBlueLines = profile.ignoredBlueLines ?? ""
+        ignoredYellowLines = profile.ignoredYellowLines ?? ""
         choicesLocked = profile.choicesLocked
         choicesEnabled = profile.choicesEnabled
         if let rect = profile.choicesOutputArea { choicesOutputArea = rect }
@@ -711,6 +727,7 @@ final class CaptionAppModel: ObservableObject {
         let area = choicesArea
         let asText = choicesTextMode
         let filterControls = filterChoiceControls
+        let ignoredLines = ignoredYellowLines
         let activeGameLanguage = gameLanguage
         let activeTargetLanguage = targetLanguage
         defer {
@@ -724,7 +741,7 @@ final class CaptionAppModel: ObservableObject {
         let optionsStarted = ProcessInfo.processInfo.systemUptime
         guard let englishChoices = await self.pipeline.recognizeOptions(
             buffer, area: area, asText: asText,
-            gameLanguage: activeGameLanguage, mode: self.ocrMode, filterControls: filterControls
+            gameLanguage: activeGameLanguage, mode: self.ocrMode, filterControls: filterControls, ignoredLines: ignoredLines
         ), self.isRunning,
            self.sessionRevision == currentSession,
            self.choicesEnabled,
@@ -735,13 +752,13 @@ final class CaptionAppModel: ObservableObject {
         optionsTranslation = Task { @MainActor [weak self] in
             guard let self, !Task.isCancelled,
                   self.optionsRevision.accepts(readingRevision) else { return }
-            await self.translateOptions(englishChoices, area: area, asText: asText, filterControls: filterControls,
+            await self.translateOptions(englishChoices, area: area, asText: asText, filterControls: filterControls, ignoredLines: ignoredLines,
                 activeGameLanguage: activeGameLanguage, activeTargetLanguage: activeTargetLanguage,
                 currentSession: currentSession, readingRevision: readingRevision, optionsStarted: optionsStarted)
         }
     }
 
-    private func translateOptions(_ englishChoices: [String], area: CGRect, asText: Bool, filterControls: Bool,
+    private func translateOptions(_ englishChoices: [String], area: CGRect, asText: Bool, filterControls: Bool, ignoredLines: String,
                                   activeGameLanguage: GLGameLanguage, activeTargetLanguage: GLTargetLanguage,
                                   currentSession: Int, readingRevision: UInt64, optionsStarted: TimeInterval) async {
         let optionsTranslateStarted = ProcessInfo.processInfo.systemUptime
@@ -780,7 +797,7 @@ final class CaptionAppModel: ObservableObject {
                 self.recordPerformance("Herní text překlad", milliseconds: (ProcessInfo.processInfo.systemUptime - optionsTranslateStarted) * 1000)
                 self.write("Volby: chyba překladu (\(error.diagnostic))")
                 await self.pipeline.optionsTranslationFailed(englishChoices,
-                    area: area, asText: asText, gameLanguage: activeGameLanguage, filterControls: filterControls)
+                    area: area, asText: asText, gameLanguage: activeGameLanguage, filterControls: filterControls, ignoredLines: ignoredLines)
                 return
             }
         }
@@ -861,7 +878,7 @@ final class CaptionAppModel: ObservableObject {
             let reading = await self.pipeline.recognize(
                 buffer, region: self.subtitleRegion,
                 manualArea: self.manualOCR ? self.manualOCRBox : nil,
-                filterMenus: self.filterMenuText,
+                filterMenus: self.filterMenuText, ignoredLines: self.ignoredBlueLines,
                 mode: self.ocrMode,
                 expandOnEmpty: self.expandOnEmpty,
                 gameLanguage: activeGameLanguage

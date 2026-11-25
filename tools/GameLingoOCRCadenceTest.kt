@@ -4,6 +4,12 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoOCRCadenceTest {
+    @Test fun ignoredRowsMatchOnlyWholeNormalizedLine() {
+        val ignored = GameLingoIgnoredLines.entries("  SAVE  GAME\nLoading\n")
+        assertFalse(GameLingoIgnoredLines.keeps("save game", ignored))
+        assertTrue(GameLingoIgnoredLines.keeps("Please save game now", ignored))
+        assertTrue(GameLingoIgnoredLines.keeps("Loading", emptySet()))
+    }
     @Test fun yellowFilterOnlyRemovesExplicitControllerPrompts() {
         for (prompt in listOf("Press A", "Hold R2", "TAP [X] to continue.", "Press button LB to go back")) {
             assertTrue(GameLingoYellowOCRFilter.keeps(prompt, false))

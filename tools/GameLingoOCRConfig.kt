@@ -15,6 +15,14 @@ object GameLingoOCRConfig {
         private set
     @Volatile var filterChoiceControls: Boolean = false
         private set
+    @Volatile var ignoredBlueLines: String = ""
+        private set
+    @Volatile var ignoredYellowLines: String = ""
+        private set
+    @Volatile internal var ignoredBlueEntries: Set<String> = emptySet()
+        private set
+    @Volatile internal var ignoredYellowEntries: Set<String> = emptySet()
+        private set
     @Volatile var expandSearch: Boolean = false
         private set
 
@@ -50,6 +58,10 @@ object GameLingoOCRConfig {
             ?.takeIf { it in modes } ?: "classic"
         filterMenuText = store.getBoolean("filterMenuText", true)
         filterChoiceControls = store.getBoolean("filterChoiceControls", false)
+        ignoredBlueLines = store.getString("ignoredBlueLines", "").orEmpty()
+        ignoredYellowLines = store.getString("ignoredYellowLines", "").orEmpty()
+        ignoredBlueEntries = GameLingoIgnoredLines.entries(ignoredBlueLines)
+        ignoredYellowEntries = GameLingoIgnoredLines.entries(ignoredYellowLines)
         expandSearch = store.getBoolean("expandSearch", false)
     }
 
@@ -91,6 +103,15 @@ object GameLingoOCRConfig {
             .edit().putBoolean("filterChoiceControls", selected).apply()
     }
 
+    fun setIgnoredLines(context: Context, yellow: Boolean, raw: String) {
+        val value = raw.take(8192)
+        val entries = GameLingoIgnoredLines.entries(value)
+        if (yellow) { ignoredYellowLines = value; ignoredYellowEntries = entries }
+        else { ignoredBlueLines = value; ignoredBlueEntries = entries }
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(if (yellow) "ignoredYellowLines" else "ignoredBlueLines", value).apply()
+    }
+
     fun setExpandSearch(context: Context, selected: Boolean) {
         expandSearch = selected
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -103,6 +124,8 @@ object GameLingoOCRConfig {
         mode = "classic"
         filterMenuText = true
         filterChoiceControls = false
+        ignoredBlueLines = ""; ignoredYellowLines = ""
+        ignoredBlueEntries = emptySet(); ignoredYellowEntries = emptySet()
         expandSearch = false
     }
 }

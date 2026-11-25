@@ -131,8 +131,8 @@ actor CaptionPipeline {
     }
 
     func optionsTranslationFailed(_ options: [String], area: CGRect,
-                                  asText: Bool, gameLanguage: GLGameLanguage, filterControls: Bool = false) {
-        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)"
+                                  asText: Bool, gameLanguage: GLGameLanguage, filterControls: Bool = false, ignoredLines: String = "") {
+        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)|\(ignoredLines)"
         guard lastOptionsSettings == signature, lastOptions == options,
               !options.isEmpty else { return }
         optionsRetryAt = ProcessInfo.processInfo.systemUptime + 2
@@ -141,14 +141,14 @@ actor CaptionPipeline {
     func recognize(_ buffer: CVPixelBuffer,
                    region: SubtitleRegion,
                    manualArea: CGRect?,
-                   filterMenus: Bool,
+                   filterMenus: Bool, ignoredLines: String = "",
                    mode: OCRMode = .classic,
                    expandOnEmpty: Bool = false,
                    gameLanguage: GLGameLanguage = .english) -> RecognizedCaption? {
         let baseROI = manualArea.map { CGRect(
             x: $0.minX, y: 1 - $0.maxY, width: $0.width, height: $0.height
         ) } ?? region.rect
-        let settings = "\(baseROI)|\(filterMenus)|\(mode.rawValue)|\(expandOnEmpty)|\(gameLanguage.rawValue)"
+        let settings = "\(baseROI)|\(filterMenus)|\(mode.rawValue)|\(expandOnEmpty)|\(gameLanguage.rawValue)|\(ignoredLines)"
         if settings != lastSettings {
             lastSettings = settings
             lastText = ""
@@ -181,11 +181,12 @@ actor CaptionPipeline {
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])
             dialogueImageGate.recordSuccessfulRead(fingerprint, now: imageTime)
+            let ignored = OCRIgnoredLines.entries(ignoredLines)
             let minLetters = mode == .street ? 2 : 3
             let lines = (request.results ?? []).compactMap { item -> String? in
                 guard let candidate = item.topCandidates(1).first else { return nil }
                 let line = candidate.string.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard line.filter({ $0.isLetter }).count >= minLetters else { return nil }
+                guard line.filter({ $0.isLetter }).count >= minLetters, OCRIgnoredLines.keeps(line, entries: ignored) else { return nil }
                 if filterMenus && looksLikeMenu(line, conservative: mode != .classic) {
                     return nil
                 }
@@ -243,13 +244,13 @@ actor CaptionPipeline {
                           area: CGRect,
                           asText: Bool,
                           gameLanguage: GLGameLanguage = .english,
-                          mode: OCRMode = .classic, filterControls: Bool = false) -> [String]? {
+                          mode: OCRMode = .classic, filterControls: Bool = false, ignoredLines: String = "") -> [String]? {
         if optionsMode != mode {
             optionsMode = mode
             lastOptionsRead = nil
             optionsRecentCost = 0
         }
-        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)"
+        let signature = "\(area)|\(asText)|\(gameLanguage.rawValue)|\(filterControls)|\(ignoredLines)"
         if signature != lastOptionsSettings {
             lastOptionsSettings = signature
             lastOptions = []
@@ -281,12 +282,13 @@ actor CaptionPipeline {
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])
             optionsImageGate.recordSuccessfulRead(fingerprint, now: imageTime)
+            let ignored = OCRIgnoredLines.entries(ignoredLines)
             let lines = (request.results ?? [])
                 .sorted { $0.boundingBox.midY > $1.boundingBox.midY }
                 .compactMap { $0.topCandidates(1).first?.string
                     .trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { $0.filter { $0.isLetter }.count >= 3 }
-                .filter { YellowOCRFilter.keeps($0, enabled: filterControls) }
+                .filter { YellowOCRFilter.keeps($0, enabled: filterControls) && OCRIgnoredLines.keeps($0, entries: ignored) }
 
             let output = asText
                 ? (lines.isEmpty ? [] : [lines.joined(separator: " ")])

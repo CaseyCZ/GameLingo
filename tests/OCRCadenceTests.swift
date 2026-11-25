@@ -22,6 +22,10 @@ struct OCRCadenceTests {
         for option in ["YES", "NO", "LEAVE", "Hold on", "Press X to open the door", "A", "Inventory"] {
             precondition(YellowOCRFilter.keeps(option, enabled: true))
         }
+        let ignored = OCRIgnoredLines.entries("  SAVE  GAME\nLoading\n")
+        precondition(!OCRIgnoredLines.keeps("save game", entries: ignored))
+        precondition(OCRIgnoredLines.keeps("Please save game now", entries: ignored))
+        precondition(OCRIgnoredLines.keeps("Loading", entries: []))
         print("OCRCadence: mode order, independent adaptive budget, fallback and yellow filter passed")
     }
 }

@@ -147,6 +147,24 @@ object GameLingoOCRSettings {
             GameLingoOCRConfig.filterChoiceControls) {
             GameLingoOCRConfig.setFilterChoiceControls(activity, it)
         }
+        for (yellow in listOf(false, true)) {
+            val raw = if (yellow) GameLingoOCRConfig.ignoredYellowLines else GameLingoOCRConfig.ignoredBlueLines
+            val label = if (yellow) "Žlutá" else "Modrá"
+            action("$label: ignorované řádky", "Počet: " + GameLingoIgnoredLines.entries(raw).size, canEdit) {
+                val input = android.widget.EditText(activity).apply {
+                    setText(raw); minLines = 3; maxLines = 8
+                    inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                    filters = arrayOf(android.text.InputFilter.LengthFilter(8192))
+                    hint = "Jeden přesný výraz na řádek"
+                }
+                android.app.AlertDialog.Builder(activity).setTitle("$label: ignorované řádky")
+                    .setView(input).setNegativeButton("Zrušit", null)
+                    .setPositiveButton("Uložit") { _, _ ->
+                        GameLingoOCRConfig.setIgnoredLines(activity, yellow, input.text.toString())
+                        dialog.dismiss(); show(activity, onAreas)
+                    }.show()
+            }
+        }
         toggle("Rozšířit hledání",
             "Při automatickém režimu zahrne širší část obrazu.",
             GameLingoOCRConfig.expandSearch,

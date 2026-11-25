@@ -584,7 +584,7 @@ def wire_yellow_control_filter(source: str) -> str:
     start = source.index("    fun prectiVolby(")
     end = source.index("    class Titulek(", start)
     before = "                })\n            }\n            .addOnFailureListener"
-    after = "                }.filter { GameLingoYellowOCRFilter.keeps(it.first, GameLingoOCRConfig.filterChoiceControls) })\n            }\n            .addOnFailureListener"
+    after = "                }.filter { GameLingoYellowOCRFilter.keeps(it.first, GameLingoOCRConfig.filterChoiceControls) && GameLingoIgnoredLines.keeps(it.first, GameLingoOCRConfig.ignoredYellowEntries) })\n            }\n            .addOnFailureListener"
     lane = source[start:end]
     if lane.count(before) != 1:
         raise RuntimeError("Android yellow OCR result anchor changed")
@@ -610,7 +610,8 @@ def main():
                 (if (GameLingoOCRConfig.expandSearch &&
                      GameLingoOCRConfig.mode != "classic")
                     0.15f..0.85f else 0.3f..0.7f) }
-            .filterNot { GameLingoOCRConfig.filterMenuText && jeMenu(it.text) }'''
+            .filterNot { GameLingoOCRConfig.filterMenuText && jeMenu(it.text) }
+            .filter { GameLingoIgnoredLines.keeps(it.text, GameLingoOCRConfig.ignoredBlueEntries) }'''
     if code.count(before)!=1:
         raise RuntimeError("Android OCR native reader source changed")
     select.write_text(code.replace(before,after,1),encoding="utf8")

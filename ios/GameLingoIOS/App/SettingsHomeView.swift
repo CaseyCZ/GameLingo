@@ -308,6 +308,10 @@ private struct GameLingoOCRSettingsView: View {
             GLCard {
                 Toggle("Filtrovat menu hry", isOn: $model.filterMenuText)
                 Toggle("Žlutá: filtrovat pokyny ovladače", isOn: $model.filterChoiceControls)
+                Text("Ignorované řádky (jeden výraz na řádek)").font(.caption)
+                TextField("Modrá oblast", text: $model.ignoredBlueLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
+                TextField("Žlutá oblast", text: $model.ignoredYellowLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
+                Text("Pouze přesná shoda celého řádku, bez ohledu na velikost písmen.").font(.caption)
                 Toggle("Rozšířit hledání", isOn: $model.expandOnEmpty)
                     .disabled(model.ocrMode == .classic || model.manualOCR)
                 HStack {
@@ -324,6 +328,8 @@ private struct GameLingoOCRSettingsView: View {
                     model.expandOnEmpty = false
                     model.filterMenuText = true
                     model.filterChoiceControls = false
+                    model.ignoredBlueLines = ""
+                    model.ignoredYellowLines = ""
                 }
                 .disabled(model.isRunning)
             }
@@ -760,6 +766,8 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var choicesEnabled: Bool
     var choicesTextMode: Bool
     var filterChoiceControls: Bool?
+    var ignoredBlueLines: String?
+    var ignoredYellowLines: String?
     var choicesArea: CGRect
     var choicesLocked: Bool
     /// Optional to preserve previously saved 0.2.0 game profiles.
