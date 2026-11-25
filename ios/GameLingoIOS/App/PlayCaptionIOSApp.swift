@@ -318,6 +318,8 @@ final class CaptionAppModel: ObservableObject {
     private var remotePlay: XboxRemotePlay?
     private var processingChoices = false
     private var processingOCR = false
+    private var choicesStartedAt = 0.0
+    private var ocrStartedAt = 0.0
     private var sessionRevision = 0
     private var dialogueRevision = TranslationRevision()
     private var optionsRevision = TranslationRevision()
@@ -481,6 +483,9 @@ final class CaptionAppModel: ObservableObject {
                      "Herní text OCR", "Herní text překlad", "Herní text celkem k výstupu"]
         var lines = names.map { "\($0): \(performance[$0]?.summary ?? "–")" }
         if let remotePlay { lines.append(remotePlay.streamSummary()) }
+        let now = ProcessInfo.processInfo.systemUptime
+        if processingOCR && now - ocrStartedAt >= 5 { lines.append("Dialog OCR: dlouhé čekání ≥ 5 s") }
+        if processingChoices && now - choicesStartedAt >= 5 { lines.append("Herní text OCR: dlouhé čekání ≥ 5 s") }
         performanceSummary = (["Průměr / P95 (posledních 128 vzorků)"] + lines +
             ["Chyby překladu: \(translationFailures)", LocalDeviceDiagnostics.sample()]).joined(separator: "\n")
     }
@@ -636,6 +641,7 @@ final class CaptionAppModel: ObservableObject {
         guard isRunning, sessionRevision == currentSession, choicesEnabled,
               !processingChoices else { return }
         processingChoices = true
+        choicesStartedAt = ProcessInfo.processInfo.systemUptime
         let contextRevision = optionsRevision.value
         let area = choicesArea
         let asText = choicesTextMode
@@ -780,6 +786,7 @@ final class CaptionAppModel: ObservableObject {
         // request must not block OCR of the next short street dialogue.
         if !self.processingOCR {
             self.processingOCR = true
+            ocrStartedAt = ProcessInfo.processInfo.systemUptime
             await dialogueReset?.value
             guard dialogueRevision.accepts(contextRevision), sessionRevision == currentSession, isRunning else {
                 if sessionRevision == currentSession { processingOCR = false }

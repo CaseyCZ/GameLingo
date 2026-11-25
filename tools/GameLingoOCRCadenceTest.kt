@@ -4,6 +4,12 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoOCRCadenceTest {
+    @Test fun captureWatchdogDistinguishesNoFrameAndSlowOcr() {
+        assertEquals("Bez zjištěného výpadku", GameLingoCaptureWatchdog.state(100,false,0))
+        assertTrue(GameLingoCaptureWatchdog.state(5000,false,0).contains("Nepřicházejí"))
+        assertTrue(GameLingoCaptureWatchdog.state(100,true,5000).contains("déle"))
+        assertTrue(GameLingoCaptureWatchdog.state(10000,true,15000).contains("další čtení nespouštím"))
+    }
     @Test fun standalonePrioritizesDialogueWithoutStarvingGameText() {
         assertEquals(1, GameLingoOCRCadence.standaloneRegion(true,true,0,0))
         assertEquals(1, GameLingoOCRCadence.standaloneRegion(true,true,1,300))

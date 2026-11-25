@@ -694,6 +694,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("old.id == sample.id", code(IOS/"PerformanceWindow.swift"))
         self.assertIn("old.id != sample.id", code(TOOLS/"GameLingoPerformance.kt"))
 
+    def test_point13_capture_watchdog_never_releases_busy_ocr(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        tick = capture.split("private val tick = object : Runnable", 1)[1].split("override fun onStartCommand", 1)[0]
+        self.assertIn("GameLingoCaptureWatchdog.state(now - frameAt, ocrBusy", tick)
+        self.assertIn("now - sampleRequestedAt >= 1500L", tick)
+        self.assertNotIn("ocrBusy = false", tick)
+        self.assertIn("lastFrameReceivedAt.set(SystemClock.elapsedRealtime())", capture)
+        self.assertIn("ocrInFlightAt = ocrStarted", capture)
+        self.assertIn("ocrInFlightAt = started", capture)
+        self.assertIn("watchdogState", capture)
+        self.assertIn("processingOCR && now - ocrStartedAt >= 5", code(IOS/"PlayCaptionIOSApp.swift"))
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")

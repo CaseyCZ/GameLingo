@@ -23,3 +23,13 @@ internal object GameLingoOCRCadence {
         return maxOf(floor, (recentCostMs.coerceIn(0L, 1000L) * 3 / 2))
     }
 }
+
+/** Only reports absence or a slow operation; it never releases an active reader. */
+internal object GameLingoCaptureWatchdog {
+    fun state(frameAgeMs: Long, busy: Boolean, ocrAgeMs: Long): String = when {
+        busy && ocrAgeMs >= 15000L -> "OCR bez odpovědi – další čtení nespouštím"
+        frameAgeMs >= 5000L -> "Nepřicházejí snímky (obraz může být neměnný)"
+        busy && ocrAgeMs >= 5000L -> "OCR trvá déle než 5 s"
+        else -> "Bez zjištěného výpadku"
+    }
+}

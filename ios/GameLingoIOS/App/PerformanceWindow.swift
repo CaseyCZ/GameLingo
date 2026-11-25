@@ -53,10 +53,15 @@ struct XboxDecodedVideoWindow {
         guard let last, now >= last, now - last <= 2 else { return nil }
         return rate
     }
+    func frameAge(now: TimeInterval) -> TimeInterval? {
+        guard let last, now >= last else { return nil }
+        return now - last
+    }
     func summary(now: TimeInterval) -> String {
         let size = width > 0 && height > 0 ? "\(width)×\(height)" : "–"
         let frameRate = fps(now: now).map { String(format: "%.1f", $0) } ?? "–"
-        return "Xbox dekódovaný obraz: \(size) · \(frameRate) FPS"
+        let age = frameAge(now: now).map { $0 >= 5 ? " · bez nového snímku ≥ 5 s" : "" } ?? " · čekám na první snímek"
+        return "Xbox dekódovaný obraz: \(size) · \(frameRate) FPS" + age
     }
 }
 

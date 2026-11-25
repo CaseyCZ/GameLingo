@@ -138,6 +138,9 @@ class GameLingoScreenTranslationService : Service() {
     private var frameHandler: Handler? = null
     private val wantFrame = java.util.concurrent.atomic.AtomicInteger(0)
     private var startedAt = 0L
+    private val lastFrameReceivedAt = AtomicLong()
+    private var sampleRequestedAt = 0L
+    private var ocrInFlightAt = 0L
     private var diagnostic = false
     private var lastTextAt = 0L
     private var translatedText = ""
@@ -232,10 +235,20 @@ class GameLingoScreenTranslationService : Service() {
             }
             blockedHome = app != null && (app == launcherPackage || app == packageName)
             if (blockedHome) {
+                watchdogState = "Čekám na podporovaný zdroj"
                 setSource("Čekám na otevření videa nebo vstupu TV")
                 if (active) ui.postDelayed(this, 350L)
                 return
             }
+            if (!paused) {
+                val now = SystemClock.elapsedRealtime()
+                val frameAt = lastFrameReceivedAt.get().takeIf { it > 0L } ?: startedAt
+                watchdogState = GameLingoCaptureWatchdog.state(now - frameAt, ocrBusy,
+                    if (ocrBusy) now - ocrInFlightAt else 0L)
+                // Retry a lost sampling opportunity, not an active ML Kit call.
+                if (!ocrBusy && !capturePending && wantFrame.get() != 0 &&
+                    sampleRequestedAt != 0L && now - sampleRequestedAt >= 1500L) cancelSample()
+            } else watchdogState = "Pozastaveno"
             if (hintLastAt != 0L && SystemClock.elapsedRealtime()-hintLastAt > 1800L) clearHint()
             if (!paused && !ocrBusy && !capturePending && wantFrame.get() == 0) {
                 val blueEnabled = dialogueEnabled || hintsEnabled
@@ -262,8 +275,8 @@ class GameLingoScreenTranslationService : Service() {
             if (!paused && yellowLastAt != 0L && SystemClock.elapsedRealtime() - yellowLastAt > 1800L) {
                 clearYellow()
             }
-            if (!paused && received.get() == 0L && SystemClock.elapsedRealtime() - startedAt > 5000L)
-                setSource("MediaProjection běží, ale nedorazil žádný snímek")
+            if (!paused && watchdogState != "Bez zjištěného výpadku")
+                setSource(watchdogState)
             if (!paused && lastTextAt != 0L && SystemClock.elapsedRealtime() - lastTextAt > 1800L) {
                 // Losing the OCR source invalidates pending work, not the reading
                 // time already granted to a displayed ordinary dialogue.
@@ -423,6 +436,7 @@ class GameLingoScreenTranslationService : Service() {
         }
     }
     private fun requestSample(region: Int) {
+        sampleRequestedAt = SystemClock.elapsedRealtime()
         if (!cleanCapture || !OverlayService.suppressStandaloneCapture(true)) {
             OverlayService.suppressStandaloneCapture(false)
             wantFrame.compareAndSet(0,region)
@@ -441,7 +455,7 @@ class GameLingoScreenTranslationService : Service() {
         }, 350L)
     }
     private fun cancelSample() {
-        sampleGeneration++; capturePending = false; wantFrame.set(0)
+        sampleGeneration++; capturePending = false; wantFrame.set(0); sampleRequestedAt = 0L
         OverlayService.suppressStandaloneCapture(false)
     }
     // Acquire and close every Image on the dedicated frame thread. Copy just
@@ -454,6 +468,7 @@ class GameLingoScreenTranslationService : Service() {
             var cropStarted = 0L
             val bitmap = try {
                 received.incrementAndGet()
+                lastFrameReceivedAt.set(SystemClock.elapsedRealtime())
                 val requested = wantFrame.getAndSet(0)
                 if (requested == 0) return
                 cropStarted = SystemClock.elapsedRealtime()
@@ -524,6 +539,7 @@ class GameLingoScreenTranslationService : Service() {
         ocrBusy = true
         val ticket = epoch
         val ocrStarted = SystemClock.elapsedRealtime()
+        ocrInFlightAt = ocrStarted
         val read = ocr ?: run { cropped.recycle(); ocrBusy=false; return }
         try {
             read.prectiPosledniTitulek(cropped, hotovo = { result ->
@@ -730,7 +746,9 @@ class GameLingoScreenTranslationService : Service() {
             return
         }
         val read = ocr ?: run { cropped.recycle(); return }
+        setSource("OCR herních textů")
         ocrBusy = true
+        ocrInFlightAt = started
         val ticket = yellowEpoch
         try {
             read.prectiVolby(cropped, { lines ->
@@ -908,6 +926,7 @@ class GameLingoScreenTranslationService : Service() {
         @Volatile private var resolution = "—"
         @Volatile private var capturedSize = "—"
         @Volatile private var frameError = "—"
+        @Volatile private var watchdogState = "Čeká"
         @Volatile private var ocrState = "Čeká"
         @Volatile private var translationState = "Čeká"
         @Volatile private var layoutState = "—"
@@ -922,13 +941,13 @@ class GameLingoScreenTranslationService : Service() {
             received.set(0); decoded.set(0); ocrCalls.set(0); ocrHits.set(0); translationHits.set(0)
             startupFailed=false; foregroundState="Nezahájena"
             projectionState="Nezahájeno"; displayState="Nevytvořen"; resolution="—"; capturedSize="—"
-            frameError="—"; ocrState="Čeká"; translationState="Čeká"; layoutState="—"
+            frameError="—"; watchdogState="Čeká"; ocrState="Čeká"; translationState="Čeká"; layoutState="—"
             lastOcrMs=0L; lastTranslationMs=0L; currentPhases=newPhaseMetrics(); clearPreview()
         }
         private fun clearPreview() { preview=null; lastRaw=""; lastTranslated="" }
         fun report(): String = "Stav: $status\nForeground služba: $foregroundState\nSouhlas / projekce: $projectionState\nVirtualDisplay: $displayState" +
             "\nSnímání: $resolution · zdroj: $capturedSize\nPřijaté snímky: ${received.get()} · výřezy: ${decoded.get()}" +
-            "\nChyba snímku: $frameError\nOCR: $ocrState (${ocrHits.get()}/${ocrCalls.get()})" +
+            "\nChyba snímku: $frameError\nHlídač: $watchdogState\nOCR: $ocrState (${ocrHits.get()}/${ocrCalls.get()})" +
             "\nPřekladač: $translationState (${translationHits.get()})" +
             "\nOCR: $lastOcrMs ms · překlad: $lastTranslationMs ms\nRozložení: $layoutState" +
             "\n" + phaseSummary() +

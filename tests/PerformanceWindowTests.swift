@@ -19,6 +19,8 @@ struct PerformanceWindowTests {
         precondition(video.fps(now: 1) == 30)
         precondition(video.width == 1280 && video.height == 720)
         precondition(video.fps(now: 3.1) == nil)
+        precondition(video.frameAge(now: 6) == 5)
+        precondition(video.summary(now: 6).contains("bez nového snímku"))
         var network = XboxNetworkWindow()
         network.record(.init(id: "a", now: 0, bytes: 1000, received: 100, lost: 10, jitter: 0.003, rtt: 0.04))
         precondition(!network.summary(now: 0).contains("kb/s"))
