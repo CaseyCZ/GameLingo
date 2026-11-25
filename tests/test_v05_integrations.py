@@ -613,6 +613,13 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("ticket != yellowEpoch) translateYellow()", yellow_translate)
         self.assertIn('hintText=text; hintEpoch++; hintAttempt=""; hintAttemptAt=0L', capture)
 
+    def test_point6_standalone_dialogue_priority_keeps_single_reader(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("GameLingoOCRCadence.standaloneRegion(blueEnabled, yellowEnabled,", capture)
+        self.assertIn("!ocrBusy && !capturePending && wantFrame.get() == 0", capture)
+        self.assertNotIn("nextYellow", capture)
+        self.assertIn("blueSinceYellow >= 2", code(TOOLS/"GameLingoOCRCadence.kt"))
+
     def test_p1_6_translation_breakers_and_fallback(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         swift = code(IOS/"TranslationCircuitBreaker.swift")

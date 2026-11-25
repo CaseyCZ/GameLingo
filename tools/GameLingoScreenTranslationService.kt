@@ -205,7 +205,8 @@ class GameLingoScreenTranslationService : Service() {
     private var yellowTextMode = false
     private var yellowRoi = floatArrayOf(.1f,.1f,.9f,.5f)
     private var orangeOutput = floatArrayOf(.07f,.43f,.50f,.60f,1f)
-    private var nextYellow = false
+    private var blueSamplesSinceYellow = 0
+    private var lastYellowSampleAt = 0L
     private var yellowEpoch = 0L
     private var yellowCandidate = emptyList<String>()
     private var yellowShown = emptyList<String>()
@@ -232,8 +233,11 @@ class GameLingoScreenTranslationService : Service() {
             if (hintLastAt != 0L && SystemClock.elapsedRealtime()-hintLastAt > 1800L) clearHint()
             if (!paused && !ocrBusy && !capturePending && wantFrame.get() == 0) {
                 val blueEnabled = dialogueEnabled || hintsEnabled
-                val region = if (yellowEnabled && (!blueEnabled || nextYellow)) 2 else 1
-                if (blueEnabled && yellowEnabled) nextYellow = !nextYellow
+                val now = SystemClock.elapsedRealtime()
+                val region = GameLingoOCRCadence.standaloneRegion(blueEnabled, yellowEnabled,
+                    blueSamplesSinceYellow, now - lastYellowSampleAt)
+                if (region == 1) blueSamplesSinceYellow = (blueSamplesSinceYellow + 1).coerceAtMost(2)
+                else { blueSamplesSinceYellow = 0; lastYellowSampleAt = now }
                 requestSample(region)
             }
             if (!paused && storyMode) {
@@ -397,6 +401,7 @@ class GameLingoScreenTranslationService : Service() {
         candidateAt = 0L; currentBox = null; currentRows = 1
         if (!preserveDisplay) {
             translatedText = ""; shownAt = 0L; shownUntil = 0L
+            blueSamplesSinceYellow = 0; lastYellowSampleAt = SystemClock.elapsedRealtime()
         }
         story.reset(); storyPage = null
         lastAttempt = ""; lastAttemptAt = 0L

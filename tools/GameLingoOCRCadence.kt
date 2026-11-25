@@ -9,6 +9,14 @@ internal object GameLingoOCRCadence {
             else -> if (phone) 100L else 250L
         }
     }
+    /** Two dialogue opportunities per game-text opportunity, with bounded
+     * yellow starvation under slow capture/OCR. A single reader still owns the work. */
+    fun standaloneRegion(blue: Boolean, yellow: Boolean, blueSinceYellow: Int, yellowAgeMs: Long): Int {
+        if (!yellow) return 1
+        if (!blue) return 2
+        return if (blueSinceYellow >= 2 || (blueSinceYellow > 0 && yellowAgeMs >= 1200L)) 2 else 1
+    }
+
     fun gameText(mode: String, asText: Boolean, lowPower: Boolean, recentCostMs: Long): Long {
         val base = when (mode) { "automatic" -> 200L; "street" -> 150L; else -> 250L }
         val floor = maxOf(if (lowPower) 600L else 0L, if (asText) base * 5 / 4 else base)

@@ -4,6 +4,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoOCRCadenceTest {
+    @Test fun standalonePrioritizesDialogueWithoutStarvingGameText() {
+        assertEquals(1, GameLingoOCRCadence.standaloneRegion(true,true,0,0))
+        assertEquals(1, GameLingoOCRCadence.standaloneRegion(true,true,1,300))
+        assertEquals(2, GameLingoOCRCadence.standaloneRegion(true,true,2,600))
+        assertEquals(2, GameLingoOCRCadence.standaloneRegion(true,true,1,1200))
+        assertEquals(1, GameLingoOCRCadence.standaloneRegion(true,false,2,9999))
+        assertEquals(2, GameLingoOCRCadence.standaloneRegion(false,true,0,0))
+    }
     @Test fun orderedModesAndPowerFloor() {
         for (phone in listOf(true, false)) {
             assertTrue(GameLingoOCRCadence.dialogue("classic", phone, false) >
