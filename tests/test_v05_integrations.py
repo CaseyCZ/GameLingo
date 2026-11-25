@@ -1270,6 +1270,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('GameLingoPSBridge.h',project)
         self.assertIn('0.5.0',project)
 
+    def test_caption_retransmission_preserves_original_expiry(self):
+        ios = code(IOS/"PlayCaptionTV.swift")
+        android = code(TOOLS/"wire_android_devices.py")
+        self.assertIn("let expiry = ProcessInfo.processInfo.systemUptime", ios)
+        self.assertIn("repeatFields[2] = String(remaining)", ios)
+        self.assertIn("guard remaining > 0 else { break }", ios)
+        self.assertIn("captionDeadline - android.os.SystemClock.elapsedRealtime()", android)
+        self.assertIn("text.isNotEmpty() && remaining == 0L", android)
+        self.assertIn('text = ""; doba = 0L; barvy = null; captionDeadline = 0L', android)
+        self.assertIn("checkedPortAt == 0L", code(TOOLS/"GameLingoTVPairing.kt"))
+
     def test_no_fake_ps5_readiness(self):
         all_ios="\n".join(code(path) for path in IOS.rglob("*.swift"))
         self.assertNotIn('PS5 – coming soon',all_ios)

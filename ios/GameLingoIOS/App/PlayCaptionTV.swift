@@ -645,14 +645,19 @@ final class PlayCaptionTV: ObservableObject {
             message = "Nejdříve bezpečně spáruj GameLingo TV."
             return
         }
-        guard duration > 0 else { return }
+        guard duration > 0, !clean.isEmpty else { return }
+        let expiry = ProcessInfo.processInfo.systemUptime + Double(duration) / 1000.0
         repeatTask = Task { [weak self] in
-            let expiry = Date().addingTimeInterval(Double(duration) / 1000.0)
-            while !Task.isCancelled && Date() < expiry {
+            while !Task.isCancelled && ProcessInfo.processInfo.systemUptime < expiry {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
-                guard !Task.isCancelled, Date() < expiry else { break }
-                guard let self else { break }
-                if !self.sendSignedSubtitle(payload, to: target, reportStatus: false) {
+                guard !Task.isCancelled, let self,
+                      self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target else { break }
+                let remaining = Int((expiry - ProcessInfo.processInfo.systemUptime) * 1000)
+                guard remaining > 0 else { break }
+                var repeatFields = fields
+                repeatFields[2] = String(remaining)
+                let repeatPayload = Data(repeatFields.joined(separator: "\t").utf8)
+                if !self.sendSignedSubtitle(repeatPayload, to: target, reportStatus: false) {
                     break
                 }
             }

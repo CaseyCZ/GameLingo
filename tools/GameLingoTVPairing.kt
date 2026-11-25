@@ -96,7 +96,7 @@ object GameLingoTVPairing {
         val now = SystemClock.elapsedRealtime()
         synchronized(portLock) {
             if (!queryingPort &&
-                (lastPortIp != ip || now - checkedPortAt > 30_000L)) {
+                (lastPortIp != ip || checkedPortAt == 0L || now - checkedPortAt > 30_000L)) {
                 queryingPort = true
                 checkedPortAt = now
                 Thread {

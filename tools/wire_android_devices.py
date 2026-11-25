@@ -209,6 +209,37 @@ def main():
             ),
         ):
             sender = one(sender, old, new, label)
+        # Do not replay an expired subtitle when the TV receiver restarts.
+        # Keep the expiry monotonic, and send an explicit clear with a new sequence.
+        sender = one(sender,
+            '        @Volatile private var doba = 0L',
+            '        @Volatile private var doba = 0L\n        private var captionDeadline = 0L',
+            "caption monotonic deadline")
+        sender = one(sender,
+            'text = t; ukazkaText = t; doba = 15_000;',
+            'text = t; ukazkaText = t; doba = 15_000; captionDeadline = android.os.SystemClock.elapsedRealtime() + 15_000L;',
+            "preview caption deadline")
+        sender = one(sender,
+            '                text = t; doba = d; napoveda = n; barvy = b',
+            '''                if (t != text) {
+                    captionDeadline = if (t.isEmpty()) 0L else android.os.SystemClock.elapsedRealtime() +
+                        (if (d > 0L) d.coerceAtMost(15_000L) else 6_000L)
+                }
+                text = t; doba = d; napoveda = n; barvy = b''',
+            "caption deadline only for new text")
+        sender = one(sender,
+            '        private fun zprava(): ByteArray = synchronized(zamek) {',
+            '''        private fun zprava(): ByteArray = synchronized(zamek) {
+            val remaining = (captionDeadline - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+            if (text.isNotEmpty() && remaining == 0L) {
+                text = ""; doba = 0L; barvy = null; captionDeadline = 0L
+                cislo++
+            } else if (text.isNotEmpty()) {
+                doba = remaining
+            } else {
+                doba = 0L; captionDeadline = 0L
+            }''',
+            "expire caption before serializing")
         # Stop idle heartbeat traffic from retaining the receiver's source lease.
         # Keep the selected TV and its profile so a later Start can reuse them.
         sender = one(sender,
