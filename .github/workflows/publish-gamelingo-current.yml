@@ -5,7 +5,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
   statuses: write
 
 concurrency:
@@ -16,18 +16,54 @@ jobs:
   release:
     if: github.repository == 'CaseyCZ/GameLingo' && github.ref == 'refs/heads/Master'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Prepare next release version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/branches/Master" --jq .commit.sha)" = "$GITHUB_SHA"
+          gh release list --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft == false) | .tagName' > published-tags.txt
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          p = Path("shared/version.json")
+          data = json.loads(p.read_text())
+          current = tuple(map(int, data["version"].split(".")))
+          published = []
+          for tag in Path("published-tags.txt").read_text().splitlines():
+              m = re.match(r"^v(\d+)\.(\d+)\.(\d+)(?:-|$)", tag)
+              if m:
+                  published.append(tuple(map(int, m.groups())))
+          if published and current <= max(published):
+              major, minor, patch = max(published)
+              data["version"] = f"{major}.{minor}.{patch + 1}"
+              data["build"] += 1
+              p.write_text(json.dumps(data, indent=2) + "\n")
+          PY
+          SOURCE="$GITHUB_SHA"
+          if ! git diff --quiet -- shared/version.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add shared/version.json
+            git commit -m "Prepare next GameLingo release"
+            git -c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:Master
+            SOURCE="$(git rev-parse HEAD)"
+            gh workflow run audit-0.5-ci.yml --ref Master
+          fi
+          echo "RELEASE_SOURCE=$SOURCE" >> "$GITHUB_ENV"
       - name: Read shared version
         run: python3 tools/sync_version.py --github-env
       - name: Record publication link
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -X POST -f state=pending -f context=gamelingo/current-test-release -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$RELEASE_SOURCE" -X POST -f state=pending -f context=gamelingo/current-test-release -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
       - name: Verify new builds and publish GameLingo
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,8 +75,13 @@ jobs:
         run: |
           set -euo pipefail
           REPO="$GITHUB_REPOSITORY"
-          SOURCE="$GITHUB_SHA"
-          RUN="$(gh api "repos/$REPO/actions/workflows/audit-0.5-ci.yml/runs?branch=Master&head_sha=$SOURCE&per_page=1" --jq '.workflow_runs[0].id // empty')"
+          SOURCE="$RELEASE_SOURCE"
+          RUN=""
+          for attempt in $(seq 1 30); do
+            RUN="$(gh api "repos/$REPO/actions/workflows/audit-0.5-ci.yml/runs?branch=Master&head_sha=$SOURCE&per_page=1" --jq '.workflow_runs[0].id // empty')"
+            if [ -n "$RUN" ]; then break; fi
+            sleep 10
+          done
           test -n "$RUN"
           BUILD_SOURCE="$(gh api "repos/$REPO/actions/runs/$RUN" --jq '.head_sha')"
           # Never fall back to an earlier successful build while the new candidate is running.
@@ -140,4 +181,4 @@ jobs:
         run: |
           state=failure
           if [ "$RESULT" = success ]; then state=success; fi
-          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -X POST -f state="$state" -f context=gamelingo/current-test-release -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$RELEASE_SOURCE" -X POST -f state="$state" -f context=gamelingo/current-test-release -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
