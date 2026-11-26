@@ -32,6 +32,18 @@ object GameLingoLanguages {
 
     // App-owned static UI only; never translate OCR results, identifiers or user text.
     private val uiLabels = mapOf(
+        "Přizpůsobení překladu a titulků" to Pair("Prispôsobenie prekladu a titulkov", "Customize translation and subtitles"),
+        "Správa konzolí, TV a výstupu titulků" to Pair("Správa konzol, TV a výstupu titulkov", "Manage consoles, TVs and subtitle output"),
+        "GameLingo – hraj a rozuměj svým hrám" to Pair("GameLingo – hraj a rozumej svojim hrám", "GameLingo – play and understand your games"),
+        "Automatické oblasti překladu" to Pair("Automatické oblasti prekladu", "Automatic translation regions"),
+        "Čtyři nezávislé oblasti pro rozpoznávání a překlad" to Pair("Štyri nezávislé oblasti na rozpoznávanie a preklad", "Four independent regions for recognition and translation"),
+        "Přidat" to Pair("Pridať", "Add"),
+        "Aktivní" to Pair("Aktívna", "Active"),
+        "Vypnutá" to Pair("Vypnutá", "Off"),
+        "Překlad herních dialogů a textů" to Pair("Preklad herných dialógov a textov", "Game dialogue and text translation"),
+        "Čtení dialogů" to Pair("Čítanie dialógov", "Read dialogue"),
+        "Výstup přeložených titulků" to Pair("Výstup preložených titulkov", "Translated subtitle output"),
+        "Povol instalaci z GameLingo v nastavení zařízení. Po návratu bude možné pokračovat bez dalšího stahování." to Pair("Povoľ inštaláciu z GameLingo v nastaveniach zariadenia. Po návrate môžeš pokračovať bez ďalšieho sťahovania.", "Allow installation from GameLingo in device settings. After returning, continue without downloading again."),
         "Spáruj TV pomocí QR nebo kódu" to Pair("Spáruj TV pomocou QR alebo kódu", "Pair TV using QR or code"),
         "Načti QR v telefonu nebo opiš celý kód." to Pair("Naskenuj QR v telefóne alebo opíš celý kód.", "Scan the QR on your phone or enter the entire code."),
         "Spárovat kódem z TV" to Pair("Spárovať kódom z TV", "Pair using the TV code"),
