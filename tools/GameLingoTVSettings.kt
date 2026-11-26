@@ -97,7 +97,8 @@ object GameLingoTVSettings {
                     2 -> GameLingoHistoryUi.show(a)
                     3 -> GameLingoCachePrivacyUi.show(a)
                     4 -> diagnostics(a)
-                    5 -> GameLingoSettings.confirmRestoreDefaults(a) {
+                    5 -> GameLingoSettings.confirmRestoreDefaults(a,
+                        directTVBusy = { GameLingoScreenTranslationService.running }) {
                         // Rebuild the cards to show the default mode and scale.
                         reopeningForScale = true
                         dialog.dismiss()
