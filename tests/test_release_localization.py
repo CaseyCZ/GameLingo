@@ -67,12 +67,26 @@ class ReleaseLocalizationTests(unittest.TestCase):
         ui = text(TOOLS / "GameLingoTVUi.kt")
         kit = text(TOOLS / "GameLingoVisualKit.kt")
         about = text(TOOLS / "GameLingoAbout.kt")
-        self.assertIn("if (isTV(c)) TV_SCALE else 1f", ui)
+        self.assertIn("if (isTV(c)) tvScale(c) else 1f", ui)
         self.assertIn("private const val TV_SCALE = 0.66f", ui)
         self.assertIn("density * value * GameLingoTVUi.menuScale(c)", kit)
         self.assertIn("value * GameLingoTVUi.menuScale(c)", kit)
         self.assertIn('GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity))', about)
         self.assertIn("textSize = GameLingoVisualKit.sp(activity, size)", about)
+
+    def test_tv_menu_size_is_persistent_and_separate_from_ocr(self):
+        ui = text(TOOLS / "GameLingoTVUi.kt")
+        settings = text(TOOLS / "GameLingoTVSettings.kt")
+        direct = text(TOOLS / "direct_tv_mode.py")
+        self.assertIn("listOf(80, 90, 100, 110, 120)", ui)
+        self.assertIn('getInt(MENU_PERCENT, 100)', ui)
+        self.assertIn("if (value in menuSizes) value else 100", ui)
+        self.assertIn("if (!isTV(c) || value !in menuSizes) return", ui)
+        self.assertIn("putInt(MENU_PERCENT, value).apply()", ui)
+        self.assertIn("GameLingoTVUi.setMenuPercent(a, next)", settings)
+        self.assertIn("reopeningForScale = true", settings)
+        self.assertIn("private val SKALA: Float get() = GameLingoTVUi.menuScale(this)", direct)
+        self.assertNotIn("a.recreate()", settings)
 
     def test_preview_uses_target_language(self):
         source = text(IOS / "SubtitleSettingsView.swift")

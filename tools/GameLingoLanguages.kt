@@ -32,6 +32,8 @@ object GameLingoLanguages {
 
     // App-owned static UI only; never translate OCR results, identifiers or user text.
     private val uiLabels = mapOf(
+        "Velikost rozhraní" to Pair("Veľkosť rozhrania", "Interface size"),
+        "Výchozí" to Pair("Predvolené", "Default"),
         "Vyber způsob překladu nebo spravuj svá zařízení." to Pair("Vyber spôsob prekladu alebo spravuj svoje zariadenia.", "Choose a translation mode or manage your devices."),
         "ZPŮSOB PŘEKLADU" to Pair("SPÔSOB PREKLADU", "TRANSLATION MODE"),
         "Překlad z telefonu" to Pair("Preklad z telefónu", "Translation from phone"),

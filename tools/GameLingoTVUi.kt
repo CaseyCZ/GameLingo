@@ -33,10 +33,27 @@ object GameLingoTVUi {
     // Android TV already has an enlarged interface density. Match the
     // original compact 10-foot UI and preserve readable D-pad focus targets.
     private const val TV_SCALE = 0.66f
+    private const val MENU_PREFS = "gamelingo_tv_interface"
+    private const val MENU_PERCENT = "menu_percent"
+    val menuSizes: List<Int> = listOf(80, 90, 100, 110, 120)
+    fun menuPercent(c: android.content.Context): Int {
+        val value = runCatching {
+            c.getSharedPreferences(MENU_PREFS, android.content.Context.MODE_PRIVATE)
+                .getInt(MENU_PERCENT, 100)
+        }.getOrDefault(100)
+        return if (value in menuSizes) value else 100
+    }
+    fun setMenuPercent(c: android.content.Context, value: Int) {
+        if (!isTV(c) || value !in menuSizes) return
+        c.getSharedPreferences(MENU_PREFS, android.content.Context.MODE_PRIVATE)
+            .edit().putInt(MENU_PERCENT, value).apply()
+    }
+    private fun tvScale(c: android.content.Context): Float =
+        TV_SCALE * (if (isTV(c)) menuPercent(c) else 100) / 100f
     /** Shared compact menu units; phone components keep their original sizes. */
-    fun menuScale(c: android.content.Context): Float = if (isTV(c)) TV_SCALE else 1f
+    fun menuScale(c: android.content.Context): Float = if (isTV(c)) tvScale(c) else 1f
     fun dp(a: Activity, v: Int): Int =
-        (a.resources.displayMetrics.density * v * TV_SCALE + .5f).toInt()
+        (a.resources.displayMetrics.density * v * tvScale(a) + .5f).toInt()
 
     fun panel(a: Activity, focus: Boolean = false): GradientDrawable =
         GradientDrawable(GradientDrawable.Orientation.TL_BR,
@@ -54,7 +71,7 @@ object GameLingoTVUi {
               muted: Boolean = false): TextView = TextView(a).apply {
         this.text = text
         gravity = Gravity.CENTER
-        textSize = size * TV_SCALE
+        textSize = size * tvScale(a)
         setTextColor(if (muted) dim else Color.WHITE)
         setTypeface(null, if (muted) Typeface.NORMAL else Typeface.BOLD)
     }
@@ -79,7 +96,7 @@ object GameLingoTVUi {
             }.apply {
                 id = View.generateViewId()
                 gravity = Gravity.CENTER
-                textSize = 16f * TV_SCALE
+                textSize = 16f * tvScale(a)
                 minimumHeight = dp(a, 50)
                 setPadding(dp(a, 14), dp(a, 7), dp(a, 14), dp(a, 7))
                 setTextColor(if (index == selected) Color.parseColor("#57EBA3") else Color.WHITE)
@@ -217,7 +234,7 @@ object GameLingoTVUi {
     fun action(a: Activity, label: String, primary: Boolean = false,
                onActivate: () -> Unit): TextView = TextView(a).apply {
         text = label
-        textSize = 18f * TV_SCALE
+        textSize = 18f * tvScale(a)
         setTextColor(Color.WHITE)
         setTypeface(null, Typeface.BOLD)
         gravity = Gravity.CENTER
@@ -366,9 +383,9 @@ object GameLingoTVUi {
             tile(a, symbol, heading, detail, onActivate).apply {
                 setPadding(dp(a, 13), dp(a, 8), dp(a, 13), dp(a, 8))
                 minimumHeight = dp(a, 92)
-                (getChildAt(0) as? TextView)?.textSize = 20f * TV_SCALE
+                (getChildAt(0) as? TextView)?.textSize = 20f * tvScale(a)
                 (getChildAt(1) as TextView).apply {
-                    textSize = 19f * TV_SCALE
+                    textSize = 19f * tvScale(a)
                     (layoutParams as LinearLayout.LayoutParams).topMargin = dp(a, 3)
                 }
                 (getChildAt(2) as TextView).apply {

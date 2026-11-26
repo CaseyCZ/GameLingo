@@ -26,6 +26,8 @@ Pracovní větev: `feature/ocr-lab`. Master a stabilní 0.5.1 zůstávají beze 
 - Majitel produktu potvrdil správnou velikost párovací obrazovky na dřívějším dev sestavení; jiné obrazovky (zejména O aplikaci / Licence) mají odlišné měřítko a obsah je mimo výšku. Jde o konkrétní vizuální důkaz, nikoli potvrzení funkčnosti párování ani nového kandidáta. Fotografie ani údaje o síti/PIN neukládat do repozitáře.
 - Oprava: společné kompaktní TV jednotky (0,66), konzistentní velikost prvků/písma, About v jednotném TV kontejneru se stálým návratem a scrollováním dlouhých licencí. Telefonní měřítko 1,0, OCR geometrie a skutečné titulky nedotčeny. Ověřit výsledný vzhled všech stránek na TCL; G1/G2 zůstávají otevřené do akceptace.
 
+- Rozšíření schválené majitelem produktu: v Pokročilém nastavení TV jednotná volba velikosti 80/90/100/110/120 % (100 % = původní kompaktní 0,66). Uložená lokálně mimo OCR/profily; menu se znovu vykreslí bez restartu aplikace. Nutno ověřit všechny stránky včetně podstránek, dialogů, D-pad a krajních hodnot. Systémové dialogy, klávesnice a externí weby nejsou součástí vlastního rozhraní.
+
 ## Povinné brány vydání
 | Brána | Akceptační důkaz | Stav |
 |---|---|---|

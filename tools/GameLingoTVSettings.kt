@@ -20,6 +20,7 @@ object GameLingoTVSettings {
         if (a.isFinishing || a.isDestroyed) return
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         var openingDevices = false
+        var reopeningForScale = false
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(a)
@@ -70,14 +71,36 @@ object GameLingoTVSettings {
         tile("gamecontroller", "Profily her", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a) }
         tile("display.2", "Zařízení", "Konzole a telefony") { openingDevices = true; dialog.dismiss(); onDevices() }
         tile("slider.horizontal.3", "Pokročilé nastavení", "Slovník, historie a diagnostika") {
-            val options = arrayOf("Herní slovník", "Historie překladů", "Překladová cache", "Diagnostika")
-                .map { GameLingoLanguages.ui(a, it) }.toTypedArray()
+            val options = arrayOf(
+                GameLingoLanguages.ui(a, "Velikost rozhraní") + " · " + GameLingoTVUi.menuPercent(a) + " %",
+                GameLingoLanguages.ui(a, "Herní slovník"),
+                GameLingoLanguages.ui(a, "Historie překladů"),
+                GameLingoLanguages.ui(a, "Překladová cache"),
+                GameLingoLanguages.ui(a, "Diagnostika"))
             GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Pokročilé nastavení"), options, -1) { index ->
                 when (index) {
-                    0 -> GameLingoGlossaryUi.show(a)
-                    1 -> GameLingoHistoryUi.show(a)
-                    2 -> GameLingoCachePrivacyUi.show(a)
-                    3 -> diagnostics(a)
+                    0 -> {
+                        val sizes = GameLingoTVUi.menuSizes
+                        val labels = sizes.map { percent ->
+                            "$percent %" + if (percent == 100) " · " + GameLingoLanguages.ui(a, "Výchozí") else ""
+                        }.toTypedArray()
+                        GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Velikost rozhraní"), labels,
+                            sizes.indexOf(GameLingoTVUi.menuPercent(a))) { choice ->
+                            val next = sizes[choice]
+                            if (next != GameLingoTVUi.menuPercent(a) && !a.isFinishing && !a.isDestroyed) {
+                                GameLingoTVUi.setMenuPercent(a, next)
+                                // Recreate only the menu, not the Activity or running services.
+                                reopeningForScale = true
+                                dialog.dismiss()
+                                onUpdate()
+                                show(a, onDevices, onUpdate)
+                            }
+                        }
+                    }
+                    1 -> GameLingoGlossaryUi.show(a)
+                    2 -> GameLingoHistoryUi.show(a)
+                    3 -> GameLingoCachePrivacyUi.show(a)
+                    4 -> diagnostics(a)
                 }
             }
         }
@@ -109,7 +132,7 @@ object GameLingoTVSettings {
         dialog.setContentView(root)
         // Both remote BACK and the visible button close through this path.
         dialog.setOnDismissListener {
-            if (!openingDevices && !a.isFinishing && !a.isDestroyed) onUpdate()
+            if (!reopeningForScale && !openingDevices && !a.isFinishing && !a.isDestroyed) onUpdate()
         }
         dialog.show()
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
