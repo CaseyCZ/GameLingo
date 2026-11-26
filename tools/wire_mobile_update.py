@@ -14,8 +14,7 @@ def patch_mobile_update(folder):
         ('GameLingo-GoogleTV-v', 'GameLingo-Android-v'),
         ('RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running', 'RemotePlayService.aktivni'),
         ('GameLingo-TV-Updater', 'GameLingo-Android-Updater'),
-        ('Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace.', 'Povol instalaci z GameLingo v nastavení zařízení. Potom znovu otevři Aktualizace.'),
-        ('Nastavení instalace není na této TV dostupné.', 'Nastavení instalace není na tomto zařízení dostupné.'),
+        ('Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování.', 'Povol instalaci z GameLingo v nastavení zařízení. Po návratu bude možné pokračovat bez dalšího stahování.'),
     ):
         if old not in source:
             raise RuntimeError("Shared updater platform anchor changed: " + old)
