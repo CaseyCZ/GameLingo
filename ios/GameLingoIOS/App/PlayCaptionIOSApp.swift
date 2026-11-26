@@ -75,6 +75,54 @@ final class CaptionAppModel: ObservableObject {
         invalidateDialogue()
         invalidateOptions()
     }
+    /// Restore only current translation/display preferences. Never touch paired
+    /// devices, Xbox/PSN sessions, credentials, game profiles or their glossaries.
+    func restoreDefaultSettings() {
+        guard !isRunning else { return }
+        setAutomaticGameDialogue(false)
+        updateAutomaticZones(AutomaticOCRZone.initial)
+        appLanguage = .systemDefault
+        gameLanguage = .english
+        targetLanguage = .systemDefault
+        ocrMode = .classic
+        yellowOCRMode = "follow"
+        expandOnEmpty = false
+        filterMenuText = true
+        filterChoiceControls = false
+        ignoredBlueLines = ""
+        ignoredYellowLines = ""
+        minBlueHeight = 0
+        minYellowHeight = 0
+        showPreviousDialogue = false
+        previousDialogueCount = 1
+        hideOnSourceGone = false
+        sourceGoneDelay = 0
+        subtitleDuration = 6
+        skipOldTranslations = false
+        maxTranslationAge = 5
+        subtitleRegion = .center
+        manualOCR = false
+        manualOCRLocked = false
+        manualOCRBox = CGRect(x: 0.10, y: 0.72, width: 0.80, height: 0.25)
+        outputX = 0.5
+        outputBottom = 0.93
+        outputWidth = 0.62
+        outputFont = 1.0
+        outputLocked = false
+        choicesEnabled = false
+        choicesTextMode = false
+        choicesLocked = false
+        choicesArea = CGRect(x: 0.55, y: 0.45, width: 0.40, height: 0.35)
+        choicesOutputArea = CGRect(x: 0.07, y: 0.43, width: 0.43, height: 0.17)
+        choicesOutputFont = 1.0
+        choicesOutputLocked = false
+        phoneFontScale = 1.0
+        phoneTextColor = .yellow
+        phoneBackground = .dark
+        tvTextColor = .white
+        tvBackground = .dark
+    }
+
     @Published var status = "Připraveno"
     @Published var lastEnglish = ""
     @Published var lastCzech = ""
