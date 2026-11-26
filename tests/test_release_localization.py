@@ -139,12 +139,30 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn('GameLingoTVUi.mountPage(activity, dialog, GameLingoLanguages.ui(activity, "Profily her"), outer, helpTopic = "profiles")', phone)
         self.assertNotIn('dialog.setContentView(scroll)', phone)
         self.assertIn('GameLingoLanguages.ui(activity, "Profil nelze načíst")', phone)
-        editor = text(IOS / "GLAutomaticZonesView.swift").split("private struct GLAutomaticZoneEditor", 1)[1]
+        editor = text(IOS / "GLAutomaticZonesView.swift")
+        self.assertIn('GLNeonTitle(title: "Oblasti překladu"', editor)
+        self.assertIn('GLHeader(title: "Upravit zónu"', editor)
         self.assertIn(".navigationBarTitleDisplayMode(.inline)", editor)
-        self.assertIn('GLHelpButton(title: "Upravit zónu"', editor)
+        self.assertIn('GLHelpButton(title: "Oblasti překladu"', editor)
         self.assertIn(".topBarTrailing", editor)
-        self.assertIn("save(zone)", editor)
-        self.assertNotIn("GLBackButton", editor)  # Native push back must remain intact.
+        self.assertIn(".topBarLeading", editor)
+        self.assertIn("GLBackButton", editor)
+        self.assertIn("model.updateAutomaticZones(zones)", editor)
+        self.assertNotIn("private struct GLAutomaticZoneEditor", editor)
+
+    def test_automatic_zone_editor_shares_one_screen_on_phone_and_tv(self):
+        source = text(TOOLS / "GameLingoAutomaticConfig.kt")
+        self.assertIn("fun showZones(a: Activity)", source)
+        self.assertIn('GameLingoTVUi.mountPage(a, dialog, tr("Oblasti překladu"), page, helpTopic = "regions")', source)
+        self.assertIn("GameLingoVisualKit.neonTitle(", source)
+        self.assertIn('GameLingoVisualKit.card(a, true)', source)
+        self.assertIn("val tv = GameLingoTVUi.isTV(a)", source)
+        self.assertIn("android.view.MotionEvent.ACTION_MOVE", source)
+        self.assertIn("bars.forEachIndexed", source)
+        self.assertIn("entries.forEachIndexed", source)
+        self.assertIn("save(a, entries)", source)
+        self.assertNotIn('setSingleChoiceItems(labels,selected)', source.split("fun showZones(a: Activity)", 1)[1])
+        self.assertNotIn('private fun edit(a: Activity,z: AutoZone', source)
 
     def test_preview_uses_target_language(self):
         source = text(IOS / "SubtitleSettingsView.swift")
