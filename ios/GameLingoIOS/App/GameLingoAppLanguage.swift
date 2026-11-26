@@ -59,6 +59,49 @@ struct GLAppLanguage: RawRepresentable, Hashable, Identifiable, Codable, CaseIte
 /// Dynamic UI strings use the same generated .lproj catalog as SwiftUI Text.
 /// If the requested locale lacks a string, fall back to English, then Czech.
 enum GLInterfaceText {
+    // Only for app-defined status fields, never OCR output, profile names or logs.
+    // Keep the original status in the model so changing the UI language also
+    // translates a previously received status. Translate the template, not
+    // the port, address, console name or external error supplied as its value.
+    private static let statusTemplates = [
+        "Odesláno do %@. Zobrazení potvrdí až televize.",
+        "Hledání není dostupné: %@. Zadej IP ručně.",
+        "Hledání selhalo: %@. IP lze zadat ručně.",
+        "%@ · automatické obnovení vyčerpáno",
+        "Microsoft přihlášení odmítl: %@",
+        "Nelze získat kód Microsoftu: %@",
+        "Párování nebylo odesláno: %@",
+        "Připojuji se k TV na UDP %@…",
+        "Ověřuji kód na TV (UDP %@)…",
+        "Obnovuji Xbox · pokus %@/2",
+        "Spojení s TV selhalo: %@",
+        "Nalezeno konzolí: %@",
+        "Přijímač TV: UDP %@",
+        "Chyba odeslání: %@",
+        "TV neodpovídá: %@",
+        "Nelze odeslat: %@",
+        "PlayStation: %@",
+        "Připojuji %@…",
+    ]
+
+    static func localizedStatus(_ status: String,
+                                translate: (String) -> String = { GLInterfaceText.localized($0) }) -> String {
+        let exact = translate(status)
+        if exact != status { return exact }
+        for template in statusTemplates {
+            let parts = template.components(separatedBy: "%@")
+            guard parts.count == 2 else { continue }
+            let prefix = parts[0], suffix = parts[1]
+            guard status.hasPrefix(prefix), status.hasSuffix(suffix),
+                  status.count > prefix.count + suffix.count else { continue }
+            let value = String(status.dropFirst(prefix.count).dropLast(suffix.count))
+            let localizedTemplate = translate(template)
+            guard localizedTemplate.components(separatedBy: "%@").count == 2 else { return status }
+            return localizedTemplate.replacingOccurrences(of: "%@", with: value)
+        }
+        return status
+    }
+
     static func localized(_ key: String) -> String {
         let current = UserDefaults.standard.string(forKey: "gamelingo.appLanguage")
             ?? GLAppLanguage.systemDefault.rawValue

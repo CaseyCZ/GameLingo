@@ -251,7 +251,7 @@ private struct GameLingoTVPairingPanel: View {
                              "Zatím nespárováno"))
                             .font(.subheadline.bold())
                         if !tv.receiverStatus.isEmpty {
-                            Text(verbatim: GLInterfaceText.localized(tv.receiverStatus))
+                            Text(verbatim: GLInterfaceText.localizedStatus(tv.receiverStatus))
                                 .font(.caption)
                                 .foregroundStyle(GLNeon.mist)
                         }
@@ -318,7 +318,7 @@ private struct GameLingoTVPairingPanel: View {
                 }
                 .tint(GLNeon.cyan)
                 if !tv.message.isEmpty {
-                    Text(verbatim: GLInterfaceText.localized(tv.message)).font(.caption)
+                    Text(verbatim: GLInterfaceText.localizedStatus(tv.message)).font(.caption)
                         .foregroundStyle(GLNeon.mist)
                 }
             }

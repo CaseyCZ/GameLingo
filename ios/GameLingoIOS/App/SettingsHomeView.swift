@@ -796,9 +796,9 @@ private struct GameLingoDiagnosticsView: View {
                     .font(.caption2.monospaced()).foregroundStyle(GLStyle.muted)
                     .textSelection(.enabled)
                 status("Google TV", model.tv.receiverConnected ? "Ověřené spojení" : (model.tv.receiverPaired ? "Spárováno · bez spojení" : "Nespárováno"))
-                Text(verbatim: GLInterfaceText.localized(model.tv.receiverStatus)).font(.caption).foregroundStyle(GLStyle.muted)
+                Text(verbatim: GLInterfaceText.localizedStatus(model.tv.receiverStatus)).font(.caption).foregroundStyle(GLStyle.muted)
                 if !model.tv.receiverConnected { Text("Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování.").font(.caption) }
-                Text(verbatim: GLInterfaceText.localized(model.status)).font(.caption).foregroundStyle(GLStyle.muted)
+                Text(verbatim: GLInterfaceText.localizedStatus(model.status)).font(.caption).foregroundStyle(GLStyle.muted)
             }
             GLCard {
                 GLHeader(title: "Poslední překlad")

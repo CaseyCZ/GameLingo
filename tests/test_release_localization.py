@@ -315,11 +315,11 @@ class ReleaseLocalizationTests(unittest.TestCase):
             "Obnovení Xbox zrušeno – mění se cache",
         }
         self.assertEqual(required - keys, set())
-        self.assertIn("GLInterfaceText.localized(tv.receiverStatus)", text(IOS / "GameLingoTVSetupScreen.swift"))
-        self.assertIn("GLInterfaceText.localized(tv.message)", text(IOS / "GameLingoTVSetupScreen.swift"))
-        self.assertIn("GLInterfaceText.localized(ps.status)", text(IOS / "PlayStation/GameLingoPlayStationSetup.swift"))
-        self.assertIn("GLInterfaceText.localized(auth.status)", text(IOS / "PlayCaptionIOSApp.swift"))
-        self.assertIn("GLInterfaceText.localized(model.status)", text(IOS / "GameLingoHome.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(tv.receiverStatus)", text(IOS / "GameLingoTVSetupScreen.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(tv.message)", text(IOS / "GameLingoTVSetupScreen.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(ps.status)", text(IOS / "PlayStation/GameLingoPlayStationSetup.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(auth.status)", text(IOS / "PlayCaptionIOSApp.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(model.status)", text(IOS / "GameLingoHome.swift"))
 
     def test_setup_action_and_diagnostics_dynamic_labels_are_localized(self):
         setup = text(IOS / "GameLingoSetupView.swift")
@@ -330,10 +330,23 @@ class ReleaseLocalizationTests(unittest.TestCase):
         home = text(IOS / "GameLingoHome.swift")
         self.assertIn('Text(LocalizedStringKey(model.isRunning ? "Zastavit překlad" : "Spustit překlad"))', home)
         settings = text(IOS / "SettingsHomeView.swift")
-        for value in ("model.cacheStatus", "model.performanceSummary", "model.tv.receiverStatus", "model.status"):
+        for value in ("model.cacheStatus", "model.performanceSummary"):
             self.assertIn(f"GLInterfaceText.localized({value})", settings)
+        for value in ("model.tv.receiverStatus", "model.status"):
+            self.assertIn(f"GLInterfaceText.localizedStatus({value})", settings)
         self.assertIn('contentDescription = GameLingoLanguages.ui(activity, "Nastavení")',
                       text(TOOLS / "GameLingoVisualKit.kt"))
+
+    def test_dynamic_status_templates_exist_in_every_locale(self):
+        shared = ROOT / "shared" / "locales"
+        manifest = json.loads(text(shared / "manifest.json"))
+        helper = text(IOS / "GameLingoAppLanguage.swift")
+        templates = re.findall(STRING, helper.split("private static let statusTemplates = [", 1)[1].split("]", 1)[0])
+        self.assertGreaterEqual(len(templates), 18)
+        for language in manifest["languages"]:
+            catalog = json.loads(text(shared / (language["code"] + ".json")))
+            for template in templates:
+                self.assertEqual(catalog[template].count("%@"), 1, template)
 
 if __name__ == "__main__":
     unittest.main()
