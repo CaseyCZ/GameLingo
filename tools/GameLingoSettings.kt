@@ -56,13 +56,10 @@ object GameLingoSettings {
             .remove("scale").remove("color").remove("background").apply()
         a.getSharedPreferences("gamelingo_tv_local_style",
             android.content.Context.MODE_PRIVATE).edit()
-            .remove("color").remove("background").apply()
+            .remove("color").remove("opacity").apply()
         a.getSharedPreferences("gamelingo_tv_caption_style",
             android.content.Context.MODE_PRIVATE).edit()
             .remove("color").remove("background").apply()
-        a.getSharedPreferences("gamelingo_phone_subtitles",
-            android.content.Context.MODE_PRIVATE).edit()
-            .remove("scale").remove("color").remove("background").apply()
         a.getSharedPreferences("gamelingo_languages",
             android.content.Context.MODE_PRIVATE).edit()
             .remove("game").remove("target").apply()
