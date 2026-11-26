@@ -248,20 +248,28 @@ struct GameLingoHome: View {
                         .shadow(color: GLNeon.purple.opacity(0.55), radius: 10)
                         .frame(width: 34, height: 34)
                 }
-                HStack(spacing: 9) {
-                    GLPlatformBadge(family: .xbox, size: 42)
-                    Text("Xbox")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(.white)
-                    Spacer(minLength: 8)
+                HStack(spacing: 8) {
+                    HStack(spacing: 6) {
+                        GLPlatformBadge(family: .xbox, size: 42)
+                        Text("Xbox")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .frame(maxWidth: .infinity)
                     Rectangle()
                         .fill(GLNeon.edge)
                         .frame(width: 1, height: 34)
-                    Spacer(minLength: 8)
-                    GLPlatformBadge(family: .playStation, size: 42)
-                    Text("PlayStation")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(.white)
+                    HStack(spacing: 6) {
+                        GLPlatformBadge(family: .playStation, size: 42)
+                        Text("PlayStation")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
             }
             .padding(12)
@@ -763,10 +771,11 @@ private struct GameLingoDeviceRow: View {
                             .lineLimit(1)
                     }
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .center)
                 Image(systemName: "chevron.right")
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(GLNeon.mist)
+                    .frame(width: 44, height: 44, alignment: .trailing)
             }
             .padding(11)
         }
