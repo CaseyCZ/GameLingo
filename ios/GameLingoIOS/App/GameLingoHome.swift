@@ -488,7 +488,7 @@ struct GameLingoHome: View {
                     .shadow(color: GLStyle.green.opacity(0.20), radius: 9)
                     .frame(width: 44, height: 44)
                 VStack(alignment: .center, spacing: 4) {
-                    Text(verbatim: model.isRunning ? model.status :
+                    Text(verbatim: model.isRunning ? GLInterfaceText.localized(model.status) :
                          GLInterfaceText.localized(consoleActuallyReady && outputActuallyReady
                           ? "Připraveno ke spuštění" :
                              (!consoleActuallyReady

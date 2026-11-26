@@ -241,5 +241,63 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn('GLInterfaceText.localized("Verze:")', text(IOS / "GameLingoHome.swift"))
         self.assertIn('GLInterfaceText.localized(choice.title)', text(IOS / "SettingsHomeView.swift"))
 
+    def test_console_and_tv_connection_status_keys(self):
+        keys = set(android_keys())
+        required = {
+            "PlayStation nepřipojen",
+            "Hledám PlayStation…",
+            "Chybí adresa PlayStation",
+            "Páruji PlayStation…",
+            "PlayStation připojen",
+            "Zadej přihlašovací PIN PlayStation",
+            "PlayStation odpojen",
+            "IP adresa konzole",
+            "Nepřihlášeno",
+            "Xbox účet uložen. Načti svoje konzole.",
+            "Čeká se na potvrzení Microsoftu. Přihlášení lze dokončit.",
+            "Čekám na návrat z přihlášení Microsoftu…",
+            "Přihlašovací kód vypršel. Vyžádej nový.",
+            "Čekám na potvrzení Microsoftu…",
+            "Spojení s Microsoftem se přerušilo. Opakuji ověření…",
+            "Přihlášeno. Načítám Xbox konzole…",
+            "Čekám na dokončení přihlášení v Microsoftu…",
+            "Microsoft požádal o pomalejší ověřování…",
+            "Microsoft je dočasně nedostupný. Zkouším znovu…",
+            "Přihlášení bylo odmítnuto. Můžeš začít znovu.",
+            "Odhlášeno",
+            "Už jsi přihlášený. Načti konzole.",
+            "Získávám přihlašovací kód…",
+            "Načítám Xbox konzole…",
+            "Nenalezena žádná konzole. Zkontroluj vzdálené funkce.",
+            "Kód je připraven. Přihlas se na stránce Microsoftu.",
+            "Kód je připraven, ale iOS nepovolil bezpečné uložení. Nezavírej aplikaci.",
+            "Televize zatím není spárovaná s iPhonem.",
+            "Na Google TV otevři GameLingo TV a zvol „Překlad z telefonu“.",
+            "Hledám GameLingo TV… Pokud ji nenajdu, zadej IP adresu z televize.",
+            "Hledám dostupný přijímací port televize…",
+            "TV neodpověděla ani po opakovaném odeslání. Na TV zvol Překlad z telefonu a zkontroluj, že je vidět platný párovací kód.",
+            "TV neodpověděla. Ověř režim S mobilem, IP a síť.",
+            "iPhone úspěšně spárován. Ověřuji spojení…",
+            "TV zapomenuta na iPhonu. Přístup telefonu odvolej také v nastavení TV.",
+            "Nejdříve vyber televizi.",
+            "TV je vybraná. Pro ověřené spojení ji spáruj šestímístným kódem.",
+            "Vyhledávám přijímač na TV…",
+            "TV spárovaná · spojení aktivní",
+            "TV spárovaná · čekám na odpověď",
+            "Čekám na síť TV",
+            "Nejprve vyber televizi nebo zadej její IP.",
+            "Nejdříve bezpečně spáruj GameLingo TV.",
+            "Nejprve vyber televizi.",
+            "Titulek předán síti. Zobrazení ověř na TV.",
+            "Navazuji Xbox Remote Play…",
+            "Obnovení Xbox zrušeno – mění se cache",
+        }
+        self.assertEqual(required - keys, set())
+        self.assertIn("GLInterfaceText.localized(tv.receiverStatus)", text(IOS / "GameLingoTVSetupScreen.swift"))
+        self.assertIn("GLInterfaceText.localized(tv.message)", text(IOS / "GameLingoTVSetupScreen.swift"))
+        self.assertIn("GLInterfaceText.localized(ps.status)", text(IOS / "PlayStation/GameLingoPlayStationSetup.swift"))
+        self.assertIn("GLInterfaceText.localized(auth.status)", text(IOS / "PlayCaptionIOSApp.swift"))
+        self.assertIn("GLInterfaceText.localized(model.status)", text(IOS / "GameLingoHome.swift"))
+
 if __name__ == "__main__":
     unittest.main()

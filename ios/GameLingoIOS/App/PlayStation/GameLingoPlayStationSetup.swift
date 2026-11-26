@@ -137,7 +137,7 @@ private struct GameLingoPSConnectionView: View {
                                 .buttonStyle(.plain)
                             }
                         }
-                        Text(ps.status)
+                        Text(verbatim: GLInterfaceText.localized(ps.status))
                             .font(.caption)
                             .foregroundStyle(GLStyle.muted)
                     }
