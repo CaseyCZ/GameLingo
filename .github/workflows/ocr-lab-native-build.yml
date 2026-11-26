@@ -4,12 +4,21 @@ on:
     branches: [feature/ocr-lab]
     paths:
       - '.github/workflows/ocr-lab-native-build.yml'
-      - 'tests/test_v05_integrations.py'
-      - 'shared/version.json'
   workflow_dispatch:
-# Explicit checkpoint: mobile header fix and package identity/certificate evidence (2026-11-26).
+# Explicit signed QA checkpoint: no secret-bearing builds on ordinary source pushes.
 permissions:
   contents: read
 jobs:
+  quick:
+    if: github.repository == 'CaseyCZ/GameLingo' && github.ref == 'refs/heads/feature/ocr-lab'
+    uses: ./.github/workflows/fast-gamelingo-checks.yml
   native:
+    needs: quick
     uses: ./.github/workflows/build-gamelingo.yml
+    with:
+      require_permanent_signing: true
+    secrets:
+      GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
+      GAMELINGO_TV_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_TV_KEYSTORE_PASSWORD }}
+      GAMELINGO_MOBILE_KEYSTORE_B64: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_B64 }}
+      GAMELINGO_MOBILE_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_PASSWORD }}

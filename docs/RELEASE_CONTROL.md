@@ -51,6 +51,13 @@ Závazný návrh a akceptační matice: [UI_UX_FUNCTIONAL_AUDIT.md](UI_UX_FUNCTI
 - Předchozí APK z dev buildu mají Android Debug certifikáty, ne trvalé certifikáty publikované revize `56230c3d` (run 45638533060); obě měly i nižší versionCode 6002701. Zvýšení verze řeší rozsah číslování, nikoli podpisy. Před distribucí znovu doložit shodu s publikovanými certifikáty a konkrétní metadata nových balíčků. IPA vyžaduje vlastní podpis.
 - NO-GO pro veřejné vydání: otevřené bezpečnostní/poskytovatelské podmínky, offline režim mobilního Androidu vyžaduje vyjasnění dřívějšího rozsahu, fyzické testy čekají a návrat po odstranění starého release není ověřen. Žádný merge, publikace ani automatické uzavření bran. Nová revize musí projít CI. Postup dle agency-roster CI/CD pipeline: jednotné verzování, ověřitelné artefakty, oddělení testovací a distribuční brány.
 
+## Podepsaný QA checkpoint 0.5.2 (26. 11. 2026)
+- Majitel potvrdil použití stávajících podpisových klíčů. Explicitní workflow checkpoint předává pouze čtyři existující GitHub Secrets po úspěšné rychlé regresi; běžný push zdrojů nespouští podpisový build. Žádné nové klíče, zveřejnění soukromého materiálu ani externí služba.
+- Podepsaný kandidát nesmí přejít na debug podpis. Finální balíčková kontrola porovnává oba veřejné SHA-256 certifikáty s CI 45638533060 a vyžaduje versionCode vyšší než 6019901; stejné podmínky na Masteru. Fyzický upgrade zůstává samostatný test. IPA unsigned.
+- Majitel potvrdil, že veřejně má zůstat pouze aktuální Release, starší binární vydání není třeba archivovat. Současné vydání nemažeme před dokončením validace nového; Git historie zůstává. Starý zdroj není zárukou reprodukovatelnosti binárek, podpisové klíče a provenance zůstávají důležité. Žádné vydání ani merge nyní.
+- Offline překlad mobilního Androidu je schválen k obnovení; TV nadále bez ML Kit Translation. Zatím není implementován. Podepsaný checkpoint není finální kandidát po této budoucí změně.
+- Metodika agency-roster Secrets Management Specialist: minimální rozsah secrets, žádná rotace trvalého podpisu bez důvodu, ověřování kontinuity certifikátů. Nový build dosud neověřen.
+
 ## Povinné brány vydání
 | Brána | Akceptační důkaz | Stav |
 |---|---|---|
