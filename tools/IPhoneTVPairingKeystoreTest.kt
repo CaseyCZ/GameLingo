@@ -101,7 +101,7 @@ class IPhoneTVPairingKeystoreTest {
         assertFalse(prefs.contains(tokenSlot(id)))
         assertTrue(prefs.contains(tokenSlot(second)))
         // Rotating just this phone must not invalidate any other record.
-        val replacement = requireNotNull(IPhoneTVPairing.confirm(ctx,
+        val replacement = requireNotNull(pair(
             IPhoneTVPairing.startCode(), second, "Android"))
         assertNotEquals(secondKey, replacement)
         assertFalse(verify(second, secondKey, "102"))

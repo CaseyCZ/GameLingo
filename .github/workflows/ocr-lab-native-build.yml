@@ -5,7 +5,7 @@ on:
     paths:
       - '.github/workflows/ocr-lab-native-build.yml'
   workflow_dispatch:
-# Explicit signed QA checkpoint: authenticated QR/manual pairing, permanent signatures and offline mobile fallback.
+# Explicit signed QA checkpoint: verified pairing test migration, permanent signatures and offline mobile fallback.
 permissions:
   contents: read
 jobs:

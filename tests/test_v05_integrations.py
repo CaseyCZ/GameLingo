@@ -465,6 +465,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("PCPAIR1\\tPAIR2",mobile)
         self.assertNotIn("PCPAIR1\\tPAIR\\t",mobile)
         self.assertIn("MessageDigest.isEqual",mobile)
+        self.assertNotIn("IPhoneTVPairing.confirm(", code(TOOLS/"IPhoneTVPairingKeystoreTest.kt"))
         self.assertIn("self.pairingRetryTask = Task",ios)
         self.assertIn("self.pairingRetryTask?.cancel()",ios)
         self.assertIn("for _ in 0..<3",ios)

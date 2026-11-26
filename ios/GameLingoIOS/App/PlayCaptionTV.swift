@@ -232,6 +232,7 @@ final class PlayCaptionTV: ObservableObject {
             return
         }
         pairingRequest?.cancel()
+        pairingRequest = nil
         pairingTimeoutTask?.cancel()
         pairingRetryTask?.cancel()
         pairingGeneration &+= 1
