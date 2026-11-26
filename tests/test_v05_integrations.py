@@ -36,11 +36,12 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn(".disabled(model.isRunning)", ios_settings)
 
         android = code(TOOLS/"GameLingoSettings.kt")
-        android_reset = android.split("fun restoreDefaultSettings(a: Activity)", 1)[1].split(
+        android_reset = android.split("fun restoreDefaultSettings(a: Activity,", 1)[1].split(
             "fun confirmRestoreDefaults", 1)[0]
         self.assertIn("RemotePlayService.aktivni", android_reset)
         self.assertIn("PrijemService.bezi", android_reset)
-        self.assertIn("GameLingoScreenTranslationService.running", android_reset)
+        self.assertIn("directTVBusy()", android_reset)
+        self.assertNotIn("GameLingoScreenTranslationService", android_reset)
         for pref in ("gamelingo_automatic", "gamelingo_phone_subtitles",
                      "gamelingo_tv_local_style", "gamelingo_tv_parity"):
             self.assertIn(pref, android_reset)
@@ -55,7 +56,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertNotIn(protected, android_reset)
         self.assertIn("confirmRestoreDefaults(activity) { onRefresh() }", android)
         tv = code(TOOLS/"GameLingoTVSettings.kt")
-        self.assertIn("GameLingoSettings.confirmRestoreDefaults(a)", tv)
+        self.assertIn("GameLingoSettings.confirmRestoreDefaults(a,", tv)
+        self.assertIn("directTVBusy = { GameLingoScreenTranslationService.running }", tv)
 
     def test_localized_region_editor_preserves_geometry_and_menu_icons(self):
         layout = code(TOOLS/"GameLingoDirectTVLayout.kt")
