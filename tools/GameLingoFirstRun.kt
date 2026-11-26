@@ -56,6 +56,12 @@ object GameLingoFirstRun {
         }
         val back = GameLingoTVUi.action(activity, tr("Zpět")) {}
         root.addView(GameLingoTVUi.header(activity, heading, back, GameLingoHelp.button(activity, "home")))
+        root.addView(GameLingoVisualKit.wordmark(activity),
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = px(4)
+                bottomMargin = px(10)
+            })
         val progress = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, 15, 0, 0)
@@ -170,14 +176,48 @@ object GameLingoFirstRun {
             heading.text = tr(GameLingoUIContract.setupSteps[step])
             when (step) {
                 0 -> {
-                    body.addView(GameLingoVisualKit.hero(activity))
-                    body.addView(TextView(activity).apply {
+                    // Same welcome composition as iOS: neon panel, wordmark,
+                    // intro and three supported platform badges.
+                    body.addView(LinearLayout(activity).apply {
+                        orientation = LinearLayout.VERTICAL
                         gravity = Gravity.CENTER
-                        text = tr("Překládej dialogy a herní texty přímo během hraní.")
-                        textSize = GameLingoVisualKit.sp(activity, 15f)
-                        setTextColor(muted)
-                        setPadding(0, px(16), 0, px(14))
-                    })
+                        background = GameLingoVisualKit.card(activity, selected = true)
+                        setPadding(px(18), px(20), px(18), px(20))
+                        addView(GameLingoVisualKit.icon(activity, "gamecontroller.fill", cyan),
+                            LinearLayout.LayoutParams(px(60), px(60)).apply {
+                                bottomMargin = px(10)
+                            })
+                        addView(GameLingoVisualKit.wordmark(activity))
+                        addView(TextView(activity).apply {
+                            text = tr("Vítej v GameLingo")
+                            textSize = GameLingoVisualKit.sp(activity, 24f)
+                            gravity = Gravity.CENTER
+                            typeface = Typeface.DEFAULT_BOLD
+                            setTextColor(Color.WHITE)
+                            setPadding(0, px(12), 0, px(3))
+                        })
+                        addView(TextView(activity).apply {
+                            text = tr("Překládej dialogy a herní texty přímo během hraní.")
+                            textSize = GameLingoVisualKit.sp(activity, 14f)
+                            gravity = Gravity.CENTER
+                            setTextColor(muted)
+                        })
+                        val platforms = LinearLayout(activity).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            gravity = Gravity.CENTER
+                            setPadding(0, px(14), 0, px(6))
+                        }
+                        listOf("Xbox", "PlayStation", "TV").forEachIndexed { index, family ->
+                            platforms.addView(GameLingoVisualKit.platformEmblem(activity, family),
+                                LinearLayout.LayoutParams(px(60), px(60)).apply {
+                                    if (index < 2) rightMargin = px(17)
+                                })
+                        }
+                        addView(platforms)
+                    }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                            bottomMargin = px(12)
+                        })
                     item(("🌐  " + tr("Jazyk aplikace") + "  •  ") +
                          GameLingoLanguages.name(GameLingoLanguages.appLanguages,
                              GameLingoLanguages.app(activity)), true) {
