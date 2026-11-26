@@ -430,6 +430,36 @@ object GameLingoVisualKit {
         return row
     }
 
+    /** iOS Home: a centered section title with a right-aligned Add action. */
+    fun deviceSection(activity: Activity, onAdd: () -> Unit): LinearLayout {
+        val rail = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(activity, 4), dp(activity, 1), dp(activity, 4), dp(activity, 1))
+        }
+        rail.addView(TextView(activity).apply {
+            text = GameLingoLanguages.ui(activity, "Moje zařízení")
+            textSize = sp(activity, 18f)
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER_VERTICAL
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        rail.addView(TextView(activity).apply {
+            text = "+  " + GameLingoLanguages.ui(activity, "Přidat")
+            textSize = sp(activity, 14f)
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(cyan)
+            gravity = Gravity.CENTER
+            minHeight = dp(activity, 44)
+            setPadding(dp(activity, 10), 0, dp(activity, 4), 0)
+            isFocusable = true
+            isClickable = true
+            setOnClickListener { onAdd() }
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT))
+        return rail
+    }
+
     fun section(activity: Activity, name: String): TextView = heading(activity, name)
 
     fun status(activity: Activity, title: String, message: String,
