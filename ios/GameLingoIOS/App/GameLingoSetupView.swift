@@ -50,9 +50,9 @@ struct GameLingoSetupView: View {
                         switch step {
                         case 0: welcomeStep
                         case 1: languageStep
-                        case 2: consoleStep
-                        case 3: outputStep
-                        default: readyStep
+                        default:
+                            consoleStep
+                            outputStep
                         }
                     }
                     .padding(20)
@@ -98,14 +98,14 @@ struct GameLingoSetupView: View {
         VStack(alignment: .leading, spacing: 12) {
             GLBrandWordmark()
             HStack(spacing: 8) {
-                ForEach(0..<5) { index in
+                ForEach(0..<3) { index in
                     Capsule()
                         .fill(index <= step ? GLNeon.cyan : GLStyle.surfaceAlt)
                         .frame(height: 5)
                 }
             }
             .padding(.bottom, 8)
-            Text(LocalizedStringKey(GameLingoUIContract.setupSteps[step]))
+            Text(LocalizedStringKey(step == 2 ? "Vyber zařízení" : GameLingoUIContract.setupSteps[step]))
                 .font(.title2.bold())
         }
     }
@@ -136,26 +136,22 @@ struct GameLingoSetupView: View {
                 .frame(maxWidth: .infinity)
                 .padding(20)
             }
-            GLCard {
-                Label("Překlad v reálném čase", systemImage: "bolt.fill")
-                    .font(.headline)
-                Text("Rozpoznávání herních dialogů a nabídek.")
-                    .font(.subheadline)
-                    .foregroundStyle(GLNeon.mist)
-            }
-            GLCard {
-                Label("Xbox a PlayStation", systemImage: "gamecontroller.fill")
-                    .font(.headline)
-                Text("Vyber si konzoli a připoj Remote Play.")
-                    .font(.subheadline)
-                    .foregroundStyle(GLNeon.mist)
-            }
-            GLCard {
-                Label("Telefon a Google TV", systemImage: "tv")
-                    .font(.headline)
-                Text("Zobraz překlad na telefonu nebo na televizoru.")
-                    .font(.subheadline)
-                    .foregroundStyle(GLNeon.mist)
+            GLNeonPanel(emphasized: true) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Jazyk aplikace", systemImage: "globe")
+                        .font(.headline)
+                    Picker("Jazyk aplikace", selection: $model.appLanguage) {
+                        ForEach(GLAppLanguage.allCases) { language in
+                            Text(LocalizedStringKey(language.title)).tag(language)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(GLNeon.cyan)
+                    Text("Jazyk prostředí GameLingo. Překlad her se nastavuje samostatně.")
+                        .font(.caption)
+                        .foregroundStyle(GLNeon.mist)
+                }
+                .padding(17)
             }
         }
     }
@@ -229,23 +225,6 @@ struct GameLingoSetupView: View {
 
     private var languageStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            GLNeonPanel(emphasized: true) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("Jazyk aplikace", systemImage: "globe")
-                        .font(.headline)
-                    Picker("Jazyk aplikace", selection: $model.appLanguage) {
-                        ForEach(GLAppLanguage.allCases) { language in
-                            Text(LocalizedStringKey(language.title)).tag(language)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .tint(GLNeon.cyan)
-                    Text("Jazyk prostředí GameLingo. Překlad her se nastavuje samostatně.")
-                        .font(.caption)
-                        .foregroundStyle(GLNeon.mist)
-                }
-                .padding(17)
-            }
             GLCard {
                 GLHeader(title: "Jazyk hry")
                 Picker("Rozpoznávat jazyk", selection: $model.gameLanguage) {
@@ -354,10 +333,10 @@ struct GameLingoSetupView: View {
 
     private var footer: some View {
         VStack(spacing: 9) {
-            if step < 4 {
+            if step < 2 {
                 GLPrimaryButton(title: "Pokračovat",
                                 systemImage: "arrow.right",
-                                disabled: step == 2 && devices.chosenConsole == nil) {
+                                disabled: false) {
                     step += 1
                 }
             } else {

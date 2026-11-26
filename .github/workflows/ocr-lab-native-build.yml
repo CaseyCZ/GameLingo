@@ -4,6 +4,7 @@ on:
     branches: [feature/ocr-lab]
     paths:
       - '.github/workflows/ocr-lab-native-build.yml'
+      - 'tests/test_v05_integrations.py'
   workflow_dispatch:
 permissions:
   contents: read

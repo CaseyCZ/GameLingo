@@ -445,8 +445,13 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("OCRFrameGate(maximumSkip: 2.0)", pipeline)
         self.assertIn("dialogueImageGate.reset()", pipeline)
         self.assertIn("optionsImageGate.reset()", pipeline)
-        self.assertEqual(pipeline.count("recordSuccessfulRead(fingerprint"), 2)
-        self.assertEqual(pipeline.count("shouldRead(fingerprint"), 2)
+        # Standard dialogue and yellow lanes remain unchanged; each new
+        # automatic region has a separate baseline and only updates after OCR.
+        self.assertIn("automaticLanes: [UUID: AutomaticLane]", pipeline)
+        self.assertIn("lane.gate.recordSuccessfulRead(fingerprint", pipeline)
+        self.assertIn("lane.gate.shouldRead(fingerprint", pipeline)
+        self.assertEqual(pipeline.count("recordSuccessfulRead(fingerprint"), 3)
+        self.assertEqual(pipeline.count("shouldRead(fingerprint"), 3)
 
     def test_p1_2_latest_frame_mailboxes_are_bounded_and_session_owned(self):
         model = code(IOS/"PlayCaptionIOSApp.swift")
@@ -461,12 +466,34 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("if options.offer(timed)", model)
         self.assertIn("while let frame = dialogue.takeNext()", model)
         self.assertIn("while let frame = options.takeNext()", model)
-        self.assertIn("optionsFrames?.setEnabled(choicesEnabled)", model)
+        self.assertIn("optionsFrames?.setEnabled(choicesEnabled && !automaticGameDialogue)", model)
+        self.assertIn("LatestFrameMailbox<TimedFrame>(enabled: choicesEnabled && !automaticGameDialogue)", model)
         stop = model.split("func stop() {", 1)[1]
         self.assertIn("dialogueFrames?.close()", stop)
         self.assertIn("optionsFrames?.close()", stop)
         self.assertNotIn("await self?.processFrame(buffer", model)
         self.assertNotIn("await self?.processFrame(frame", model)
+
+    def test_automatic_zones_use_signed_bounded_snapshots_and_old_profiles(self):
+        ios = code(IOS/"PlayCaptionIOSApp.swift")
+        tv = code(IOS/"PlayCaptionTV.swift")
+        parser = code(TOOLS/"GameLingoZonePacket.kt")
+        overlay = code(TOOLS/"GameLingoZoneOverlay.kt")
+        receiver = code(TOOLS/"patch_tv_iphone.py")
+        pairing = code(TOOLS/"IPhoneTVPairing.kt")
+        self.assertIn("profile.automaticMode ?? false", ios)
+        self.assertIn("profile.automaticZones", ios)
+        self.assertIn("receiverSupportsZones", tv)
+        self.assertIn("sendSignedSubtitle(Data((header + blocks)", tv)
+        self.assertIn("count in 0..10", parser)
+        self.assertIn("bytes.size in 1..512", parser)
+        self.assertIn("isFinite()", parser)
+        self.assertIn("FLAG_NOT_TOUCHABLE", overlay)
+        self.assertIn("FLAG_NOT_FOCUSABLE", overlay)
+        self.assertIn("ui.postDelayed(expire, 2200)", overlay)
+        self.assertIn('"PCZ1", "STORY"', pairing)
+        self.assertLess(receiver.index("IPhoneTVPairing.verifyFresh(c, id,"), receiver.index("ACTION_SET_ZONES"))
+        self.assertIn("GameLingoZonePacket.parse(inner)", receiver)
 
     def test_p1_3_persistent_translation_cache_uses_engine_and_language_keys(self):
         swift = code(IOS/"TranslationCache.swift")

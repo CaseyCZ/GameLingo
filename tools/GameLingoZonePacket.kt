@@ -6,7 +6,7 @@ import android.util.Base64
 internal data class GameLingoZoneBlock(val text: String, val x: Float, val bottom: Float, val width: Float)
 internal data class GameLingoZonePacket(val aspect: Float, val font: Float, val blocks: List<GameLingoZoneBlock>) {
     companion object {
-        fun parse(fields: List<String>): GameLingoZonePacket? = runCatching {
+        fun parse(fields: List<String>, decode: (String) -> ByteArray = { Base64.decode(it, Base64.NO_WRAP) }): GameLingoZonePacket? = runCatching {
             require(fields.firstOrNull() == "PCZ1" && fields.size >= 4)
             val aspect = fields[1].toFloat()
             val font = fields[2].toFloat()
@@ -16,7 +16,7 @@ internal data class GameLingoZonePacket(val aspect: Float, val font: Float, val 
             val blocks = (0 until count).map { i ->
                 val p = 4+i*4
                 require(fields[p].length <= 684)
-                val bytes = Base64.decode(fields[p], Base64.NO_WRAP)
+                val bytes = decode(fields[p])
                 require(bytes.size in 1..512)
                 val text = String(bytes, Charsets.UTF_8)
                 require(text.isNotBlank())

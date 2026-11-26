@@ -569,6 +569,9 @@ def patch_direct_tv(folder):
     # Authenticated full snapshots use the existing foreground overlay service.
     for name in ("GameLingoZonePacket.kt", "GameLingoZoneOverlay.kt"):
         (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
+    unit_dir = folder.parents[4] / "test/java/cz/titulky/tv"
+    unit_dir.mkdir(parents=True, exist_ok=True)
+    (unit_dir / "GameLingoZonePacketTest.kt").write_text(Path(__file__).with_name("GameLingoZonePacketTest.kt").read_text(encoding="utf8"), encoding="utf8")
     overlay_one('    private lateinit var wm: WindowManager',
         '''    private lateinit var wm: WindowManager
     private val automaticZoneOverlay by lazy { GameLingoZoneOverlay(this, wm) }''')

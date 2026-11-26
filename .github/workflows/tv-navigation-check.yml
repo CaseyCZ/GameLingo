@@ -57,6 +57,9 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Test full zone packet bounds and malformed geometry
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoZonePacketTest' --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: tv-navigation-debug

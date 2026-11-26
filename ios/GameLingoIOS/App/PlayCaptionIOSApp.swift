@@ -48,6 +48,7 @@ final class CaptionAppModel: ObservableObject {
         var revision = UUID()
         var lastSeen: TimeInterval = 0
         var retryAt: TimeInterval = 0
+        var layout: AutomaticDialogueLayout? = nil
     }
     private var automaticTracks: [UUID: AutomaticTrack] = [:]
     private var automaticTasks: [UUID: Task<Void, Never>] = [:]
@@ -1005,7 +1006,7 @@ final class CaptionAppModel: ObservableObject {
                 tv.sendSubtitle("", duration: 0)
                 automaticLastTV = nil
             }
-            if key != automaticSnapshotKey || now - automaticLastTVAt >= 0.8 {
+            if key != automaticSnapshotKey || (!ordered.isEmpty && now - automaticLastTVAt >= 0.8) {
                 tv.sendAutomaticZones(ordered, aspect: automaticFrameAspect)
                 automaticSnapshotKey = key
                 automaticLastTVAt = now
@@ -1054,6 +1055,7 @@ final class CaptionAppModel: ObservableObject {
             track.confirmations = min(2, track.confirmations + 1)
             track.lastSeen = seen
         }
+        track.layout = reading.layout
         automaticTracks[id] = track
         guard let layout = reading.layout else { return }
         if let i = automaticOutputs.firstIndex(where: { $0.id == id }) {
@@ -1073,7 +1075,7 @@ final class CaptionAppModel: ObservableObject {
                     let text = self.glossaryTranslation(original: reading.text, translated: raw,
                         source: source.rawValue, target: target.rawValue)
                     self.automaticOutputs.removeAll { $0.id == id }
-                    self.automaticOutputs.append(.init(id: id, text: text, layout: layout))
+                    self.automaticOutputs.append(.init(id: id, text: text, layout: latest.layout ?? layout))
                     self.publishAutomaticOutputs(now: finished)
                 } else {
                     self.automaticTracks[id]?.retryAt = finished + 2

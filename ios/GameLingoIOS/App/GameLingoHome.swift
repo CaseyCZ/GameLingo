@@ -451,7 +451,7 @@ struct GameLingoHome: View {
     private var regionsPage: some View {
         VStack(alignment: .leading, spacing: 14) {
             GLNeonTitle(title: "Oblasti obrazovky",
-                        subtitle: "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
+                        subtitle: model.automaticGameDialogue ? "Automatické oblasti překladu" : "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
                         icon: "viewfinder")
             Button { regionsSheet = true } label: {
                 HStack {
@@ -465,10 +465,16 @@ struct GameLingoHome: View {
                 .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 16))
             }
             .buttonStyle(.plain)
-            areaLine("Modrá", "Čtení dialogů", .blue)
-            areaLine("Zelená", "Výstup přeložených titulků", .green)
-            areaLine("Žlutá", "Čtení herních textů a voleb", .yellow)
-            areaLine("Oranžová", "Překlad herních textů", .orange)
+            if model.automaticGameDialogue {
+                ForEach(model.automaticZones) { zone in
+                    areaLine(zone.name, zone.enabled ? "Aktivní" : "Vypnutá", zone.enabled ? .green : .gray)
+                }
+            } else {
+                areaLine("Modrá", "Čtení dialogů", .blue)
+                areaLine("Zelená", "Výstup přeložených titulků", .green)
+                areaLine("Žlutá", "Čtení herních textů a voleb", .yellow)
+                areaLine("Oranžová", "Překlad herních textů", .orange)
+            }
         }
     }
 
