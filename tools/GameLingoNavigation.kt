@@ -35,14 +35,23 @@ object GameLingoNavigation {
 
         fun appearance(index: Int, focused: Boolean): GradientDrawable {
             val active = index == activeIndex
-            return GradientDrawable().apply {
-                setColor(Color.parseColor(
-                    if (focused) "#31256D" else if (active) "#442080" else "#070B19"
-                ))
+            return if (active) {
+                // Same violet -> blue -> cyan accent direction as the iOS tab pill.
+                GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                    intArrayOf(
+                        Color.parseColor(GameLingoUIContract.Palette.purple),
+                        Color.parseColor(GameLingoUIContract.Palette.blue),
+                        Color.parseColor(GameLingoUIContract.Palette.cyan)
+                    )).apply {
+                    cornerRadius = dp(14).toFloat()
+                    setStroke(dp(if (focused) 2 else 1), Color.WHITE)
+                }
+            } else GradientDrawable().apply {
+                setColor(Color.parseColor(if (focused) "#253458" else GameLingoUIContract.Palette.background))
                 cornerRadius = dp(14).toFloat()
                 setStroke(dp(if (focused) 2 else 1), Color.parseColor(
                     if (focused) GameLingoUIContract.Palette.cyan
-                    else if (active) "#6B3BAF" else "#070B19"
+                    else GameLingoUIContract.Palette.background
                 ))
             }
         }
