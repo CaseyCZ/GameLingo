@@ -259,7 +259,7 @@ object GameLingoSettings {
         }
 
         menu("slider.horizontal.3", "Režim překladu", GameLingoAutomaticConfig.label(activity)) {
-            GameLingoAutomaticConfig.mode(activity, onChanged = onRefresh) {}
+            GameLingoAutomaticConfig.mode(activity, onChanged = onRefresh)
         }
         section(GameLingoUIContract.settingsSections[1])
         val advanced = LinearLayout(activity).apply {
