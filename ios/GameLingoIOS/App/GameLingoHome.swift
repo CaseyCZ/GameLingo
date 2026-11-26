@@ -455,15 +455,9 @@ struct GameLingoHome: View {
                         subtitle: model.automaticGameDialogue ? "Automatické oblasti překladu" : "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
                         icon: "viewfinder")
             Button { regionsSheet = true } label: {
-                HStack {
-                    Image(systemName: "rectangle.dashed")
-                        .foregroundStyle(GLVisual.cyan)
-                    Text("Otevřít editor oblastí")
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                }
-                .padding(18)
-                .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 16))
+                GLDetailRow(icon: "rectangle.dashed",
+                            title: "Otevřít editor oblastí",
+                            detail: "")
             }
             .buttonStyle(.plain)
             if model.automaticGameDialogue {
@@ -480,18 +474,19 @@ struct GameLingoHome: View {
     }
 
     private func areaLine(_ name: String, _ detail: String, _ color: Color) -> some View {
-        HStack(spacing: 11) {
-            RoundedRectangle(cornerRadius: 5).fill(color).frame(width: 9, height: 34)
-            VStack(alignment: .center, spacing: 3) {
-                Text(LocalizedStringKey(name)).font(.subheadline.bold())
-                Text(LocalizedStringKey(detail)).font(.caption).foregroundStyle(GLVisual.muted)
+        GLNeonPanel(radius: 15) {
+            HStack(spacing: 11) {
+                RoundedRectangle(cornerRadius: 5).fill(color).frame(width: 9, height: 34)
+                VStack(alignment: .center, spacing: 3) {
+                    Text(LocalizedStringKey(name)).font(.subheadline.bold())
+                    Text(LocalizedStringKey(detail)).font(.caption).foregroundStyle(GLVisual.muted)
+                }
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
+                Color.clear.frame(width: 9, height: 34)
             }
-            Spacer()
+            .padding(14)
         }
-        .padding(14)
-        .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 15))
-        .overlay(RoundedRectangle(cornerRadius: 15)
-            .strokeBorder(GLNeon.edge.opacity(0.65), lineWidth: 1))
     }
 
     private var profilesPage: some View {
