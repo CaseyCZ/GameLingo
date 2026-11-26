@@ -1,4 +1,4 @@
-name: iOS OCR engine benchmark
+name: iOS native OCR combination benchmark
 on:
   push:
     branches: [feature/ocr-lab]
@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -r ocr-lab/requirements.txt
-      - run: python mlkit-lab/prepare_fixtures.py
+      - run: python ocr-lab/combination_fixtures.py
       - run: brew install xcodegen
       - name: Generate standalone test project
         working-directory: ios-ocr-lab
@@ -48,11 +48,11 @@ jobs:
           set -o pipefail
           xcodebuild test -workspace IOSOCRLab.xcworkspace -scheme IOSOCRLab \
             -destination "platform=iOS Simulator,id=$OCR_SIM" \
-            -parallel-testing-enabled NO -resultBundlePath /tmp/ios-ocr.xcresult \
+            -only-testing:IOSOCRLabTests/CombinationTests/testCombination -parallel-testing-enabled NO -resultBundlePath /tmp/ios-ocr.xcresult \
             CODE_SIGNING_ALLOWED=NO ARCHS=x86_64 | tee results/xcodebuild.log
       - name: Score results
         if: always()
-        run: python ios-ocr-lab/summarize.py
+        run: python ocr-lab/score_combination.py ios-ocr-lab/results/xcodebuild.log ios-ocr-lab/results/combination-summary.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
