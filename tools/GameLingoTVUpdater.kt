@@ -35,6 +35,7 @@ object GameLingoTVUpdater {
     private data class Update(val name: String, val code: Long, val size: Long,
                               val hash: String, val cert: String, val url: String, val notes: String)
 
+    private fun tr(a: Activity, key: String) = GameLingoLanguages.ui(a, key)
     private fun alive(a: Activity) = !a.isFinishing && !a.isDestroyed
     private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
     private fun hex(bytes: ByteArray) = bytes.joinToString("") { "%02x".format(it.toInt() and 255) }
@@ -133,8 +134,26 @@ object GameLingoTVUpdater {
         }
         return candidates.maxByOrNull { it.code }
     }
+    private fun updateError(a: Activity, error: Throwable): String {
+        val detail = error.message.orEmpty()
+        val known = setOf("Nelze vytvořit složku aktualizací.",
+            "Stahování zrušeno.",
+            "Časový limit stahování.",
+            "Neočekávaná velikost APK.",
+            "Kontrolní součet APK nesouhlasí.",
+            "APK není čitelná.",
+            "Podpis, identita nebo verze APK nesouhlasí.",
+            "Nepovolený zdroj aktualizace.",
+            "Chybí cíl přesměrování.",
+            "Příliš mnoho přesměrování.")
+        return when {
+            detail in known -> tr(a, detail)
+            detail.startsWith("GitHub odpověděl HTTP ") -> tr(a, "GitHub odpověděl HTTP") + " " + detail.substringAfterLast(' ')
+            else -> tr(a, "Neznámá chyba.")
+        }
+    }
     private fun message(a: Activity, text: String) {
-        if (alive(a)) AlertDialog.Builder(a).setTitle("Aktualizace GameLingo")
+        if (alive(a)) AlertDialog.Builder(a).setTitle(tr(a, "Aktualizace GameLingo"))
             .setMessage(text).setPositiveButton("OK", null).show()
     }
 
@@ -150,7 +169,7 @@ object GameLingoTVUpdater {
                         val next = result.getOrNull()
                         if (alive(a) && a.hasWindowFocus() && !busy() && next != null &&
                             runCatching { next.code > code(installed(a)) }.getOrDefault(false)) {
-                            Toast.makeText(a, "Nová verze GameLingo · O aplikaci → Aktualizace", Toast.LENGTH_LONG).show()
+                            Toast.makeText(a, tr(a, "Nová verze GameLingo · O aplikaci → Aktualizace"), Toast.LENGTH_LONG).show()
                         }
                     }
                 }.apply { name = "gamelingo-tv-update-check"; isDaemon = true }.start()
@@ -160,10 +179,10 @@ object GameLingoTVUpdater {
 
     fun show(a: Activity) {
         if (!alive(a)) return
-        if (busy()) { message(a, "Nejprve zastav překlad a příjem."); return }
-        if (!working.compareAndSet(false, true)) { message(a, "Kontrola již probíhá. Zkus to znovu."); return }
-        val status = AlertDialog.Builder(a).setTitle("Aktualizace GameLingo")
-            .setMessage("Kontroluji vydání na GitHubu…").setNegativeButton("Zrušit", null).show()
+        if (busy()) { message(a, tr(a, "Nejprve zastav překlad a příjem.")); return }
+        if (!working.compareAndSet(false, true)) { message(a, tr(a, "Kontrola již probíhá. Zkus to znovu.")); return }
+        val status = AlertDialog.Builder(a).setTitle(tr(a, "Aktualizace GameLingo"))
+            .setMessage(tr(a, "Kontroluji vydání na GitHubu…")).setNegativeButton(tr(a, "Zrušit"), null).show()
         Thread {
             val result = runCatching { find() }
             working.set(false)
@@ -173,37 +192,37 @@ object GameLingoTVUpdater {
                 result.fold(onSuccess = { next ->
                     val current = runCatching { installed(a) }.getOrNull()
                     when {
-                        current == null -> message(a, "Nelze zjistit nainstalovanou verzi.")
-                        next == null -> message(a, "Zatím není dostupné vydání s ověřitelnými aktualizačními metadaty.")
-                        next.code <= code(current) -> message(a, "Novější verze není dostupná.\nNainstalováno: " + current.versionName)
-                        signers(current) != setOf(next.cert) -> message(a, "Nová APK má jiný podpis. Aktualizace je zablokovaná, aby se nesmazalo nastavení. Je nutný jednorázový přechod na trvalý podpis.")
-                        else -> AlertDialog.Builder(a).setTitle("Nová verze GameLingo")
-                            .setMessage("Nainstalováno: " + current.versionName + "\nNová verze: " + next.name +
-                                "\nVelikost: " + (next.size / (1024 * 1024)) + " MB\n\n" + next.notes)
-                            .setNegativeButton("Později", null)
-                            .setPositiveButton("Stáhnout") { _, _ -> download(a, next) }.show()
+                        current == null -> message(a, tr(a, "Nelze zjistit nainstalovanou verzi."))
+                        next == null -> message(a, tr(a, "Zatím není dostupné vydání s ověřitelnými aktualizačními metadaty."))
+                        next.code <= code(current) -> message(a, tr(a, "Novější verze není dostupná.") + "\n" + tr(a, "Nainstalováno:") + " " + current.versionName)
+                        signers(current) != setOf(next.cert) -> message(a, tr(a, "Nová APK má jiný podpis. Aktualizace je zablokovaná, aby se nesmazalo nastavení. Je nutný jednorázový přechod na trvalý podpis."))
+                        else -> AlertDialog.Builder(a).setTitle(tr(a, "Nová verze GameLingo"))
+                            .setMessage(tr(a, "Nainstalováno:") + " " + current.versionName + "\n" + tr(a, "Nová verze:") + " " + next.name +
+                                "\n" + tr(a, "Velikost:") + " " + (next.size / (1024 * 1024)) + " MB\n\n" + next.notes)
+                            .setNegativeButton(tr(a, "Později"), null)
+                            .setPositiveButton(tr(a, "Stáhnout")) { _, _ -> download(a, next) }.show()
                     }
-                }, onFailure = { message(a, "Kontrola aktualizace se nezdařila. Zkontroluj internet a zkus to znovu.") })
+                }, onFailure = { message(a, tr(a, "Kontrola aktualizace se nezdařila. Zkontroluj internet a zkus to znovu.")) })
             }
         }.apply { name = "gamelingo-tv-update-check"; isDaemon = true }.start()
     }
 
     private fun download(a: Activity, next: Update) {
         if (!alive(a)) return
-        if (busy()) { message(a, "Nejprve zastav překlad a příjem."); return }
+        if (busy()) { message(a, tr(a, "Nejprve zastav překlad a příjem.")); return }
         if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
-            AlertDialog.Builder(a).setTitle("Povolení instalace")
-                .setMessage("Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace.")
-                .setNegativeButton("Zrušit", null).setPositiveButton("Otevřít nastavení") { _, _ ->
+            AlertDialog.Builder(a).setTitle(tr(a, "Povolení instalace"))
+                .setMessage(tr(a, "Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace."))
+                .setNegativeButton(tr(a, "Zrušit"), null).setPositiveButton(tr(a, "Otevřít nastavení")) { _, _ ->
                     runCatching { a.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + a.packageName))) }
-                        .onFailure { message(a, "Nastavení instalace není na této TV dostupné.") }
+                        .onFailure { message(a, tr(a, "Nastavení instalace není na této TV dostupné.")) }
                 }.show()
             return
         }
-        if (!working.compareAndSet(false, true)) { message(a, "Jiná aktualizace již probíhá."); return }
+        if (!working.compareAndSet(false, true)) { message(a, tr(a, "Jiná aktualizace již probíhá.")); return }
         val cancelled = AtomicBoolean(false)
-        val progress = AlertDialog.Builder(a).setTitle("Stahování aktualizace")
-            .setMessage("0 %").setNegativeButton("Zrušit") { _, _ -> cancelled.set(true) }.show()
+        val progress = AlertDialog.Builder(a).setTitle(tr(a, "Stahování aktualizace"))
+            .setMessage("0 %").setNegativeButton(tr(a, "Zrušit")) { _, _ -> cancelled.set(true) }.show()
         progress.setOnCancelListener { cancelled.set(true) }
         Thread {
             var file: File? = null
@@ -254,13 +273,13 @@ object GameLingoTVUpdater {
                 if (!alive(a) || cancelled.get() || !progress.isShowing) { file?.delete(); return@runOnUiThread }
                 progress.dismiss()
                 result.fold(onSuccess = { apk ->
-                    if (busy()) { apk.delete(); message(a, "Překlad je aktivní. Aktualizaci spusť po zastavení."); return@fold }
+                    if (busy()) { apk.delete(); message(a, tr(a, "Překlad je aktivní. Aktualizaci spusť po zastavení.")); return@fold }
                     runCatching {
                         val uri = FileProvider.getUriForFile(a, a.packageName + ".updates", apk)
                         a.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
                             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-                    }.onFailure { apk.delete(); message(a, "Systémový instalátor nelze otevřít.") }
-                }, onFailure = { file?.delete(); message(a, "Aktualizace nebyla nainstalována: " + (it.message ?: "neznámá chyba").take(180)) })
+                    }.onFailure { apk.delete(); message(a, tr(a, "Systémový instalátor nelze otevřít.")) }
+                }, onFailure = { file?.delete(); message(a, tr(a, "Aktualizace nebyla nainstalována:") + " " + updateError(a, it)) })
             }
         }.apply { name = "gamelingo-tv-update-download"; isDaemon = true }.start()
     }

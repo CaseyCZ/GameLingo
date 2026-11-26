@@ -197,7 +197,7 @@ def patch_direct_tv(folder):
     update_anchor = '        page.addView(label("Licence a původní autoři", 19f, true))'
     if about_text.count(update_anchor) != 1:
         raise RuntimeError("TV About update anchor changed")
-    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoTVUi.action(activity, "Zkontrolovat aktualizace") {
+    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoTVUi.action(activity, GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")) {
             GameLingoTVUpdater.show(activity)
         })
 ''' + update_anchor, 1)

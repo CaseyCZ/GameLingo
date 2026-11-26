@@ -14,6 +14,8 @@ def patch_mobile_update(folder):
         ('GameLingo-GoogleTV-v', 'GameLingo-Android-v'),
         ('RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running', 'RemotePlayService.aktivni'),
         ('GameLingo-TV-Updater', 'GameLingo-Android-Updater'),
+        ('Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace.', 'Povol instalaci z GameLingo v nastavení zařízení. Potom znovu otevři Aktualizace.'),
+        ('Nastavení instalace není na této TV dostupné.', 'Nastavení instalace není na tomto zařízení dostupné.'),
     ):
         if old not in source:
             raise RuntimeError("Shared updater platform anchor changed: " + old)
@@ -25,7 +27,7 @@ def patch_mobile_update(folder):
     update_anchor = '        page.addView(label("Licence a původní autoři", 19f, true))'
     if about_text.count(update_anchor) != 1:
         raise RuntimeError("Mobile About update anchor changed")
-    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoVisualKit.deviceCard(activity, "TV", "Zkontrolovat aktualizace", "Stáhnout novou verzi", false) {
+    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoVisualKit.deviceCard(activity, "TV", GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace"), GameLingoLanguages.ui(activity, "Stáhnout novou verzi"), false) {
             GameLingoTVUpdater.show(activity)
         })
 ''' + update_anchor, 1)

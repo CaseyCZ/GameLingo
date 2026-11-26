@@ -1143,6 +1143,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                      '"none"', '"dark"', '"translucent"'):
             self.assertIn(item,style)
 
+    def test_android_tv_update_ui_localization(self):
+        import re
+        updater = code(TOOLS/"GameLingoTVUpdater.kt")
+        labels = code(TOOLS/"GameLingoLanguages.kt")
+        keys = re.findall(r'tr\(a, "([^"]+)"\)', updater)
+        self.assertGreaterEqual(len(set(keys)), 20)
+        for key in set(keys):
+            self.assertIn(json.dumps(key, ensure_ascii=False) + " to Pair(", labels)
+        for script in ("wire_mobile_update.py", "direct_tv_mode.py"):
+            self.assertIn('GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")', code(TOOLS/script))
+
     def test_tv_updater_requires_signed_newer_apk_and_system_consent(self):
         updater = code(TOOLS/"GameLingoTVUpdater.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")
