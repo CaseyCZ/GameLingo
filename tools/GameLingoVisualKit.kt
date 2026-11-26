@@ -217,6 +217,43 @@ object GameLingoVisualKit {
             setStroke(dp(context, 1), Color.parseColor("#9DEAFF"))
         }
 
+    /** Native Android equivalent of SwiftUI GLNeonTitle (centered, balanced rails). */
+    fun neonTitle(activity: Activity, title: String, subtitle: String,
+                  symbol: String): LinearLayout {
+        val rail = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(activity, 4), 0, dp(activity, 7))
+        }
+        rail.addView(FrameLayout(activity).apply {
+            addView(iconBadge(activity, symbol),
+                FrameLayout.LayoutParams(dp(activity, 41), dp(activity, 41), Gravity.CENTER))
+        }, LinearLayout.LayoutParams(dp(activity, 41), dp(activity, 41)))
+        rail.addView(LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            addView(TextView(activity).apply {
+                text = GameLingoLanguages.ui(activity, title)
+                gravity = Gravity.CENTER
+                textSize = sp(activity, 19f)
+                setTextColor(Color.WHITE)
+                setTypeface(null, Typeface.BOLD)
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT))
+            addView(TextView(activity).apply {
+                text = GameLingoLanguages.ui(activity, subtitle)
+                gravity = Gravity.CENTER
+                textSize = sp(activity, 12f)
+                setTextColor(muted)
+                setPadding(0, dp(activity, 3), 0, 0)
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT))
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        // Fixed balancing rail keeps the title centered across the full screen.
+        rail.addView(View(activity), LinearLayout.LayoutParams(dp(activity, 41), dp(activity, 41)))
+        return rail
+    }
+
     fun heading(context: Context, title: String): TextView =
         TextView(context).apply {
             text = title
