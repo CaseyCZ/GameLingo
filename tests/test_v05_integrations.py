@@ -44,6 +44,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for pref in ("gamelingo_automatic", "gamelingo_phone_subtitles",
                      "gamelingo_tv_local_style", "gamelingo_tv_parity"):
             self.assertIn(pref, android_reset)
+        self.assertEqual(android_reset.count('getSharedPreferences("gamelingo_phone_subtitles"'), 1)
+        self.assertIn('.remove("color").remove("opacity").apply()', android_reset)
         self.assertIn("GameLingoOCRConfig.reset(a)", android_reset)
         self.assertIn("Volby.nacti(a)", android_reset)
         self.assertIn("OblastTitulku.nacti(a)", android_reset)
