@@ -361,3 +361,27 @@
 "Aktivní" = "Aktívna";
 "Vypnutá" = "Vypnutá";
 "Standardní oblasti" = "Štandardné oblasti";
+
+/* Update panel and update errors */
+"Nepovolený zdroj aktualizace." = "Nepovolený zdroj aktualizácie.";
+"GitHub neposkytl platný soubor." = "GitHub neposkytol platný súbor.";
+"Příliš velká metadata." = "Príliš veľké metadáta.";
+"Neplatná metadata aktualizace." = "Neplatné metadáta aktualizácie.";
+"Neplatné údaje IPA." = "Neplatné údaje IPA.";
+"Velikost IPA nesouhlasí." = "Veľkosť IPA nesúhlasí.";
+"Kontrolní součet IPA nesouhlasí." = "Kontrolný súčet IPA nesúhlasí.";
+"Kontroluji vydání…" = "Kontrolujem vydania…";
+"Novější verze není dostupná." = "Novšia verzia nie je dostupná.";
+"Je dostupná nová verze." = "Je dostupná nová verzia.";
+"Kontrola se nezdařila:" = "Kontrola zlyhala:";
+"Stahuji IPA…" = "Sťahujem IPA…";
+"IPA ověřena. Ulož ji do Souborů nebo předej do podepisovací aplikace." = "IPA overená. Ulož ju do Súborov alebo ju odovzdaj podpisovacej aplikácii.";
+"Stahování zrušeno." = "Sťahovanie zrušené.";
+"Stažení se nezdařilo:" = "Stiahnutie zlyhalo:";
+"Aktualizace" = "Aktualizácie";
+"Zkontrolovat aktualizace" = "Skontrolovať aktualizácie";
+"Nová verze:" = "Nová verzia:";
+"Stáhnout IPA" = "Stiahnuť IPA";
+"Uložit nebo sdílet IPA" = "Uložiť alebo zdieľať IPA";
+"Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem." = "Nepodpísaná IPA: inštaláciu a podpis vykonávaš vlastným nástrojom.";
+"Neznámá chyba." = "Neznáma chyba.";

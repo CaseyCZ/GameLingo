@@ -361,3 +361,27 @@
 "Aktivní" = "Enabled";
 "Vypnutá" = "Disabled";
 "Standardní oblasti" = "Standard regions";
+
+/* Update panel and update errors */
+"Nepovolený zdroj aktualizace." = "Untrusted update source.";
+"GitHub neposkytl platný soubor." = "GitHub did not provide a valid file.";
+"Příliš velká metadata." = "Metadata exceeds the size limit.";
+"Neplatná metadata aktualizace." = "Invalid update metadata.";
+"Neplatné údaje IPA." = "Invalid IPA metadata.";
+"Velikost IPA nesouhlasí." = "IPA size mismatch.";
+"Kontrolní součet IPA nesouhlasí." = "IPA checksum mismatch.";
+"Kontroluji vydání…" = "Checking releases…";
+"Novější verze není dostupná." = "No newer version is available.";
+"Je dostupná nová verze." = "A new version is available.";
+"Kontrola se nezdařila:" = "Update check failed:";
+"Stahuji IPA…" = "Downloading IPA…";
+"IPA ověřena. Ulož ji do Souborů nebo předej do podepisovací aplikace." = "IPA verified. Save it to Files or share it with a signing app.";
+"Stahování zrušeno." = "Download canceled.";
+"Stažení se nezdařilo:" = "Download failed:";
+"Aktualizace" = "Updates";
+"Zkontrolovat aktualizace" = "Check for updates";
+"Nová verze:" = "New version:";
+"Stáhnout IPA" = "Download IPA";
+"Uložit nebo sdílet IPA" = "Save or share IPA";
+"Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem." = "Unsigned IPA: sign and install it with your own tool.";
+"Neznámá chyba." = "Unknown error.";

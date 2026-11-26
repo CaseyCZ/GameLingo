@@ -7,8 +7,9 @@ private let releaseRoot = "https://github.com/CaseyCZ/GameLingo/releases/downloa
 private let maximumIPA: Int64 = 150 * 1024 * 1024
 
 private struct UpdateFailure: LocalizedError {
-    let errorDescription: String?
-    init(_ message: String) { errorDescription = message }
+    let key: String
+    var errorDescription: String? { GLInterfaceText.localized(key) }
+    init(_ message: String) { key = message }
 }
 
 private struct ReleaseAsset: Decodable {
@@ -174,6 +175,7 @@ private enum IPAUpdates {
 @MainActor
 final class GameLingoUpdateModel: ObservableObject {
     @Published private(set) var message = ""
+    @Published private(set) var messageDetail: String?
     @Published private(set) var available: String?
     @Published private(set) var notes = ""
     @Published private(set) var downloaded: URL?
@@ -192,7 +194,7 @@ final class GameLingoUpdateModel: ObservableObject {
     func check(passive: Bool = false) {
         guard !busy else { return }
         busy = true
-        if !passive { message = "Kontroluji vydání…" }
+        if !passive { messageDetail = nil; message = "Kontroluji vydání…" }
         task = Task {
             defer { busy = false; task = nil }
             do {
@@ -201,9 +203,15 @@ final class GameLingoUpdateModel: ObservableObject {
                 candidate = result
                 available = result?.metadata.versionName
                 notes = result?.notes ?? ""
-                if !passive || result != nil { message = result == nil ? "Novější verze není dostupná." : "Je dostupná nová verze." }
+                if !passive || result != nil {
+                    messageDetail = nil
+                    message = result == nil ? "Novější verze není dostupná." : "Je dostupná nová verze."
+                }
             } catch {
-                if !passive && !Task.isCancelled { message = "Kontrola se nezdařila: " + error.localizedDescription }
+                if !passive && !Task.isCancelled {
+                    message = "Kontrola se nezdařila:"
+                    messageDetail = (error as? UpdateFailure)?.key ?? "Neznámá chyba."
+                }
             }
         }
     }
@@ -212,6 +220,7 @@ final class GameLingoUpdateModel: ObservableObject {
         busy = true
         downloaded = nil
         progress = 0
+        messageDetail = nil
         message = "Stahuji IPA…"
         task = Task {
             defer { busy = false; task = nil }
@@ -224,7 +233,8 @@ final class GameLingoUpdateModel: ObservableObject {
                 progress = 1
                 message = "IPA ověřena. Ulož ji do Souborů nebo předej do podepisovací aplikace."
             } catch {
-                message = Task.isCancelled ? "Stahování zrušeno." : "Stažení se nezdařilo: " + error.localizedDescription
+                message = Task.isCancelled ? "Stahování zrušeno." : "Stažení se nezdařilo:"
+                messageDetail = Task.isCancelled ? nil : ((error as? UpdateFailure)?.key ?? "Neznámá chyba.")
             }
         }
     }
@@ -240,7 +250,7 @@ struct GameLingoUpdatePanel: View {
             Button("Zkontrolovat aktualizace") { updates.check() }
                 .disabled(updates.busy || running)
             if let version = updates.available {
-                Text("Nová verze: \(version)").font(.headline)
+                Text(verbatim: GLInterfaceText.localized("Nová verze:") + " " + version).font(.headline)
                 if !updates.notes.isEmpty { Text(updates.notes).font(.caption) }
                 Button("Stáhnout IPA") { updates.download() }
                     .disabled(updates.busy || running)
@@ -252,7 +262,11 @@ struct GameLingoUpdatePanel: View {
             if let file = updates.downloaded {
                 ShareLink(item: file) { Label("Uložit nebo sdílet IPA", systemImage: "square.and.arrow.up") }
             }
-            if !updates.message.isEmpty { Text(updates.message).font(.caption) }
+            if !updates.message.isEmpty {
+                Text(verbatim: GLInterfaceText.localized(updates.message) +
+                    (updates.messageDetail.map { " " + GLInterfaceText.localized($0) } ?? ""))
+                    .font(.caption).multilineTextAlignment(.center)
+            }
             Text("Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem.").font(.caption)
         }
     }

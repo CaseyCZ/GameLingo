@@ -1143,6 +1143,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                      '"none"', '"dark"', '"translucent"'):
             self.assertIn(item,style)
 
+    def test_ios_update_ui_localization(self):
+        import re
+        updater = code(IOS/"GameLingoUpdates.swift")
+        keys = re.findall(r'(?:UpdateFailure|Button|Label|GLInterfaceText.localized)\("([^"]+)"', updater)
+        keys += re.findall(r'(?:message|messageDetail) = "([^"]+)"', updater)
+        keys += ["Novější verze není dostupná.", "Je dostupná nová verze.", "Stahování zrušeno.", "Stažení se nezdařilo:", "Neznámá chyba.", "Aktualizace", "Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem."]
+        for lang in ("en", "sk"):
+            catalog = code(IOS/(lang + ".lproj")/"Localizable.strings")
+            for key in set(keys):
+                if key:
+                    self.assertIn(json.dumps(key, ensure_ascii=False) + " = ", catalog)
+        self.assertIn("GLInterfaceText.localized(updates.message)", updater)
+        self.assertIn("GLInterfaceText.localized($0)", updater)
+
     def test_android_tv_update_ui_localization(self):
         import re
         updater = code(TOOLS/"GameLingoTVUpdater.kt")
