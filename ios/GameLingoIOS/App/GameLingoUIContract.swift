@@ -7,7 +7,7 @@ enum GameLingoUIContract {
     static let tabs: [Tab] = [
         Tab(title: "Domů", symbol: "house.fill"),
         Tab(title: "Obrazovka", symbol: "rectangle.dashed"),
-        Tab(title: "Konzole", symbol: "gamecontroller"),
+        Tab(title: "Zařízení", symbol: "display.2"),
         Tab(title: "Nastavení", symbol: "slider.horizontal.3"),
         Tab(title: "O aplikaci", symbol: "info.circle"),
     ]
