@@ -18,6 +18,18 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_localized_region_and_appearance_controls(self):
+        lang = code(TOOLS/"GameLingoLanguages.kt")
+        regions = code(TOOLS/"GameLingoRegions.kt")
+        phone = code(TOOLS/"GameLingoSubtitleAppearance.kt")
+        tv = code(TOOLS/"GameLingoTVCaptionStyle.kt")
+        for label in ("Otevřít editor oblastí", "Velikost písma", "Náhled na TV", "Pozadí titulků"):
+            self.assertIn('"' + label + '" to Pair(', lang)
+        self.assertIn("text = tr(name)", regions)
+        self.assertIn("this.text = tr(label)", phone)
+        self.assertIn("this.text = GameLingoPhoneSubtitleStyle.sample(activity)", phone)
+        self.assertIn("title.text=tr(labelText)", tv)
+
     def test_android_localized_ocr_translation_and_history(self):
         lang = code(TOOLS/"GameLingoLanguages.kt")
         settings = code(TOOLS/"GameLingoSettings.kt")

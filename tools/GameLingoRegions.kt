@@ -18,6 +18,7 @@ import android.widget.TextView
 object GameLingoRegions {
     fun content(activity: Activity, onEdit: () -> Unit,
                 onDismiss: () -> Unit = {}, showClose: Boolean = false): LinearLayout {
+        fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         val d: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -26,14 +27,14 @@ object GameLingoRegions {
         }
         page.addView(TextView(activity).apply {
             gravity = android.view.Gravity.CENTER
-            text = "Oblasti obrazovky"
+            text = tr("Oblasti obrazovky")
             textSize = 26f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         })
         page.addView(TextView(activity).apply {
             gravity = android.view.Gravity.CENTER
-            text = "Čtyři nezávislé oblasti pro rozpoznávání a překlad."
+            text = tr("Čtyři nezávislé oblasti pro rozpoznávání a překlad.")
             textSize = 14f
             setTextColor(Color.parseColor("#92A4C7"))
             setPadding(0, d(10), 0, d(20))
@@ -56,19 +57,20 @@ object GameLingoRegions {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(activity).apply {
                     gravity = android.view.Gravity.CENTER
-                    text = name
+                    text = tr(name)
                     textSize = 16f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
                 })
                 addView(TextView(activity).apply {
                     gravity = android.view.Gravity.CENTER
-                    text = detail
+                    text = tr(detail)
                     textSize = 13f
                     setTextColor(Color.parseColor("#92A4C7"))
                     setPadding(0, d(4), 0, 0)
                 })
-            })
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            line.addView(android.view.View(activity), LinearLayout.LayoutParams(d(51), 1))
             page.addView(line, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -76,7 +78,7 @@ object GameLingoRegions {
         }
         page.addView(TextView(activity).apply {
             gravity = android.view.Gravity.CENTER
-            text = "Otevřít editor oblastí"
+            text = tr("Otevřít editor oblastí")
             gravity = Gravity.CENTER
             textSize = 17f
             typeface = Typeface.DEFAULT_BOLD
@@ -93,7 +95,7 @@ object GameLingoRegions {
         ).apply { topMargin = d(8); bottomMargin = d(12) })
         if (showClose) page.addView(TextView(activity).apply {
             gravity = android.view.Gravity.CENTER
-            text = "Zpět"
+            text = tr("Zpět")
             gravity = Gravity.CENTER
             textSize = 16f
             setTextColor(Color.WHITE)
