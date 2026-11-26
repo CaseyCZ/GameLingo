@@ -31,7 +31,7 @@ object GameLingoOCRSettings {
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(activity)
-            setPadding(d(20), d(20), d(20), d(28))
+            setPadding(d(16), d(12), d(16), d(16))
         }
         fun text(value: String, size: Float = 15f, bold: Boolean = false): TextView =
             TextView(activity).apply {
