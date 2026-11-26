@@ -22,7 +22,7 @@ def redesign_mobile(s: str) -> str:
             // console/TV -> single CTA -> four shortcuts -> readiness -> tabs.
             // Console authentication, OCR and Remote Play are untouched.
             obsah.background = GameLingoVisualKit.pageBackground(this)
-            obsah.setPadding(dp(14), dp(10), dp(14), dp(20))
+            obsah.setPadding(dp(16), dp(12), dp(16), dp(16))
 
             // The five tabs share one persistent page host, just like SwiftUI.
             // Source setup/pairing remains an explicit native action in each tab.
@@ -98,7 +98,7 @@ def redesign_mobile(s: str) -> str:
 
             val prvni = vodorovne()
             prvni.addView(GameLingoVisualKit.navigationTile(this,
-                "▣", GameLingoLanguages.ui(this, "Oblasti na obrazovce")) { openAreas() },
+                "▣", GameLingoLanguages.ui(this, "Oblasti")) { openAreas() },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(10) })
             prvni.addView(GameLingoVisualKit.navigationTile(this,
