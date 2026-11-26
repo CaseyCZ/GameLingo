@@ -125,7 +125,11 @@ struct GameLingoHome: View {
         } message: {
             Text("Zadej PIN uživatele konzole, ne osmimístný párovací kód.")
         }
-        .sheet(isPresented: $regionsSheet) { SubtitleSettingsView(model: model) }
+        .sheet(isPresented: $regionsSheet) {
+            if model.automaticGameDialogue {
+                NavigationStack { GLAutomaticZonesView(model: model) }
+            } else { SubtitleSettingsView(model: model) }
+        }
         .sheet(isPresented: $profilesSheet) {
             NavigationStack {
                 GameLingoProfilesScreen(model: model)
@@ -320,11 +324,7 @@ struct GameLingoHome: View {
                 )
             }
             .buttonStyle(.plain)
-            Toggle("GTA VI · automatické dialogy (test)", isOn: Binding(
-                get: { model.automaticGameDialogue },
-                set: { model.setAutomaticGameDialogue($0) }))
-                .disabled(model.isRunning)
-                .padding(.horizontal, 8)
+            GLTranslationModePicker(model: model)
             actionButton
             LazyVGrid(columns: [GridItem(.flexible()),
                                 GridItem(.flexible())], spacing: 9) {
@@ -334,6 +334,15 @@ struct GameLingoHome: View {
                 tile("Zařízení", icon: "display.2") { tab = .devices }
             }
             readiness
+            if devices.subtitleOutput == .phone && model.automaticGameDialogue {
+                ForEach(model.automaticOutputs) { output in
+                    GLCard {
+                        Text(model.automaticZones.first { $0.id == output.id }?.name ?? "Překlad")
+                            .font(.caption)
+                        Text(output.text).font(.headline)
+                    }
+                }
+            }
             if devices.subtitleOutput == .phone && !model.phoneSubtitle.isEmpty {
                 GLCard {
                     GLHeader(title: "Dialog")

@@ -7,6 +7,11 @@ enum GLAppLanguage: String, CaseIterable, Identifiable, Codable {
     case english = "en"
     case slovak = "sk"
 
+    static var systemDefault: Self {
+        let language = Locale.preferredLanguages.first?.split(separator: "-").first.map(String.init) ?? "en"
+        return Self(rawValue: language) ?? .english
+    }
+
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -21,7 +26,7 @@ enum GLAppLanguage: String, CaseIterable, Identifiable, Codable {
 /// SwiftUI Text(LocalizedStringKey) uses the same .lproj catalog automatically.
 enum GLInterfaceText {
     static func localized(_ key: String) -> String {
-        let language = UserDefaults.standard.string(forKey: "gamelingo.appLanguage") ?? "cs"
+        let language = UserDefaults.standard.string(forKey: "gamelingo.appLanguage") ?? GLAppLanguage.systemDefault.rawValue
         guard let path = Bundle.main.path(forResource: language, ofType: "lproj"),
               let bundle = Bundle(path: path) else { return key }
         return bundle.localizedString(forKey: key, value: key, table: "Localizable")

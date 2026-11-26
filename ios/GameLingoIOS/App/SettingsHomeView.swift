@@ -32,6 +32,7 @@ struct GameLingoSettingsOverview: View {
     @ObservedObject var model: CaptionAppModel
     var onDevices: (() -> Void)? = nil
     @State private var showRegions = false
+    @State private var showAdvancedSettings = false
     @State private var showDevices = false
     @State private var showXbox = false
     @State private var showPlayStation = false
@@ -56,7 +57,9 @@ struct GameLingoSettingsOverview: View {
             }
             .buttonStyle(.plain)
 
+            GLTranslationModePicker(model: model)
             sectionLabel(GameLingoUIContract.settingsSections[1])
+            DisclosureGroup("Pokročilé nastavení", isExpanded: $showAdvancedSettings) {
             NavigationLink {
                 GameLingoOCRSettingsView(model: model)
             } label: {
@@ -73,10 +76,11 @@ struct GameLingoSettingsOverview: View {
                             detail: "Časování a aktuálnost titulků")
             }
             .buttonStyle(.plain)
+            }
             Button { showRegions = true } label: {
                 GLDetailRow(icon: "rectangle.dashed",
                             title: "Oblasti obrazovky",
-                            detail: "Čtyři nezávislé oblasti")
+                            detail: model.automaticGameDialogue ? String(model.automaticZones.filter(\.enabled).count) + " aktivních zón" : "Standardní oblasti")
             }
             .buttonStyle(.plain)
 
@@ -139,7 +143,9 @@ struct GameLingoSettingsOverview: View {
             .buttonStyle(.plain)
         }
         .sheet(isPresented: $showRegions) {
-            SubtitleSettingsView(model: model)
+            if model.automaticGameDialogue {
+                NavigationStack { GLAutomaticZonesView(model: model) }
+            } else { SubtitleSettingsView(model: model) }
         }
         .sheet(isPresented: $showDevices) {
             NavigationStack {

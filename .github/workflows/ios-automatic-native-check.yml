@@ -19,7 +19,7 @@ jobs:
           persist-credentials: false
       - name: Compile and test native geometry
         run: |
-          swiftc ios/GameLingoIOS/App/AutomaticDialogueLayout.swift tests/AutomaticDialogueLayoutTests.swift -o "$RUNNER_TEMP/automatic-dialogue-tests"
+          xcrun --sdk macosx swiftc -framework CoreGraphics ios/GameLingoIOS/App/AutomaticDialogueLayout.swift ios/GameLingoIOS/App/AutomaticOCRZone.swift tests/AutomaticDialogueLayoutTests.swift -o "$RUNNER_TEMP/automatic-dialogue-tests"
           "$RUNNER_TEMP/automatic-dialogue-tests"
       - name: Parse iOS app sources
         run: |

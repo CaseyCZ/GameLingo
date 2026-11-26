@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 /// Native first stage of the automatic dialogue mode. Coordinates are in the
 /// decoder's normalized frame; the legacy PCT1 receiver supports one block.
@@ -32,12 +33,12 @@ struct AutomaticDialogueLayout: Equatable, Sendable {
         rect.maxX <= 1.000001 && rect.maxY <= 1.000001
     }
 
-    static func select(_ lines: [Line]) -> (text: String, layout: Self)? {
+    static func select(_ lines: [Line], centered: Bool = true) -> (text: String, layout: Self)? {
         // Only central dialogue candidates. Do not translate peripheral HUD.
         // Group vertically adjacent, horizontally overlapping text lines.
         let candidates = lines.filter {
             valid($0.rect) && !$0.text.isEmpty &&
-            abs($0.rect.midX - 0.5) <= 0.20
+            (!centered || abs($0.rect.midX - 0.5) <= 0.20)
         }.sorted { a, b in
             a.rect.minY == b.rect.minY ? a.rect.minX < b.rect.minX : a.rect.minY < b.rect.minY
         }

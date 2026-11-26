@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 @main struct AutomaticDialogueLayoutTests {
     static func main() {
@@ -19,6 +20,14 @@ import Foundation
         precondition(AutomaticDialogueLayout.select([hud]) == nil)
         precondition(AutomaticDialogueLayout.fullFrameRect(croppedVision: .null, crop: crop) == nil)
         precondition(AutomaticDialogueLayout.fullFrameRect(croppedVision: CGRect(x: -0.1, y: 0, width: 0.5, height: 0.2), crop: crop) == nil)
+        let initial = AutomaticOCRZone.initial
+        precondition(initial.count == 1 && initial[0].enabled && initial[0].valid)
+        precondition(AutomaticOCRZone.validated(initial + initial).count == 1)
+        let invalid = AutomaticOCRZone(name: "Invalid", rect: CGRect(x: 0.9, y: 0, width: 0.5, height: 1))
+        precondition(AutomaticOCRZone.validated([invalid]).isEmpty)
+        let many = (0..<11).map { AutomaticOCRZone(name: String($0), rect: crop) }
+        precondition(AutomaticOCRZone.validated(many).count == 10)
+        precondition(AutomaticDialogueLayout.select([hud], centered: false)?.text == "HUD")
         print("AUTOMATIC_DIALOGUE_LAYOUT_TESTS passed")
     }
 }

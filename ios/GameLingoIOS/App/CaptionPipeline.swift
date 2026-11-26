@@ -110,6 +110,9 @@ actor CaptionPipeline {
     private var dialogueImageGate = OCRFrameGate(maximumSkip: 1.5)
 
     func resetDialogue() {
+        automaticLanes.removeAll()
+        nextAutomaticZone = 0
+        lastAutomaticAttempt = -.infinity
         lastText = ""
         dialogueStability.reset()
         lastRead = .distantPast
@@ -138,6 +141,68 @@ actor CaptionPipeline {
         guard lastOptionsSettings == signature, lastOptions == options,
               !options.isEmpty else { return }
         optionsRetryAt = ProcessInfo.processInfo.systemUptime + 2
+    }
+
+    struct AutomaticZoneReading {
+        let zone: UUID
+        let text: String
+        let layout: AutomaticDialogueLayout?
+    }
+    private struct AutomaticLane {
+        var gate = OCRFrameGate(maximumSkip: 1.0)
+        var lastAttempt: TimeInterval = -.infinity
+    }
+    private var automaticLanes: [UUID: AutomaticLane] = [:]
+    private var nextAutomaticZone = 0
+    private var lastAutomaticAttempt: TimeInterval = -.infinity
+
+    /// One actual crop per invocation, round-robin across enabled regions.
+    /// No OCR of pixels outside the selected zone and no unbounded task queue.
+    func recognizeAutomaticZone(_ buffer: CVPixelBuffer, zones: [AutomaticOCRZone],
+                                gameLanguage: GLGameLanguage) -> AutomaticZoneReading? {
+        let enabled = zones.filter { $0.enabled && $0.valid }
+        guard !enabled.isEmpty else { return nil }
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastAutomaticAttempt >= 0.10 else { return nil }
+        let image = CIImage(cvPixelBuffer: buffer)
+        let e = image.extent
+        for offset in 0..<enabled.count {
+            let index = (nextAutomaticZone + offset) % enabled.count
+            let zone = enabled[index]
+            let roi = CGRect(x: zone.rect.minX, y: 1-zone.rect.maxY,
+                             width: zone.rect.width, height: zone.rect.height)
+            var lane = automaticLanes[zone.id] ?? AutomaticLane()
+            guard now - lane.lastAttempt >= 0.10 else { continue }
+            let fingerprint = OCRFrameFingerprint.read(buffer, visionROI: roi)
+            guard lane.gate.shouldRead(fingerprint, now: now) else { continue }
+            lane.lastAttempt = now
+            lastAutomaticAttempt = now
+            nextAutomaticZone = (index + 1) % enabled.count
+            automaticLanes[zone.id] = lane
+            let crop = CGRect(x: e.minX + e.width * roi.minX, y: e.minY + e.height * roi.minY,
+                              width: e.width * roi.width, height: e.height * roi.height)
+            let local = image.cropped(to: crop).transformed(by: CGAffineTransform(translationX: -crop.minX, y: -crop.minY))
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.recognitionLanguages = [gameLanguage.visionIdentifier]
+            request.usesLanguageCorrection = true
+            do {
+                try VNImageRequestHandler(ciImage: local, options: [:]).perform([request])
+                lane.gate.recordSuccessfulRead(fingerprint, now: now)
+                automaticLanes[zone.id] = lane
+                let lines: [AutomaticDialogueLayout.Line] = (request.results ?? []).compactMap { item in
+                    guard let text = item.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines),
+                          text.filter({ $0.isLetter }).count >= 2,
+                          !looksLikeMenu(text, conservative: true),
+                          let rect = AutomaticDialogueLayout.fullFrameRect(croppedVision: item.boundingBox, crop: zone.rect)
+                    else { return nil }
+                    return .init(text: text, rect: rect)
+                }
+                let selected = AutomaticDialogueLayout.select(lines, centered: zone.centered)
+                return .init(zone: zone.id, text: selected?.text ?? "", layout: selected?.layout)
+            } catch { return nil } // failed read is not an empty observation
+        }
+        return nil
     }
 
     func recognize(_ buffer: CVPixelBuffer,

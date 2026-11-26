@@ -25,11 +25,46 @@ struct GameLingoIOSApp: App {
 
 @MainActor
 final class CaptionAppModel: ObservableObject {
-    // Explicit opt-in; legacy profile and OCR preferences remain unchanged.
-    @Published private(set) var automaticGameDialogue = false
+    // Standard remains the default for existing and new installations.
+    @Published private(set) var automaticGameDialogue = UserDefaults.standard.bool(forKey: "gamelingo.automaticMode")
+    @Published private(set) var automaticZones = AutomaticOCRZone.load()
+    func updateAutomaticZones(_ zones: [AutomaticOCRZone]) {
+        guard !isRunning else { return }
+        automaticZones = AutomaticOCRZone.validated(zones)
+        if let data = try? JSONEncoder().encode(automaticZones) {
+            UserDefaults.standard.set(data, forKey: "gamelingo.automaticZones")
+        }
+        invalidateDialogue()
+    }
+    struct AutomaticOutput: Identifiable {
+        let id: UUID
+        let text: String
+        let layout: AutomaticDialogueLayout
+    }
+    @Published private(set) var automaticOutputs: [AutomaticOutput] = []
+    private struct AutomaticTrack {
+        var candidate = ""
+        var confirmations = 0
+        var revision = UUID()
+        var lastSeen: TimeInterval = 0
+        var retryAt: TimeInterval = 0
+    }
+    private var automaticTracks: [UUID: AutomaticTrack] = [:]
+    private var automaticTasks: [UUID: Task<Void, Never>] = [:]
+    private var automaticLastTV: AutomaticOutput?
+    private var automaticLastTVAt: TimeInterval = 0
+    private func clearAutomaticOutputs() {
+        automaticTasks.values.forEach { $0.cancel() }
+        automaticTasks.removeAll()
+        automaticTracks.removeAll()
+        automaticOutputs.removeAll()
+        automaticLastTV = nil
+        automaticLastTVAt = 0
+    }
     func setAutomaticGameDialogue(_ enabled: Bool) {
         guard !isRunning else { return }
         automaticGameDialogue = enabled
+        UserDefaults.standard.set(enabled, forKey: "gamelingo.automaticMode")
         invalidateDialogue()
         invalidateOptions()
     }
@@ -40,7 +75,7 @@ final class CaptionAppModel: ObservableObject {
     @Published var isRunning = false
     @Published var appLanguage: GLAppLanguage = GLAppLanguage(
         rawValue: UserDefaults.standard.string(forKey: "gamelingo.appLanguage") ?? ""
-    ) ?? .czech {
+    ) ?? GLAppLanguage.systemDefault {
         didSet {
             UserDefaults.standard.set(appLanguage.rawValue, forKey: "gamelingo.appLanguage")
         }
@@ -55,7 +90,7 @@ final class CaptionAppModel: ObservableObject {
     }
     @Published var targetLanguage: GLTargetLanguage = GLTargetLanguage(
         rawValue: UserDefaults.standard.string(forKey: "gamelingo.targetLanguage") ?? ""
-    ) ?? .czech {
+    ) ?? GLTargetLanguage.systemDefault {
         didSet {
             UserDefaults.standard.set(targetLanguage.rawValue, forKey: "gamelingo.targetLanguage")
             if oldValue != targetLanguage { invalidateDialogue(); invalidateOptions() }
@@ -627,7 +662,7 @@ final class CaptionAppModel: ObservableObject {
         status = "Navazuji Xbox Remote Play…"
         write("Start Remote Play: \(console.name)")
         let play = XboxRemotePlay(authorization: xbox,
-                                  minimumFrameInterval: choicesEnabled ? min(ocrMode.minimumFrameInterval, ocrModeForYellow.minimumFrameInterval) : ocrMode.minimumFrameInterval)
+                                  minimumFrameInterval: automaticGameDialogue ? OCRMode.automatic.minimumFrameInterval : (choicesEnabled ? min(ocrMode.minimumFrameInterval, ocrModeForYellow.minimumFrameInterval) : ocrMode.minimumFrameInterval))
         remotePlay = play
         play.onStatus = { [weak self] status in
             Task { @MainActor in
@@ -752,6 +787,7 @@ final class CaptionAppModel: ObservableObject {
     /// Independent yellow-area drain. A slow options translation cannot block
     /// dialogue OCR or enqueue a backlog of decoded images.
     private func invalidateDialogue(clearTV: Bool = true) {
+        clearAutomaticOutputs()
         dialogueWindow.reset()
         dialogueRevision.advance()
         dialogueTranslation?.cancel()
@@ -943,6 +979,85 @@ final class CaptionAppModel: ObservableObject {
     }
 
     /// Both Xbox WebRTC and PS4/PS5 Chiaki video feed the same latest-frame OCR.
+    /// Zone results are independent; only the legacy TV transport is still
+    /// restricted to one block. The iPhone retains all confirmed translations.
+    private func publishAutomaticOutputs(now: TimeInterval) {
+        automaticOutputs.removeAll { output in
+            guard let track = automaticTracks[output.id] else { return true }
+            return now - track.lastSeen > 3.0
+        }
+        guard devices.subtitleOutput == .googleTV else { return }
+        devices.prepareTV(tv)
+        guard verifiedTelevisionOutput else { return }
+        let first = automaticZones.compactMap { zone in automaticOutputs.first { $0.id == zone.id } }.first
+        if let first {
+            if automaticLastTV?.id != first.id || automaticLastTV?.text != first.text ||
+                automaticLastTV?.layout != first.layout || now - automaticLastTVAt >= 1.0 {
+                tv.sendSubtitle(first.text, duration: 1800, automaticLayout: first.layout)
+                automaticLastTV = first
+                automaticLastTVAt = now
+            }
+        } else if automaticLastTV != nil {
+            tv.sendSubtitle("", duration: 0)
+            automaticLastTV = nil
+        }
+    }
+
+    private func processAutomaticFrame(_ buffer: CVPixelBuffer, currentSession: Int, contextRevision: Int) async {
+        let now = ProcessInfo.processInfo.systemUptime
+        publishAutomaticOutputs(now: now)
+        await dialogueReset?.value
+        guard isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
+        let source = gameLanguage, target = targetLanguage
+        guard let reading = await pipeline.recognizeAutomaticZone(buffer, zones: automaticZones, gameLanguage: source),
+              isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
+        let seen = ProcessInfo.processInfo.systemUptime
+        let id = reading.zone
+        var track = automaticTracks[id] ?? AutomaticTrack()
+        if reading.text.isEmpty || reading.layout == nil {
+            automaticTasks.removeValue(forKey: id)?.cancel()
+            automaticTracks.removeValue(forKey: id)
+            automaticOutputs.removeAll { $0.id == id }
+            publishAutomaticOutputs(now: seen)
+            return
+        }
+        if track.candidate != reading.text {
+            automaticTasks.removeValue(forKey: id)?.cancel()
+            automaticOutputs.removeAll { $0.id == id }
+            track = AutomaticTrack(candidate: reading.text, confirmations: 1, lastSeen: seen)
+        } else {
+            track.confirmations = min(2, track.confirmations + 1)
+            track.lastSeen = seen
+        }
+        automaticTracks[id] = track
+        guard let layout = reading.layout else { return }
+        if let i = automaticOutputs.firstIndex(where: { $0.id == id }) {
+            automaticOutputs[i] = AutomaticOutput(id: id, text: automaticOutputs[i].text, layout: layout)
+        } else if track.confirmations >= 2, automaticTasks[id] == nil, seen >= track.retryAt {
+            let revision = track.revision
+            automaticTasks[id] = Task { @MainActor [weak self] in
+                guard let self else { return }
+                let outcome = await self.pipeline.translate(reading.text, from: source, to: target)
+                guard !Task.isCancelled, self.isRunning, self.sessionRevision == currentSession,
+                      self.dialogueRevision.accepts(contextRevision),
+                      self.automaticTracks[id]?.revision == revision else { return }
+                self.automaticTasks.removeValue(forKey: id)
+                let finished = ProcessInfo.processInfo.systemUptime
+                guard let latest = self.automaticTracks[id], finished - latest.lastSeen <= 3 else { return }
+                if case .success(let raw) = outcome {
+                    let text = self.glossaryTranslation(original: reading.text, translated: raw,
+                        source: source.rawValue, target: target.rawValue)
+                    self.automaticOutputs.removeAll { $0.id == id }
+                    self.automaticOutputs.append(.init(id: id, text: text, layout: layout))
+                    self.publishAutomaticOutputs(now: finished)
+                } else {
+                    self.automaticTracks[id]?.retryAt = finished + 2
+                }
+            }
+        }
+        publishAutomaticOutputs(now: seen)
+    }
+
     private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int, frameReceivedAt: TimeInterval) async {
         guard isRunning, sessionRevision == currentSession else { return }
         self.frameCount += 1
@@ -950,6 +1065,10 @@ final class CaptionAppModel: ObservableObject {
         let activeTargetLanguage = self.targetLanguage
         let contextRevision = dialogueRevision.value
         let automatic = automaticGameDialogue
+        if automatic {
+            await processAutomaticFrame(buffer, currentSession: currentSession, contextRevision: contextRevision)
+            return
+        }
 
         // Keep recognition independent of network translation: a slow
         // request must not block OCR of the next short street dialogue.
@@ -1117,6 +1236,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func stop() {
+        clearAutomaticOutputs()
         xboxReconnectTask?.cancel()
         xboxReconnectTask = nil
         dialogueRevision.advance()

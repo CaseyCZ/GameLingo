@@ -46,6 +46,11 @@ enum GLTargetLanguage: String, CaseIterable, Identifiable, Codable {
     case italian = "it"
     case portuguese = "pt"
 
+    static var systemDefault: Self {
+        let language = Locale.preferredLanguages.first?.split(separator: "-").first.map(String.init) ?? "en"
+        return Self(rawValue: language) ?? .english
+    }
+
     /// Preview only; actual live subtitles always use the translation engine.
     var sampleSubtitle: String {
         switch self {
