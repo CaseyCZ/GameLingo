@@ -397,7 +397,7 @@ struct GameLingoHome: View {
             if devices.subtitleOutput == .phone && model.automaticGameDialogue {
                 ForEach(model.automaticOutputs) { output in
                     GLCard {
-                        Text(model.automaticZones.first { $0.id == output.zone }?.name ?? "Překlad")
+                        Text(model.automaticZones.first { $0.id == output.zone }?.name ?? GLInterfaceText.localized("Překlad"))
                             .font(.caption)
                         Text(output.text).font(.headline)
                     }
@@ -451,7 +451,7 @@ struct GameLingoHome: View {
                     .foregroundStyle(.white)
                     .frame(width: 34, height: 34)
                     .background(.white.opacity(0.18), in: Circle())
-                Text(model.isRunning ? "Zastavit překlad" : "Spustit překlad")
+                Text(LocalizedStringKey(model.isRunning ? "Zastavit překlad" : "Spustit překlad"))
                     .font(.system(size: 18, weight: .heavy, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.84)

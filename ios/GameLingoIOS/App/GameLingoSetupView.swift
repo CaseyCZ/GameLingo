@@ -231,7 +231,7 @@ struct GameLingoSetupView: View {
                 GLHeader(title: "Jazyk hry")
                 Picker("Rozpoznávat jazyk", selection: $model.gameLanguage) {
                     ForEach(GLGameLanguage.allCases) { language in
-                        Text(language.title).tag(language)
+                        Text(LocalizedStringKey(language.title)).tag(language)
                     }
                 }
                 .pickerStyle(.menu)
@@ -241,7 +241,7 @@ struct GameLingoSetupView: View {
                 GLHeader(title: "Překládat do")
                 Picker("Cílový jazyk", selection: $model.targetLanguage) {
                     ForEach(GLTargetLanguage.allCases) { language in
-                        Text(language.title).tag(language)
+                        Text(LocalizedStringKey(language.title)).tag(language)
                     }
                 }
                 .pickerStyle(.menu)
@@ -284,7 +284,7 @@ struct GameLingoSetupView: View {
                 GLCard {
                     GLHeader(title: "Google TV",
                              help: "Otevři GameLingo TV na televizi a opiš šest číslic. TV a iPhone musejí být ve stejné síti.")
-                    Text(devices.chosenTelevision?.name ?? "Vyber nebo přidej TV")
+                    Text(verbatim: devices.chosenTelevision?.name ?? GLInterfaceText.localized("Vyber nebo přidej TV"))
                         .foregroundStyle(GLStyle.muted)
                     GLPrimaryButton(title: "Spárovat TV", systemImage: "link") {
                         showTV = true
@@ -298,12 +298,12 @@ struct GameLingoSetupView: View {
         VStack(spacing: 15) {
             GLCard {
                 GLHeader(title: "Konzole")
-                Text(devices.chosenConsole?.name ?? "Nevybráno")
+                Text(verbatim: devices.chosenConsole?.name ?? GLInterfaceText.localized("Nevybráno"))
                     .foregroundStyle(.white)
             }
             GLCard {
                 GLHeader(title: "Titulky")
-                Text(devices.subtitleOutput.rawValue)
+                Text(LocalizedStringKey(devices.subtitleOutput.rawValue))
                     .foregroundStyle(.white)
             }
             GLCard {

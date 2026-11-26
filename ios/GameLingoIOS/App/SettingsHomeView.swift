@@ -774,7 +774,7 @@ private struct GameLingoCacheView: View {
                             Task { await model.manageTranslationCache() }
                         }
                     }
-                Text(model.cacheStatus).font(.caption)
+                Text(verbatim: GLInterfaceText.localized(model.cacheStatus)).font(.caption)
             }.disabled(model.isRunning || model.cacheChanging)
             if model.isRunning { Text("Nejdříve zastav překlad.").font(.caption) }
         }
@@ -792,13 +792,13 @@ private struct GameLingoDiagnosticsView: View {
                 GLHeader(title: "Stav")
                 status("Překladová relace", model.isRunning ? (model.frameCount > 0 ? "Přijímá snímky" : "Čeká na snímky") : "Neaktivní")
                 status("Snímky", "\(model.frameCount)")
-                Text(model.performanceSummary)
+                Text(verbatim: GLInterfaceText.localized(model.performanceSummary))
                     .font(.caption2.monospaced()).foregroundStyle(GLStyle.muted)
                     .textSelection(.enabled)
                 status("Google TV", model.tv.receiverConnected ? "Ověřené spojení" : (model.tv.receiverPaired ? "Spárováno · bez spojení" : "Nespárováno"))
-                Text(model.tv.receiverStatus).font(.caption).foregroundStyle(GLStyle.muted)
+                Text(verbatim: GLInterfaceText.localized(model.tv.receiverStatus)).font(.caption).foregroundStyle(GLStyle.muted)
                 if !model.tv.receiverConnected { Text("Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování.").font(.caption) }
-                Text(model.status).font(.caption).foregroundStyle(GLStyle.muted)
+                Text(verbatim: GLInterfaceText.localized(model.status)).font(.caption).foregroundStyle(GLStyle.muted)
             }
             GLCard {
                 GLHeader(title: "Poslední překlad")

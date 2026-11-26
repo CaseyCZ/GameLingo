@@ -321,5 +321,19 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("GLInterfaceText.localized(auth.status)", text(IOS / "PlayCaptionIOSApp.swift"))
         self.assertIn("GLInterfaceText.localized(model.status)", text(IOS / "GameLingoHome.swift"))
 
+    def test_setup_action_and_diagnostics_dynamic_labels_are_localized(self):
+        setup = text(IOS / "GameLingoSetupView.swift")
+        self.assertNotIn("Text(language.title)", setup)
+        self.assertNotIn("Text(devices.subtitleOutput.rawValue)", setup)
+        self.assertIn('GLInterfaceText.localized("Vyber nebo přidej TV")', setup)
+        self.assertIn('GLInterfaceText.localized("Nevybráno")', setup)
+        home = text(IOS / "GameLingoHome.swift")
+        self.assertIn('Text(LocalizedStringKey(model.isRunning ? "Zastavit překlad" : "Spustit překlad"))', home)
+        settings = text(IOS / "SettingsHomeView.swift")
+        for value in ("model.cacheStatus", "model.performanceSummary", "model.tv.receiverStatus", "model.status"):
+            self.assertIn(f"GLInterfaceText.localized({value})", settings)
+        self.assertIn('contentDescription = GameLingoLanguages.ui(activity, "Nastavení")',
+                      text(TOOLS / "GameLingoVisualKit.kt"))
+
 if __name__ == "__main__":
     unittest.main()

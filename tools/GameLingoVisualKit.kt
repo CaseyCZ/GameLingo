@@ -365,7 +365,7 @@ object GameLingoVisualKit {
             text = ""
             setCompoundDrawablesWithIntrinsicBounds(iconDrawable("gearshape.fill",Color.WHITE,dp(activity,21)),null,null,null)
             setPadding(dp(activity,12),0,0,0)
-            contentDescription = "Nastavení"
+            contentDescription = GameLingoLanguages.ui(activity, "Nastavení")
             gravity = Gravity.CENTER
             textSize = sp(activity, 26f)
             setTextColor(Color.WHITE)

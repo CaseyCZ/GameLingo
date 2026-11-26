@@ -43,6 +43,7 @@
 "Bílá" = "White";
 "Během aktivního překladu nelze měnit konzoli. Nejprve překlad zastav." = "Console cannot be changed while translating. Stop translation first.";
 "Během běžícího překladu nelze změnit rychlost čtení." = "OCR speed cannot be changed while translation is running.";
+"Cache se nepodařilo úplně vymazat. Zkus to znovu." = "Could not clear the entire cache. Try again.";
 "Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu." = "The cache stores source text and translations on this device, separately from optional history. Turning it off can increase online requests and reduce translation availability without internet.";
 "Cache vypnuta; uložené překlady lze vymazat zvlášť." = "Cache disabled; saved translations can be cleared separately.";
 "Cache zapnuta." = "Cache enabled.";
@@ -1018,6 +1019,7 @@
 "Zastavit" = "Stop";
 "Zastavit překlad" = "Stop translating";
 "Zastavit příjem" = "Stop receiving";
+"Zatím bez měření" = "No measurements yet";
 "Zatím nebyla nalezena žádná televize." = "No TV has been found yet.";
 "Zatím nemáš přidanou žádnou konzoli." = "No console added yet.";
 "Zatím nemáš uložený žádný profil." = "No saved profiles yet.";
