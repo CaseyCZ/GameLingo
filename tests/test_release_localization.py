@@ -48,6 +48,8 @@ class ReleaseLocalizationTests(unittest.TestCase):
         android = text(TOOLS / "GameLingoLanguages.kt")
         self.assertIn("struct GLAppLanguage: RawRepresentable", swift)
         self.assertIn("supportedCodes.compactMap", swift)
+        self.assertIn('if current == "cs" { return key }', swift)
+        self.assertIn("value: missing, table: \"Localizable\"", swift)
         self.assertIn("BEGIN GENERATED UI LANGUAGES", swift)
         self.assertIn("BEGIN GENERATED APP LANGUAGES", android)
         self.assertIn("BEGIN GENERATED UI LABELS", android)
