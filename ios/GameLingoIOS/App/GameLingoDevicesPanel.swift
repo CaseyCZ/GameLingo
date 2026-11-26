@@ -59,7 +59,8 @@ struct GameLingoDevicesPanel: View {
                                 .foregroundStyle(devices.preferredConsoleID == console.id
                                                  ? GLStyle.green : GLNeon.mist)
                         }
-                        Spacer()
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
                         if devices.preferredConsoleID == console.id {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(GLStyle.green)
@@ -113,7 +114,8 @@ struct GameLingoDevicesPanel: View {
                                                  model.tv.receiverConnected
                                                  ? GLStyle.green : GLNeon.mist)
                         }
-                        Spacer()
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
                         if devices.preferredTelevisionID == television.id {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(GLStyle.green)
@@ -145,12 +147,23 @@ struct GameLingoDevicesPanel: View {
             }
             GLCard {
                 GLHeader(title: "Titulky")
-                Picker("Zobrazit na", selection: $devices.subtitleOutput) {
+                HStack(spacing: 6) {
                     ForEach(GLSubtitleOutput.allCases) { option in
-                        Text(LocalizedStringKey(option.rawValue)).tag(option)
+                        Button {
+                            devices.subtitleOutput = option
+                        } label: {
+                            Text(LocalizedStringKey(option.rawValue))
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .background(devices.subtitleOutput == option
+                                    ? AnyShapeStyle(GLStyle.gradient) : AnyShapeStyle(GLStyle.surface),
+                                    in: RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(devices.subtitleOutput == option ? .isSelected : [])
                     }
                 }
-                .pickerStyle(.segmented)
                 if devices.subtitleOutput == .googleTV {
                     Button {
                         addTV()
@@ -218,12 +231,15 @@ struct GameLingoDevicesPanel: View {
     }
 
     private func emptyRow(_ title: String, icon: String) -> some View {
-        HStack {
-            Image(systemName: icon).foregroundStyle(GLStyle.muted)
-            Text(LocalizedStringKey(title)).foregroundStyle(GLStyle.muted)
-            Spacer()
+        GLNeonPanel(radius: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: icon).foregroundStyle(GLStyle.muted).frame(width: 24)
+                Text(LocalizedStringKey(title)).foregroundStyle(GLStyle.muted)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                Color.clear.frame(width: 24, height: 1)
+            }
+            .padding(17)
         }
-        .padding(17)
-        .background(GLStyle.surface, in: RoundedRectangle(cornerRadius: 14))
     }
 }
