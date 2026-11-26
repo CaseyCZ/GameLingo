@@ -45,7 +45,7 @@ object GameLingoFirstRun {
 
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(px(20), px(18), px(20), px(24))
+            setPadding(px(16), px(12), px(16), px(16))
             background = GameLingoVisualKit.pageBackground(activity)
         }
         val heading = TextView(activity).apply {
