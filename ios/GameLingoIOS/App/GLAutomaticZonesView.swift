@@ -49,15 +49,15 @@ struct GLAutomaticZonesView: View {
                             VStack(spacing: 7) {
                                 Image(systemName: zone.enabled ? "viewfinder" : "eye.slash")
                                     .font(.system(size: 18, weight: .medium))
-                                    .foregroundStyle(Color.yellow)
+                                    .foregroundStyle(Color.blue)
                                 Text(zone.name).font(.system(size: 11, weight: .semibold))
                                     .lineLimit(1).minimumScaleFactor(0.75)
                             }
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 65)
-                            .background(selected?.id == zone.id ? Color.yellow.opacity(0.19) : GLNeon.panel,
+                            .background(selected?.id == zone.id ? Color.blue.opacity(0.19) : GLNeon.panel,
                                         in: RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.yellow.opacity(selected?.id == zone.id ? 0.95 : 0.35)))
+                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.blue.opacity(selected?.id == zone.id ? 0.95 : 0.35), lineWidth: selected?.id == zone.id ? 1.8 : 0.8))
                         }.buttonStyle(.plain)
                         .accessibilityAddTraits(selected?.id == zone.id ? .isSelected : [])
                     }
@@ -86,7 +86,7 @@ struct GLAutomaticZonesView: View {
                     }
                     GLCard {
                         VStack(alignment: .leading, spacing: 12) {
-                            GLHeader(title: "Upravit zónu")
+                            GLHeader(title: "Upravit zónu", help: "Vyber zónu a přetáhni její rámeček. Změny se ukládají automaticky.")
                             TextField("Název", text: Binding(get: { selected?.name ?? zone.name }, set: { name in edit(zone.id) { $0.name = name } }))
                             Toggle("Aktivní zóna", isOn: Binding(get: { selected?.enabled ?? zone.enabled }, set: { enabled in edit(zone.id) { $0.enabled = enabled } }))
                             slider("Šířka", value: Double(zone.rect.width), range: 0.08...1) { value in
@@ -125,19 +125,31 @@ struct GLAutomaticZonesView: View {
     private func preview(_ zone: AutomaticOCRZone) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 13).fill(LinearGradient(colors: [GLNeon.panel, GLNeon.ink], startPoint: .topLeading, endPoint: .bottomTrailing))
-                Image(systemName: "mountain.2.fill").resizable().scaledToFit()
+                RoundedRectangle(cornerRadius: 13)
+                    .fill(LinearGradient(
+                        colors: [Color(red: 0.07, green: 0.17, blue: 0.29),
+                                 Color(red: 0.17, green: 0.11, blue: 0.30),
+                                 GLNeon.ink],
+                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                Image(systemName: "mountain.2.fill")
+                    .resizable()
+                    .scaledToFit()
                     .foregroundStyle(GLNeon.cyan.opacity(0.18))
-                    .frame(width: geo.size.width * 0.85, height: geo.size.height * 0.68)
-                    .position(x: geo.size.width * 0.57, y: geo.size.height * 0.46)
+                    .frame(width: geo.size.width * 0.85,
+                           height: geo.size.height * 0.68)
+                    .position(x: geo.size.width * 0.57,
+                              y: geo.size.height * 0.46)
+                RoundedRectangle(cornerRadius: 13)
+                    .strokeBorder(GLNeon.edge, lineWidth: 1.6)
+
                 ForEach(model.automaticZones) { item in
                     Text(item.name).font(.caption2.bold()).lineLimit(1)
-                        .foregroundStyle(item.id == zone.id ? Color.black : Color.yellow)
+                        .foregroundStyle(item.id == zone.id ? Color.black : Color.blue)
                         .frame(width: max(1, item.rect.width * geo.size.width), height: max(1, item.rect.height * geo.size.height))
-                        .background(Color.yellow.opacity(item.id == zone.id ? 0.85 : 0.15))
-                        .overlay(Rectangle().strokeBorder(Color.yellow, lineWidth: item.id == zone.id ? 3 : 1))
+                        .background(Color.blue.opacity(item.id == zone.id ? 0.85 : 0.15))
+                        .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.blue, style: StrokeStyle(lineWidth: item.id == zone.id ? 3 : 2, dash: item.id == zone.id ? [] : [7, 4])))
                         .position(x: item.rect.midX * geo.size.width, y: item.rect.midY * geo.size.height)
-                        .opacity(item.enabled ? 1 : 0.45)
+                        .opacity(item.enabled ? 1 : 0.46)
                         .allowsHitTesting(false)
                 }
                 Color.clear.contentShape(Rectangle())
