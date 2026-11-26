@@ -374,7 +374,7 @@ object GameLingoTVPairing {
             setText(initialPin.takeIf { it.matches(Regex("[0-9]{6}")) }.orEmpty())
             textSize = 26f
             gravity = Gravity.CENTER
-            contentDescription = "Šestimístný kód z GameLingo TV"
+            contentDescription = GameLingoLanguages.ui(activity, "Šestimístný kód z GameLingo TV")
             setSingleLine(true)
         }
         val dialog=android.app.Dialog(activity,android.R.style.Theme_Material_NoActionBar_Fullscreen)
@@ -384,7 +384,7 @@ object GameLingoTVPairing {
             setPadding(d(18),d(18),d(18),d(24));background=GameLingoVisualKit.pageBackground(activity)
         }
         val header=android.widget.LinearLayout(activity).apply {gravity=Gravity.CENTER_VERTICAL}
-        header.addView(GameLingoVisualKit.heading(activity,"Párování televize"),android.widget.LinearLayout.LayoutParams(0,-2,1f))
+        header.addView(GameLingoVisualKit.heading(activity,GameLingoLanguages.ui(activity, "Párování televize")),android.widget.LinearLayout.LayoutParams(0,-2,1f))
         header.addView(GameLingoHelp.button(activity,"pairing"),GameLingoHelp.layout(activity,d(36),d(44)))
         root.addView(header)
         root.addView(GameLingoVisualKit.platformPanel(activity,"TV",tv.jmeno,tv.ip))
@@ -392,8 +392,8 @@ object GameLingoTVPairing {
             orientation=android.widget.LinearLayout.VERTICAL
             val pad=d(13);setPadding(pad,pad,pad,pad);background=GameLingoVisualKit.card(activity)
             addView(android.widget.TextView(activity).apply {
-                text="Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování. Používej jen důvěryhodnou domácí síť; párování a titulky nejsou šifrované."
-                textSize=14f;setTextColor(android.graphics.Color.parseColor("#92A4C7"))
+                text=GameLingoLanguages.ui(activity, "Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování. Používej jen důvěryhodnou domácí síť; párování a titulky nejsou šifrované.")
+                gravity=Gravity.CENTER;textSize=14f;setTextColor(android.graphics.Color.parseColor("#92A4C7"))
             })
             pinInput.setTextColor(android.graphics.Color.WHITE)
             pinInput.setHintTextColor(android.graphics.Color.parseColor("#92A4C7"))
@@ -403,14 +403,14 @@ object GameLingoTVPairing {
             addView(pinInput,android.widget.LinearLayout.LayoutParams(-1,d(58)).apply{topMargin=d(13)})
         }
         root.addView(card,android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=d(13)})
-        val pair=GameLingoVisualKit.cta(activity,"Spárovat") {}
+        val pair=GameLingoVisualKit.cta(activity,GameLingoLanguages.ui(activity, "Spárovat")) {}
         root.addView(pair,android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=d(13)})
-        root.addView(GameLingoTVUi.action(activity,"Zrušit"){dialog.dismiss()})
+        root.addView(GameLingoTVUi.action(activity,GameLingoLanguages.ui(activity, "Zrušit")){dialog.dismiss()})
         dialog.setContentView(android.widget.ScrollView(activity).apply{isFillViewport=true;addView(root)})
         pair.setOnClickListener {
                 val pin = pinInput.text.toString().trim()
                 if (!pin.matches(Regex("[0-9]{6}"))) {
-                    pinInput.error = "Je nutných šest číslic"
+                    pinInput.error = GameLingoLanguages.ui(activity, "Je nutných šest číslic")
                     return@setOnClickListener
                 }
                 pair.isEnabled = false;pair.alpha=.45f
@@ -428,18 +428,18 @@ object GameLingoTVPairing {
                                 dialog.dismiss()
                                 onPaired()
                                 Toast.makeText(activity,
-                                    "TV přijala kód. Ověřuji spojení…",
+                                    GameLingoLanguages.ui(activity, "TV přijala kód. Ověřuji spojení…"),
                                     Toast.LENGTH_SHORT).show()
                                 verify(activity, tv) { connected ->
                                     Toast.makeText(activity,
-                                        if (connected) "GameLingo TV je připojená."
-                                        else "Kód uložen, ale TV zatím neodpovídá.",
+                                        if (connected) GameLingoLanguages.ui(activity, "GameLingo TV je připojená.")
+                                        else GameLingoLanguages.ui(activity, "Kód uložen, ale TV zatím neodpovídá."),
                                         Toast.LENGTH_LONG).show()
                                 }
                             }.onFailure { err ->
                                 pair.isEnabled = true;pair.alpha=1f
                                 AlertDialog.Builder(activity)
-                                    .setMessage(err.message ?: "TV neodpověděla. Ověř IP a síť.")
+                                    .setMessage(GameLingoLanguages.ui(activity, err.message ?: "TV neodpověděla. Ověř IP a síť."))
                                     .setPositiveButton("OK", null).show()
                             }
                         }

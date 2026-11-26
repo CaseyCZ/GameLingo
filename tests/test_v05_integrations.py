@@ -18,6 +18,16 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_localized_device_pairing_and_diagnostics(self):
+        device = code(TOOLS/"GameLingoDeviceCenter.kt")
+        pairing = code(TOOLS/"GameLingoTVPairing.kt")
+        diagnostics = code(TOOLS/"GameLingoDiagnostics.kt")
+        self.assertIn('GameLingoLanguages.ui(c, "Přidat zařízení")', device)
+        self.assertIn('GameLingoLanguages.ui(activity, "Spárovat")', pairing)
+        self.assertIn('GameLingoLanguages.ui(activity, "Ověřit spojení s TV")', diagnostics)
+        self.assertIn('setText(initialPin.takeIf', pairing)
+        self.assertIn('item.original+"\\n\\n"+item.translated', diagnostics)
+
     def test_profiles_optional_and_localized_without_translating_names(self):
         phone = code(TOOLS/"GameLingoProfiles.kt")
         tv = code(TOOLS/"GameLingoTVProfiles.kt")

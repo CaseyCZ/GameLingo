@@ -26,7 +26,7 @@ object GameLingoDiagnostics {
             background = GameLingoVisualKit.pageBackground(activity)
         }
         val heading = TextView(activity).apply {
-            text = "Diagnostika"
+            text = GameLingoLanguages.ui(activity, "Diagnostika")
             textSize = 27f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
@@ -37,8 +37,8 @@ object GameLingoDiagnostics {
             addView(GameLingoHelp.button(activity,"diagnostics"),GameLingoHelp.layout(activity,d(36),d(44)))
         })
         root.addView(TextView(activity).apply {
-            text = "Stav místních nastavení a zahájené relace. " +
-                "Uložené údaje nepotvrzují živé spojení s konzolí ani TV."
+            text = GameLingoLanguages.ui(activity, "Stav místních nastavení a zahájené relace. Uložené údaje nepotvrzují živé spojení s konzolí ani TV.")
+            gravity = Gravity.CENTER
             textSize = 14f
             setTextColor(Color.parseColor("#92A4C7"))
             setPadding(0, d(10), 0, d(18))
@@ -49,13 +49,13 @@ object GameLingoDiagnostics {
         }
         states.background=GameLingoVisualKit.card(activity)
         states.setPadding(d(13),d(13),d(13),d(13))
-        root.addView(GameLingoVisualKit.heading(activity,"Stav"))
+        root.addView(GameLingoVisualKit.heading(activity,GameLingoLanguages.ui(activity, "Stav")))
         root.addView(states)
         val last=TextView(activity).apply {
             setTextColor(Color.WHITE);textSize=16f;background=GameLingoVisualKit.card(activity)
             setPadding(d(13),d(13),d(13),d(13))
         }
-        root.addView(GameLingoVisualKit.heading(activity,"Poslední překlad"))
+        root.addView(GameLingoVisualKit.heading(activity,GameLingoLanguages.ui(activity, "Poslední překlad")))
         root.addView(last)
         fun value(title: String, actual: String) {
             val card = LinearLayout(activity).apply {
@@ -65,11 +65,13 @@ object GameLingoDiagnostics {
             }
             card.addView(TextView(activity).apply {
                 text = title
+                gravity = Gravity.CENTER
                 textSize = 13f
                 setTextColor(Color.parseColor("#92A4C7"))
             })
             card.addView(TextView(activity).apply {
                 text = actual
+                gravity = Gravity.CENTER
                 textSize = 16f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.WHITE)
@@ -83,32 +85,32 @@ object GameLingoDiagnostics {
         fun refresh() {
             states.removeAllViews()
             val item=GameLingoTranslationHistory.snapshot().firstOrNull()
-            last.text=if(item==null)"Zatím žádný překlad ve volitelné historii." else item.original+"\n\n"+item.translated
+            last.text=if(item==null)GameLingoLanguages.ui(activity, "Zatím žádný překlad ve volitelné historii.") else item.original+"\n\n"+item.translated
             val tvStore = TvProfily(activity)
             val savedTv = tvStore.posledniId?.let { tvStore.najdi(it) }
             val xboxLogged = XboxUcet.prihlasen(activity)
             val selectedXbox = activity.getSharedPreferences(
                 "gamelingo_devices", Activity.MODE_PRIVATE
             ).getString("selectedXboxId", null)
-            value("Překladová fronta", GameLingoNetworkPerformance.summary())
-            value("Xbox – skutečný obraz", GameLingoXboxDiagnostics.summary())
+            value(GameLingoLanguages.ui(activity, "Překladová fronta"), GameLingoNetworkPerformance.summary())
+            value(GameLingoLanguages.ui(activity, "Xbox – skutečný obraz"), GameLingoXboxDiagnostics.summary())
             value("Remote Play", if (RemotePlayService.aktivni)
-                "Relace spuštěna – snímky se ověřují zvlášť" else "Relace není spuštěna")
-            value("Xbox – účet", if (xboxLogged) "Přihlášený" else "Nepřihlášený")
-            value("Xbox – volba konzole", if (selectedXbox.isNullOrBlank())
-                "Žádná vybraná" else "ID konzole uloženo")
+                GameLingoLanguages.ui(activity, "Relace spuštěna – snímky se ověřují zvlášť") else GameLingoLanguages.ui(activity, "Relace není spuštěna"))
+            value(GameLingoLanguages.ui(activity, "Xbox – účet"), if (xboxLogged) GameLingoLanguages.ui(activity, "Přihlášený") else GameLingoLanguages.ui(activity, "Nepřihlášený"))
+            value(GameLingoLanguages.ui(activity, "Xbox – volba konzole"), if (selectedXbox.isNullOrBlank())
+                GameLingoLanguages.ui(activity, "Žádná vybraná") else GameLingoLanguages.ui(activity, "ID konzole uloženo"))
             val consoles = GameLingoPlayStationConsoles.list(activity)
-            value("PlayStation", "${consoles.size} uložených · " +
-                if (consoles.any { it.selected }) "jedna vybraná" else "žádná vybraná")
-            value("Výstup titulků", if (tvStore.pouzeTelefon)
-                "Telefon" else savedTv?.jmeno ?: "Televize nevybrána")
-            value("Párování TV", when {
-                savedTv == null -> "Bez uloženého profilu"
-                !GameLingoTVPairing.paired(activity, savedTv.ip) -> "Nespárováno"
-                GameLingoTVPairing.connected(savedTv.ip) -> "Ověřené spojení"
-                else -> "Spárováno – bez čerstvého potvrzení"
+            value("PlayStation", GameLingoLanguages.ui(activity, "Uložené konzole") + ": ${consoles.size} · " +
+                if (consoles.any { it.selected }) GameLingoLanguages.ui(activity, "jedna vybraná") else GameLingoLanguages.ui(activity, "žádná vybraná"))
+            value(GameLingoLanguages.ui(activity, "Výstup titulků"), if (tvStore.pouzeTelefon)
+                GameLingoLanguages.ui(activity, "Telefon") else savedTv?.jmeno ?: GameLingoLanguages.ui(activity, "Televize nevybrána"))
+            value(GameLingoLanguages.ui(activity, "Párování TV"), when {
+                savedTv == null -> GameLingoLanguages.ui(activity, "Bez uloženého profilu")
+                !GameLingoTVPairing.paired(activity, savedTv.ip) -> GameLingoLanguages.ui(activity, "Nespárováno")
+                GameLingoTVPairing.connected(savedTv.ip) -> GameLingoLanguages.ui(activity, "Ověřené spojení")
+                else -> GameLingoLanguages.ui(activity, "Spárováno – bez čerstvého potvrzení")
             })
-            value("Jazyk hry → překlad",
+            value(GameLingoLanguages.ui(activity, "Jazyk hry → překlad"),
                 GameLingoLanguages.name(
                     GameLingoLanguages.gameLanguages,
                     GameLingoLanguages.game(activity)
@@ -120,6 +122,7 @@ object GameLingoDiagnostics {
         fun action(title: String, onClick: () -> Unit) {
             root.addView(TextView(activity).apply {
                 text = title
+                gravity = Gravity.CENTER
                 textSize = 17f
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
@@ -132,45 +135,45 @@ object GameLingoDiagnostics {
                 ViewGroup.LayoutParams.MATCH_PARENT, d(54)
             ).apply { bottomMargin = d(10) })
         }
-        action("Aktualizovat stav") { refresh() }
+        action(GameLingoLanguages.ui(activity, "Aktualizovat stav")) { refresh() }
         var verifying = false
-        action("Ověřit spojení s TV") {
+        action(GameLingoLanguages.ui(activity, "Ověřit spojení s TV")) {
             if (!verifying) {
                 val store = TvProfily(activity)
                 val selected = store.posledniId?.let { store.najdi(it) }
                 if (selected == null || !GameLingoTVPairing.paired(activity, selected.ip)) {
-                    android.widget.Toast.makeText(activity, "Nejdříve vyber a spáruj TV.", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(activity, GameLingoLanguages.ui(activity, "Nejdříve vyber a spáruj TV."), android.widget.Toast.LENGTH_LONG).show()
                 } else {
                     verifying = true
                     GameLingoTVPairing.verify(activity, selected) { ok ->
                         verifying = false
                         if (dialog.isShowing) {
                             refresh()
-                            android.widget.Toast.makeText(activity, if (ok) "Spojení ověřeno." else "TV neodpovídá. Zkontroluj domácí síť a přijímač.", android.widget.Toast.LENGTH_LONG).show()
+                            android.widget.Toast.makeText(activity, if (ok) GameLingoLanguages.ui(activity, "Spojení ověřeno.") else GameLingoLanguages.ui(activity, "TV neodpovídá. Zkontroluj domácí síť a přijímač."), android.widget.Toast.LENGTH_LONG).show()
                         }
                     }
                 }
             }
         }
-        action("Vymazat místní log překladu") {
+        action(GameLingoLanguages.ui(activity, "Vymazat místní log překladu")) {
             if (RemotePlayService.aktivni || PrijemService.bezi) {
-                android.app.AlertDialog.Builder(activity).setMessage("Nejdříve zastav překlad a příjem.")
+                android.app.AlertDialog.Builder(activity).setMessage(GameLingoLanguages.ui(activity, "Nejdříve zastav překlad a příjem."))
                     .setPositiveButton("OK", null).show()
             } else android.app.AlertDialog.Builder(activity)
-                .setMessage("Vymazat starý i nový místní log překladu? Ostatní diagnostické soubory zůstanou.")
-                .setNegativeButton("Zrušit", null)
-                .setPositiveButton("Vymazat") { _, _ ->
+                .setMessage(GameLingoLanguages.ui(activity, "Vymazat starý i nový místní log překladu? Ostatní diagnostické soubory zůstanou."))
+                .setNegativeButton(GameLingoLanguages.ui(activity, "Zrušit"), null)
+                .setPositiveButton(GameLingoLanguages.ui(activity, "Vymazat")) { _, _ ->
                     if (RemotePlayService.aktivni || PrijemService.bezi) return@setPositiveButton
                     val removed = listOf("titulky.log", "titulky-private-v2.log").map { name ->
                         val file = java.io.File(activity.filesDir, name)
                         !file.exists() || file.delete()
                     }.all { it }
                     android.app.AlertDialog.Builder(activity)
-                        .setMessage(if (removed) "Místní log překladu vymazán." else "Některý log se nepodařilo vymazat.")
+                        .setMessage(if (removed) GameLingoLanguages.ui(activity, "Místní log překladu vymazán.") else GameLingoLanguages.ui(activity, "Některý log se nepodařilo vymazat."))
                         .setPositiveButton("OK", null).show()
                 }.show()
         }
-        action("Hotovo") { dialog.dismiss() }
+        action(GameLingoLanguages.ui(activity, "Hotovo")) { dialog.dismiss() }
         val scroll = ScrollView(activity).apply {
             isFillViewport = true
             addView(root)
