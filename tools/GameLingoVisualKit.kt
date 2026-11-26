@@ -275,6 +275,7 @@ object GameLingoVisualKit {
         isFocusable = true
         isClickable = true
         setOnClickListener { onClick() }
+        if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
     }
     fun brandHeader(activity: Activity, onSettings: () -> Unit): LinearLayout {
         val px = dp(activity, 13)
@@ -305,6 +306,7 @@ object GameLingoVisualKit {
             isFocusable = true
             isClickable = true
             setOnClickListener { onSettings() }
+            if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
         }, LinearLayout.LayoutParams(dp(activity, 48), dp(activity, 48)))
         return bar
     }
@@ -393,6 +395,7 @@ object GameLingoVisualKit {
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(dp(activity, 25),
             ViewGroup.LayoutParams.WRAP_CONTENT))
+        if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, row)
         return row
     }
 
@@ -480,6 +483,7 @@ object GameLingoVisualKit {
             maxLines = 2
             setPadding(0, dp(activity, 6), 0, 0)
         })
+        if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, item)
         return item
     }
 
@@ -498,6 +502,7 @@ object GameLingoVisualKit {
         isFocusable = true
         isClickable = true
         setOnClickListener { onClick() }
+        if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
     }
 
 }

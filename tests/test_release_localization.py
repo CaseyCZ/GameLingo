@@ -88,6 +88,21 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("private val SKALA: Float get() = GameLingoTVUi.menuScale(this)", direct)
         self.assertNotIn("a.recreate()", settings)
 
+    def test_tv_shared_header_focus_and_compact_about(self):
+        ui = text(TOOLS / "GameLingoTVUi.kt")
+        kit = text(TOOLS / "GameLingoVisualKit.kt")
+        about = text(TOOLS / "GameLingoAbout.kt")
+        dashboard = text(TOOLS / "GameLingoTVSettings.kt")
+        header = ui.split("fun header(", 1)[1].split("private class MenuFocusOutline", 1)[0]
+        self.assertLess(header.index("slot(back, Gravity.START)"), header.index("addView(heading"))
+        self.assertLess(header.index("addView(heading"), header.index("slot(help, Gravity.END)"))
+        self.assertIn("state_focused", ui)
+        self.assertIn("view.foreground = if (previous == null) outline", ui)
+        self.assertIn("GameLingoTVUi.controlFocus(activity, row)", kit)
+        self.assertIn("GameLingoTVUi.header(a, heading, back, help)", dashboard)
+        self.assertIn("(listOf(license) + sources).chunked(2)", about)
+        self.assertIn("GameLingoTVUi.page(activity, tr(\"Licence třetích stran\"), body)", about)
+
     def test_preview_uses_target_language(self):
         source = text(IOS / "SubtitleSettingsView.swift")
         self.assertIn("model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle,", source)

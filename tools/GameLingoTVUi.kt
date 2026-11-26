@@ -12,6 +12,7 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -88,7 +89,9 @@ object GameLingoTVUi {
             setPadding(dp(a, 24),dp(a, 16),dp(a, 24),dp(a, 16))
             background = android.graphics.drawable.ColorDrawable(Color.parseColor("#080E1B"))
         }
-        body.addView(title(a, heading, 27f))
+        val back = action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
+        back.id = View.generateViewId()
+        body.addView(header(a, title(a, heading, 27f), back))
         val rows = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; clipChildren=false; clipToPadding=false }
         val buttons = labels.mapIndexed { index, label ->
             action(a, (if (index == selected) "✓  " else "    ") + label) {
@@ -109,21 +112,45 @@ object GameLingoTVUi {
         body.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
             minOf(dp(a, 430), a.resources.displayMetrics.heightPixels * 55 / 100,
                 dp(a, 63 * labels.size)).coerceAtLeast(dp(a, 54))))
-        val back = action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
-        back.id = View.generateViewId()
-        body.addView(back, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            .apply { topMargin = dp(a, 12) })
         buttons.forEachIndexed { i, button ->
-            button.nextFocusUpId = buttons.getOrNull(i-1)?.id ?: button.id
-            button.nextFocusDownId = buttons.getOrNull(i+1)?.id ?: back.id
+            button.nextFocusUpId = buttons.getOrNull(i-1)?.id ?: back.id
+            button.nextFocusDownId = buttons.getOrNull(i+1)?.id ?: button.id
         }
-        back.nextFocusUpId = buttons.lastOrNull()?.id ?: back.id
-        back.nextFocusDownId = back.id
+        back.nextFocusUpId = back.id
+        back.nextFocusDownId = buttons.firstOrNull()?.id ?: back.id
         dialog.setContentView(body)
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .48f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .66f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        applyMenuFocus(a, body)
         (buttons.getOrNull(selected) ?: buttons.firstOrNull() ?: back).requestFocus()
+    }
+
+    /** Fixed, symmetric navigation: Back left, title centered, Help right. */
+    fun header(a: Activity, heading: View, back: View, help: View? = null): LinearLayout =
+        LinearLayout(a).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            val side = dp(a, 132)
+            fun slot(child: View?, alignment: Int): FrameLayout = FrameLayout(a).apply {
+                if (child != null) addView(child, FrameLayout.LayoutParams(-2, -2,
+                    alignment or Gravity.CENTER_VERTICAL))
+            }
+            addView(slot(back, Gravity.START), LinearLayout.LayoutParams(side, -2))
+            addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(slot(help, Gravity.END), LinearLayout.LayoutParams(side, -2))
+        }
+
+    /** Keep native controls' original background and selected state; draw focus above them. */
+    private class MenuFocusOutline : android.graphics.drawable.StateListDrawable()
+    private fun hasMenuOutline(d: android.graphics.drawable.Drawable?): Boolean =
+        d is MenuFocusOutline || (d is android.graphics.drawable.LayerDrawable &&
+            (0 until d.numberOfLayers).any { hasMenuOutline(d.getDrawable(it)) })
+
+    fun applyMenuFocus(a: Activity, root: View) {
+        if (!isTV(a)) return
+        if (root.isFocusable && (root.isClickable || root is android.widget.EditText ||
+                root is android.widget.SeekBar)) controlFocus(a, root)
+        if (root is ViewGroup) for (i in 0 until root.childCount) applyMenuFocus(a, root.getChildAt(i))
     }
 
     /** Full-screen TV settings destination. Content may supply its own weighted scroll area. */
@@ -135,27 +162,47 @@ object GameLingoTVUi {
             background = GameLingoVisualKit.pageBackground(a)
             setPadding(dp(a,32),dp(a,18),dp(a,32),dp(a,18))
         }
-        val top = LinearLayout(a).apply { gravity=Gravity.CENTER_VERTICAL }
-        top.addView(title(a,heading,29f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
         val back=action(a,GameLingoLanguages.ui(a,"Zpět")){dialog.dismiss()}
-        if(helpTopic!=null) top.addView(GameLingoHelp.button(a,helpTopic),GameLingoHelp.layout(a))
-        top.addView(back)
+        val help = helpTopic?.let { GameLingoHelp.button(a,it) }
+        val top = header(a, title(a,heading,29f), back, help)
         root.addView(top,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(a,14)})
-        val content=if(scroll) ScrollView(a).apply{isFillViewport=true;addView(body)} else body
-        root.addView(content,LinearLayout.LayoutParams(-1,0,1f))
+        val content=if(scroll) ScrollView(a).apply {
+            isFillViewport=false
+            isFocusable=false
+            clipToPadding=false
+            addView(body)
+        } else body
+        val contentWidth = if (scroll && isTV(a)) (a.resources.displayMetrics.widthPixels * .84f).toInt() else -1
+        root.addView(content,LinearLayout.LayoutParams(contentWidth,0,1f).apply{gravity=Gravity.CENTER_HORIZONTAL})
         dialog.setContentView(root)
         dialog.setOnDismissListener { onClose() }
         dialog.show()
         dialog.window?.setLayout(-1,-1)
-        if(!body.requestFocus()) back.requestFocus()
+        applyMenuFocus(a, root)
+        body.post {
+            if (!dialog.isShowing) return@post
+            val first = body.getFocusables(View.FOCUS_FORWARD).firstOrNull {
+                it.isEnabled && it.isShown && (it.isClickable || it is android.widget.EditText ||
+                    it is android.widget.SeekBar)
+            }
+            if (first?.requestFocus() != true) back.requestFocus()
+        }
         return dialog
     }
 
     fun controlFocus(a: Activity, view: View) {
-        val old = view.background
-        view.setOnFocusChangeListener { v, focused ->
-            v.background = if (focused) panel(a, true) else old
+        if (!isTV(a) || hasMenuOutline(view.foreground)) return
+        val outline = MenuFocusOutline().apply {
+            addState(intArrayOf(android.R.attr.state_focused), GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
+                cornerRadius = dp(a, 14).toFloat()
+                setStroke(dp(a, 4).coerceAtLeast(2), cyan)
+            })
+            addState(intArrayOf(), android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
         }
+        val previous = view.foreground
+        view.foreground = if (previous == null) outline
+            else android.graphics.drawable.LayerDrawable(arrayOf(previous, outline))
     }
 
     fun brand(a: Activity): LinearLayout = LinearLayout(a).apply {

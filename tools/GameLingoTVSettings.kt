@@ -26,16 +26,11 @@ object GameLingoTVSettings {
             background = GameLingoVisualKit.pageBackground(a)
             setPadding(d(a, 38), d(a, 24), d(a, 38), d(a, 24))
         }
-        val header = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
         val heading = GameLingoTVUi.title(a, GameLingoLanguages.ui(a, "Nastavení GameLingo TV"), 25f)
-        header.addView(heading,
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
         back.id = View.generateViewId()
         val help=GameLingoHelp.button(a,"settings")
-        header.addView(help,GameLingoHelp.layout(a))
-        header.addView(back)
-        root.addView(header)
+        root.addView(GameLingoTVUi.header(a, heading, back, help))
         val cards = mutableListOf<View>()
         val cardLabels = mutableListOf<Pair<String, String>>()
         fun refreshLanguage() {
@@ -124,11 +119,11 @@ object GameLingoTVSettings {
             card.nextFocusUpId = if (i >= 3) cards[i-3].id else back.id
             card.nextFocusDownId = cards.getOrNull(i+3)?.id ?: card.id
         }
-        back.nextFocusDownId = cards[2].id
-        back.nextFocusLeftId=help.id
-        help.nextFocusRightId=back.id
-        help.nextFocusDownId=cards[1].id
-        cards[1].nextFocusUpId=help.id
+        back.nextFocusDownId = cards[0].id
+        back.nextFocusRightId=help.id
+        help.nextFocusLeftId=back.id
+        help.nextFocusDownId=cards[2].id
+        cards[2].nextFocusUpId=help.id
         dialog.setContentView(root)
         // Both remote BACK and the visible button close through this path.
         dialog.setOnDismissListener {

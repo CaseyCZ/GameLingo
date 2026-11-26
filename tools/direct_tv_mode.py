@@ -199,6 +199,8 @@ def patch_direct_tv(folder):
         raise RuntimeError("TV About update anchor changed")
     about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoTVUi.action(activity, GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")) {
             GameLingoTVUpdater.show(activity)
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
         })
 ''' + update_anchor, 1)
     about.write_text(about_text, encoding="utf8")

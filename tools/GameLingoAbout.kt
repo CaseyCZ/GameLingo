@@ -37,7 +37,7 @@ object GameLingoAbout {
             setPadding(0, pad(6), 0, pad(14))
         }
         if (showClose) page.addView(close)
-        page.addView(GameLingoVisualKit.wordmark(activity),
+        page.addView(GameLingoVisualKit.wordmark(activity, compact = tv),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(if (tv) 6 else 17) })
 
@@ -64,30 +64,56 @@ object GameLingoAbout {
             14f
         ))
 
-        fun link(title: String, url: String) {
-            val row = GameLingoVisualKit.deviceCard(activity, "TV",
-                tr(title), tr("Otevřít odkaz"), false) {
-                activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        fun link(title: String, url: String): LinearLayout =
+            GameLingoVisualKit.detailRow(activity, "globe", tr(title), tr("Otevřít odkaz")) {
+                try {
+                    activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                } catch (_: android.content.ActivityNotFoundException) {
+                    android.app.AlertDialog.Builder(activity).setMessage(url)
+                        .setPositiveButton(tr("Zavřít"), null).show()
+                }
             }
-            page.addView(row, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(9) })
-        }
-        page.addView(label("Licenční texty v aplikaci", 19f, true))
-        page.addView(GameLingoVisualKit.deviceCard(activity, "TV",
-            tr("Licence třetích stran"), tr("Číst bez internetu"), false) {
+        val license = GameLingoVisualKit.detailRow(activity, "info.circle",
+            tr("Licence třetích stran"), tr("Číst bez internetu")) {
             val notices = runCatching {
                 activity.assets.open("GameLingoNotices.txt").bufferedReader(Charsets.UTF_8).use { it.readText() }
             }.getOrNull()
-            android.app.AlertDialog.Builder(activity)
+            if (tv) {
+                val body = TextView(activity).apply {
+                    text = notices ?: tr("Licenční soubor není v tomto sestavení dostupný.")
+                    textSize = GameLingoVisualKit.sp(activity, 16f)
+                    setTextColor(Color.WHITE)
+                    isFocusable = true
+                    setTextIsSelectable(true)
+                    setPadding(pad(12),pad(8),pad(12),pad(8))
+                }
+                GameLingoTVUi.page(activity, tr("Licence třetích stran"), body)
+            } else android.app.AlertDialog.Builder(activity)
                 .setTitle(tr("Licence třetích stran"))
                 .setMessage(notices ?: tr("Licenční soubor není v tomto sestavení dostupný."))
                 .setPositiveButton(tr("Zavřít"), null).show()
-        })
-        page.addView(label("Zdrojové kódy", 19f, true))
-        link("GameLingo na GitHubu", "https://github.com/CaseyCZ/GameLingo")
-        link("Původní PlayCaption", "https://github.com/AdamRuzick4/PlayCaption-app")
-        link("Chiaki / TP Play", "https://github.com/mB14ck22/tp-play")
+        }
+        val sources = listOf(
+            link("GameLingo na GitHubu", "https://github.com/CaseyCZ/GameLingo"),
+            link("Původní PlayCaption", "https://github.com/AdamRuzick4/PlayCaption-app"),
+            link("Chiaki / TP Play", "https://github.com/mB14ck22/tp-play"))
+        if (tv) {
+            // Four compact cards, two columns. Only the actual long license text scrolls.
+            (listOf(license) + sources).chunked(2).forEach { pair ->
+                val row = LinearLayout(activity).apply { orientation=LinearLayout.HORIZONTAL }
+                pair.forEachIndexed { i, card ->
+                    row.addView(card, LinearLayout.LayoutParams(0,-2,1f).apply {
+                        if (i == 0) marginEnd = pad(12)
+                    })
+                }
+                page.addView(row, LinearLayout.LayoutParams(-1,-2).apply { topMargin=pad(8) })
+            }
+        } else {
+            page.addView(label("Licenční texty v aplikaci", 19f, true))
+            page.addView(license)
+            page.addView(label("Zdrojové kódy", 19f, true))
+            sources.forEach { page.addView(it, LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=pad(9) }) }
+        }
 
         return page
     }
