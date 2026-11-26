@@ -26,7 +26,8 @@ object GameLingoTVSettings {
             setPadding(d(a, 38), d(a, 24), d(a, 38), d(a, 24))
         }
         val header = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
-        header.addView(GameLingoTVUi.title(a, GameLingoLanguages.ui(a, "Nastavení GameLingo TV"), 25f),
+        val heading = GameLingoTVUi.title(a, GameLingoLanguages.ui(a, "Nastavení GameLingo TV"), 25f)
+        header.addView(heading,
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
         back.id = View.generateViewId()
@@ -35,13 +36,30 @@ object GameLingoTVSettings {
         header.addView(back)
         root.addView(header)
         val cards = mutableListOf<View>()
+        val cardLabels = mutableListOf<Pair<String, String>>()
+        fun refreshLanguage() {
+            if (a.isFinishing || a.isDestroyed || !dialog.isShowing) return
+            heading.text = GameLingoLanguages.ui(a, "Nastavení GameLingo TV")
+            back.text = GameLingoLanguages.ui(a, "Zpět")
+            help.contentDescription = GameLingoLanguages.ui(a, "Otevřít nápovědu")
+            cards.forEachIndexed { index, card ->
+                val (label, detail) = cardLabels[index]
+                card.findViewWithTag<TextView>("gamelingo-title")?.text = GameLingoLanguages.ui(a, label)
+                card.findViewWithTag<TextView>("gamelingo-detail")?.text = when (index) {
+                    1 -> GameLingoAutomaticConfig.label(a)
+                    3 -> GameLingoLanguages.ui(a, if (GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti")
+                    else -> GameLingoLanguages.ui(a, detail)
+                }
+            }
+        }
         fun tile(symbol: String, label: String, detail: String, action: () -> Unit) {
             val card = GameLingoVisualKit.detailRow(a,symbol,GameLingoLanguages.ui(a, label),GameLingoLanguages.ui(a, detail),action).apply {
                 id=View.generateViewId()
             }
             cards.add(card)
+            cardLabels.add(label to detail)
         }
-        tile("globe", "Jazyky", "Aplikace, hra, překlad") { GameLingoLanguages.show(a) }
+        tile("globe", "Jazyky", "Aplikace, hra, překlad") { GameLingoLanguages.show(a, onChanged = ::refreshLanguage) }
         tile("viewfinder", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(a)) { if (!GameLingoScreenTranslationService.running) GameLingoAutomaticConfig.mode(a, onChanged = {
             cards[1].findViewWithTag<android.widget.TextView>("gamelingo-detail")?.text = GameLingoAutomaticConfig.label(a)
             cards[3].findViewWithTag<android.widget.TextView>("gamelingo-detail")?.text = GameLingoLanguages.ui(a, if(GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti")

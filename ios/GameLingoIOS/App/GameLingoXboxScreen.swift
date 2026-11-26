@@ -58,9 +58,9 @@ struct GameLingoXboxScreen: View {
                         .font(.subheadline)
 
                         if auth.consoles.isEmpty {
-                            Text(auth.signedIn
+                            Text(LocalizedStringKey(auth.signedIn
                                  ? "Žádný Xbox zatím nebyl nalezen. Zkontroluj vzdálené funkce konzole a zkus Obnovit."
-                                 : "Nejdříve se přihlas ke svému účtu Microsoft.")
+                                 : "Nejdříve se přihlas ke svému účtu Microsoft."))
                                 .font(.subheadline)
                                 .foregroundStyle(GLStyle.muted)
                         } else {
@@ -76,8 +76,8 @@ struct GameLingoXboxScreen: View {
                                                 .font(.headline)
                                                 .foregroundStyle(.white)
                                             Text(console.powerState.isEmpty
-                                                 ? "Stav konzole není známý"
-                                                 : "Stav: " + console.powerState)
+                                                 ? GLInterfaceText.localized("Stav konzole není známý")
+                                                 : GLInterfaceText.localized("Stav:") + " " + GLInterfaceText.localized(console.powerState))
                                                 .font(.caption)
                                                 .foregroundStyle(GLStyle.muted)
                                         }
@@ -102,7 +102,7 @@ struct GameLingoXboxScreen: View {
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(model.isRunning)
-                                .accessibilityLabel("Vybrat konzoli " + console.name)
+                                .accessibilityLabel(GLInterfaceText.localized("Vybrat konzoli:") + " " + console.name)
                             }
                         }
                     }

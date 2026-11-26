@@ -71,7 +71,7 @@ struct SubtitleSettingsView: View {
                                     Image(systemName: area.icon)
                                         .font(.system(size: 18, weight: .medium))
                                         .foregroundStyle(area.color)
-                                    Text(area.label)
+                                    Text(LocalizedStringKey(area.label))
                                         .font(.system(size: 11, weight: .semibold))
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.75)
@@ -89,7 +89,7 @@ struct SubtitleSettingsView: View {
                                         lineWidth: editing == area ? 1.8 : 0.8))
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel(area.label + " – " + area.rawValue)
+                            .accessibilityLabel(GLInterfaceText.localized(area.label) + " – " + GLInterfaceText.localized(area.rawValue))
                         }
                     }
                     GLNeonPanel(emphasized: true) {
@@ -98,7 +98,7 @@ struct SubtitleSettingsView: View {
                                 Label("Náhled obrazovky", systemImage: "tv")
                                     .font(.subheadline.bold())
                                 Spacer()
-                                Text(editing.label)
+                                Text(LocalizedStringKey(editing.label))
                                     .font(.caption.bold())
                                     .foregroundStyle(editing.color)
                             }
@@ -205,7 +205,7 @@ struct SubtitleSettingsView: View {
     private func rectangle(_ rect: CGRect, color: Color, name: String,
                            selected: Bool, size: CGSize,
                            active: Bool = true) -> some View {
-        Text(name)
+        Text(LocalizedStringKey(name))
             .font(.caption2.bold())
             .lineLimit(1)
             .minimumScaleFactor(0.7)
@@ -282,7 +282,7 @@ struct SubtitleSettingsView: View {
             } else {
                 Picker("Výchozí oblast", selection: $model.subtitleRegion) {
                     ForEach(SubtitleRegion.allCases) { preset in
-                        Text(preset.title).tag(preset)
+                        Text(LocalizedStringKey(preset.title)).tag(preset)
                     }
                 }.pickerStyle(.menu)
             }
@@ -469,7 +469,7 @@ struct SubtitleSettingsView: View {
             guard model.manualOCR else { return }
             model.tv.showOCRRegion(model.manualOCRBox, visible: true)
         } else if editing == .output {
-            model.tv.sendSubtitle("Ukázka českých titulků", duration: 6000, preview: true)
+            model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle, duration: 6000, preview: true)
         } else if editing == .choices {
             guard model.choicesEnabled else { return }
             model.tv.sendChoices([], area: model.choicesArea,
@@ -485,7 +485,7 @@ struct SubtitleSettingsView: View {
                 return
             }
             orangePreviewTask?.cancel()
-            model.tv.sendChoices(["Ukázka českého překladu"],
+            model.tv.sendChoices([model.targetLanguage.sampleSubtitle],
                                  area: model.choicesArea, asText: true,
                                  showFrame: false, outputArea: model.choicesOutputArea,
                                  outputFont: model.choicesOutputFont)

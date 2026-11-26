@@ -54,7 +54,7 @@ struct GameLingoDevicesPanel: View {
                         VStack(alignment: .center, spacing: 4) {
                             Text(console.name).font(.headline)
                             Text(devices.preferredConsoleID == console.id
-                                 ? "Vybraná konzole" : console.family.rawValue)
+                                 ? GLInterfaceText.localized("Vybraná konzole") : console.family.rawValue)
                                 .font(.caption)
                                 .foregroundStyle(devices.preferredConsoleID == console.id
                                                  ? GLStyle.green : GLNeon.mist)
@@ -82,7 +82,7 @@ struct GameLingoDevicesPanel: View {
                                 .font(.title2)
                                 .foregroundStyle(GLStyle.blue)
                         }
-                        .accessibilityLabel("Spravovat " + console.name)
+                        .accessibilityLabel(GLInterfaceText.localized("Spravovat:") + " " + console.name)
                     }
                     .contentShape(Rectangle())
                     .padding(13)
@@ -104,10 +104,10 @@ struct GameLingoDevicesPanel: View {
                         GLPlatformBadge(family: nil, isTelevision: true, size: 54)
                         VStack(alignment: .center, spacing: 4) {
                             Text(television.name).font(.headline)
-                            Text(devices.preferredTelevisionID == television.id
+                            Text(LocalizedStringKey(devices.preferredTelevisionID == television.id
                                  ? (model.tv.receiverConnected ? "TV připojena" :
                                     "TV uložena – čekám na spojení")
-                                 : "Uložená televize")
+                                 : "Uložená televize"))
                                 .font(.caption)
                                 .foregroundStyle(devices.preferredTelevisionID == television.id &&
                                                  model.tv.receiverConnected

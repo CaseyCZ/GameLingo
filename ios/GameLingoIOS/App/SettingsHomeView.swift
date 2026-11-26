@@ -80,7 +80,7 @@ struct GameLingoSettingsOverview: View {
             Button { showRegions = true } label: {
                 GLDetailRow(icon: "rectangle.dashed",
                             title: "Oblasti obrazovky",
-                            detail: model.automaticGameDialogue ? String(model.automaticZones.filter(\.enabled).count) + " aktivních zón" : "Standardní oblasti")
+                            detail: model.automaticGameDialogue ? GLInterfaceText.localized("Aktivní zóny:") + " " + String(model.automaticZones.filter(\.enabled).count) : "Standardní oblasti")
             }
             .buttonStyle(.plain)
 
@@ -250,7 +250,7 @@ struct GameLingoLicenseView: View {
                     Text("Překlad herních dialogů a textů")
                         .font(.subheadline)
                         .foregroundStyle(GLNeon.mist)
-                    Text("Verze " + GameLingoUpdateModel.currentVersion)
+                    Text(GLInterfaceText.localized("Verze:") + " " + GameLingoUpdateModel.currentVersion)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(GLNeon.cyan)
                 }
@@ -283,7 +283,7 @@ struct GameLingoLicenseView: View {
                 ScrollView {
                     Text(Bundle.main.url(forResource: "GameLingoNotices", withExtension: "txt")
                         .flatMap { try? String(contentsOf: $0, encoding: .utf8) }
-                        ?? "Licenční soubor není v tomto sestavení dostupný.")
+                        ?? GLInterfaceText.localized("Licenční soubor není v tomto sestavení dostupný."))
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
                         .padding()
@@ -309,13 +309,13 @@ private struct GameLingoOCRSettingsView: View {
             GLCard {
                 GLHeader(title: "OCR", help: "Během běžícího překladu nelze změnit rychlost čtení.")
                 Picker("Modrá: režim OCR", selection: $model.ocrMode) {
-                    ForEach(OCRMode.allCases) { mode in Text(mode.title).tag(mode) }
+                    ForEach(OCRMode.allCases) { mode in Text(LocalizedStringKey(mode.title)).tag(mode) }
                 }
                 .pickerStyle(.menu)
                 .disabled(model.isRunning)
                 Picker("Žlutá: režim OCR", selection: $model.yellowOCRMode) {
                     Text("Stejný jako modrá").tag("follow")
-                    ForEach(OCRMode.allCases) { mode in Text(mode.title).tag(mode.rawValue) }
+                    ForEach(OCRMode.allCases) { mode in Text(LocalizedStringKey(mode.title)).tag(mode.rawValue) }
                 }.pickerStyle(.menu).disabled(model.isRunning)
             }
             GLCard {
@@ -355,7 +355,7 @@ private struct GameLingoOCRSettingsView: View {
                 HStack {
                     Text("Oblast")
                     Spacer()
-                    Text(model.manualOCR ? "Ruční" : model.subtitleRegion.title)
+                    Text(LocalizedStringKey(model.manualOCR ? "Ruční" : model.subtitleRegion.title))
                         .foregroundStyle(GLStyle.muted)
                 }
                 .font(.subheadline)
@@ -578,7 +578,7 @@ struct GameLingoProfilesScreen: View {
                     disabled: profileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
                     let name = profileName.trimmingCharacters(in: .whitespacesAndNewlines)
                     model.saveGameProfile(named: name)
-                    savedProfileMessage = "✓ Profil „\(name)“ uložen"
+                    savedProfileMessage = GLInterfaceText.localized("✓ Profil uložen:") + " " + name
                     profileName = ""
                 }
                 if !savedProfileMessage.isEmpty {
@@ -667,7 +667,7 @@ private struct GameLingoGlossaryEditor: View {
                     model.setGameGlossary(profileID: profileID, glossary: glossary)
                     message = "Slovník uložen. Použij tento profil před hraním."
                 }.disabled(model.isRunning || !loaded)
-                Text(message).font(.caption)
+                Text(LocalizedStringKey(message)).font(.caption)
             }
         }
         .onAppear {
@@ -701,13 +701,13 @@ private struct GameLingoHistoryView: View {
             }
             if model.translationHistory.entries.isEmpty {
                 GLCard {
-                    Text(model.translationHistory.enabled ? "Zatím žádné překlady." : "Historie je vypnutá.")
+                    Text(LocalizedStringKey(model.translationHistory.enabled ? "Zatím žádné překlady." : "Historie je vypnutá."))
                         .foregroundStyle(GLStyle.muted)
                 }
             }
             ForEach(Array(model.translationHistory.entries.reversed())) { entry in
                 GLCard {
-                    Text(entry.kind + " · " + entry.source + " → " + entry.target + " · " +
+                    Text(GLInterfaceText.localized(entry.kind) + " · " + entry.source + " → " + entry.target + " · " +
                          entry.date.formatted(date: .omitted, time: .standard))
                         .font(.caption).foregroundStyle(GLStyle.muted)
                     Text(entry.translated).font(.headline).textSelection(.enabled)
@@ -797,9 +797,9 @@ private struct GameLingoDiagnosticsView: View {
 
     private func status(_ key: String, _ value: String) -> some View {
         HStack {
-            Text(key).foregroundStyle(GLStyle.muted)
+            Text(LocalizedStringKey(key)).foregroundStyle(GLStyle.muted)
             Spacer()
-            Text(value).lineLimit(1).minimumScaleFactor(0.8)
+            Text(LocalizedStringKey(value)).lineLimit(1).minimumScaleFactor(0.8)
         }
         .font(.subheadline)
     }
