@@ -1,0 +1,71 @@
+"""Focused source-level localization checks; native/UI QA remains required."""
+from collections import Counter
+from pathlib import Path
+import re
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+IOS = ROOT / "ios" / "GameLingoIOS" / "App"
+TOOLS = ROOT / "tools"
+STRING = r'"((?:\\.|[^"\\])*)"'
+
+def text(path):
+    return path.read_text(encoding="utf-8")
+
+def catalog_keys(path):
+    return re.findall(r"^\s*" + STRING + r"\s*=", text(path), re.M)
+
+def android_keys():
+    return re.findall(r"^\s*" + STRING + r"\s+to Pair\(", text(TOOLS / "GameLingoLanguages.kt"), re.M)
+
+class ReleaseLocalizationTests(unittest.TestCase):
+    def assert_unique(self, keys):
+        self.assertTrue(keys)
+        self.assertEqual([k for k, n in Counter(keys).items() if n > 1], [])
+
+    def test_ios_catalog_parity_and_uniqueness(self):
+        en = catalog_keys(IOS / "en.lproj" / "Localizable.strings")
+        sk = catalog_keys(IOS / "sk.lproj" / "Localizable.strings")
+        self.assert_unique(en)
+        self.assert_unique(sk)
+        self.assertEqual(set(en), set(sk))
+
+    def test_ios_explicit_dynamic_localization_keys_exist(self):
+        keys = set(catalog_keys(IOS / "en.lproj" / "Localizable.strings"))
+        for name in ("GameLingoDevicesPanel.swift", "GameLingoXboxScreen.swift",
+                     "SettingsHomeView.swift", "SubtitleSettingsView.swift"):
+            with self.subTest(file=name):
+                found = re.findall(r"GLInterfaceText\.localized\(\s*" + STRING, text(IOS / name))
+                self.assertTrue(found)
+                self.assertEqual(set(found) - keys, set())
+
+    def test_android_catalog_and_audited_ui_calls(self):
+        keys = android_keys()
+        self.assert_unique(keys)
+        for name in ("redesign_gamelingo.py", "polish_all_screens.py",
+                     "GameLingoTVSettings.kt", "GameLingoScreenTranslationService.kt"):
+            with self.subTest(file=name):
+                found = re.findall(
+                    r"GameLingoLanguages\.ui\(\s*(?:this(?:@MainActivity)?|a|activity|c|context)\s*,\s*" + STRING,
+                    text(TOOLS / name),
+                )
+                self.assertTrue(found)
+                self.assertEqual(set(found) - set(keys), set())
+
+    def test_tv_dashboard_refresh_does_not_rebuild_dialog(self):
+        settings = text(TOOLS / "GameLingoTVSettings.kt")
+        visual = text(TOOLS / "GameLingoVisualKit.kt")
+        self.assertIn("onChanged = ::refreshLanguage", settings)
+        refresh = settings.split("fun refreshLanguage()", 1)[1].split("fun tile(", 1)[0]
+        self.assertIn('findViewWithTag<TextView>("gamelingo-title")', refresh)
+        self.assertIn('findViewWithTag<TextView>("gamelingo-detail")', refresh)
+        self.assertNotIn("dialog.dismiss()", refresh)
+        self.assertIn('tag="gamelingo-title"', visual)
+
+    def test_preview_uses_target_language(self):
+        source = text(IOS / "SubtitleSettingsView.swift")
+        self.assertIn("model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle,", source)
+        self.assertIn("model.tv.sendChoices([model.targetLanguage.sampleSubtitle],", source)
+
+if __name__ == "__main__":
+    unittest.main()
