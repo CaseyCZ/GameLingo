@@ -52,7 +52,7 @@ struct GLHelpButton: View {
         .sheet(isPresented: $showing) {
             NavigationStack {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 15) {
+                    VStack(alignment: .center, spacing: 15) {
                         Label(LocalizedStringKey(title), systemImage: "questionmark.circle.fill")
                             .font(.title2.bold())
                             .foregroundStyle(GLStyle.blue)
@@ -62,7 +62,8 @@ struct GLHelpButton: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(22)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .multilineTextAlignment(.center)
                 }
                 .background(GLNeonBackground())
                 .navigationTitle("Nápověda")

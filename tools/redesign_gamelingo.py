@@ -160,7 +160,8 @@ def redesign_mobile(s: str) -> str:
                     3 -> GameLingoSettings.content(this, nast,
                         onAreas = { editAreas() },
                         onLanguage = { GameLingoLanguages.show(this) { ukazHlavni() } },
-                        onDevices = { openDevices() })
+                        onDevices = { openDevices() },
+                        onRefresh = { openTab(3) })
                     4 -> GameLingoAbout.content(this)
                     else -> homePage
                 }

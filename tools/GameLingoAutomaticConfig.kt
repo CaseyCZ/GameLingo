@@ -58,12 +58,13 @@ internal object GameLingoAutomaticConfig {
         else AlertDialog.Builder(a).setTitle(title).setSingleChoiceItems(labels,selected){dialog,index->dialog.dismiss();action(index)}
             .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null).show()
     }
-    fun mode(a: Activity, advanced: () -> Unit = {}) {
+    fun mode(a: Activity, onChanged: () -> Unit = {}, advanced: () -> Unit = {}) {
         if (!editable(a)) return
         val labels=arrayOf("Standardní","Automatický","Pokročilé nastavení OCR").map { GameLingoLanguages.ui(a,it) }.toTypedArray()
         select(a,GameLingoLanguages.ui(a,"Režim překladu"),labels,if(enabled(a)) 1 else 0) { i ->
             if(i==2) advanced() else {
                 prefs(a).edit().putBoolean("enabled",i==1).apply()
+                onChanged()
                 // The default dialogue zone is already ready; editing is optional.
             }
         }

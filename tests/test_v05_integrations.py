@@ -18,6 +18,19 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_settings_mode_updates_without_reopening(self):
+        automatic = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        phone = code(TOOLS/"GameLingoSettings.kt")
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        visual = code(TOOLS/"GameLingoVisualKit.kt")
+        redesign = code(TOOLS/"redesign_gamelingo.py")
+        self.assertIn('putBoolean("enabled",i==1).apply()\n                onChanged()', automatic)
+        self.assertIn("onChanged = onRefresh", phone)
+        self.assertIn("onRefresh = { openTab(3) }", redesign)
+        self.assertIn('tag="gamelingo-detail"', visual)
+        self.assertIn('cards[1].findViewWithTag', tv)
+        self.assertIn('cards[3].findViewWithTag', tv)
+
     def test_centered_shared_menu_components(self):
         android = code(TOOLS/"GameLingoVisualKit.kt")
         tv = code(TOOLS/"GameLingoTVUi.kt")

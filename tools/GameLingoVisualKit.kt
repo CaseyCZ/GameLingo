@@ -117,7 +117,7 @@ object GameLingoVisualKit {
             addView(LinearLayout(activity).apply {
                 orientation=LinearLayout.VERTICAL
                 addView(TextView(activity).apply{ text=title;gravity=Gravity.CENTER;textSize=16f;setTextColor(Color.WHITE);typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL) })
-                addView(TextView(activity).apply{ text=detail;gravity=Gravity.CENTER;textSize=12f;setTextColor(muted);setPadding(0,dp(activity,4),0,0) })
+                addView(TextView(activity).apply{ text=detail;gravity=Gravity.CENTER;tag="gamelingo-detail";textSize=12f;setTextColor(muted);setPadding(0,dp(activity,4),0,0) })
             },LinearLayout.LayoutParams(0,-2,1f))
             addView(FrameLayout(activity).apply {
                 addView(icon(activity,"chevron.right",muted), FrameLayout.LayoutParams(dp(activity,16),dp(activity,16),Gravity.END or Gravity.CENTER_VERTICAL))

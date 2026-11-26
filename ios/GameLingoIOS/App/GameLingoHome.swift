@@ -585,7 +585,8 @@ struct GameLingoHome: View {
             Text(LocalizedStringKey(title)).font(.headline)
             Text(LocalizedStringKey(text)).font(.subheadline).foregroundStyle(GLVisual.muted)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
         .padding(15)
         .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 15))
     }

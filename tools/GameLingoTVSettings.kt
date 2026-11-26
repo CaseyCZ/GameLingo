@@ -42,7 +42,10 @@ object GameLingoTVSettings {
             cards.add(card)
         }
         tile("◎", "Jazyky", "Aplikace, hra, překlad") { GameLingoLanguages.show(a) }
-        tile("viewfinder", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(a)) { if (!GameLingoScreenTranslationService.running) GameLingoAutomaticConfig.mode(a) { ocr(a) } }
+        tile("viewfinder", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(a)) { if (!GameLingoScreenTranslationService.running) GameLingoAutomaticConfig.mode(a, onChanged = {
+            cards[1].findViewWithTag<android.widget.TextView>("gamelingo-detail")?.text = GameLingoAutomaticConfig.label(a)
+            cards[3].findViewWithTag<android.widget.TextView>("gamelingo-detail")?.text = GameLingoLanguages.ui(a, if(GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti")
+        }) { ocr(a) } }
         tile("文", "Překlad", "Dialogy, herní texty, Story") { translation(a) }
         tile("rectangle.dashed", "Oblasti obrazovky", if(GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti") { if (!GameLingoScreenTranslationService.running) { if(GameLingoAutomaticConfig.enabled(a)) GameLingoAutomaticConfig.showZones(a) else GameLingoDirectTVLayout.show(a) {} } }
         tile("Aa", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }

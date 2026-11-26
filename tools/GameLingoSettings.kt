@@ -217,7 +217,8 @@ object GameLingoSettings {
     fun content(activity: Activity, settings: Nastaveni,
              onAreas: () -> Unit, onLanguage: () -> Unit,
              onDevices: () -> Unit = {},
-             onDismiss: () -> Unit = {}, showClose: Boolean = false): LinearLayout {
+             onDismiss: () -> Unit = {}, showClose: Boolean = false,
+             onRefresh: () -> Unit = {}): LinearLayout {
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         val d = GameLingoVisualKit.dp(activity, 1)
         val page = LinearLayout(activity).apply {
@@ -272,12 +273,12 @@ object GameLingoSettings {
                 GameLingoLanguages.game(activity)) + " → " +
             GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
                 GameLingoLanguages.target(activity))) {
-            GameLingoLanguages.show(activity)
+            onLanguage()
         }
 
         section(GameLingoUIContract.settingsSections[1])
         menu("▣", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(activity)) {
-            GameLingoAutomaticConfig.mode(activity) { GameLingoOCRSettings.show(activity, onAreas) }
+            GameLingoAutomaticConfig.mode(activity, onChanged = onRefresh) { GameLingoOCRSettings.show(activity, onAreas) }
         }
         menu("⌗", "Oblasti obrazovky",
              if(GameLingoAutomaticConfig.enabled(activity)) "Automatické zóny" else "Čtyři nezávislé oblasti") {
