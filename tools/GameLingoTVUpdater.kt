@@ -288,8 +288,31 @@ object GameLingoTVUpdater {
                 val dir = File(a.cacheDir, "gamelingo-updates")
                 require(dir.isDirectory || dir.mkdirs()) { "Nelze vytvořit složku aktualizací." }
                 dir.listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 86400000L }?.forEach { it.delete() }
-                val apk = File.createTempFile("update-", ".apk", dir)
+                val apk = File(dir, "verified-" + next.hash + ".apk")
                 file = apk
+                // Reuse a previously downloaded APK only after checking its full digest.
+                if (apk.isFile && apk.length() == next.size) {
+                    val cachedDigest = MessageDigest.getInstance("SHA-256")
+                    apk.inputStream().use { input ->
+                        val buffer = ByteArray(65536)
+                        while (true) {
+                            require(!cancelled.get() && alive(a)) { "Stahování zrušeno." }
+                            val n = input.read(buffer)
+                            if (n < 0) break
+                            cachedDigest.update(buffer, 0, n)
+                        }
+                    }
+                    if (hex(cachedDigest.digest()) == next.hash) {
+                        val archive = a.packageManager.getPackageArchiveInfo(apk.path, flags())
+                        val current = installed(a)
+                        if (archive != null && archive.packageName == ID && a.packageName == ID &&
+                            code(archive) == next.code && archive.versionName == next.name &&
+                            code(archive) > code(current) &&
+                            signers(archive) == setOf(next.cert) && signers(current) == setOf(next.cert)) {
+                            return@runCatching apk
+                        }
+                    }
+                }
                 val digest = MessageDigest.getInstance("SHA-256")
                 val start = android.os.SystemClock.elapsedRealtime()
                 var total = 0L
