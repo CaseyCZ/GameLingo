@@ -15,7 +15,7 @@ Vývojová verze, nikoli potvrzené stabilní vydání. Používej pouze balíč
 5. Po hraní zastav překlad; při změně konzole/TV zastav relaci a vyber nový zdroj.
 
 ## Přímý překlad na Google TV
-Zvol Přímo na TV, nastav konzoli a jazyky a postupuj podle nativního průvodce. TV má vlastní OCR a online překlad z dostupné Remote Play cesty, nikoli univerzální zachytávání libovolného HDMI/chráněného videa. Nemá offline model. Bez internetu může použít existující cache, nikoli zaručeně přeložit nový text. Přímý story/modrá oblast mají otevřená omezení. Telefonní režim zůstává samostatnou cestou.
+Zvol Přímo na TV a příslušný zdroj. Samostatný překlad aplikací vyžaduje systémový souhlas MediaProjection a dostupný obraz; konzolové cesty Remote Play vyžadují vlastní přihlášení. Nelze slíbit univerzální snímání HDMI ani chráněného videa. TV nemá offline model. Bez internetu může použít existující cache, nikoli přeložit nový text. Telefonní režim zůstává samostatnou cestou. Před změnou zdroje zastav relaci.
 
 ## Čtyři oblasti
 | Barva | Účel |
@@ -25,7 +25,7 @@ Zvol Přímo na TV, nastav konzoli a jazyky a postupuj podle nativního průvodc
 | Žlutá | Čtení herních voleb, textů a nabídek |
 | Oranžová | Zobrazení přeložených voleb a textů |
 
-Změna oranžové oblasti nemá měnit žlutou OCR oblast. Nezávislé posílání oranžové geometrie z Androidu a úplná parita profilů jsou otevřené nálezy; hlaste rozdíl, neobcházejte jej změnou čtecí oblasti. Ulož profil a ověř po restartu.
+Změna oranžové oblasti nemá měnit žlutou OCR oblast. Nezávislé posílání oranžové geometrie a paritu profilů ověř na kandidátu; případný rozdíl neobcházej změnou čtecí oblasti. Ulož profil a ověř po restartu. Standardní režim je výchozí. Automatický režim začíná jednou zónou, další přidávej jen podle potřeby.
 
 ## Když něco nefunguje
 - Zkontroluj stejnou důvěryhodnou domácí síť, nikoli veřejnou Wi-Fi/guest izolaci. Neotvírej UDP porty do internetu. Port fallback 41989–41993 je implementován, HW čeká.
@@ -35,4 +35,4 @@ Změna oranžové oblasti nemá měnit žlutou OCR oblast. Nezávislé posílán
 - Netflix a jiný chráněný obsah nejsou ověřeny; žádný příslib OCR chráněného přehrávání. Pokud systém překryv blokuje, neobcházej ochrany.
 
 ## Bezpečnost a hlášení
-Používej vlastní testovací konzoli/účty a důvěryhodnou LAN. Přenos titulků je podepsaný, ale nešifrovaný, PIN bootstrap a starší account transfer mají otevřená rizika. Preferuj samostatné přihlášení místo přenosu účtu. [Soukromí](PRIVACY-0.5.md). Do hlášení uveď model, OS, verzi/SHA, režim, kroky a výsledek, ale odstraň PIN, token, soukromé IP, identifikátory účtu a citlivý text. [QA scénáře](PHYSICAL_QA_0.5.md).
+Používej vlastní testovací konzoli/účty a důvěryhodnou LAN. Přenos titulků je podepsaný, ale nešifrovaný, PIN bootstrap zůstává nešifrovaný. Starý přenos konzolového účtu byl odstraněn; na každém zařízení se přihlaš samostatně. Preferuj samostatné přihlášení místo přenosu účtu. [Soukromí](PRIVACY-0.5.md). Do hlášení uveď model, OS, verzi/SHA, režim, kroky a výsledek, ale odstraň PIN, token, soukromé IP, identifikátory účtu a citlivý text. [QA scénáře](PHYSICAL_QA_0.5.md).

@@ -130,7 +130,24 @@ object GameLingoTVUi {
     fun header(a: Activity, heading: View, back: View, help: View? = null): LinearLayout =
         LinearLayout(a).apply {
             gravity = Gravity.CENTER_VERTICAL
-            val side = dp(a, 132)
+            val television = isTV(a)
+            // Phone pages share navigation semantics, not ten-foot geometry.
+            // Reserve only a 48dp touch target on each side of the mobile title.
+            val side = if (television) dp(a, 132) else GameLingoVisualKit.dp(a, 48)
+            if (!television && back is TextView) {
+                back.contentDescription = back.text
+                back.text = "‹"
+                back.textSize = 28f
+                back.minimumWidth = side
+                back.minimumHeight = side
+                back.setPadding(0, 0, 0, 0)
+            }
+            if (!television && help != null) {
+                help.minimumWidth = side
+                help.minimumHeight = side
+                val inset = GameLingoVisualKit.dp(a, 12)
+                help.setPadding(inset, 0, inset, 0)
+            }
             fun slot(child: View?, alignment: Int): FrameLayout = FrameLayout(a).apply {
                 if (child != null) addView(child, FrameLayout.LayoutParams(-2, -2,
                     alignment or Gravity.CENTER_VERTICAL))
@@ -189,7 +206,7 @@ object GameLingoTVUi {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(-1,-1)
         applyMenuFocus(a, root)
-        body.post {
+        if (isTV(a)) body.post {
             if (!dialog.isShowing) return@post
             val first = body.getFocusables(View.FOCUS_FORWARD).firstOrNull {
                 it.isEnabled && it.isShown && (it.isClickable || it is android.widget.EditText ||

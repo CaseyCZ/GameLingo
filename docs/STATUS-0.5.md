@@ -1,28 +1,28 @@
-# GameLingo 0.5 — aktuální stav
-Aktualizace 2026-11-24. Jediný aktuální rozcestník pro auditní větev `feature/audit-0.5`. Vývojový základ `feature/gamelingo-v05-platform-rebuild`; Master a veřejná vydání neměnit. Historické checkpointy 23. 11. nejsou současný stav. Poslední aplikační revize `f34348b1cd721c83074bae2590e6047b0a076303`, [CI 45384321662](https://github.com/CaseyCZ/GameLingo/actions/runs/45384321662): šest jobů PASS včetně iOS, Android mobil, TV, kontraktů, balíčků/SHA-256 a TV/mobil DEX guard. Po tomto buildu vznikly nové aplikační opravy v bodě 8; starý build zůstává historickým QA kandidátem, nikoli aktuálním kandidátem po opravách. Nový build a ověření čekají. HW všechny kombinace čekají; žádný nový release.
+# GameLingo — aktuální stav vývojové větve
+
+Aktualizace 2026-11-26. Pracovní větev `feature/ocr-lab`, Master a veřejné vydání 0.5.1 zůstávají nedotčené. Hlavní autoritativní přehled vydání je [RELEASE_CONTROL.md](RELEASE_CONTROL.md). Zdrojová revize posuzovaná v tomto checkpointu: `968e4808b2ab433b93c57c517bc64911134922c4`. [Rychlá regrese 45844249821](https://github.com/CaseyCZ/GameLingo/actions/runs/45844249821) prošla. [TV kontrola 45844249886](https://github.com/CaseyCZ/GameLingo/actions/runs/45844249886): generovaný zdroj, navigace a inventář 112 Kotlin souborů/176 UI referencí prošly; kompilace skončila na HTTP 429 při stahování Maven závislostí před kompilací. [Úplný nativní build 45844249987](https://github.com/CaseyCZ/GameLingo/actions/runs/45844249987) v době kontroly běžel. Starší úspěšné buildy nejsou aktuální release kandidát. Fyzické testy tohoto kandidáta nemají PASS.
 
 | Funkce | iOS | Android mobil | Google TV |
 |---|---|---|---|
-| Xbox / PS4 / PS5 | Implementované cesty Remote Play, HW čeká | Implementované cesty Remote Play, HW čeká | Přímé režimy implementované, HW čeká |
-| OCR | Vision | ML Kit OCR | ML Kit OCR v přímém režimu; telefonní receiver OCR nedělá |
-| Online překlad | Google GTX / Microsoft Edge / MyMemory | Google GTX / Microsoft Edge / MyMemory | Google GTX / Microsoft Edge / MyMemory |
-| Offline překlad nové věty | Ne | Ne; odstraněno ze zdroje, nové sestavení čeká | Ne; odstraněno ze zdroje, nové sestavení čeká |
-| Cache | SQLite | SQLite | SQLite pro lokální překlad |
-| Čtyři oblasti | Implementace, HW čeká | Implementace, orange→TV a profilová parita nedokončena | Receiver podporuje orange geometrii; přímý režim má omezení modré/story |
-| Párování TV | 6 číslic/QR, HMAC | 6 číslic/QR, HMAC | QR zobrazení/PIN, až 32 identit, jeden aktivní zdroj |
-| Historie | Opt-in RAM | Opt-in RAM; story výjimka | Sdílený základ, runtime ověřit |
-| Slovník | Ruční, herní profil | Ruční, herní profil; story výjimka | Podle přímé cesty; neprohlašovat plnou paritu |
-| UI jazyk | cs/en/sk | cs/sk | Zachovat stávající katalog; ověřit skutečné volby |
-| HDMI overlay | Odesílá do TV | Odesílá do TV | Vyžaduje oprávnění a kompatibilní firmware, HW čeká |
+| Xbox / PlayStation | Implementované cesty Remote Play; kandidát čeká na HW | Implementované cesty Remote Play; kandidát čeká na HW | Přijímač z telefonu; přímé konzolové cesty čekají na HW |
+| OCR | Vision | ML Kit OCR | ML Kit OCR při podporovaném přímém snímání; telefonní receiver OCR nedělá |
+| Online překlad | Google GTX / Microsoft Edge / MyMemory | Stejné | Stejné |
+| Offline překlad nové věty | Ne | Ne | Ne |
+| Cache | Lokální SQLite s opt-out a mazáním | Stejné | Stejné |
+| Režimy OCR | Standardní výchozí, automatický volitelný | Stejné | Stejné pro přímý OCR režim |
+| Oblasti | Čtyři nezávislé standardní oblasti; automatické zóny | Stejné | Přijímač a samostatný režim; geometrie vyžaduje HW kontrolu |
+| Párování | PIN/QR a HMAC | PIN/QR a HMAC | Přijímač s více uloženými telefony, jeden aktivní zdroj |
+| Historie a slovník | Volitelná historie, slovník profilu | Stejné | Stejné; funkční parita čeká na HW |
+| UI jazyky | CZ/SK/EN | CZ/SK/EN | CZ/SK/EN |
+| HDMI překryv | Odesílá titulky do TV | Odesílá titulky do TV | Jen při kompatibilním firmware a povoleném překryvu |
+| Samostatná TV | n/a | n/a | MediaProjection, souhlas systému, OCR dostupného obrazu; chráněný obraz může být nedostupný |
 
-Offline cache hit není offline překlad nové věty. QR neslouží k instalaci APK. HMAC chrání integritu, nikoli důvěrnost; PIN/secret bootstrap a starší account transfer jsou otevřená rizika. Neoficiální online API nemají doloženou autorizaci. Neoznačovat Netflix/protected playback, Samsung/LG, univerzální HDMI, AI, dabing, automatickou instalaci či PC za ověřenou podporu. Zděděné LG/Samsung assets nejsou schválená nová podpora.
+Tabulka popisuje implementaci a rozsah, nikoli potvrzení funkčnosti každé kombinace. Úplná jazyková a vizuální kontrola zůstává povinná dle [UI auditu](UI_UX_FUNCTIONAL_AUDIT.md). HMAC chrání integritu, nikoli důvěrnost; prvotní PIN/secret bootstrap zůstává nešifrovaný. Starý PCS1 import konzolového účtu byl odstraněn, přímé síťové ověření čeká; nepřenášet účty mezi zařízeními. Neoficiální online API nemají doloženou autorizaci. Bezpečnostní a licenční podmínky se neuzavírají samotným buildem. Nepřidávat nové platformy ani funkce.
 
 ## Dokumentace
-- [Návod pro testery](USER-GUIDE-0.5.md), [informace o soukromí (pracovní)](PRIVACY-0.5.md).
-- [Licenční audit](LICENSE-AND-PROVIDER-AUDIT.md), [atribuce](../ATTRIBUTION.md), [licence](../LICENSE).
-- [Audit kódu](CODE-AUDIT-0.5.md), [bezpečnost](SECURITY-PRIVACY-AUDIT-0.5.md), [úklid](CLEANUP-AUDIT-0.5.md).
-- [Výsledky sestavení](BUILD_EVIDENCE_0.5.md), [fyzické QA](PHYSICAL_QA_0.5.md), [podmínky vydání](RELEASE_GATES_0.5.md), [vydávání](RELEASES.md).
-- [REPORT.md](../REPORT.md) chronologie a obnovitelný checkpoint. [Mobilní kontrakt](MOBILE_PARITY.md) popisuje záměr, ne důkaz pixelové shody.
+- [Řízení vydání](RELEASE_CONTROL.md), [UI a funkční audit](UI_UX_FUNCTIONAL_AUDIT.md), [fyzická akceptace](PHYSICAL_QA_OCR_L10N.md).
+- [Návod pro testery](USER-GUIDE-0.5.md), [soukromí (pracovní návrh)](PRIVACY-0.5.md).
+- [Bezpečnost](SECURITY-PRIVACY-AUDIT-0.5.md), [licence a poskytovatelé](LICENSE-AND-PROVIDER-AUDIT.md), [atribuce](../ATTRIBUTION.md).
+- [Historické výsledky sestavení](BUILD_EVIDENCE_0.5.md), [podmínky vydání](RELEASE_GATES_0.5.md), [vydávání](RELEASES.md).
 
-## Post-auditní plán
-1–4: statické audity dokončeny, zjištěné problémy otevřené. 5: sjednocení dokumentace. 6: testovací balíčky ze stejné revize (nikoli veřejná distribuce), jejich inventář/podpis/checksum a dependency/notice evidence. 7: fyzická QA — [protokol připraven](QA-RESULTS-0.5.md), uživatelem odložena až po opravách a novém buildu. 8: všech sedm CODE skupin implementačně upraveno, bezpečnostní opravy částečné, licenční oznámení zapojena, šest historických publish workflow archivováno; kompilace a praktické ověření nových změn čekají. Viz REPORT. Zvláštní schválení bezpečnostní architektury/providerů/vyřazení funkcí, potom nová QA. 9: release pouze po splnění gates a výslovném souhlasu. Nepoužívat staré publish workflow s hardcoded build ID.
+Další postup: dokončit aktuální CI, uzavřít ověřitelné nálezy, připravit jediný kandidát se shodnou revizí a prokazatelnými podpisy, provést fyzické testy, získat schválení. Žádný veřejný release bez schválení.

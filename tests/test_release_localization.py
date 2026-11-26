@@ -125,6 +125,14 @@ class ReleaseLocalizationTests(unittest.TestCase):
                 self.assertIn("GLBackButton", source)
                 self.assertIn(".topBarLeading", source)
 
+    def test_shared_header_respects_phone_width_and_touch_navigation(self):
+        ui = text(TOOLS / "GameLingoTVUi.kt")
+        self.assertIn("if (television) dp(a, 132) else GameLingoVisualKit.dp(a, 48)", ui)
+        self.assertIn("back.contentDescription = back.text", ui)
+        self.assertIn("back.minimumHeight = side", ui)
+        self.assertIn("help.minimumHeight = side", ui)
+        self.assertIn("if (isTV(a)) body.post", ui)
+
     def test_preview_uses_target_language(self):
         source = text(IOS / "SubtitleSettingsView.swift")
         self.assertIn("model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle,", source)
