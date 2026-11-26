@@ -379,6 +379,7 @@ object GameLingoVisualKit {
                 addView(TextView(activity).apply{text=subtitle;gravity=Gravity.CENTER;textSize = sp(activity, 13f);setTextColor(muted);setPadding(0,dp(activity,4),0,0)})
             },LinearLayout.LayoutParams(0,-2,1f))
         }
+    /** Mobile dashboard cards use the same balanced center column as iOS. */
     fun deviceCard(activity: Activity, family: String, title: String,
                    subtitle: String, selected: Boolean,
                    onClick: () -> Unit): LinearLayout {
@@ -393,36 +394,38 @@ object GameLingoVisualKit {
             isClickable = true
             setOnClickListener { onClick() }
         }
-        row.addView(platformEmblem(activity, family),
-            LinearLayout.LayoutParams(dp(activity, 53), dp(activity, 53)).apply {
-                rightMargin = dp(activity, 12)
-            })
+        row.addView(FrameLayout(activity).apply {
+            addView(platformEmblem(activity, family),
+                FrameLayout.LayoutParams(dp(activity, 53), dp(activity, 53), Gravity.CENTER))
+        }, LinearLayout.LayoutParams(dp(activity, 61), dp(activity, 53)))
         row.addView(LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
             addView(TextView(activity).apply {
                 text = title
                 gravity = Gravity.CENTER
                 textSize = sp(activity, 17f)
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
-                maxLines = 1
-            })
+                maxLines = 2
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT))
             addView(TextView(activity).apply {
                 text = subtitle
                 gravity = Gravity.CENTER
                 textSize = sp(activity, 12.5f)
                 setTextColor(if (selected) Color.parseColor("#3BE781") else muted)
-                maxLines = 2
+                maxLines = 3
                 setPadding(0, dp(activity, 4), 0, 0)
-            })
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         row.addView(TextView(activity).apply {
             text = "›"
             textSize = sp(activity, 27f)
             setTextColor(muted)
             gravity = Gravity.CENTER
-        }, LinearLayout.LayoutParams(dp(activity, 25),
-            ViewGroup.LayoutParams.WRAP_CONTENT))
+        }, LinearLayout.LayoutParams(dp(activity, 61), dp(activity, 53)))
         if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, row)
         return row
     }
