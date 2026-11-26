@@ -304,7 +304,8 @@ struct GameLingoLicenseView: View {
         }
         .sheet(isPresented: $showNotices) {
             NavigationStack {
-                GLScreen(title: "Licence třetích stran") {
+                GLScreen(title: "Licence třetích stran", help:
+                    "Licenční oznámení jsou součástí aplikace. Pokud soubor chybí, lze zobrazit zveřejněné licence na GitHubu.") {
                     GLCard {
                         Text(verbatim: {
                             guard let url = Bundle.main.url(forResource: "GameLingoNotices", withExtension: "txt"),
@@ -322,6 +323,11 @@ struct GameLingoLicenseView: View {
                     }
                     Link("Licence třetích stran na GitHubu",
                          destination: URL(string: "https://github.com/CaseyCZ/GameLingo/blob/Master/THIRD_PARTY_NOTICES.md")!)
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        GLBackButton { showNotices = false }
+                    }
                 }
             }
             .preferredColorScheme(.dark)
