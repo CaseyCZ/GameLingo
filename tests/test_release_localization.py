@@ -61,7 +61,7 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn('findViewWithTag<TextView>("gamelingo-title")', refresh)
         self.assertIn('findViewWithTag<TextView>("gamelingo-detail")', refresh)
         self.assertNotIn("dialog.dismiss()", refresh)
-        self.assertIn('tag="gamelingo-title"', visual)
+        self.assertRegex(visual, r'tag\s*=\s*"gamelingo-title"')
 
     def test_tv_menu_uses_one_scale_and_shared_about_page(self):
         ui = text(TOOLS / "GameLingoTVUi.kt")
