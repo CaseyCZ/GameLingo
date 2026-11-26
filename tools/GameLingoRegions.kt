@@ -22,7 +22,7 @@ object GameLingoRegions {
         val d: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(d(20), d(20), d(20), d(26))
+            setPadding(d(16), d(12), d(16), d(16))
             background = GameLingoVisualKit.pageBackground(activity)
         }
         if (showHeader) page.addView(GameLingoVisualKit.neonTitle(activity,
@@ -33,6 +33,24 @@ object GameLingoRegions {
             "viewfinder"), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = d(15) })
+        page.addView(TextView(activity).apply {
+            gravity = android.view.Gravity.CENTER
+            text = tr("Otevřít editor oblastí")
+            gravity = Gravity.CENTER
+            textSize = GameLingoVisualKit.sp(activity, 17f)
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
+            background = GameLingoVisualKit.primary(activity)
+            minHeight = d(58)
+            isFocusable = true
+            setOnClickListener {
+                onDismiss()
+                if (GameLingoAutomaticConfig.enabled(activity)) GameLingoAutomaticConfig.showZones(activity)
+                else onEdit()
+            }
+        }, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, d(58)
+        ).apply { topMargin = d(8); bottomMargin = d(12) })
         val areas = if (GameLingoAutomaticConfig.enabled(activity)) {
             GameLingoAutomaticConfig.zones(activity).map { zone ->
                 Triple(zone.name, if (zone.enabled) "Aktivní" else "Vypnutá",
@@ -59,20 +77,23 @@ object GameLingoRegions {
             }, LinearLayout.LayoutParams(d(9), d(34)).apply { rightMargin = d(11) })
             line.addView(LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
                 addView(TextView(activity).apply {
-                    gravity = android.view.Gravity.CENTER
+                    gravity = Gravity.CENTER
                     text = tr(name)
                     textSize = GameLingoVisualKit.sp(activity, 16f)
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
-                })
+                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT))
                 addView(TextView(activity).apply {
-                    gravity = android.view.Gravity.CENTER
+                    gravity = Gravity.CENTER
                     text = tr(detail)
                     textSize = GameLingoVisualKit.sp(activity, 13f)
                     setTextColor(Color.parseColor("#92A4C7"))
                     setPadding(0, d(4), 0, 0)
-                })
+                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT))
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             line.addView(android.view.View(activity), LinearLayout.LayoutParams(d(20), 1))
             page.addView(line, LinearLayout.LayoutParams(
@@ -80,24 +101,6 @@ object GameLingoRegions {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = d(11) })
         }
-        page.addView(TextView(activity).apply {
-            gravity = android.view.Gravity.CENTER
-            text = tr("Otevřít editor oblastí")
-            gravity = Gravity.CENTER
-            textSize = GameLingoVisualKit.sp(activity, 17f)
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            background = GameLingoVisualKit.primary(activity)
-            minHeight = d(58)
-            isFocusable = true
-            setOnClickListener {
-                onDismiss()
-                if (GameLingoAutomaticConfig.enabled(activity)) GameLingoAutomaticConfig.showZones(activity)
-                else onEdit()
-            }
-        }, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, d(58)
-        ).apply { topMargin = d(8); bottomMargin = d(12) })
         if (showClose) page.addView(TextView(activity).apply {
             gravity = android.view.Gravity.CENTER
             text = tr("Zpět")
