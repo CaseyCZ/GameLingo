@@ -5,13 +5,25 @@ struct GLTranslationModePicker: View {
     var body: some View {
         VStack(alignment: .center, spacing: 5) {
             Text("Režim překladu").font(.caption)
-            Picker("Režim překladu", selection: Binding(
-                get: { model.automaticGameDialogue },
-                set: { model.setAutomaticGameDialogue($0) })) {
-                Text("Standardní").tag(false)
-                Text("Automatický").tag(true)
+            HStack(spacing: 6) {
+                ForEach([false, true], id: \.self) { automatic in
+                    Button {
+                        model.setAutomaticGameDialogue(automatic)
+                    } label: {
+                        Text(automatic ? LocalizedStringKey("Automatický") : LocalizedStringKey("Standardní"))
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .foregroundStyle(.white)
+                            .background {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(automatic == model.automaticGameDialogue ? AnyShapeStyle(GLStyle.gradient) : AnyShapeStyle(GLStyle.surface))
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(automatic == model.automaticGameDialogue ? .isSelected : [])
+                }
             }
-            .pickerStyle(.segmented)
             .disabled(model.isRunning)
             if model.automaticGameDialogue {
                 Text(GLInterfaceText.localized("Automatické umístění · aktivní zóny: ") + String(model.automaticZones.filter(\.enabled).count))
