@@ -142,8 +142,14 @@ struct GameLingoHome: View {
         }
         .sheet(isPresented: $modeSheet) {
             NavigationStack {
-                GLScreen(title: "Režim překladu") {
+                GLScreen(title: "Režim překladu", help:
+                    "Standardní režim používá ověřené oblasti. Automatický režim rozpoznává dialogy v aktivních zónách. Režim měň před spuštěním překladu.") {
                     GLTranslationModePicker(model: model)
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        GLBackButton { modeSheet = false }
+                    }
                 }
             }
             .preferredColorScheme(.dark)
