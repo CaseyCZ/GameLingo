@@ -67,8 +67,10 @@ enum GLInterfaceText {
         for language in [current, "en"] {
             guard let path = Bundle.main.path(forResource: language, ofType: "lproj"),
                   let bundle = Bundle(path: path) else { continue }
-            let value = bundle.localizedString(forKey: key, value: key, table: "Localizable")
-            if value != key || language == "en" { return value }
+            let missing = "__GAMELINGO_MISSING_TRANSLATION__"
+            let value = bundle.localizedString(forKey: key, value: missing, table: "Localizable")
+            // A legitimate translation may equal the Czech source text.
+            if value != missing { return value }
         }
         return key
     }
