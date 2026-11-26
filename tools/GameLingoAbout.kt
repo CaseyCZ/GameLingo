@@ -37,9 +37,13 @@ object GameLingoAbout {
             setPadding(0, pad(6), 0, pad(14))
         }
         if (showClose) page.addView(close)
-        page.addView(GameLingoVisualKit.wordmark(activity, compact = tv),
+        if (tv) page.addView(GameLingoVisualKit.wordmark(activity, compact = true),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(if (tv) 6 else 17) })
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(6) })
+        else page.addView(GameLingoVisualKit.neonTitle(activity,
+            "O aplikaci", "GameLingo – hraj a rozuměj svým hrám", "info.circle"),
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(15) })
 
         fun label(value: String, size: Float, strong: Boolean = false): TextView =
             TextView(activity).apply {
@@ -55,8 +59,26 @@ object GameLingoAbout {
             activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
         }.getOrNull().orEmpty().ifEmpty { tr("testovací sestavení") }
 
-        page.addView(label("GameLingo · $version", 19f, true))
-        page.addView(label("Nezávislý překlad herních dialogů a textů pro Xbox, PlayStation a kompatibilní TV.", 14f))
+        if (tv) {
+            page.addView(label("GameLingo · $version", 19f, true))
+            page.addView(label("Nezávislý překlad herních dialogů a textů pro Xbox, PlayStation a kompatibilní TV.", 14f))
+        } else {
+            // Equivalent to iOS About's emphasized GLNeonPanel.
+            val brandCard = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                background = GameLingoVisualKit.card(activity, selected = true)
+                setPadding(pad(14), pad(22), pad(14), pad(22))
+            }
+            brandCard.addView(GameLingoVisualKit.wordmark(activity))
+            brandCard.addView(label("Překlad herních dialogů a textů", 14f))
+            brandCard.addView(label("Verze $version", 13f, true).apply {
+                setTextColor(Color.parseColor(GameLingoUIContract.Palette.cyan))
+            })
+            page.addView(brandCard, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { bottomMargin = pad(13) })
+        }
 
         page.addView(label("Licence a původní autoři", 19f, true))
         page.addView(label(
