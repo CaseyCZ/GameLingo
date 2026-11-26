@@ -21,6 +21,7 @@ import android.widget.TextView
 object GameLingoSubtitleAppearance {
     fun show(activity: Activity) {
         if (activity.isFinishing) return
+        fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         val prefs = TvProfily.nastaveni(activity)
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val dp: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
@@ -34,7 +35,8 @@ object GameLingoSubtitleAppearance {
 
         fun text(label: String, size: Float = 15f, color: Int = Color.WHITE,
                  bold: Boolean = false): TextView = TextView(activity).apply {
-            this.text = label
+            gravity = android.view.Gravity.CENTER
+            this.text = tr(label)
             textSize = size
             setTextColor(color)
             if (bold) typeface = Typeface.DEFAULT_BOLD
@@ -50,7 +52,7 @@ object GameLingoSubtitleAppearance {
         header.addView(GameLingoHelp.button(activity,"appearance"),GameLingoHelp.layout(activity,dp(36),dp(44)))
         header.addView(TextView(activity).apply {
             this.text = "✕"
-            contentDescription = "Zavřít vzhled titulků"
+            contentDescription = tr("Zavřít vzhled titulků")
             textSize = 24f
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
@@ -62,14 +64,14 @@ object GameLingoSubtitleAppearance {
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = dp(18) })
         layout.addView(text(
-            "Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. " +
-                "Přesná poloha rámečků zůstává v Oblastech obrazovky.",
+            "Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. Přesná poloha rámečků zůstává v Oblastech obrazovky.",
             14f, muted
         ), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { bottomMargin = dp(20) })
 
-        val preview = text(GameLingoPhoneSubtitleStyle.sample(activity), 18f, bold = true).apply {
+        val preview = text("", 18f, bold = true).apply {
+            this.text = GameLingoPhoneSubtitleStyle.sample(activity)
             gravity = Gravity.CENTER
             setPadding(dp(14), dp(16), dp(14), dp(16))
             background = GameLingoVisualKit.card(activity, true)
@@ -109,7 +111,7 @@ object GameLingoSubtitleAppearance {
                 setPadding(dp(16), dp(15), dp(16), dp(12))
             }
             val number = text("", 16f, bold = true)
-            fun refresh(value: Int) { number.text = "$label: $value %" }
+            fun refresh(value: Int) { number.text = "${tr(label)}: $value %" }
             refresh(initial)
             card.addView(number)
             val bar = SeekBar(activity).apply {
@@ -156,13 +158,13 @@ object GameLingoSubtitleAppearance {
                 text = "●"
                 textSize = 29f
                 gravity = Gravity.CENTER
-                contentDescription = "Barva textu: " + when (choice) {
+                contentDescription = tr("Barva textu") + ": " + tr(when (choice) {
                     "yellow" -> "Žlutá"
                     "cyan" -> "Tyrkysová"
                     "green" -> "Zelená"
                     "purple" -> "Fialová"
                     else -> "Bílá"
-                }
+                })
                 setTextColor(GameLingoPhoneSubtitleStyle.textColor(choice))
                 background = GameLingoVisualKit.card(activity,
                     GameLingoPhoneSubtitleStyle.color(activity) == choice)
@@ -191,15 +193,15 @@ object GameLingoSubtitleAppearance {
         val backgroundButtons = mutableListOf<Pair<String, TextView>>()
         GameLingoPhoneSubtitleStyle.backgrounds.forEach { choice ->
             val button = TextView(activity).apply {
-                text = when (choice) {
+                text = tr(when (choice) {
                     "dark" -> "Tmavé"
                     "translucent" -> "Průhledné"
                     else -> "Žádné"
-                }
+                })
                 gravity = Gravity.CENTER
                 textSize = 13f
                 setTextColor(Color.WHITE)
-                contentDescription = "Pozadí: " + text
+                contentDescription = tr("Pozadí") + ": " + text
                 isSelected = GameLingoPhoneSubtitleStyle.background(activity) == choice
                 background = GameLingoVisualKit.card(activity, isSelected)
                 setOnClickListener {
@@ -242,7 +244,7 @@ object GameLingoSubtitleAppearance {
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         lockCard.addView(Switch(activity).apply {
             isChecked = locked
-            contentDescription = "Zamknout polohu a vzhled titulků"
+            contentDescription = tr("Zamknout polohu a vzhled titulků")
             thumbTintList = ColorStateList.valueOf(cyan)
             setOnCheckedChangeListener { _, checked ->
                 prefs.edit().putBoolean("rozvrhZamek", checked).apply()
@@ -262,8 +264,8 @@ object GameLingoSubtitleAppearance {
         val tvSelected = !tvStore.pouzeTelefon && selectedTv != null &&
             senderIp != null && senderIp == selectedTv.ip
         layout.addView(TextView(activity).apply {
-            text = "Náhled na TV"
-            contentDescription = "Odeslat ukázkový překlad do vybrané TV"
+            text = tr("Náhled na TV")
+            contentDescription = tr("Odeslat ukázkový překlad do vybrané TV")
             textSize = 17f
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
@@ -281,14 +283,13 @@ object GameLingoSubtitleAppearance {
         ).apply { topMargin = dp(8); bottomMargin = dp(12) })
 
         layout.addView(text(
-            "Změny se ukládají pro aktuálně vybranou televizi nebo telefon. " +
-                "Pro přesné umístění rámečků otevři Oblasti obrazovky.",
+            "Změny se ukládají pro aktuálně vybranou televizi nebo telefon. Pro přesné umístění rámečků otevři Oblasti obrazovky.",
             13f, muted
         ), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(5); bottomMargin = dp(17) })
         layout.addView(TextView(activity).apply {
-            text = "Hotovo"
+            text = tr("Hotovo")
             textSize = 18f
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)

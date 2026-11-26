@@ -19,14 +19,14 @@ struct GameLingoXboxScreen: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 17) {
+                VStack(alignment: .center, spacing: 17) {
                     GLNeonTitle(title: "Můj Xbox",
                                 subtitle: "Účet, konzole a výběr pro překlad",
                                 icon: "gamecontroller.fill")
                     GLNeonPanel(emphasized: true) {
                         HStack(spacing: 13) {
                             GLPlatformBadge(family: .xbox, size: 62)
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .center, spacing: 4) {
                                 Text("Xbox Remote Play")
                                     .font(.headline)
                                 Text("Microsoft účet a vlastní konzole")
@@ -45,7 +45,7 @@ struct GameLingoXboxScreen: View {
                         GLHeader(title: "Moje konzole", help:
                             "Načti všechny Xboxy přiřazené k účtu. Zvol konkrétní konzoli pro překlad, zejména pokud jich máš více. Výběr se uloží do GameLingo a zobrazí na úvodní obrazovce. Samotné zobrazení v seznamu neznamená aktivní Remote Play.")
                         HStack(spacing: 9) {
-                            Text("\(auth.consoles.count) nalezených")
+                            Text(verbatim: GLInterfaceText.localized("Nalezeno:") + " " + String(auth.consoles.count))
                                 .foregroundStyle(GLStyle.muted)
                             Spacer()
                             Button {
@@ -58,9 +58,9 @@ struct GameLingoXboxScreen: View {
                         .font(.subheadline)
 
                         if auth.consoles.isEmpty {
-                            Text(auth.signedIn
+                            Text(LocalizedStringKey(auth.signedIn
                                  ? "Žádný Xbox zatím nebyl nalezen. Zkontroluj vzdálené funkce konzole a zkus Obnovit."
-                                 : "Nejdříve se přihlas ke svému účtu Microsoft.")
+                                 : "Nejdříve se přihlas ke svému účtu Microsoft."))
                                 .font(.subheadline)
                                 .foregroundStyle(GLStyle.muted)
                         } else {
@@ -71,13 +71,13 @@ struct GameLingoXboxScreen: View {
                                 } label: {
                                     HStack(spacing: 13) {
                                         GLPlatformBadge(family: .xbox, size: 44)
-                                        VStack(alignment: .leading, spacing: 3) {
+                                        VStack(alignment: .center, spacing: 3) {
                                             Text(console.name)
                                                 .font(.headline)
                                                 .foregroundStyle(.white)
                                             Text(console.powerState.isEmpty
-                                                 ? "Stav konzole není známý"
-                                                 : "Stav: " + console.powerState)
+                                                 ? GLInterfaceText.localized("Stav konzole není známý")
+                                                 : GLInterfaceText.localized("Stav:") + " " + GLInterfaceText.localized(console.powerState))
                                                 .font(.caption)
                                                 .foregroundStyle(GLStyle.muted)
                                         }
@@ -102,7 +102,7 @@ struct GameLingoXboxScreen: View {
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(model.isRunning)
-                                .accessibilityLabel("Vybrat konzoli " + console.name)
+                                .accessibilityLabel(GLInterfaceText.localized("Vybrat konzoli:") + " " + console.name)
                             }
                         }
                     }
@@ -132,8 +132,11 @@ struct GameLingoXboxScreen: View {
             .navigationTitle("Xbox")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    GLBackButton { dismiss() }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Zavřít") { dismiss() }
+                    GLHelpButton(title: "Xbox", explanation: "Nejdříve se přihlas ke svému účtu Microsoft.")
                 }
             }
         }

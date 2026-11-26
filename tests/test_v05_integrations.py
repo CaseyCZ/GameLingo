@@ -18,6 +18,141 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_localized_region_editor_preserves_geometry_and_menu_icons(self):
+        layout = code(TOOLS/"GameLingoDirectTVLayout.kt")
+        phone = code(TOOLS/"GameLingoSettings.kt")
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        self.assertIn('active.text=tr(names[selected])', layout)
+        self.assertIn('GameLingoLanguages.ui(context, names[i].substringBefore(" ·"))', layout)
+        self.assertIn('KEYCODE_DPAD_LEFT', layout)
+        self.assertIn('storedGreen', layout)
+        self.assertIn('menu("globe", "Jazyky"', phone)
+        self.assertIn('tile("globe", "Jazyky"', tv)
+
+    def test_localized_tv_welcome_qr_and_cache(self):
+        ui = code(TOOLS/"GameLingoTVUi.kt")
+        qr = code(TOOLS/"GameLingoQRDisplay.kt")
+        scanner = code(TOOLS/"GameLingoQRScanner.kt")
+        cache = code(TOOLS/"GameLingoTranslationCache.kt")
+        self.assertIn('GameLingoLanguages.ui(a, "Vítej v GameLingo TV")', ui)
+        self.assertIn('GameLingoLanguages.ui(activity, "Párování pomocí QR")', qr)
+        self.assertIn('GameLingoLanguages.ui(activity, "Načti QR kód z GameLingo TV")', scanner)
+        self.assertIn('GameLingoLanguages.ui(a, "Vypnout paměť")', cache)
+        self.assertIn('QRCodeWriter().encode(target', qr)
+        self.assertIn('GameLingoTranslationCache.manage(a, value)', cache)
+
+    def test_localized_help_and_about_preserve_license_and_phone_keys(self):
+        help_ui = code(TOOLS/"GameLingoHelp.kt")
+        about = code(TOOLS/"GameLingoAbout.kt")
+        patch = code(TOOLS/"direct_tv_mode.py")
+        self.assertIn('GameLingoLanguages.ui(activity, descriptionKey)', help_ui)
+        self.assertIn('text = tr(value)', about)
+        self.assertIn('AGPL-3.0', about)
+        self.assertIn('notices ?: tr(', about)
+        self.assertIn('GameLingoLanguages.ui(c, "Odpárovat")', patch)
+        self.assertIn('IPhoneTVPairing.unpair(c, phone.id)', patch)
+
+    def test_localized_device_pairing_and_diagnostics(self):
+        device = code(TOOLS/"GameLingoDeviceCenter.kt")
+        pairing = code(TOOLS/"GameLingoTVPairing.kt")
+        diagnostics = code(TOOLS/"GameLingoDiagnostics.kt")
+        self.assertIn('GameLingoLanguages.ui(c, "Přidat zařízení")', device)
+        self.assertIn('GameLingoLanguages.ui(activity, "Spárovat")', pairing)
+        self.assertIn('GameLingoLanguages.ui(activity, "Ověřit spojení s TV")', diagnostics)
+        self.assertIn('setText(initialPin.takeIf', pairing)
+        self.assertIn('item.original+"\\n\\n"+item.translated', diagnostics)
+
+    def test_profiles_optional_and_localized_without_translating_names(self):
+        phone = code(TOOLS/"GameLingoProfiles.kt")
+        tv = code(TOOLS/"GameLingoTVProfiles.kt")
+        glossary = code(TOOLS/"GameLingoGlossaryUi.kt")
+        self.assertIn('if (names.isEmpty()) { onChosen(); return }', tv)
+        self.assertIn('GameLingoLanguages.ui(a, "Aktuální nastavení")', tv)
+        self.assertIn('text(activity,name,16f', phone)
+        self.assertIn('GameLingoVisualKit.detailRow(a,"gamecontroller",name,', tv)
+        self.assertIn('setText(saved?.text.orEmpty())', glossary)
+
+    def test_localized_region_and_appearance_controls(self):
+        lang = code(TOOLS/"GameLingoLanguages.kt")
+        regions = code(TOOLS/"GameLingoRegions.kt")
+        phone = code(TOOLS/"GameLingoSubtitleAppearance.kt")
+        tv = code(TOOLS/"GameLingoTVCaptionStyle.kt")
+        for label in ("Otevřít editor oblastí", "Velikost písma", "Náhled na TV", "Pozadí titulků"):
+            self.assertIn('"' + label + '" to Pair(', lang)
+        self.assertIn("text = tr(name)", regions)
+        self.assertIn("this.text = tr(label)", phone)
+        self.assertIn("this.text = GameLingoPhoneSubtitleStyle.sample(activity)", phone)
+        self.assertIn("title.text=tr(labelText)", tv)
+
+    def test_android_localized_ocr_translation_and_history(self):
+        lang = code(TOOLS/"GameLingoLanguages.kt")
+        settings = code(TOOLS/"GameLingoSettings.kt")
+        ocr = code(TOOLS/"GameLingoOCRSettings.kt")
+        history = code(TOOLS/"GameLingoHistoryUi.kt")
+        for label in ("Překládat dialogy", "Režim OCR", "Uchovávat historii", "Výchozí oblast", "Automaticky"):
+            self.assertIn('"' + label + '" to Pair(', lang)
+        self.assertIn("GameLingoLanguages.ui(c, title)", settings)
+        self.assertIn("this.text = tr(value)", ocr)
+        self.assertIn('text = tr("Uchovávat historii")', history)
+        self.assertIn("entry.translated", history)
+        self.assertIn("entry.original", history)
+
+    def test_settings_mode_updates_without_reopening(self):
+        automatic = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        phone = code(TOOLS/"GameLingoSettings.kt")
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        visual = code(TOOLS/"GameLingoVisualKit.kt")
+        redesign = code(TOOLS/"redesign_gamelingo.py")
+        self.assertIn('putBoolean("enabled",i==1).apply()\n                onChanged()', automatic)
+        self.assertIn("onChanged = onRefresh", phone)
+        self.assertIn("onRefresh = { openTab(3) }", redesign)
+        self.assertIn('tag="gamelingo-detail"', visual)
+        self.assertIn('cards[1].findViewWithTag', tv)
+        self.assertIn('cards[3].findViewWithTag', tv)
+
+    def test_centered_shared_menu_components(self):
+        android = code(TOOLS/"GameLingoVisualKit.kt")
+        tv = code(TOOLS/"GameLingoTVUi.kt")
+        onboarding = code(TOOLS/"GameLingoFirstRun.kt")
+        ios = code(IOS/"GameLingoVisualSystem.swift")
+        style = code(IOS/"GameLingoStyle.swift")
+        self.assertIn("text=title;gravity=Gravity.CENTER", android)
+        self.assertIn("text=detail;gravity=Gravity.CENTER", android)
+        self.assertIn("this.text = text\n        gravity = Gravity.CENTER", tv)
+        self.assertIn("val heading = TextView(activity).apply {\n            gravity = Gravity.CENTER", onboarding)
+        self.assertIn(".multilineTextAlignment(.center)", ios)
+        self.assertIn(".frame(width: 42, alignment: .trailing)", ios)
+        self.assertIn(".multilineTextAlignment(.center)", style)
+
+    def test_android_entry_localization_and_first_run_simplification(self):
+        import re
+        languages = code(TOOLS/"GameLingoLanguages.kt")
+        first = code(TOOLS/"GameLingoFirstRun.kt")
+        nav = code(TOOLS/"GameLingoNavigation.kt")
+        settings = code(TOOLS/"GameLingoSettings.kt")
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        auto = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        spec = json.loads(code(ROOT/"shared/mobile-ui.json"))
+        entries = re.findall(r'"([^"\n]+)" to Pair\("([^"\n]+)", "([^"\n]+)"\)', languages)
+        catalog = dict((cs, (sk, en)) for cs, sk, en in entries)
+        self.assertEqual(len(catalog), len(entries))
+        for title in spec["setupSteps"] + spec["settingsSections"] + [tab["title"] for tab in spec["tabs"]]:
+            self.assertIn(title, catalog)
+        for title in ("Jazyk aplikace", "Jazyk hry", "Jazyk překladu", "Standardní", "Automatický", "Nastavit později", "Pokročilé nastavení"):
+            self.assertIn(title, catalog)
+        self.assertIn('?: "en"', languages)
+        self.assertIn('GameLingoLanguages.ui(activity, destination.title)', nav)
+        self.assertEqual(first.count('tr("Spárovat TV")'), 1)
+        self.assertIn('2 -> consoleRegistered() && televisionPaired()', first)
+        self.assertIn('visibility = android.view.View.GONE', settings)
+        self.assertIn('parent = advanced', settings)
+        self.assertEqual(len(re.findall(r'^        tile\(', tv, re.M)), 9)
+        tv_ui = code(TOOLS/"GameLingoTVUi.kt")
+        self.assertIn('val back=action(a,GameLingoLanguages.ui(a,"Zpět")){dialog.dismiss()}', tv_ui)
+        self.assertIn('val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }', tv)
+        self.assertIn('getBoolean("enabled",false)', auto)
+        self.assertNotIn('if(i==1) showZones(a)', auto)
+
     def test_first_run_and_device_library(self):
         home=code(IOS/"GameLingoHome.swift")
         setup=code(IOS/"GameLingoSetupView.swift")
@@ -27,7 +162,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                       'openSelectedConsole', 'startCurrentSource'):
             self.assertIn(label,home)
         contract=code(ROOT/"shared/mobile-ui.json")
-        for label in ('Vyber konzoli', 'Kam zobrazit titulky?'):
+        for label in ('Jazyky a překlad', 'Vyber zařízení'):
             self.assertIn(label,contract)
         for label in ('PlayStation', 'Xbox', 'Spárovat TV'):
             self.assertIn(label,setup)
@@ -187,7 +322,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for step in ('Nastavit později', 'connectPlayStation()', 'connectTV()',
                      'GameLingoUIContract.setupSteps[step]'):
             self.assertIn(step,first_run)
-        self.assertIn('Vyber konzoli',code(ROOT/"shared/mobile-ui.json"))
+        self.assertIn('Vyber zařízení',code(ROOT/"shared/mobile-ui.json"))
         self.assertIn('AES/GCM/NoPadding',psstore)
         self.assertIn('setSingleChoiceItems',multi)
         self.assertIn('if (predvybrany >= 0)',multi)
@@ -218,7 +353,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         android=code(TOOLS/"redesign_gamelingo.py")
         first_run=code(TOOLS/"GameLingoFirstRun.kt")
         ios_setup=code(IOS/"GameLingoSetupView.swift")
-        self.assertIn("4 -> consoleRegistered() && televisionPaired()", first_run)
+        self.assertIn("2 -> consoleRegistered() && televisionPaired()", first_run)
         self.assertIn("GameLingoTVPairing.paired(activity, selected.ip)",first_run)
         self.assertIn("isEnabled = canContinue", first_run)
         self.assertIn("disabled: !canFinish", ios_setup)
@@ -255,7 +390,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
 
     def test_shared_mobile_contract_and_real_screens(self):
         spec=json.loads(code(ROOT/"shared/mobile-ui.json"))
-        self.assertEqual(len(spec["setupSteps"]), 5)
+        self.assertEqual(spec["setupSteps"], ["Vítej v GameLingo", "Jazyky a překlad", "Vyber zařízení"])
         self.assertEqual(len(spec["settingsSections"]), 4)
         self.assertEqual(spec["settingsSections"][-1], "OBECNÉ")
         self.assertIn("GameLingoUIContract.setupSteps[step]",
@@ -313,14 +448,24 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         native=code(TOOLS/"redesign_gamelingo.py")
         # Both clients must use one exact protocol, not two superficially
         # similar PIN screens that cannot communicate.
-        self.assertIn("PCPAIR1\\tPAIR",ios)
-        self.assertIn("PCPAIR1\\\\tOK",patch)
-        self.assertIn("IPhoneTVPairing.confirm(c, code, id, casti.getOrNull(4).orEmpty(), p.address.hostAddress.orEmpty())",patch)
+        self.assertIn("PCPAIR1\\tPAIR2",ios)
+        self.assertIn("PCPAIR1\\\\tOK2",patch)
+        self.assertIn("IPhoneTVPairing.confirmProof(c, id, casti[3], nonce, casti[5]",patch)
+        self.assertIn('"PAIR" -> continue',patch)
+        self.assertNotIn("PCPAIR1\\tPAIR\\t",ios)
         self.assertIn("lastSuccessPhoneId",receiver)
-        self.assertIn("return@synchronized loadSecret(ctx, phoneId)",receiver)
+        self.assertIn('pairMac(saved, "OK2\\t$context")',receiver)
         self.assertNotIn("lastSuccessToken",receiver)
         self.assertIn("REPLY_RETRY_WINDOW_MS = 15_000L",receiver)
-        self.assertIn("input == lastSuccessPin && phoneId == lastSuccessPhoneId",receiver)
+        self.assertIn("sameProof(it, proof)",receiver)
+        self.assertIn("ByteArray(16).also(random::nextBytes)",receiver)
+        self.assertIn('pairMac(pairingCode, "KEY2\\t$context")',receiver)
+        mobile = code(TOOLS/"GameLingoTVPairing.kt")
+        self.assertIn('sign(pin, "KEY2\\t$context")',mobile)
+        self.assertIn("PCPAIR1\\tPAIR2",mobile)
+        self.assertNotIn("PCPAIR1\\tPAIR\\t",mobile)
+        self.assertIn("MessageDigest.isEqual",mobile)
+        self.assertNotIn("IPhoneTVPairing.confirm(", code(TOOLS/"IPhoneTVPairingKeystoreTest.kt"))
         self.assertIn("self.pairingRetryTask = Task",ios)
         self.assertIn("self.pairingRetryTask?.cancel()",ios)
         self.assertIn("for _ in 0..<3",ios)
@@ -445,8 +590,13 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("OCRFrameGate(maximumSkip: 2.0)", pipeline)
         self.assertIn("dialogueImageGate.reset()", pipeline)
         self.assertIn("optionsImageGate.reset()", pipeline)
-        self.assertEqual(pipeline.count("recordSuccessfulRead(fingerprint"), 2)
-        self.assertEqual(pipeline.count("shouldRead(fingerprint"), 2)
+        # Standard dialogue and yellow lanes remain unchanged; each new
+        # automatic region has a separate baseline and only updates after OCR.
+        self.assertIn("automaticLanes: [UUID: AutomaticLane]", pipeline)
+        self.assertIn("lane.gate.recordSuccessfulRead(fingerprint", pipeline)
+        self.assertIn("lane.gate.shouldRead(fingerprint", pipeline)
+        self.assertEqual(pipeline.count("recordSuccessfulRead(fingerprint"), 3)
+        self.assertEqual(pipeline.count("shouldRead(fingerprint"), 3)
 
     def test_p1_2_latest_frame_mailboxes_are_bounded_and_session_owned(self):
         model = code(IOS/"PlayCaptionIOSApp.swift")
@@ -461,12 +611,52 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("if options.offer(timed)", model)
         self.assertIn("while let frame = dialogue.takeNext()", model)
         self.assertIn("while let frame = options.takeNext()", model)
-        self.assertIn("optionsFrames?.setEnabled(choicesEnabled)", model)
+        self.assertIn("optionsFrames?.setEnabled(choicesEnabled && !automaticGameDialogue)", model)
+        self.assertIn("LatestFrameMailbox<TimedFrame>(enabled: choicesEnabled && !automaticGameDialogue)", model)
         stop = model.split("func stop() {", 1)[1]
         self.assertIn("dialogueFrames?.close()", stop)
         self.assertIn("optionsFrames?.close()", stop)
         self.assertNotIn("await self?.processFrame(buffer", model)
         self.assertNotIn("await self?.processFrame(frame", model)
+
+    def test_automatic_zones_use_signed_bounded_snapshots_and_old_profiles(self):
+        ios = code(IOS/"PlayCaptionIOSApp.swift")
+        tv = code(IOS/"PlayCaptionTV.swift")
+        parser = code(TOOLS/"GameLingoZonePacket.kt")
+        overlay = code(TOOLS/"GameLingoZoneOverlay.kt")
+        receiver = code(TOOLS/"patch_tv_iphone.py")
+        pairing = code(TOOLS/"IPhoneTVPairing.kt")
+        self.assertIn("profile.automaticMode ?? false", ios)
+        self.assertIn("profile.automaticZones", ios)
+        self.assertIn("receiverSupportsZones", tv)
+        self.assertIn("sendSignedSubtitle(Data((header + blocks)", tv)
+        self.assertIn("count in 0..32", parser)
+        self.assertIn("bytes.size in 1..512", parser)
+        self.assertIn("isFinite()", parser)
+        self.assertIn("FLAG_NOT_TOUCHABLE", overlay)
+        self.assertIn("FLAG_NOT_FOCUSABLE", overlay)
+        self.assertIn("ui.postDelayed(expire, 2200)", overlay)
+        self.assertIn('"PCZ1", "STORY"', pairing)
+        self.assertLess(receiver.index("IPhoneTVPairing.verifyFresh(c, id,"), receiver.index("ACTION_SET_ZONES"))
+        self.assertIn("GameLingoZonePacket.parse(inner)", receiver)
+
+    def test_android_automatic_is_native_and_session_bounded(self):
+        wiring = code(TOOLS/"automatic_android.py")
+        engine = code(TOOLS/"GameLingoAutomaticOCR.kt")
+        self.assertIn("automaticXbox(f)", wiring)
+        self.assertIn("automaticFrame(gl.sirka,gl.vyska)", wiring)
+        self.assertIn("GameLingoAutomaticConfig.enabled(this)", wiring)
+        self.assertIn("TextRecognition.getClient", engine)
+        self.assertIn("busy.compareAndSet(false,true)", engine)
+        self.assertIn("tracker.observe(zone.id,blocks", engine)
+        self.assertIn("translating=true", engine)
+        self.assertIn("GameLingoTVPairing.supportsZones(ip)", wiring)
+        self.assertIn("GameLingoAutomaticConfig.profile(c)", code(TOOLS/"GameLingoProfiles.kt"))
+        standalone = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("automaticCaptureTick()", standalone)
+        self.assertIn("automaticReader?.offer(image.width,image.height)", standalone)
+        self.assertIn("stopAutomaticCapture()", standalone)
+        self.assertIn("automaticZoneOverlay.suppress(hidden)", code(TOOLS/"direct_tv_mode.py"))
 
     def test_p1_3_persistent_translation_cache_uses_engine_and_language_keys(self):
         swift = code(IOS/"TranslationCache.swift")
@@ -546,7 +736,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("preserveDisplay: Boolean = false", reset)
         self.assertIn('if (!preserveDisplay) {\n            translatedText = ""; shownAt = 0L; shownUntil = 0L', reset)
         self.assertIn('cancelSample(); resetText(); clearYellow(); clearHint(); render("")', capture)
-        self.assertIn('paused = !paused; cancelSample(); resetText(); render("")', capture)
+        self.assertIn('paused = !paused; stopAutomaticCapture(); cancelSample(); resetText(); render("")', capture)
         self.assertIn('shownUntil = 0L; translatedText = ""; render("")', capture)
         self.assertIn('if (wasActive) { render(""); clearYellow(); clearHint() }', capture)
     def test_point2_dialogue_replacement_preserves_old_deadline_until_success(self):
@@ -822,7 +1012,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         scanner = code(TOOLS/"GameLingoQRScanner.kt")
         center = code(TOOLS/"GameLingoDeviceCenter.kt")
         ios = code(IOS/"GameLingoTVSetupScreen.swift")
-        self.assertIn("GLPAIR1", parser)
+        self.assertIn("GLPAIR2", parser)
         self.assertIn("IPhoneTVPairing.activeCode() != pin", tv)
         self.assertIn("handler.removeCallbacks(tick)", tv)
         self.assertIn("GameLingoPairingQR.parse(it)", scanner)
@@ -893,12 +1083,34 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                         out.writestr("classes.dex" if i == 0 else f"classes{i+1}.dex", b"dex\n035\x00"+part)
             make(b"Lcom/google/mlkit/vision/text/TextRecognition;")
             gate.verify(apk, "tv")
-            gate.verify(apk, "mobile")
+            with self.assertRaises(AssertionError):
+                gate.verify(apk, "mobile")
             for marker in gate.MARKERS:
                 make(b"normal", marker)
-                for mode in ("tv", "mobile"):
-                    with self.assertRaises(AssertionError):
-                        gate.verify(apk, mode)
+                with self.assertRaises(AssertionError):
+                    gate.verify(apk, "tv")
+            make(b"normal", gate.MOBILE_MARKER)
+            gate.verify(apk, "mobile")
+            with self.assertRaises(AssertionError):
+                gate.verify(apk, "tv")
+
+    def test_mobile_offline_isolated_and_preserves_privacy_contract(self):
+        mobile = code(TOOLS/"mobile_offline_translation.py")
+        helper = code(TOOLS/"GameLingoMobileOffline.kt")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        brand = code(TOOLS/"brand_android.py")
+        self.assertIn('if not tv_variant(root):\n        t = install_mobile_translator(t, folder)', wiring)
+        self.assertLess(wiring.index("t = protect_cache_writes(t)"), wiring.index("t = install_mobile_translator(t, folder)"))
+        self.assertIn('        gradle.write_text(strip_dependency', brand)
+        self.assertIn('remember("mlkit-v1", source, target, vstup, result, cacheRevision)', mobile)
+        self.assertIn("GameLingoLanguages.revision != languageRevision", mobile)
+        self.assertIn("offline.close()", mobile)
+        self.assertIn("requireWifi()", helper)
+        self.assertIn("pending >= MAX_PENDING", helper)
+        self.assertIn("UI_MODE_TYPE_TELEVISION", helper)
+        self.assertIn("FEATURE_LEANBACK", helper)
+        self.assertIn("active !== client", helper)
+        self.assertIn("translator.close()", helper)
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""
@@ -962,6 +1174,31 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for item in ('"white"', '"yellow"', '"cyan"', '"green"', '"purple"',
                      '"none"', '"dark"', '"translucent"'):
             self.assertIn(item,style)
+
+    def test_ios_update_ui_localization(self):
+        import re
+        updater = code(IOS/"GameLingoUpdates.swift")
+        keys = re.findall(r'(?:UpdateFailure|Button|Label|GLInterfaceText.localized)\("([^"]+)"', updater)
+        keys += re.findall(r'(?:message|messageDetail) = "([^"]+)"', updater)
+        keys += ["Novější verze není dostupná.", "Je dostupná nová verze.", "Stahování zrušeno.", "Stažení se nezdařilo:", "Neznámá chyba.", "Aktualizace", "Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem."]
+        for lang in ("en", "sk"):
+            catalog = code(IOS/(lang + ".lproj")/"Localizable.strings")
+            for key in set(keys):
+                if key:
+                    self.assertIn(json.dumps(key, ensure_ascii=False) + " = ", catalog)
+        self.assertIn("GLInterfaceText.localized(updates.message)", updater)
+        self.assertIn("GLInterfaceText.localized($0)", updater)
+
+    def test_android_tv_update_ui_localization(self):
+        import re
+        updater = code(TOOLS/"GameLingoTVUpdater.kt")
+        labels = code(TOOLS/"GameLingoLanguages.kt")
+        keys = re.findall(r'tr\(a, "([^"]+)"\)', updater)
+        self.assertGreaterEqual(len(set(keys)), 20)
+        for key in set(keys):
+            self.assertIn(json.dumps(key, ensure_ascii=False) + " to Pair(", labels)
+        for script in ("wire_mobile_update.py", "direct_tv_mode.py"):
+            self.assertIn('GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")', code(TOOLS/script))
 
     def test_tv_updater_requires_signed_newer_apk_and_system_consent(self):
         updater = code(TOOLS/"GameLingoTVUpdater.kt")
@@ -1144,7 +1381,12 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                        "Volby.zapnuto", "Volby.rezimText", "prectiVolby(cropped", "ACTION_SET_VOLBY",
                        "GameLingoTVProfiles.chooseForStart(a)", "if (yellow) yellowRoi else roi"):
             self.assertIn(marker, capture)
-        self.assertIn("restore(a, items.getJSONObject(names[index-1]))", profiles)
+        chooser = profiles.split("fun chooseForStart(", 1)[1].split("fun saveCurrent(", 1)[0]
+        self.assertIn("names.getOrNull(index - 1)", chooser)
+        self.assertIn("all(a).optJSONObject(it)", chooser)
+        self.assertIn("restore(a, profile)", chooser)
+        self.assertNotIn("getJSONObject(", chooser)
+        self.assertIn("if (busy()) return@select", chooser)
         self.assertIn("fun greenBounds", layout)
         self.assertIn("wantFrame.getAndSet(0)", capture)
         self.assertIn("yellowEpoch", capture)
@@ -1181,10 +1423,29 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("fun layout(activity: Activity",help_ui)
         self.assertIn("GameLingoTVUi.panel(activity,focused)",help_ui)
         self.assertIn("setOnFocusChangeListener",help_ui)
-        self.assertIn('GameLingoTVUi.page(activity,"Nápověda · "+title',help_ui)
-        for module in ("GameLingoTVSettings.kt","GameLingoOCRSettings.kt","GameLingoDirectTVLayout.kt"):
-            self.assertIn("GameLingoHelp.layout",code(TOOLS/module))
+        self.assertIn('GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title',help_ui)
+        self.assertIn('GameLingoTVUi.header(a, heading, back, help)',code(TOOLS/"GameLingoTVSettings.kt"))
+        self.assertIn('helpTopic = "ocr"',code(TOOLS/"GameLingoOCRSettings.kt"))
+        self.assertIn("GameLingoTVUi.header(a, GameLingoTVUi.title",code(TOOLS/"GameLingoDirectTVLayout.kt"))
         self.assertIn("Independent help glyph",code(TOOLS/"audit_tv_ui.py"))
+
+    def test_tv_receiver_and_editor_fixed_header_and_separate_stop(self):
+        receiver = code(TOOLS/"redesign_gamelingo.py")
+        nav = code(TOOLS/"tv_navigation.py")
+        editor = code(TOOLS/"GameLingoDirectTVLayout.kt")
+        self.assertIn('GameLingoTVUi.header(this, logo, zastav, GameLingoHelp.button(this, "tv"))',receiver)
+        self.assertNotIn("paticka.addView(zastav)",receiver)
+        self.assertIn("paticka.addView(zastavPrijem)",nav)
+        self.assertIn('val cancel = button("Zrušit"){dialog.dismiss()}',editor)
+        self.assertIn("GameLingoTVUi.header(activity, heading, back",code(TOOLS/"GameLingoFirstRun.kt"))
+
+    def test_tv_profile_cancel_keeps_parent_and_editor_returns_to_list(self):
+        source = code(TOOLS/"GameLingoTVProfiles.kt")
+        lane = source.split("fun show(a: Activity)",1)[1]
+        self.assertNotIn("page?.dismiss()\n                    when(action)",lane)
+        self.assertIn("all(a).optJSONObject(name)",lane)
+        self.assertIn('onClose = { if (!a.isFinishing && !a.isDestroyed) show(a) }',source)
+        self.assertIn("GameLingoGlossaryUi.edit(a,name){page?.dismiss();show(a)}",lane)
 
     def test_tv_fullscreen_pages_and_global_dialog_theme(self):
         ui=code(TOOLS/"GameLingoTVUi.kt")
@@ -1194,7 +1455,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn("GameLingoTVUi.page(a",code(TOOLS/module))
         for marker in ("install_tv_theme(root)","GameLingoTVTheme","GameLingoTVAlert","state_focused","gamelingo_tv_focus"):
             self.assertIn(marker,wiring)
-        self.assertIn("if(television) ViewGroup.LayoutParams.MATCH_PARENT",code(TOOLS/"GameLingoSettings.kt"))
+        self.assertIn('GameLingoTVUi.mountPage(activity, dialog, tr("Překlad"), content, helpTopic = "translation")',code(TOOLS/"GameLingoSettings.kt"))
 
     def test_tv_diagnostics_distinguishes_stopped_resources_from_last_session_counters(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
@@ -1203,8 +1464,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for marker in ("releaseDisplay.isSuccess", "releaseProjection.isSuccess",
                        "stopForeground(STOP_FOREGROUND_REMOVE)", "stopForegroundResult.isSuccess"):
             self.assertIn(marker, cleanup)
-        self.assertIn("reportView.text = report()", service)
+        self.assertIn("reportView.text = report(a)", service)
         self.assertIn("reportView.removeCallbacks(reportRefresh)", service)
+
+    def test_tv_diagnostic_display_localizes_without_rewriting_capture_state(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        settings = code(TOOLS/"GameLingoTVSettings.kt")
+        languages = code(TOOLS/"GameLingoLanguages.kt")
+        self.assertIn('localizedStatus(a, GameLingoScreenTranslationService.status)', settings)
+        self.assertIn('reportView.text = report(a)', capture)
+        self.assertIn('status.startsWith("Systém ukončil")', capture)
+        self.assertIn('foregroundState.startsWith("Aktivní")', capture)
+        self.assertIn('if (lastRaw.isNotBlank()) "\\nOCR: $lastRaw"', capture)
+        for key in ("Samostatný překlad TV", "Diagnostika TV", "Čekám na první snímek", "Přijaté snímky:"):
+            self.assertIn(f'"{key}" to Pair(', languages)
 
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
@@ -1255,7 +1528,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
     def test_tv_review_fixes_focus_opacity_and_profile_editing(self):
         style=code(TOOLS/"GameLingoTVCaptionStyle.kt")
         self.assertIn("opacityBar.progress=percent",style)
-        self.assertIn("Neprůhlednost pozadí: $percent %",style)
+        self.assertIn('label.text = "${tr("Neprůhlednost pozadí")}: $percent %"',style)
+        self.assertIn('(p.getInt("opacity",230).coerceIn(0,255)*100+127)/255',style)
         self.assertIn("ViewGroup.FOCUS_BLOCK_DESCENDANTS",code(TOOLS/"GameLingoOCRSettings.kt"))
         self.assertIn("ViewGroup.FOCUS_BLOCK_DESCENDANTS",code(TOOLS/"GameLingoSettings.kt"))
         self.assertIn("Upravit další nastavení",code(TOOLS/"GameLingoTVProfiles.kt"))
@@ -1264,12 +1538,12 @@ class GameLingoIntegrationContracts(unittest.TestCase):
     def test_tv_device_manager_shows_phones_instead_of_other_tvs(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         tv=code(TOOLS/"direct_tv_mode.py")
-        self.assertIn('arrayOf("Xbox", "PlayStation 5 / 4", "Telefon · QR / PIN")',manager)
-        self.assertIn('label(c, "Telefony", 16f)',manager)
+        self.assertIn('arrayOf("Xbox", "PlayStation 5 / 4", GameLingoLanguages.ui(c, "Telefon · QR / PIN"))',manager)
+        self.assertIn('label(c, GameLingoLanguages.ui(c, "Telefony"), 16f)',manager)
         self.assertIn("TV_RECEIVER_PHONE_ROWS",manager)
         self.assertIn("IPhoneTVPairing.phones(c)",tv)
         self.assertIn("IPhoneTVPairing.unpair(c, phone.id)",tv)
-        self.assertIn("return root",manager.split("TV_RECEIVER_PHONE_ROWS",1)[1].split('label(c, "Televize"',1)[0])
+        self.assertIn("return root",manager.split("TV_RECEIVER_PHONE_ROWS",1)[1].split('label(c, GameLingoLanguages.ui(c, "Televize")',1)[0])
 
     def test_tv_mobile_downloads_use_public_prerelease_assets_and_two_home_actions(self):
         qr=code(TOOLS/"GameLingoQRDisplay.kt")
@@ -1288,14 +1562,14 @@ class GameLingoIntegrationContracts(unittest.TestCase):
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         self.assertIn("GameLingoTVUi.select(c, heading, options, onSelect = onSelect)",manager)
-        for marker in ('chooseDevice(c, "Přidat zařízení", options)', 'chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name)',
+        for marker in ('chooseDevice(c, GameLingoLanguages.ui(c, "Přidat zařízení"), options)', 'chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name)',
                        'chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno)', "chooseDevice(c, tv.jmeno"):
             self.assertIn(marker,manager)
 
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         for marker in (
-            '"Použít", "Připojit", "Odebrat", "Přejmenovat"',
+            'arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Připojit"), GameLingoLanguages.ui(c, "Odebrat"), GameLingoLanguages.ui(c, "Přejmenovat"))',
             '"hiddenXboxIds"',
             'filterNot { it.id in hiddenXboxIds }',
             '"Vrátit odebrané Xboxy"',
@@ -1329,8 +1603,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                        "GLNeonPanel(emphasized: connected)", "GLNeonBackground()"):
             self.assertIn(marker,home)
         for marker in ("GLBrandWordmark()", "GLPlatformBadge(family: family",
-                       "case 1: languageStep", "case 2: consoleStep", "case 3: outputStep",
-                       "ForEach(0..<5)", "GLNeonBackground()"):
+                       "case 1: languageStep", "consoleStep", "outputStep",
+                       "ForEach(GameLingoUIContract.setupSteps.indices", "GLNeonBackground()"):
             self.assertIn(marker,setup)
         for marker in ("GLNeonTitle(", "GLNeonPanel(emphasized: true)",
                        "ForEach(Area.allCases", "model.choicesOutputArea"):
@@ -1361,7 +1635,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('selection: $model.appLanguage',setup)
         self.assertIn('selection: $model.appLanguage',settings)
         self.assertIn('Vítej v GameLingo',setup)
-        self.assertIn('ForEach(0..<5)',setup)
+        self.assertIn('ForEach(GameLingoUIContract.setupSteps.indices',setup)
 
     def test_pinned_native_source_and_build(self):
         workflow=code(ROOT/".github/workflows/build-gamelingo.yml")

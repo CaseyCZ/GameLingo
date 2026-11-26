@@ -44,7 +44,7 @@ struct GameLingoHome: View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 11) {
+                    VStack(alignment: .center, spacing: 11) {
                         if tab == .home { brandHeader }
                         switch tab {
                         case .home: homePage
@@ -57,6 +57,8 @@ struct GameLingoHome: View {
                         case .about: aboutPage
                         }
                     }
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
                     .padding(.bottom, 16)
@@ -125,7 +127,11 @@ struct GameLingoHome: View {
         } message: {
             Text("Zadej PIN uživatele konzole, ne osmimístný párovací kód.")
         }
-        .sheet(isPresented: $regionsSheet) { SubtitleSettingsView(model: model) }
+        .sheet(isPresented: $regionsSheet) {
+            if model.automaticGameDialogue {
+                NavigationStack { GLAutomaticZonesView(model: model) }
+            } else { SubtitleSettingsView(model: model) }
+        }
         .sheet(isPresented: $profilesSheet) {
             NavigationStack {
                 GameLingoProfilesScreen(model: model)
@@ -145,7 +151,7 @@ struct GameLingoHome: View {
 
     private var brandHeader: some View {
         HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .center, spacing: 3) {
                 GLBrandWordmark(compact: true)
                 Text("Titulky a překlady her v reálném čase")
                     .font(.caption)
@@ -173,9 +179,9 @@ struct GameLingoHome: View {
 
     private var heroBanner: some View {
         GLNeonPanel(emphasized: true, radius: 23) {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .center, spacing: 10) {
                 HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .center, spacing: 4) {
                         Text("HRAJ. ROZUMĚJ.")
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
                             .tracking(2)
@@ -320,6 +326,7 @@ struct GameLingoHome: View {
                 )
             }
             .buttonStyle(.plain)
+            GLTranslationModePicker(model: model)
             actionButton
             LazyVGrid(columns: [GridItem(.flexible()),
                                 GridItem(.flexible())], spacing: 9) {
@@ -329,6 +336,15 @@ struct GameLingoHome: View {
                 tile("Zařízení", icon: "display.2") { tab = .devices }
             }
             readiness
+            if devices.subtitleOutput == .phone && model.automaticGameDialogue {
+                ForEach(model.automaticOutputs) { output in
+                    GLCard {
+                        Text(model.automaticZones.first { $0.id == output.zone }?.name ?? "Překlad")
+                            .font(.caption)
+                        Text(output.text).font(.headline)
+                    }
+                }
+            }
             if devices.subtitleOutput == .phone && !model.phoneSubtitle.isEmpty {
                 GLCard {
                     GLHeader(title: "Dialog")
@@ -410,7 +426,7 @@ struct GameLingoHome: View {
                     .foregroundStyle(consoleActuallyReady && outputActuallyReady
                                      ? GLStyle.green : GLNeon.mist)
                     .shadow(color: GLStyle.green.opacity(0.20), radius: 9)
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .center, spacing: 4) {
                     Text(model.isRunning ? model.status :
                          (consoleActuallyReady && outputActuallyReady
                           ? "Připraveno ke spuštění" :
@@ -435,9 +451,9 @@ struct GameLingoHome: View {
     }
 
     private var regionsPage: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .center, spacing: 14) {
             GLNeonTitle(title: "Oblasti obrazovky",
-                        subtitle: "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
+                        subtitle: model.automaticGameDialogue ? "Automatické oblasti překladu" : "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
                         icon: "viewfinder")
             Button { regionsSheet = true } label: {
                 HStack {
@@ -451,17 +467,23 @@ struct GameLingoHome: View {
                 .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 16))
             }
             .buttonStyle(.plain)
-            areaLine("Modrá", "Čtení dialogů", .blue)
-            areaLine("Zelená", "Výstup přeložených titulků", .green)
-            areaLine("Žlutá", "Čtení herních textů a voleb", .yellow)
-            areaLine("Oranžová", "Překlad herních textů", .orange)
+            if model.automaticGameDialogue {
+                ForEach(model.automaticZones) { zone in
+                    areaLine(zone.name, zone.enabled ? "Aktivní" : "Vypnutá", zone.enabled ? .green : .gray)
+                }
+            } else {
+                areaLine("Modrá", "Čtení dialogů", .blue)
+                areaLine("Zelená", "Výstup přeložených titulků", .green)
+                areaLine("Žlutá", "Čtení herních textů a voleb", .yellow)
+                areaLine("Oranžová", "Překlad herních textů", .orange)
+            }
         }
     }
 
     private func areaLine(_ name: String, _ detail: String, _ color: Color) -> some View {
         HStack(spacing: 11) {
             RoundedRectangle(cornerRadius: 5).fill(color).frame(width: 9, height: 34)
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .center, spacing: 3) {
                 Text(LocalizedStringKey(name)).font(.subheadline.bold())
                 Text(LocalizedStringKey(detail)).font(.caption).foregroundStyle(GLVisual.muted)
             }
@@ -474,7 +496,7 @@ struct GameLingoHome: View {
     }
 
     private var profilesPage: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .center, spacing: 14) {
             GLNeonTitle(title: "Profily her",
                         subtitle: "Pro každou hru vlastní oblasti, rychlost OCR a titulky",
                         icon: "gamecontroller")
@@ -517,7 +539,7 @@ struct GameLingoHome: View {
     }
 
     private var aboutPage: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .center, spacing: 15) {
             GLNeonTitle(title: "O aplikaci",
                         subtitle: "GameLingo – hraj a rozuměj svým hrám",
                         icon: "info.circle")
@@ -559,17 +581,18 @@ struct GameLingoHome: View {
     }
 
     private func infoRow(_ title: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .center, spacing: 5) {
             Text(LocalizedStringKey(title)).font(.headline)
             Text(LocalizedStringKey(text)).font(.subheadline).foregroundStyle(GLVisual.muted)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
         .padding(15)
         .background(GLVisual.card, in: RoundedRectangle(cornerRadius: 15))
     }
 
     private func sectionTitle(_ title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .center, spacing: 6) {
             Text(LocalizedStringKey(title)).font(.title2.bold())
             Text(LocalizedStringKey(detail)).font(.subheadline).foregroundStyle(GLVisual.muted)
         }
@@ -673,7 +696,7 @@ private struct GameLingoDeviceRow: View {
                         .background(GLNeon.panel,
                                     in: RoundedRectangle(cornerRadius: 15))
                 }
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .center, spacing: 5) {
                     Text(name)
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)

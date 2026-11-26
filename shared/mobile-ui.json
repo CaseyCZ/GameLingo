@@ -35,9 +35,7 @@
   "setupSteps": [
     "Vítej v GameLingo",
     "Jazyky a překlad",
-    "Vyber konzoli",
-    "Kam zobrazit titulky?",
-    "Kontrola nastavení"
+    "Vyber zařízení"
   ],
   "settingsSections": [
     "JAZYKY",

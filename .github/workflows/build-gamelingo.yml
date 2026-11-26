@@ -3,6 +3,10 @@ name: GameLingo • iOS / Android / Google TV
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      require_permanent_signing:
+        type: boolean
+        default: false
     secrets:
       GAMELINGO_TV_KEYSTORE_B64:
         required: false
@@ -69,6 +73,10 @@ jobs:
         run: |
           swiftc ios/GameLingoIOS/App/OCRFrameFingerprint.swift tests/OCRFrameFingerprintTests.swift -o "$RUNNER_TEMP/ocr-fingerprint-tests"
           "$RUNNER_TEMP/ocr-fingerprint-tests"
+      - name: Run automatic OCR block and zone tests
+        run: |
+          xcrun --sdk macosx swiftc -framework CoreGraphics ios/GameLingoIOS/App/AutomaticDialogueLayout.swift ios/GameLingoIOS/App/AutomaticOCRZone.swift ios/GameLingoIOS/App/AutomaticBlockTracker.swift tests/AutomaticDialogueLayoutTests.swift -o "$RUNNER_TEMP/automatic-ocr-tests"
+          "$RUNNER_TEMP/automatic-ocr-tests"
       - name: Run persistent translation cache tests
         run: |
           swiftc ios/GameLingoIOS/App/TranslationCache.swift tests/TranslationCacheTests.swift -lsqlite3 -o "$RUNNER_TEMP/translation-cache-tests"
@@ -187,6 +195,9 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Run Android native automatic tracker tests
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoAutomaticTrackerTest' --no-daemon --stacktrace
       - name: Verify Android mobile identity
         run: |
           set -euo pipefail
@@ -198,6 +209,7 @@ jobs:
           cp "$APK" GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
       - name: Sign mobile APK with persistent private update key
         env:
+          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
           GAMELINGO_MOBILE_KEYSTORE_B64: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_B64 }}
           GAMELINGO_MOBILE_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_PASSWORD }}
         shell: bash
@@ -208,6 +220,10 @@ jobs:
           if [[ -z "$GAMELINGO_MOBILE_KEYSTORE_B64" && -z "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD" ]]; then
             if [[ "$GITHUB_REPOSITORY" == "CaseyCZ/GameLingo" && "$GITHUB_REF" == "refs/heads/Master" ]]; then
               echo "::error::Persistent APK signing secrets missing on Master."
+              exit 1
+            fi
+            if [[ "$REQUIRE_PERMANENT_SIGNING" == true ]]; then
+              echo "::error::Permanent signing is required for this candidate."
               exit 1
             fi
             echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
@@ -282,6 +298,9 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Test native zone tracker and bounded TV packet
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoAutomaticTrackerTest' --tests 'cz.titulky.tv.GameLingoZonePacketTest' --no-daemon --stacktrace
       - name: Run Android circuit breaker unit tests
         working-directory: upstream
         run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoCircuitBreakerTest' --no-daemon --stacktrace
@@ -318,6 +337,7 @@ jobs:
           cp "$APK" GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
       - name: Sign TV APK with persistent private update key
         env:
+          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
           GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
           GAMELINGO_TV_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_TV_KEYSTORE_PASSWORD }}
         shell: bash
@@ -328,6 +348,10 @@ jobs:
           if [[ -z "$GAMELINGO_TV_KEYSTORE_B64" && -z "$GAMELINGO_TV_KEYSTORE_PASSWORD" ]]; then
             if [[ "$GITHUB_REPOSITORY" == "CaseyCZ/GameLingo" && "$GITHUB_REF" == "refs/heads/Master" ]]; then
               echo "::error::Persistent APK signing secrets missing on Master."
+              exit 1
+            fi
+            if [[ "$REQUIRE_PERMANENT_SIGNING" == true ]]; then
+              echo "::error::Permanent signing is required for this candidate."
               exit 1
             fi
             echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
@@ -381,6 +405,44 @@ jobs:
           test -s release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
           (cd release && sha256sum "GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" "GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk" "GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk" > SHA256SUMS.txt)
           cat release/SHA256SUMS.txt
+      - name: Record package identity and signing evidence
+        env:
+          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
+        run: |
+          set -euo pipefail
+          SDK_TOOLS="$ANDROID_HOME/build-tools/34.0.0"
+          test -x "$SDK_TOOLS/aapt"
+          test -x "$SDK_TOOLS/apksigner"
+          {
+            printf 'Source commit: %s\nWorkflow run: %s (attempt %s)\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            echo 'IPA: unsigned; requires user signing.'
+            echo 'Certificate continuity is required for signed candidates; physical upgrade QA remains separate.'
+            for kind in Android GoogleTV; do
+              APK="release/GameLingo-${kind}-v${GAMELINGO_VERSION}-dev-TEST.apk"
+              if [[ "$kind" == Android ]]; then expected=cz.caseycz.gamelingo.mobile; else expected=cz.caseycz.gamelingo.tv; fi
+              printf '\n%s\n' "$kind"
+              badging=$("$SDK_TOOLS/aapt" dump badging "$APK")
+              identity=$(printf '%s\n' "$badging" | grep "^package: name='$expected'")
+              printf '%s\n' "$identity"
+              verified=$("$SDK_TOOLS/apksigner" verify --verbose --print-certs "$APK")
+              printf '%s\n' "$verified"
+              if [[ "$REQUIRE_PERMANENT_SIGNING" == true || "$GITHUB_REF" == refs/heads/Master ]]; then
+                # Public certificate fingerprints from the verified 0.5.1 release build, not secrets.
+                if [[ "$kind" == Android ]]; then
+                  expected_cert=d45ae9b961340c4361bf2b681d57a920493e21adb967d1b311290c609349e0f4
+                else
+                  expected_cert=f2bdae07378f52642abcec8d55d04f1e6dc688f7e6b12aa39358b227a0fc1423
+                fi
+                cert=$(printf '%s\n' "$verified" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')
+                test "$cert" = "$expected_cert"
+                code=$(printf '%s\n' "$identity" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+                [[ "$code" =~ ^[0-9]+$ ]]
+                (( code > 6019901 ))
+                echo 'Published 0.5.1 signer and minimum version continuity: PASS'
+              fi
+            done
+          } > release/PACKAGE-EVIDENCE.txt
+          cat release/PACKAGE-EVIDENCE.txt
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-v${{ env.GAMELINGO_VERSION }}-dev-all-installers

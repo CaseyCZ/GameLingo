@@ -25,6 +25,56 @@ struct GameLingoIOSApp: App {
 
 @MainActor
 final class CaptionAppModel: ObservableObject {
+    // Standard remains the default for existing and new installations.
+    @Published private(set) var automaticGameDialogue = UserDefaults.standard.bool(forKey: "gamelingo.automaticMode")
+    @Published private(set) var automaticZones = AutomaticOCRZone.load()
+    func updateAutomaticZones(_ zones: [AutomaticOCRZone]) {
+        guard !isRunning else { return }
+        automaticZones = AutomaticOCRZone.validated(zones)
+        if let data = try? JSONEncoder().encode(automaticZones) {
+            UserDefaults.standard.set(data, forKey: "gamelingo.automaticZones")
+        }
+        invalidateDialogue()
+    }
+    struct AutomaticOutput: Identifiable, Equatable {
+        let id: UUID
+        let zone: UUID
+        let text: String
+        let layout: AutomaticDialogueLayout
+        let rect: CGRect
+    }
+    @Published private(set) var automaticOutputs: [AutomaticOutput] = []
+    private var automaticTracker = AutomaticBlockTracker()
+    private var automaticTranslations: [UUID: String] = [:]
+    private var automaticRetries: [UUID: TimeInterval] = [:]
+    private var automaticTasks: [UUID: Task<Void, Never>] = [:]
+    private var automaticTimer: Task<Void, Never>?
+    private var automaticLastFrame: TimeInterval = 0
+    private var automaticLastTV: AutomaticOutput?
+    private var automaticLastTVAt: TimeInterval = 0
+    private var automaticFrameAspect = 16.0 / 9.0
+    private var automaticSnapshotKey = ""
+    private func clearAutomaticOutputs() {
+        automaticTasks.values.forEach { $0.cancel() }
+        automaticTasks.removeAll()
+        automaticTimer?.cancel()
+        automaticTimer = nil
+        automaticTracker.reset()
+        automaticTranslations.removeAll()
+        automaticRetries.removeAll()
+        automaticOutputs.removeAll()
+        automaticLastTV = nil
+        automaticLastFrame = 0
+        automaticLastTVAt = 0
+        automaticSnapshotKey = ""
+    }
+    func setAutomaticGameDialogue(_ enabled: Bool) {
+        guard !isRunning else { return }
+        automaticGameDialogue = enabled
+        UserDefaults.standard.set(enabled, forKey: "gamelingo.automaticMode")
+        invalidateDialogue()
+        invalidateOptions()
+    }
     @Published var status = "Připraveno"
     @Published var lastEnglish = ""
     @Published var lastCzech = ""
@@ -32,7 +82,7 @@ final class CaptionAppModel: ObservableObject {
     @Published var isRunning = false
     @Published var appLanguage: GLAppLanguage = GLAppLanguage(
         rawValue: UserDefaults.standard.string(forKey: "gamelingo.appLanguage") ?? ""
-    ) ?? .czech {
+    ) ?? GLAppLanguage.systemDefault {
         didSet {
             UserDefaults.standard.set(appLanguage.rawValue, forKey: "gamelingo.appLanguage")
         }
@@ -47,7 +97,7 @@ final class CaptionAppModel: ObservableObject {
     }
     @Published var targetLanguage: GLTargetLanguage = GLTargetLanguage(
         rawValue: UserDefaults.standard.string(forKey: "gamelingo.targetLanguage") ?? ""
-    ) ?? .czech {
+    ) ?? GLTargetLanguage.systemDefault {
         didSet {
             UserDefaults.standard.set(targetLanguage.rawValue, forKey: "gamelingo.targetLanguage")
             if oldValue != targetLanguage { invalidateDialogue(); invalidateOptions() }
@@ -235,7 +285,7 @@ final class CaptionAppModel: ObservableObject {
     @Published var choicesEnabled = UserDefaults.standard.bool(forKey: "choicesEnabled") {
         didSet {
             UserDefaults.standard.set(choicesEnabled, forKey: "choicesEnabled")
-            optionsFrames?.setEnabled(choicesEnabled)
+            optionsFrames?.setEnabled(choicesEnabled && !automaticGameDialogue)
             if oldValue != choicesEnabled { invalidateOptions() }
         }
     }
@@ -465,7 +515,9 @@ final class CaptionAppModel: ObservableObject {
             phoneTextColor: phoneTextColor.rawValue,
             phoneBackground: phoneBackground.rawValue,
             tvTextColor: tvTextColor.rawValue,
-            tvBackground: tvBackground.rawValue
+            tvBackground: tvBackground.rawValue,
+            automaticMode: automaticGameDialogue,
+            automaticZones: automaticZones
         )
         if let existingIndex {
             profile.glossary = gameProfiles[existingIndex].glossary
@@ -478,6 +530,8 @@ final class CaptionAppModel: ObservableObject {
 
     func applyGameProfile(_ profile: GameSubtitleProfile) {
         guard !isRunning else { return }
+        setAutomaticGameDialogue(profile.automaticMode ?? false)
+        if let zones = profile.automaticZones { updateAutomaticZones(zones) }
         selectGlossaryProfile(profile.id)
         subtitleRegion = SubtitleRegion(rawValue: profile.region) ?? .center
         manualOCR = profile.manualOCR
@@ -618,7 +672,7 @@ final class CaptionAppModel: ObservableObject {
         status = "Navazuji Xbox Remote Play…"
         write("Start Remote Play: \(console.name)")
         let play = XboxRemotePlay(authorization: xbox,
-                                  minimumFrameInterval: choicesEnabled ? min(ocrMode.minimumFrameInterval, ocrModeForYellow.minimumFrameInterval) : ocrMode.minimumFrameInterval)
+                                  minimumFrameInterval: automaticGameDialogue ? OCRMode.automatic.minimumFrameInterval : (choicesEnabled ? min(ocrMode.minimumFrameInterval, ocrModeForYellow.minimumFrameInterval) : ocrMode.minimumFrameInterval))
         remotePlay = play
         play.onStatus = { [weak self] status in
             Task { @MainActor in
@@ -695,7 +749,7 @@ final class CaptionAppModel: ObservableObject {
         dialogueFrames?.close()
         optionsFrames?.close()
         let dialogue = LatestFrameMailbox<TimedFrame>()
-        let options = LatestFrameMailbox<TimedFrame>(enabled: choicesEnabled)
+        let options = LatestFrameMailbox<TimedFrame>(enabled: choicesEnabled && !automaticGameDialogue)
         dialogueFrames = dialogue
         optionsFrames = options
         let reset = Task {
@@ -743,6 +797,7 @@ final class CaptionAppModel: ObservableObject {
     /// Independent yellow-area drain. A slow options translation cannot block
     /// dialogue OCR or enqueue a backlog of decoded images.
     private func invalidateDialogue(clearTV: Bool = true) {
+        clearAutomaticOutputs()
         dialogueWindow.reset()
         dialogueRevision.advance()
         dialogueTranslation?.cancel()
@@ -754,7 +809,10 @@ final class CaptionAppModel: ObservableObject {
         lastEnglish = ""
         lastCzech = ""
         phoneSubtitle = ""
-        if clearTV, isRunning, verifiedTelevisionOutput { tv.sendSubtitle("", duration: 0) }
+        if clearTV, isRunning, verifiedTelevisionOutput {
+            tv.sendAutomaticZones([], aspect: automaticFrameAspect)
+            tv.sendSubtitle("", duration: 0)
+        }
         let previous = dialogueReset
         dialogueReset = Task { [pipeline] in
             await previous?.value
@@ -780,7 +838,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     private func processChoicesFrame(_ buffer: CVPixelBuffer, currentSession: Int, frameReceivedAt: TimeInterval) async {
-        guard isRunning, sessionRevision == currentSession, choicesEnabled,
+        guard isRunning, sessionRevision == currentSession, choicesEnabled, !automaticGameDialogue,
               !processingChoices else { return }
         processingChoices = true
         choicesStartedAt = ProcessInfo.processInfo.systemUptime
@@ -934,12 +992,127 @@ final class CaptionAppModel: ObservableObject {
     }
 
     /// Both Xbox WebRTC and PS4/PS5 Chiaki video feed the same latest-frame OCR.
+    /// Zone results are independent; only the legacy TV transport is still
+    /// restricted to one block. The iPhone retains all confirmed translations.
+    private func publishAutomaticOutputs(now: TimeInterval) {
+        if now - automaticLastFrame > 2.0 { automaticTracker.reset() }
+        automaticTracker.expire(now: now)
+        let active = Set(automaticTracker.tracks.map(\.id))
+        for id in Array(automaticTasks.keys) where !active.contains(id) {
+            automaticTasks.removeValue(forKey: id)?.cancel()
+        }
+        automaticTranslations = automaticTranslations.filter { active.contains($0.key) }
+        automaticRetries = automaticRetries.filter { active.contains($0.key) }
+        var ordered: [AutomaticOutput] = []
+        for zone in automaticZones {
+            for track in automaticTracker.tracks where track.zone == zone.id {
+                guard let text = automaticTranslations[track.id], !text.isEmpty else { continue }
+                if ordered.contains(where: {
+                    AutomaticBlockTracker.normalized($0.text) == AutomaticBlockTracker.normalized(text) &&
+                    AutomaticBlockTracker.overlaps($0.rect, track.block.rect)
+                }) { continue }
+                ordered.append(.init(id: track.id, zone: zone.id, text: text,
+                                     layout: track.block.layout, rect: track.block.rect))
+            }
+        }
+        let next = Array(ordered.prefix(32))
+        if next != automaticOutputs { automaticOutputs = next }
+        guard devices.subtitleOutput == .googleTV else { return }
+        devices.prepareTV(tv)
+        guard verifiedTelevisionOutput else { return }
+        if tv.receiverSupportsZones {
+            let key = automaticOutputs.map { "\($0.id)|\($0.text)|\($0.layout.centerX)|\($0.layout.bottomY)|\($0.layout.width)" }.joined(separator: ";")
+            if automaticLastTV != nil {
+                tv.sendSubtitle("", duration: 0)
+                automaticLastTV = nil
+            }
+            if key != automaticSnapshotKey || (!automaticOutputs.isEmpty && now - automaticLastTVAt >= 0.8) {
+                tv.sendAutomaticZones(automaticOutputs, aspect: automaticFrameAspect)
+                automaticSnapshotKey = key
+                automaticLastTVAt = now
+            }
+        } else if let first = automaticOutputs.first {
+            if automaticLastTV?.id != first.id || automaticLastTV?.text != first.text ||
+                automaticLastTV?.layout != first.layout || now - automaticLastTVAt >= 1.0 {
+                tv.sendSubtitle(first.text, duration: 1800, automaticLayout: first.layout)
+                automaticLastTV = first
+                automaticLastTVAt = now
+            }
+        } else if automaticLastTV != nil {
+            tv.sendSubtitle("", duration: 0)
+            automaticLastTV = nil
+        }
+    }
+
+    private func scheduleAutomaticTranslations(currentSession: Int, contextRevision: UInt64) {
+        let now = ProcessInfo.processInfo.systemUptime
+        let source = gameLanguage, target = targetLanguage
+        for track in automaticTracker.tracks where automaticTasks.count < 2 {
+            let id = track.id
+            guard track.confirmations >= 2, automaticTranslations[id] == nil,
+                  automaticTasks[id] == nil, now >= (automaticRetries[id] ?? 0),
+                  now - track.lastSeen <= AutomaticBlockTracker.staleAfter else { continue }
+            let original = track.block.text
+            automaticTasks[id] = Task { @MainActor [weak self] in
+                guard let self else { return }
+                let outcome = await self.pipeline.translate(original, from: source, to: target)
+                guard !Task.isCancelled, self.isRunning, self.sessionRevision == currentSession,
+                      self.dialogueRevision.accepts(contextRevision),
+                      let current = self.automaticTracker.tracks.first(where: { $0.id == id })
+                else { return }
+                self.automaticTasks.removeValue(forKey: id)
+                let finished = ProcessInfo.processInfo.systemUptime
+                if finished - current.lastSeen <= AutomaticBlockTracker.staleAfter,
+                   case .success(let raw) = outcome, !raw.isEmpty {
+                    self.automaticTranslations[id] = self.glossaryTranslation(original: original, translated: raw,
+                        source: source.rawValue, target: target.rawValue)
+                } else {
+                    self.automaticRetries[id] = finished + 2
+                }
+                self.publishAutomaticOutputs(now: finished)
+            }
+        }
+    }
+
+    private func processAutomaticFrame(_ buffer: CVPixelBuffer, currentSession: Int, contextRevision: UInt64) async {
+        let now = ProcessInfo.processInfo.systemUptime
+        automaticLastFrame = now
+        let height = CVPixelBufferGetHeight(buffer)
+        if height > 0 { automaticFrameAspect = Double(CVPixelBufferGetWidth(buffer)) / Double(height) }
+        if automaticTimer == nil {
+            automaticTimer = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(350))
+                    guard !Task.isCancelled, let self, self.isRunning,
+                          self.sessionRevision == currentSession,
+                          self.dialogueRevision.accepts(contextRevision) else { return }
+                    self.publishAutomaticOutputs(now: ProcessInfo.processInfo.systemUptime)
+                    self.scheduleAutomaticTranslations(currentSession: currentSession, contextRevision: contextRevision)
+                }
+            }
+        }
+        publishAutomaticOutputs(now: now)
+        await dialogueReset?.value
+        guard isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
+        guard let reading = await pipeline.recognizeAutomaticZone(buffer, zones: automaticZones, gameLanguage: gameLanguage),
+              isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
+        let seen = ProcessInfo.processInfo.systemUptime
+        automaticTracker.observe(zone: reading.zone, blocks: reading.blocks, now: seen)
+        publishAutomaticOutputs(now: seen)
+        scheduleAutomaticTranslations(currentSession: currentSession, contextRevision: contextRevision)
+    }
+
     private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int, frameReceivedAt: TimeInterval) async {
         guard isRunning, sessionRevision == currentSession else { return }
         self.frameCount += 1
         let activeGameLanguage = self.gameLanguage
         let activeTargetLanguage = self.targetLanguage
         let contextRevision = dialogueRevision.value
+        let automatic = automaticGameDialogue
+        if automatic {
+            await processAutomaticFrame(buffer, currentSession: currentSession, contextRevision: contextRevision)
+            return
+        }
 
         // Keep recognition independent of network translation: a slow
         // request must not block OCR of the next short street dialogue.
@@ -954,10 +1127,11 @@ final class CaptionAppModel: ObservableObject {
             let reading = await self.pipeline.recognize(
                 buffer, region: self.subtitleRegion,
                 manualArea: self.manualOCR ? self.manualOCRBox : nil,
-                filterMenus: self.filterMenuText, ignoredLines: self.ignoredBlueLines, minimumHeight: self.minBlueHeight,
-                mode: self.ocrMode,
+                filterMenus: automatic || self.filterMenuText, ignoredLines: automatic ? "" : self.ignoredBlueLines, minimumHeight: automatic ? 0 : self.minBlueHeight,
+                mode: automatic ? .automatic : self.ocrMode,
                 expandOnEmpty: self.expandOnEmpty,
-                gameLanguage: activeGameLanguage
+                gameLanguage: activeGameLanguage,
+                automaticPlacement: automatic
             )
             if self.sessionRevision == currentSession {
                 self.processingOCR = false
@@ -972,11 +1146,13 @@ final class CaptionAppModel: ObservableObject {
                 self.lastEnglish = reading.english
                 if reading.english.isEmpty {
                     // The revision/cancellation above rejects pending stale work.
-                    self.hideAfterSourceGone(currentSession: currentSession)
+                    if automatic { self.clearDialogueOutput() }
+                    else { self.hideAfterSourceGone(currentSession: currentSession) }
                     // By default, already visible dialogue retains its existing expiry;
                     // stop, source changes and explicit clears remain immediate.
                     return
                 }
+                if automatic { self.clearDialogueOutput() }
                 self.write("OCR: \(reading.english)")
                 dialogueTranslation = Task { @MainActor [weak self] in
                     guard let self, !Task.isCancelled,
@@ -1020,7 +1196,7 @@ final class CaptionAppModel: ObservableObject {
                     let displaySeconds = min(10.0, max(3.0, requested))
                     self.lastCzech = czech
                     let displayText = self.dialogueWindow.render(source: reading.english, translation: czech,
-                        enabled: self.showPreviousDialogue, now: ProcessInfo.processInfo.systemUptime, previousCount: self.previousDialogueCount)
+                        enabled: !automatic && self.showPreviousDialogue, now: ProcessInfo.processInfo.systemUptime, previousCount: self.previousDialogueCount)
                     self.translationHistory.append(kind: "Dialog",
                         source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue,
                         original: reading.english, translated: czech)
@@ -1031,7 +1207,8 @@ final class CaptionAppModel: ObservableObject {
                         self.devices.prepareTV(self.tv)
                         if self.verifiedTelevisionOutput {
                             self.tv.sendSubtitle(displayText,
-                                                 duration: Int(displaySeconds * 1000))
+                                                 duration: Int(displaySeconds * 1000),
+                                                 automaticLayout: reading.automaticLayout)
                         }
                     }
                     if self.devices.subtitleOutput == .phone || self.verifiedTelevisionOutput {
@@ -1103,6 +1280,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     func stop() {
+        clearAutomaticOutputs()
         xboxReconnectTask?.cancel()
         xboxReconnectTask = nil
         dialogueRevision.advance()
@@ -1135,6 +1313,7 @@ final class CaptionAppModel: ObservableObject {
         phoneSubtitle = ""
         isRunning = false
         UIApplication.shared.isIdleTimerDisabled = false
+        tv.sendAutomaticZones([], aspect: automaticFrameAspect)
         tv.sendSubtitle("", duration: 0)
         tv.sendChoices([], area: choicesArea, outputArea: choicesOutputArea)
         lastTranslatedChoiceItems = []

@@ -34,7 +34,7 @@ def main():
         exactly_one(gradle,'versionNameSuffix = "-iphone-tv-test"',
                     'versionNameSuffix = "-tv"')
         exactly_one(strings,">PlayCaption iPhone TV TEST</string>",">GameLingo TV</string>")
-    gradle.write_text(strip_dependency(gradle.read_text(encoding="utf8")), encoding="utf8")
+        gradle.write_text(strip_dependency(gradle.read_text(encoding="utf8")), encoding="utf8")
     # One immutable version per CI run, including reruns; visible in the APK.
     run = int(os.environ.get("GITHUB_RUN_NUMBER", "0"))
     attempt = int(os.environ.get("GITHUB_RUN_ATTEMPT", "1"))

@@ -44,7 +44,7 @@ struct GameLingoTVSetupScreen: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 11) {
+                VStack(alignment: .center, spacing: 11) {
                     GLNeonTitle(title: "Google TV",
                                 subtitle: "Připojení a párování televize",
                                 icon: "tv.fill")
@@ -61,7 +61,7 @@ struct GameLingoTVSetupScreen: View {
                                     HStack(spacing: 12) {
                                         GLPlatformBadge(family: nil,
                                                         isTelevision: true, size: 46)
-                                        VStack(alignment: .leading, spacing: 3) {
+                                        VStack(alignment: .center, spacing: 3) {
                                             Text(record.name).font(.headline)
                                             Text(record.ipAddress)
                                                 .font(.caption.monospaced())
@@ -125,8 +125,11 @@ struct GameLingoTVSetupScreen: View {
             .navigationTitle("Google TV")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    GLBackButton { onFinished(); dismiss() }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Zavřít") { onFinished(); dismiss() }
+                    GLHelpButton(title: "Google TV", explanation: "Google TV se páruje pomocí QR nebo kódu.")
                 }
             }
         }
@@ -150,9 +153,9 @@ private struct GameLingoTVPairingPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .center, spacing: 15) {
             GLNeonPanel(emphasized: true) {
-                VStack(alignment: .leading, spacing: 13) {
+                VStack(alignment: .center, spacing: 13) {
                     GLNeonTitle(title: "Vyhledat televizi",
                                 subtitle: "GameLingo TV ve stejné domácí síti",
                                 icon: "magnifyingglass")
@@ -190,7 +193,7 @@ private struct GameLingoTVPairingPanel: View {
                                 HStack(spacing: 12) {
                                     GLPlatformBadge(family: nil,
                                                     isTelevision: true, size: 47)
-                                    VStack(alignment: .leading, spacing: 3) {
+                                    VStack(alignment: .center, spacing: 3) {
                                         Text(device.name)
                                             .font(.subheadline.bold())
                                             .foregroundStyle(.white)
@@ -230,11 +233,11 @@ private struct GameLingoTVPairingPanel: View {
 
             GLCard {
                 GLHeader(title: "Párování televize",
-                         help: "Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Opiš nový šestimístný kód. Uložená IP neznamená spárování.")
-                Text("1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš šestimístný kód. 3. Zvol Spárovat.")
+                         help: "Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Načti QR nebo opiš celý kód. Uložená IP neznamená spárování.")
+                Text("1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat.")
                     .font(.caption)
                     .foregroundStyle(GLNeon.mist)
-                Text("Používej jen důvěryhodnou domácí síť. Párování a titulky nejsou šifrované.")
+                Text("Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované.")
                     .font(.caption).foregroundStyle(GLStyle.muted)
                 HStack(spacing: 10) {
                     Image(systemName: tv.receiverConnected
@@ -242,7 +245,7 @@ private struct GameLingoTVPairingPanel: View {
                         .font(.system(size: 26))
                         .foregroundStyle(tv.receiverConnected
                                          ? GLStyle.green : GLNeon.cyan)
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .center, spacing: 3) {
                         Text(tv.receiverConnected ? "Přijímač připojen" :
                              tv.receiverPaired ? "Spárováno, čekám na TV" :
                              "Zatím nespárováno")
@@ -267,19 +270,21 @@ private struct GameLingoTVPairingPanel: View {
                         showQRScanner = true
                     }
                 }
-                TextField("Šestimístný kód z TV", text: $tv.receiverCode)
-                    .keyboardType(.numberPad)
-                    .textContentType(.oneTimeCode)
+                TextField("Párovací kód z TV", text: $tv.receiverCode)
+                    .keyboardType(.asciiCapable)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .font(.system(.caption, design: .monospaced))
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: tv.receiverCode) { _, newCode in
-                        tv.receiverCode = String(newCode.filter(\.isNumber).prefix(6))
+                        tv.receiverCode = String(newCode.prefix(48))
                     }
                     .disabled(isRunning)
                 GLPrimaryButton(title: tv.receiverPaired
                                 ? "Spárovat znovu" : "Spárovat",
                                 systemImage: "link",
                                 disabled: selectedIP.isEmpty ||
-                                    tv.receiverCode.count != 6 || isRunning) {
+                                    tv.receiverCode.filter { !$0.isWhitespace && $0 != "-" }.count != 32 || isRunning) {
                     tv.pairReceiver()
                 }
                 if tv.receiverPaired {
@@ -332,8 +337,8 @@ private struct GameLingoTVPairingPanel: View {
                 .navigationTitle("Načíst QR z TV")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Zrušit") { showQRScanner = false }
+                    ToolbarItem(placement: .topBarLeading) {
+                        GLBackButton { showQRScanner = false }
                     }
                 }
             }

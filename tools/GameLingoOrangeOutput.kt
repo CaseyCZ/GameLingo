@@ -59,7 +59,7 @@ object GameLingoOrangeOutput {
         fun text(label: String) = TextView(c).apply {
             this.text = label
             setTextColor(Color.WHITE)
-            textSize = 14f
+            textSize = GameLingoVisualKit.sp(c, 14f)
             setPadding(0, dp(6), 0, dp(6))
         }
         panel.addView(text("Oranžová · výstup herních textů").apply {

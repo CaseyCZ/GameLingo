@@ -6,9 +6,9 @@ struct PairingQRCode: Equatable {
     static func parse(_ raw: String) -> PairingQRCode? {
         guard raw.utf8.count <= 64 else { return nil }
         let fields = raw.split(separator: "|", omittingEmptySubsequences: false)
-        guard fields.count == 3, fields[0] == "GLPAIR1",
-              fields[2].utf8.count == 6,
-              fields[2].utf8.allSatisfy({ (48...57).contains($0) }) else { return nil }
+        guard fields.count == 3, fields[0] == "GLPAIR2",
+              fields[2].utf8.count == 32,
+              fields[2].utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else { return nil }
         let parts = fields[1].split(separator: ".", omittingEmptySubsequences: false)
         guard parts.count == 4 else { return nil }
         let octets = parts.compactMap { part -> UInt8? in

@@ -62,6 +62,12 @@ final class PlayCaptionTV: ObservableObject {
                 // A new IP must never leave old dialogue or game-text overlays
                 // behind. Send an explicit clear to the former receiver first.
                 clearOverlays(at: oldValue)
+                pairingGeneration &+= 1
+                pairingRequest?.cancel()
+                pairingRequest = nil
+                pairingTimeoutTask?.cancel()
+                pairingRetryTask?.cancel()
+                receiverCode = ""
                 receiverRetrySeconds = 3
                 startReceiverHeartbeat()
             }
@@ -70,6 +76,7 @@ final class PlayCaptionTV: ObservableObject {
     @Published var receiverCode = ""
     @Published private(set) var receiverStatus = "Televize zatím není spárovaná s iPhonem."
     @Published private(set) var receiverConnected = false
+    @Published private(set) var receiverSupportsZones = false
     @Published private(set) var lastCaptionAcknowledgement = ""
 
     private let receiverID: String = {
@@ -79,6 +86,7 @@ final class PlayCaptionTV: ObservableObject {
         defaults.set(value, forKey: "receiverPhoneID")
         return value
     }()
+    private var pairingGeneration = 0
     private var pairingRequest: NWConnection?
     private var pairingTimeoutTask: Task<Void, Never>?
     private var pairingRetryTask: Task<Void, Never>?
@@ -217,17 +225,21 @@ final class PlayCaptionTV: ObservableObject {
     // The PIN is displayed only on our independent TV receiver app.
     func pairReceiver() {
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
-        let code = receiverCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !target.isEmpty, code.count == 6, code.allSatisfy(\.isNumber) else {
-            receiverStatus = "Zadej šest číslic z obrazovky TV."
+        let code = receiverCode.filter { !$0.isWhitespace && $0 != "-" }.lowercased()
+        guard !target.isEmpty, code.utf8.count == 32,
+              code.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else {
+            receiverStatus = "Zadej celý párovací kód z TV."
             return
         }
         pairingRequest?.cancel()
+        pairingRequest = nil
         pairingTimeoutTask?.cancel()
         pairingRetryTask?.cancel()
+        pairingGeneration &+= 1
+        let generation = pairingGeneration
         receiverStatus = "Hledám dostupný přijímací port televize…"
         discoverReceiverPort(target) { [weak self] port in
-            guard let self, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target
+            guard let self, self.pairingGeneration == generation, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target
             else { return }
             self.beginReceiverPairing(target: target, code: code, port: port)
         }
@@ -239,6 +251,13 @@ final class PlayCaptionTV: ObservableObject {
         pairingRetryTask?.cancel()
         receiverStatus = "Ověřuji kód na TV (UDP \(port))…"
         let pairingClientID = receiverID
+        let nonce = UUID().uuidString
+        let context = "\(pairingClientID)\tiPhone\t\(nonce)"
+        guard let proof = signature("PAIR2\t\(context)", tokenHex: code),
+              let token = signature("KEY2\t\(context)", tokenHex: code),
+              let reply = signature("OK2\t\(context)", tokenHex: token) else { return }
+        let request = Data("PCPAIR1\tPAIR2\t\(context)\t\(proof)".utf8)
+        let expectedReply = "PCPAIR1\tOK2\t\(pairingClientID)\t\(nonce)\t\(reply)"
         let conn = NWConnection(host: .init(target),
                                 port: NWEndpoint.Port(rawValue: UInt16(port))!,
                                 using: .udp)
@@ -249,7 +268,7 @@ final class PlayCaptionTV: ObservableObject {
             try? await Task.sleep(for: .seconds(10))
             guard !Task.isCancelled, let self, let conn,
                   self.pairingRequest === conn else { return }
-            self.receiverStatus = "TV neodpověděla ani po opakovaném odeslání. Na TV zvol Překlad z telefonu a zkontroluj, že je vidět platný šestimístný kód."
+            self.receiverStatus = "TV neodpověděla ani po opakovaném odeslání. Na TV zvol Překlad z telefonu a zkontroluj, že je vidět platný párovací kód."
             self.pairingRetryTask?.cancel()
             self.pairingRetryTask = nil
             self.pairingRequest = nil
@@ -271,24 +290,16 @@ final class PlayCaptionTV: ObservableObject {
                             conn.cancel()
                             return
                         }
-                        let fields = text.components(separatedBy: "\t")
-                        if fields.count == 4, fields[0] == "PCPAIR1",
-                           fields[1] == "OK", fields[2] == pairingClientID,
-                           fields[3].count == 64,
-                           fields[3].allSatisfy({ $0.isHexDigit }),
-                           ReceiverSecretStore.save(fields[3], ip: target) {
+                        if text == expectedReply, ReceiverSecretStore.save(token, ip: target) {
                             self.receiverCode = ""
                             self.receiverStatus = "iPhone úspěšně spárován. Ověřuji spojení…"
                             self.startReceiverHeartbeat()
-                        } else if fields.first == "PCPAIR1", fields.dropFirst().first == "ERROR" {
-                            self.receiverStatus = "TV odmítla kód. Vytvoř na TV nový šestimístný kód a zadej ho znovu."
                         } else {
-                            self.receiverStatus = "TV vrátila neplatnou odpověď."
+                            self.receiverStatus = "TV nepotvrdila bezpečné párování. Vytvoř nový kód."
                         }
                         conn.cancel()
                     }
                 }
-                let request = Data("PCPAIR1\tPAIR\t\(code)\t\(pairingClientID)\tiPhone".utf8)
                 conn.send(content: request,
                           completion: .contentProcessed { [weak self] error in
                     if let error {
@@ -299,8 +310,7 @@ final class PlayCaptionTV: ObservableObject {
                 })
                 // UDP does not guarantee delivery. Retry on the SAME socket
                 // (and therefore the same reply port) while awaiting TV OK.
-                // The receiver now resends an identical secret for a repeated
-                // successful PIN, instead of considering the PIN expired.
+                // The receiver resends only the same authenticated proof for an exact retry.
                 Task { @MainActor [weak self, weak conn] in
                     guard let self, let conn, self.pairingRequest === conn else { return }
                     self.pairingRetryTask?.cancel()
@@ -332,6 +342,7 @@ final class PlayCaptionTV: ObservableObject {
     }
 
     func forgetReceiver() {
+        pairingGeneration &+= 1
         pairingTimeoutTask?.cancel()
         pairingRetryTask?.cancel()
         pairingRetryTask = nil
@@ -344,7 +355,7 @@ final class PlayCaptionTV: ObservableObject {
     }
 
     private func signature(_ payload: String, tokenHex: String) -> String? {
-        guard tokenHex.count == 64 else { return nil }
+        guard tokenHex.count == 64 || tokenHex.count == 32 else { return nil }
         var keyBytes = [UInt8]()
         for offset in stride(from: 0, to: tokenHex.count, by: 2) {
             let a = tokenHex.index(tokenHex.startIndex, offsetBy: offset)
@@ -374,6 +385,7 @@ final class PlayCaptionTV: ObservableObject {
         liveReceiver = nil
         liveReceiverReady = false
         receiverConnected = false
+        receiverSupportsZones = false
         lastPong = nil
         pendingPingNonce = nil
         lastCaptionAcknowledgement = ""
@@ -445,7 +457,7 @@ final class PlayCaptionTV: ObservableObject {
                         while !Task.isCancelled {
                             guard let self, let token = ReceiverSecretStore.load(target),
                                   self.liveReceiver === conn else { break }
-                            let nonce = UUID().uuidString
+                            let nonce = "Z1-" + UUID().uuidString
                             self.pendingPingNonce = nonce
                             let body = self.freshBody("PING\t\(self.receiverID)\t\(nonce)")
                             if let mac = self.signature(body, tokenHex: token) {
@@ -505,11 +517,13 @@ final class PlayCaptionTV: ObservableObject {
                 guard let self, self.liveReceiver === conn, self.ip == target else { return }
                 if let data, let raw = String(data: data, encoding: .utf8) {
                     let fields = raw.components(separatedBy: "\t")
-                    if fields.count == 4 && fields[0] == "PCPAIR1" && fields[1] == "PONG",
+                    if (fields.count == 4 || fields.count == 6) && fields[0] == "PCPAIR1" && fields[1] == "PONG",
                        fields[2] == self.pendingPingNonce,
                        let token = ReceiverSecretStore.load(target),
                        let expected = self.signature("PONG\t\(self.receiverID)\t\(fields[2])", tokenHex: token),
                        fields[3] == expected {
+                        self.receiverSupportsZones = fields.count == 6 && fields[4] == "PCZ1" &&
+                            self.signature("PONG\t\(self.receiverID)\t\(fields[2])|PCZ1", tokenHex: token) == fields[5]
                         self.pendingPingNonce = nil
                         self.lastPong = Date()
                         self.receiverRetrySeconds = 3
@@ -602,7 +616,8 @@ final class PlayCaptionTV: ObservableObject {
         sequence += 1
         let choices = Data("PCV1\t\(sequence)\t0\t0\t0\t1\t1\t-1\t".utf8)
 
-        for payload in [dialogue, choices] {
+        let zones = Data("PCZ1\t1.7777778\t1\t0".utf8)
+        for payload in [dialogue, choices, zones] {
             if !sendSignedSubtitle(payload, to: target,
                                    reportStatus: false, forceDatagram: true) {
                 // No authenticated receiver: do not send unsigned game text.
@@ -611,10 +626,35 @@ final class PlayCaptionTV: ObservableObject {
         }
     }
 
+    /// One authenticated full snapshot, never a sequence of mutually
+    /// overwriting PCT1 captions. Old TV builds keep the legacy fallback.
+    func sendAutomaticZones(_ outputs: [CaptionAppModel.AutomaticOutput], aspect: Double) {
+        guard receiverSupportsZones else { return }
+        repeatTask?.cancel()
+        repeatTask = nil
+        let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !target.isEmpty else { return }
+        let font = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1
+        var blocks = [String]()
+        let limit = min(512, 4608 / max(1, min(32, outputs.count)))
+        for output in outputs.prefix(32) {
+            var text = output.text
+            while text.utf8.count > limit { text.removeLast() }
+            guard !text.isEmpty else { continue }
+            let l = output.layout
+            blocks += [Data(text.utf8).base64EncodedString(), String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.centerX),
+                       String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.bottomY),
+                       String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.width)]
+        }
+        let header = ["PCZ1", String(min(4, max(0.5, aspect))), String(min(2.5, max(0.5, font))), String(blocks.count / 4)]
+        _ = sendSignedSubtitle(Data((header + blocks).joined(separator: "\t").utf8), to: target, reportStatus: false)
+    }
+
     /// Sends one packet and repeats it once a second while the caption is valid,
     /// matching Android's heartbeat. Preview uses the Android layout/edit flag so
     /// Google TV shows it even when HDMI is not the selected input.
-    func sendSubtitle(_ subtitle: String, duration: Int, preview: Bool = false) {
+    func sendSubtitle(_ subtitle: String, duration: Int, preview: Bool = false,
+                      automaticLayout: AutomaticDialogueLayout? = nil) {
         repeatTask?.cancel()
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !target.isEmpty else {
@@ -629,9 +669,9 @@ final class PlayCaptionTV: ObservableObject {
         // Same 5 layout fields as Android: center X, bottom Y, width,
         // font size, and 1 while previewing the position.
         let prefs = UserDefaults.standard
-        let x = (prefs.object(forKey: "outputX") as? Double) ?? 0.5
-        let y = (prefs.object(forKey: "outputBottom") as? Double) ?? 0.93
-        let width = (prefs.object(forKey: "outputWidth") as? Double) ?? 0.62
+        let x = automaticLayout?.centerX ?? (prefs.object(forKey: "outputX") as? Double) ?? 0.5
+        let y = automaticLayout?.bottomY ?? (prefs.object(forKey: "outputBottom") as? Double) ?? 0.93
+        let width = automaticLayout?.width ?? (prefs.object(forKey: "outputWidth") as? Double) ?? 0.62
         let font = (prefs.object(forKey: "outputFont") as? Double) ?? 1.0
         // Original PlayCaption 0.22 protocol: field 4 is an empty hint.
         // Without it the TV misreads X/Y/width and draws a huge black strip.

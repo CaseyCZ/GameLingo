@@ -12,6 +12,7 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -33,8 +34,27 @@ object GameLingoTVUi {
     // Android TV already has an enlarged interface density. Match the
     // original compact 10-foot UI and preserve readable D-pad focus targets.
     private const val TV_SCALE = 0.66f
+    private const val MENU_PREFS = "gamelingo_tv_interface"
+    private const val MENU_PERCENT = "menu_percent"
+    val menuSizes: List<Int> = listOf(80, 90, 100, 110, 120)
+    fun menuPercent(c: android.content.Context): Int {
+        val value = runCatching {
+            c.getSharedPreferences(MENU_PREFS, android.content.Context.MODE_PRIVATE)
+                .getInt(MENU_PERCENT, 100)
+        }.getOrDefault(100)
+        return if (value in menuSizes) value else 100
+    }
+    fun setMenuPercent(c: android.content.Context, value: Int) {
+        if (!isTV(c) || value !in menuSizes) return
+        c.getSharedPreferences(MENU_PREFS, android.content.Context.MODE_PRIVATE)
+            .edit().putInt(MENU_PERCENT, value).apply()
+    }
+    private fun tvScale(c: android.content.Context): Float =
+        TV_SCALE * (if (isTV(c)) menuPercent(c) else 100) / 100f
+    /** Shared compact menu units; phone components keep their original sizes. */
+    fun menuScale(c: android.content.Context): Float = if (isTV(c)) tvScale(c) else 1f
     fun dp(a: Activity, v: Int): Int =
-        (a.resources.displayMetrics.density * v * TV_SCALE + .5f).toInt()
+        (a.resources.displayMetrics.density * v * tvScale(a) + .5f).toInt()
 
     fun panel(a: Activity, focus: Boolean = false): GradientDrawable =
         GradientDrawable(GradientDrawable.Orientation.TL_BR,
@@ -51,12 +71,13 @@ object GameLingoTVUi {
     fun title(a: Activity, text: String, size: Float = 24f,
               muted: Boolean = false): TextView = TextView(a).apply {
         this.text = text
-        textSize = size * TV_SCALE
+        gravity = Gravity.CENTER
+        textSize = size * tvScale(a)
         setTextColor(if (muted) dim else Color.WHITE)
         setTypeface(null, if (muted) Typeface.NORMAL else Typeface.BOLD)
     }
 
-    fun isTV(a: Activity): Boolean = (a.resources.configuration.uiMode and
+    fun isTV(a: android.content.Context): Boolean = (a.resources.configuration.uiMode and
         android.content.res.Configuration.UI_MODE_TYPE_MASK) == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
 
     // Selected is a persistent checkmark; focus is an independent bright ring.
@@ -68,19 +89,21 @@ object GameLingoTVUi {
             setPadding(dp(a, 24),dp(a, 16),dp(a, 24),dp(a, 16))
             background = android.graphics.drawable.ColorDrawable(Color.parseColor("#080E1B"))
         }
-        body.addView(title(a, heading, 27f))
+        val back = action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
+        back.id = View.generateViewId()
+        body.addView(header(a, title(a, heading, 27f), back))
         val rows = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; clipChildren=false; clipToPadding=false }
         val buttons = labels.mapIndexed { index, label ->
             action(a, (if (index == selected) "✓  " else "    ") + label) {
                 dialog.dismiss(); onSelect(index)
             }.apply {
                 id = View.generateViewId()
-                gravity = Gravity.CENTER_VERTICAL
-                textSize = 16f
+                gravity = Gravity.CENTER
+                textSize = 16f * tvScale(a)
                 minimumHeight = dp(a, 50)
                 setPadding(dp(a, 14), dp(a, 7), dp(a, 14), dp(a, 7))
                 setTextColor(if (index == selected) Color.parseColor("#57EBA3") else Color.WHITE)
-                contentDescription = if (index == selected) "$label, vybráno" else label
+                contentDescription = if (index == selected) "$label, " + GameLingoLanguages.ui(a, "vybráno") else label
                 rows.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(a, 7) })
             }
@@ -89,53 +112,124 @@ object GameLingoTVUi {
         body.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
             minOf(dp(a, 430), a.resources.displayMetrics.heightPixels * 55 / 100,
                 dp(a, 63 * labels.size)).coerceAtLeast(dp(a, 54))))
-        val back = action(a, "Zpět") { dialog.dismiss() }
-        back.id = View.generateViewId()
-        body.addView(back, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            .apply { topMargin = dp(a, 12) })
         buttons.forEachIndexed { i, button ->
-            button.nextFocusUpId = buttons.getOrNull(i-1)?.id ?: button.id
-            button.nextFocusDownId = buttons.getOrNull(i+1)?.id ?: back.id
+            button.nextFocusUpId = buttons.getOrNull(i-1)?.id ?: back.id
+            button.nextFocusDownId = buttons.getOrNull(i+1)?.id ?: button.id
         }
-        back.nextFocusUpId = buttons.lastOrNull()?.id ?: back.id
-        back.nextFocusDownId = back.id
+        back.nextFocusUpId = back.id
+        back.nextFocusDownId = buttons.firstOrNull()?.id ?: back.id
         dialog.setContentView(body)
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .48f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .66f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        applyMenuFocus(a, body)
         (buttons.getOrNull(selected) ?: buttons.firstOrNull() ?: back).requestFocus()
+    }
+
+    /** Fixed, symmetric navigation: Back left, title centered, Help right. */
+    fun header(a: Activity, heading: View, back: View, help: View? = null): LinearLayout =
+        LinearLayout(a).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            val television = isTV(a)
+            // Phone pages share navigation semantics, not ten-foot geometry.
+            // Reserve only a 48dp touch target on each side of the mobile title.
+            val side = if (television) dp(a, 132) else GameLingoVisualKit.dp(a, 48)
+            if (!television && back is TextView) {
+                back.contentDescription = back.text
+                back.text = "‹"
+                back.textSize = 28f
+                back.minimumWidth = side
+                back.minimumHeight = side
+                back.setPadding(0, 0, 0, 0)
+            }
+            if (!television && help != null) {
+                help.minimumWidth = side
+                help.minimumHeight = side
+                val inset = GameLingoVisualKit.dp(a, 12)
+                help.setPadding(inset, 0, inset, 0)
+            }
+            fun slot(child: View?, alignment: Int): FrameLayout = FrameLayout(a).apply {
+                if (child != null) addView(child, FrameLayout.LayoutParams(-2, -2,
+                    alignment or Gravity.CENTER_VERTICAL))
+            }
+            addView(slot(back, Gravity.START), LinearLayout.LayoutParams(side, -2))
+            addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(slot(help, Gravity.END), LinearLayout.LayoutParams(side, -2))
+        }
+
+    /** Keep native controls' original background and selected state; draw focus above them. */
+    private class MenuFocusOutline : android.graphics.drawable.StateListDrawable()
+    private fun hasMenuOutline(d: android.graphics.drawable.Drawable?): Boolean =
+        d is MenuFocusOutline || (d is android.graphics.drawable.LayerDrawable &&
+            (0 until d.numberOfLayers).any { hasMenuOutline(d.getDrawable(it)) })
+
+    fun applyMenuFocus(a: Activity, root: View) {
+        if (!isTV(a)) return
+        if (root.isFocusable && (root.isClickable || root is android.widget.EditText ||
+                root is android.widget.SeekBar)) controlFocus(a, root)
+        if (root is ViewGroup) for (i in 0 until root.childCount) applyMenuFocus(a, root.getChildAt(i))
     }
 
     /** Full-screen TV settings destination. Content may supply its own weighted scroll area. */
     fun page(a: Activity, heading: String, body: View, scroll: Boolean = true,
              helpTopic: String? = null, onClose: () -> Unit = {}): Dialog {
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        return mountPage(a, dialog, heading, body, scroll, helpTopic, onClose)
+    }
+
+    /** Use an existing dialog when its actions must close or refresh the same page. */
+    fun mountPage(a: Activity, dialog: Dialog, heading: String, body: View, scroll: Boolean = true,
+                  helpTopic: String? = null, onClose: () -> Unit = {}): Dialog {
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(a)
-            setPadding(dp(a,32),dp(a,18),dp(a,32),dp(a,18))
+            val horizontal = if (isTV(a)) dp(a,32) else GameLingoVisualKit.dp(a,16)
+            val vertical = if (isTV(a)) dp(a,18) else GameLingoVisualKit.dp(a,10)
+            setPadding(horizontal,vertical,horizontal,vertical)
         }
-        val top = LinearLayout(a).apply { gravity=Gravity.CENTER_VERTICAL }
-        top.addView(title(a,heading,29f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
-        val back=action(a,"Zpět"){dialog.dismiss()}
-        if(helpTopic!=null) top.addView(GameLingoHelp.button(a,helpTopic),GameLingoHelp.layout(a))
-        top.addView(back)
+        val back=action(a,GameLingoLanguages.ui(a,"Zpět")){dialog.dismiss()}
+        val help = helpTopic?.let { GameLingoHelp.button(a,it) }
+        val top = header(a, title(a,heading,29f), back, help)
         root.addView(top,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(a,14)})
-        val content=if(scroll) ScrollView(a).apply{isFillViewport=true;addView(body)} else body
-        root.addView(content,LinearLayout.LayoutParams(-1,0,1f))
+        val content=if(scroll) ScrollView(a).apply {
+            isFillViewport=false
+            isFocusable=false
+            clipToPadding=false
+            addView(body)
+        } else body
+        val contentWidth = if (scroll && isTV(a)) (a.resources.displayMetrics.widthPixels * .84f).toInt() else -1
+        root.addView(content,LinearLayout.LayoutParams(contentWidth,0,1f).apply{gravity=Gravity.CENTER_HORIZONTAL})
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
         dialog.setContentView(root)
         dialog.setOnDismissListener { onClose() }
         dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(-1,-1)
-        if(!body.requestFocus()) back.requestFocus()
+        applyMenuFocus(a, root)
+        if (isTV(a)) body.post {
+            if (!dialog.isShowing) return@post
+            val first = body.getFocusables(View.FOCUS_FORWARD).firstOrNull {
+                it.isEnabled && it.isShown && (it.isClickable || it is android.widget.EditText ||
+                    it is android.widget.SeekBar)
+            }
+            if (first?.requestFocus() != true) back.requestFocus()
+        }
         return dialog
     }
 
     fun controlFocus(a: Activity, view: View) {
-        val old = view.background
-        view.setOnFocusChangeListener { v, focused ->
-            v.background = if (focused) panel(a, true) else old
+        if (!isTV(a) || hasMenuOutline(view.foreground)) return
+        val outline = MenuFocusOutline().apply {
+            addState(intArrayOf(android.R.attr.state_focused), GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
+                cornerRadius = dp(a, 14).toFloat()
+                setStroke(dp(a, 4).coerceAtLeast(2), cyan)
+            })
+            addState(intArrayOf(), android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
         }
+        val previous = view.foreground
+        view.foreground = if (previous == null) outline
+            else android.graphics.drawable.LayerDrawable(arrayOf(previous, outline))
     }
 
     fun brand(a: Activity): LinearLayout = LinearLayout(a).apply {
@@ -155,7 +249,7 @@ object GameLingoTVUi {
                     setSpan(android.text.style.ForegroundColorSpan(purple),4,9,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
             })
-            addView(title(a, "Titulky a překlady her v reálném čase", 16f, muted = true))
+            addView(title(a, GameLingoLanguages.ui(a, "Titulky a překlady her v reálném čase"), 16f, muted = true))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
     }
 
@@ -167,7 +261,7 @@ object GameLingoTVUi {
              onActivate: () -> Unit): LinearLayout {
         val box = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
+            gravity = Gravity.CENTER
             setPadding(dp(a, 16), dp(a, 12), dp(a, 16), dp(a, 12))
             background = panel(a)
             isFocusable = true
@@ -190,7 +284,7 @@ object GameLingoTVUi {
                 adjustViewBounds = true
                 contentDescription = if (symbol == "PS") "PlayStation" else "Xbox"
             }, LinearLayout.LayoutParams(dp(a, 34), dp(a, 34)))
-        } else if(heading in setOf("Jazyk aplikace","Jazyk hry","Jazyk překladu")) {
+        } else if(heading in setOf("Jazyk aplikace","Jazyk hry","Jazyk překladu").map { GameLingoLanguages.ui(a, it) }) {
             // Preserve the previously approved language screen.
             box.addView(title(a, symbol, 25f).apply { setTextColor(cyan) })
         } else {
@@ -214,7 +308,7 @@ object GameLingoTVUi {
     fun action(a: Activity, label: String, primary: Boolean = false,
                onActivate: () -> Unit): TextView = TextView(a).apply {
         text = label
-        textSize = 18f * TV_SCALE
+        textSize = 18f * tvScale(a)
         setTextColor(Color.WHITE)
         setTypeface(null, Typeface.BOLD)
         gravity = Gravity.CENTER
@@ -266,13 +360,13 @@ object GameLingoTVUi {
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             bottomMargin = dp(a, 27)
         })
-        root.addView(title(a, "Vítej v GameLingo TV", 30f),
+        root.addView(title(a, GameLingoLanguages.ui(a, "Vítej v GameLingo TV"), 30f),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = dp(a, 10)
             })
         root.addView(title(a,
-            "Vyber jazyky. Potom můžeš překládat z telefonu nebo přímo na televizi.",
+            GameLingoLanguages.ui(a, "Vyber jazyky. Potom můžeš překládat z telefonu nebo přímo na televizi."),
             17f, muted = true), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -281,7 +375,7 @@ object GameLingoTVUi {
         fun select(name: String, choices: List<GameLingoLanguages.Language>,
                    current: () -> String, kind: GameLingoLanguages.Kind) {
             val button = action(a,
-                name + "  ·  " + GameLingoLanguages.name(choices, current())) {
+                GameLingoLanguages.ui(a, name) + "  ·  " + GameLingoLanguages.name(choices, current())) {
                 GameLingoLanguages.choose(a, kind) {
                     dialog.dismiss()
                     showWelcome(a, onFinish)
@@ -300,7 +394,7 @@ object GameLingoTVUi {
         select("Jazyk překladu", GameLingoLanguages.targetLanguages,
             { GameLingoLanguages.target(a) }, GameLingoLanguages.Kind.TARGET)
 
-        val begin = action(a, "Pokračovat na TV", primary = true) {
+        val begin = action(a, GameLingoLanguages.ui(a, "Pokračovat na TV"), primary = true) {
             dialog.dismiss()
             onFinish(GameLingoLanguages.app(a))
         }
@@ -331,10 +425,10 @@ object GameLingoTVUi {
         val header = LinearLayout(a).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            addView(title(a, "Nastavení GameLingo TV", 25f), LinearLayout.LayoutParams(
+            addView(title(a, GameLingoLanguages.ui(a, "Nastavení GameLingo TV"), 25f), LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
-        val close = action(a, "Zpět") { dialog.dismiss(); onUpdate() }
+        val close = action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
         close.id = View.generateViewId()
         header.addView(close)
         root.addView(header)
@@ -363,9 +457,9 @@ object GameLingoTVUi {
             tile(a, symbol, heading, detail, onActivate).apply {
                 setPadding(dp(a, 13), dp(a, 8), dp(a, 13), dp(a, 8))
                 minimumHeight = dp(a, 92)
-                (getChildAt(0) as? TextView)?.textSize = 20f * TV_SCALE
+                (getChildAt(0) as? TextView)?.textSize = 20f * tvScale(a)
                 (getChildAt(1) as TextView).apply {
-                    textSize = 19f * TV_SCALE
+                    textSize = 19f * tvScale(a)
                     (layoutParams as LinearLayout.LayoutParams).topMargin = dp(a, 3)
                 }
                 (getChildAt(2) as TextView).apply {
@@ -408,17 +502,17 @@ object GameLingoTVUi {
                 }
             }
 
-        section("JAZYKY")
+        section(GameLingoLanguages.ui(a, "JAZYKY"))
         addGrid(listOf(
-            languageTile("Jazyk aplikace", GameLingoLanguages.appLanguages,
+            languageTile(GameLingoLanguages.ui(a, "Jazyk aplikace"), GameLingoLanguages.appLanguages,
                 GameLingoLanguages.Kind.APP) { GameLingoLanguages.app(a) },
-            languageTile("Jazyk hry", GameLingoLanguages.gameLanguages,
+            languageTile(GameLingoLanguages.ui(a, "Jazyk hry"), GameLingoLanguages.gameLanguages,
                 GameLingoLanguages.Kind.GAME) { GameLingoLanguages.game(a) },
-            languageTile("Jazyk překladu", GameLingoLanguages.targetLanguages,
+            languageTile(GameLingoLanguages.ui(a, "Jazyk překladu"), GameLingoLanguages.targetLanguages,
                 GameLingoLanguages.Kind.TARGET) { GameLingoLanguages.target(a) }
         ))
 
-        section("PŘEKLAD HRY")
+        section(GameLingoLanguages.ui(a, "PŘEKLAD HRY"))
         val userSettings = Nastaveni(a)
         fun toggle(title: String, detail: String,
                    get: () -> Boolean, set: (Boolean) -> Unit): LinearLayout {
@@ -433,48 +527,48 @@ object GameLingoTVUi {
             return choice
         }
         addGrid(listOf(
-            toggle("Dialogy", "Překlad mluvených dialogů",
+            toggle(GameLingoLanguages.ui(a, "Dialogy"), GameLingoLanguages.ui(a, "Překlad mluvených dialogů"),
                 { userSettings.dialogy }, { userSettings.dialogy = it }),
-            toggle("Herní texty", "Nápověda a úkoly v herním obraze",
+            toggle(GameLingoLanguages.ui(a, "Herní texty"), GameLingoLanguages.ui(a, "Nápověda a úkoly v herním obraze"),
                 { userSettings.napovedy }, { userSettings.napovedy = it }),
-            toggle("Překrýt původní titulky", "Přeložený text přímo přes originál",
+            toggle(GameLingoLanguages.ui(a, "Překrýt původní titulky"), GameLingoLanguages.ui(a, "Přeložený text přímo přes originál"),
                 { userSettings.prekryvat }, { userSettings.prekryvat = it }),
-            toggle("Příběhový režim", "Postupné čtení delších dialogů",
+            toggle(GameLingoLanguages.ui(a, "Příběhový režim"), GameLingoLanguages.ui(a, "Postupné čtení delších dialogů"),
                 { userSettings.pribehovy }, { userSettings.pribehovy = it })
         ))
         if (RemotePlayService.aktivni) {
             page.addView(title(a,
-                "Změny nastavení překladu se projeví po novém spuštění.",
+                GameLingoLanguages.ui(a, "Změny nastavení překladu se projeví po novém spuštění."),
                 14f, muted = true))
         }
 
-        section("OCR A ROZPOZNÁVÁNÍ")
+        section(GameLingoLanguages.ui(a, "OCR A ROZPOZNÁVÁNÍ"))
         GameLingoOCRConfig.load(a)
-        addGrid(listOf(settingsTile("◎", "Režim OCR", GameLingoOCRConfig.title()) {
+        addGrid(listOf(settingsTile("◎", GameLingoLanguages.ui(a, "Režim OCR"), GameLingoOCRConfig.title()) {
             if (RemotePlayService.aktivni) {
-                android.app.AlertDialog.Builder(a).setMessage("Nejprve zastav překlad.")
+                android.app.AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejprve zastav překlad."))
                     .setPositiveButton("OK", null).show()
             } else {
                 val keys = arrayOf("classic", "automatic", "street")
-                val labels = arrayOf("Původní · stabilní", "Automatický · vyvážený", "Krátké dialogy · rychlý")
-                android.app.AlertDialog.Builder(a).setTitle("Režim OCR")
+                val labels = arrayOf(GameLingoLanguages.ui(a, "Původní · stabilní"), GameLingoLanguages.ui(a, "Automatický · vyvážený"), GameLingoLanguages.ui(a, "Krátké dialogy · rychlý"))
+                android.app.AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Režim OCR"))
                     .setSingleChoiceItems(labels, keys.indexOf(GameLingoOCRConfig.mode)) { picker, index ->
                         GameLingoOCRConfig.setMode(a, keys[index])
                         picker.dismiss()
                         dialog.dismiss()
                         onUpdate()
-                    }.setNegativeButton("Zrušit", null).show()
+                    }.setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).show()
             }
         }))
-        page.addView(title(a, "Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon.",
+        page.addView(title(a, GameLingoLanguages.ui(a, "Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon."),
             14f, muted = true))
-        page.addView(title(a, "Přímý překlad i překlad z telefonu používají internet nebo dříve uložené překlady.",
+        page.addView(title(a, GameLingoLanguages.ui(a, "Přímý překlad i překlad z telefonu používají internet nebo dříve uložené překlady."),
             14f, muted = true))
 
-        section("ZOBRAZENÍ")
-        val overlay = settingsTile("▣", "Titulky přes obraz hry",
+        section(GameLingoLanguages.ui(a, "ZOBRAZENÍ"))
+        val overlay = settingsTile("▣", GameLingoLanguages.ui(a, "Titulky přes obraz hry"),
             if (Settings.canDrawOverlays(a)) "Povoleno" else
-                "Vyžaduje povolení překryvu") {
+                GameLingoLanguages.ui(a, "Vyžaduje povolení překryvu")) {
             if (!Settings.canDrawOverlays(a)) {
                 a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:" + a.packageName)))
@@ -482,24 +576,24 @@ object GameLingoTVUi {
         }
         addGrid(listOf(overlay))
         page.addView(title(a,
-            "Pro čtení her přímo v TV potřebuje aplikace povolení překryvu.",
+            GameLingoLanguages.ui(a, "Pro čtení her přímo v TV potřebuje aplikace povolení překryvu."),
             14f, muted = true))
 
-        section("ZABEZPEČENÍ")
-        addGrid(listOf(toggle("Legacy · staré aplikace",
-            "Povolí nepodepsané titulky (jen důvěryhodná síť)",
+        section(GameLingoLanguages.ui(a, "ZABEZPEČENÍ"))
+        addGrid(listOf(toggle(GameLingoLanguages.ui(a, "Legacy · staré aplikace"),
+            GameLingoLanguages.ui(a, "Povolí nepodepsané titulky (jen důvěryhodná síť)"),
             { GameLingoTVPairing.legacyEnabled(a) },
             { GameLingoTVPairing.setLegacyEnabled(a, it) })))
 
-        section("DALŠÍ")
-        addGrid(listOf(settingsTile("文", "Herní slovník", "Vlastní výrazy pro přímé OCR") {
+        section(GameLingoLanguages.ui(a, "DALŠÍ"))
+        addGrid(listOf(settingsTile("文", GameLingoLanguages.ui(a, "Herní slovník"), GameLingoLanguages.ui(a, "Vlastní výrazy pro přímé OCR")) {
             GameLingoGlossaryUi.show(a)
-        }, settingsTile("◷", "Historie překladů", "Překlady zpracované přímo na TV") {
+        }, settingsTile("◷", GameLingoLanguages.ui(a, "Historie překladů"), GameLingoLanguages.ui(a, "Překlady zpracované přímo na TV")) {
             GameLingoHistoryUi.show(a)
-        }, settingsTile("▣", "Překladová cache", "Ukládání a vymazání místních překladů") {
+        }, settingsTile("▣", GameLingoLanguages.ui(a, "Překladová cache"), GameLingoLanguages.ui(a, "Ukládání a vymazání místních překladů")) {
             GameLingoCachePrivacyUi.show(a)
-        }, settingsTile("ⓘ", "O aplikaci / Licence",
-            "Původní autoři, zdrojový kód a GNU AGPLv3") {
+        }, settingsTile("ⓘ", GameLingoLanguages.ui(a, "O aplikaci / Licence"),
+            GameLingoLanguages.ui(a, "Původní autoři, zdrojový kód a GNU AGPLv3")) {
             GameLingoAbout.show(a)
         }))
 
@@ -531,6 +625,7 @@ object GameLingoTVUi {
         root.addView(scroll, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         dialog.setContentView(root)
+        dialog.setOnDismissListener { if (!a.isFinishing && !a.isDestroyed) onUpdate() }
         dialog.show()
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT)

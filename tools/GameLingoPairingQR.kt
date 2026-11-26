@@ -1,13 +1,14 @@
 package cz.titulky.tv
 
-/** A QR contains only a local address and short-lived PIN. */
+/** A QR contains a local address and a one-time 128-bit pairing code. Never log it. */
 internal data class GameLingoPairingQR(val ip: String, val pin: String) {
+    override fun toString() = "GameLingoPairingQR(redacted)"
     companion object {
         fun parse(raw: String): GameLingoPairingQR? {
             if (raw.length > 64) return null
             val fields = raw.split('|')
-            if (fields.size != 3 || fields[0] != "GLPAIR1" ||
-                !fields[2].matches(Regex("[0-9]{6}"))) return null
+            if (fields.size != 3 || fields[0] != "GLPAIR2" ||
+                !fields[2].matches(Regex("[0-9a-f]{32}"))) return null
             val parts = fields[1].split('.')
             if (parts.size != 4) return null
             val octets = parts.map {
@@ -24,7 +25,7 @@ internal data class GameLingoPairingQR(val ip: String, val pin: String) {
             return GameLingoPairingQR(fields[1], fields[2])
         }
         fun encode(ip: String, pin: String): String? {
-            val raw = "GLPAIR1|$ip|$pin"
+            val raw = "GLPAIR2|$ip|$pin"
             return raw.takeIf { parse(it) != null }
         }
     }

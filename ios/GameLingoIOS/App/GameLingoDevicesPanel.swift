@@ -15,7 +15,7 @@ struct GameLingoDevicesPanel: View {
     @State private var pendingRemove: GLConsoleRecord?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .center, spacing: 15) {
             HStack {
                 GLNeonTitle(title: "Konzole a zařízení",
                             subtitle: "Správa konzolí, TV a výstupu titulků",
@@ -51,10 +51,10 @@ struct GameLingoDevicesPanel: View {
                 GLNeonPanel(emphasized: devices.preferredConsoleID == console.id) {
                     HStack(spacing: 12) {
                         GLPlatformBadge(family: console.family, size: 54)
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .center, spacing: 4) {
                             Text(console.name).font(.headline)
                             Text(devices.preferredConsoleID == console.id
-                                 ? "Vybraná konzole" : console.family.rawValue)
+                                 ? GLInterfaceText.localized("Vybraná konzole") : console.family.rawValue)
                                 .font(.caption)
                                 .foregroundStyle(devices.preferredConsoleID == console.id
                                                  ? GLStyle.green : GLNeon.mist)
@@ -82,7 +82,7 @@ struct GameLingoDevicesPanel: View {
                                 .font(.title2)
                                 .foregroundStyle(GLStyle.blue)
                         }
-                        .accessibilityLabel("Spravovat " + console.name)
+                        .accessibilityLabel(GLInterfaceText.localized("Spravovat:") + " " + console.name)
                     }
                     .contentShape(Rectangle())
                     .padding(13)
@@ -102,12 +102,12 @@ struct GameLingoDevicesPanel: View {
                 GLNeonPanel(emphasized: devices.preferredTelevisionID == television.id) {
                     HStack(spacing: 12) {
                         GLPlatformBadge(family: nil, isTelevision: true, size: 54)
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .center, spacing: 4) {
                             Text(television.name).font(.headline)
-                            Text(devices.preferredTelevisionID == television.id
+                            Text(LocalizedStringKey(devices.preferredTelevisionID == television.id
                                  ? (model.tv.receiverConnected ? "TV připojena" :
                                     "TV uložena – čekám na spojení")
-                                 : "Uložená televize")
+                                 : "Uložená televize"))
                                 .font(.caption)
                                 .foregroundStyle(devices.preferredTelevisionID == television.id &&
                                                  model.tv.receiverConnected
@@ -208,7 +208,7 @@ struct GameLingoDevicesPanel: View {
                 Text(family.rawValue)
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                Text("\(devices.consoles.filter { $0.family == family }.count) uložených")
+                Text(verbatim: GLInterfaceText.localized("Uloženo:") + " " + String(devices.consoles.filter { $0.family == family }.count))
                     .font(.caption)
                     .foregroundStyle(GLNeon.mist)
             }

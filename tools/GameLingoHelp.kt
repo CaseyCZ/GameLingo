@@ -17,6 +17,10 @@ object GameLingoHelp {
     private const val CYAN = "#38BDF8"
 
     private fun info(screen: String): Pair<String, String> = when (screen) {
+        "languages" -> "Jazyky" to
+            "Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle."
+        "about" -> "O aplikaci / Licence" to
+            "Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty."
         "settings" -> "Nastavení TV" to
             "Jazyky, OCR a Překlad určují, co a jak se překládá. Rozložení nastavuje čtyři oblasti. Vzhled upravuje titulky a Profily ukládají konfiguraci pro hry, filmy a aplikace."
         "ocr" -> "OCR a rozpoznávání" to
@@ -28,7 +32,7 @@ object GameLingoHelp {
         "download" -> "Stáhnout aplikaci" to
             "Vyber iPhone nebo Android a naskenuj QR kód fotoaparátem telefonu. Odkaz vede na nejnovější dostupný mobilní balíček na GitHubu. IPA vyžaduje podpis; Android APK může vyžadovat povolení instalace z tohoto zdroje. Pokud vydání nelze ověřit, použij stránku všech vydání. Toto není párovací QR kód."
         "pairing" -> "Párování telefonu" to
-            "Telefon a TV připoj ke stejné síti. V mobilu otevři Zařízení, vyber TV a naskenuj QR kód nebo zadej šestimístný PIN. Po vypršení platnosti vytvoř nový kód."
+            "Telefon a TV připoj ke stejné síti. V mobilu otevři Zařízení, vyber TV a naskenuj QR kód nebo zadej celý párovací kód. Po vypršení platnosti vytvoř nový kód."
         "history" -> "Historie překladů" to
             "Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti."
         "cache" -> "Překladová paměť" to
@@ -36,9 +40,9 @@ object GameLingoHelp {
         "glossary" -> "Herní slovník" to
             "Slovník opravuje vlastní výrazy a jména pro zvolenou jazykovou dvojici. Před úpravou zastav překlad."
         "tv" -> "GameLingo TV" to
-            "1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Zadej šest číslic z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Pokud používáš starý přijímač PlayCaption, zavři jej. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru."
+            "1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Načti QR nebo opiš celý kód z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Pokud používáš starý přijímač PlayCaption, zavři jej. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru."
         "regions" -> "Oblasti" to
-            "Modrá oblast čte původní titulky. Zelená určuje místo českých dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů."
+            "Modrá oblast čte původní titulky. Zelená určuje místo přeložených dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů."
         "translation" -> "Překlad" to
             "OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit. Výchozí nastavení vychází z ověřeného základu PlayCaption."
         "profiles" -> "Profily her" to
@@ -46,9 +50,9 @@ object GameLingoHelp {
         "console" -> "Xbox a PlayStation" to
             "Pro Xbox se přihlašuješ svým účtem Microsoft a povolíš vzdálené funkce. Pro PS5/PS4 použij Remote Play a údaje svého účtu PlayStation. Párovací PIN z konzole se liší od hesla. Do hry ani do konzole se nic neinstaluje."
         "phone" -> "Překlad na telefonu" to
-            "Zvol Standardní pro dialogy nebo Příběhový pro delší titulky. Pokud překládáš přes TV, telefon i TV musí být ve stejné síti. Změny zobrazení jsou k dispozici v Oblastech a Nastavení."
+            "Standardní režim funguje bez dalšího nastavování. Automatický režim používá připravenou zónu a další můžeš přidat v Oblastech obrazovky. Pokud překládáš přes TV, telefon i TV musí být ve stejné síti."
         else -> "GameLingo" to
-            "Vyber Xbox, PlayStation nebo samostatnou TV, připoj zařízení a spusť překlad. Kam se české titulky zobrazí, nastavíš v Zařízení. Oblasti upravují místo čtení a zobrazení, Profily her ukládají vlastní konfiguraci."
+            "Vyber Xbox, PlayStation nebo samostatnou TV, připoj zařízení a spusť překlad. Kam se přeložené titulky zobrazí, nastavíš v Zařízení. Oblasti upravují místo čtení a zobrazení, Profily her ukládají vlastní konfiguraci."
     }
 
     /** Fixed TV geometry; mobile callers retain their existing dimensions. */
@@ -62,7 +66,7 @@ object GameLingoHelp {
     fun button(activity: Activity, topic: String = "home",
                size: Float = 24f): TextView = TextView(activity).apply {
         text = "?"
-        textSize = size
+        textSize = GameLingoVisualKit.sp(activity, size)
         gravity = Gravity.CENTER
         typeface = Typeface.DEFAULT_BOLD
         setTextColor(Color.parseColor(CYAN))
@@ -76,7 +80,7 @@ object GameLingoHelp {
         }
         isClickable = true
         isFocusable = true
-        contentDescription = "Otevřít nápovědu"
+        contentDescription = GameLingoLanguages.ui(activity, "Otevřít nápovědu")
         setOnClickListener { show(activity, topic) }
         if (!GameLingoTVUi.isTV(activity)) {
             text = ""
@@ -86,7 +90,7 @@ object GameLingoHelp {
             minWidth=0;minHeight=0
         }
         if (GameLingoTVUi.isTV(activity)) {
-            textSize = 23f
+            textSize = GameLingoVisualKit.sp(activity, 23f)
             setPadding(0,0,0,0)
             minWidth=GameLingoTVUi.dp(activity,64)
             minHeight=GameLingoTVUi.dp(activity,64)
@@ -110,17 +114,19 @@ object GameLingoHelp {
     }
 
     fun show(activity: Activity, topic: String) {
-        val (title, description) = info(topic)
+        val (titleKey, descriptionKey) = info(topic)
+        val title = GameLingoLanguages.ui(activity, titleKey)
+        val description = GameLingoLanguages.ui(activity, descriptionKey)
         if (GameLingoTVUi.isTV(activity)) {
             val body=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL }
             body.addView(TextView(activity).apply {
-                text=description; textSize=19f
+                text=description; gravity = android.view.Gravity.CENTER; textSize = GameLingoVisualKit.sp(activity, 19f)
                 setTextColor(Color.WHITE); setLineSpacing(5f,1.18f)
                 background=GameLingoTVUi.panel(activity)
                 val padding=GameLingoTVUi.dp(activity,24)
                 setPadding(padding,padding,padding,padding)
             },LinearLayout.LayoutParams(-1,-2))
-            GameLingoTVUi.page(activity,"Nápověda · "+title,body)
+            GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title,body)
             return
         }
         val container = LinearLayout(activity).apply {
@@ -132,15 +138,15 @@ object GameLingoHelp {
             }
         }
         container.addView(TextView(activity).apply {
-            text = title
-            textSize = 23f
+            text = title; gravity = android.view.Gravity.CENTER
+            textSize = GameLingoVisualKit.sp(activity, 23f)
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
             setPadding(6, 0, 6, 14)
         })
         container.addView(TextView(activity).apply {
-            text = description
-            textSize = 16f
+            text = description; gravity = android.view.Gravity.CENTER
+            textSize = GameLingoVisualKit.sp(activity, 16f)
             setTextColor(Color.parseColor("#D8E2F0"))
             setLineSpacing(4f, 1.12f)
             setPadding(6, 0, 6, 12)
@@ -149,7 +155,7 @@ object GameLingoHelp {
         scroll.addView(container)
         AlertDialog.Builder(activity)
             .setView(scroll)
-            .setPositiveButton("Hotovo", null)
+            .setPositiveButton(GameLingoLanguages.ui(activity, "Hotovo"), null)
             .show()
     }
 }

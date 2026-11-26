@@ -35,3 +35,6 @@ Datum 2026-11-24. Statický cílený audit revize `973d5540beae07fff3da1b29cdf2a
 ## Rozhodnutí a další postup
 
 SEC-01/02 a SEC-05 (terms) vyžadují explicitní rozhodnutí před veřejným release; doporučení SEC-02 řešit před distribucí, SEC-04/06/07 zahrnout do priorit oprav. Žádné tvrzení o fyzicky ověřené bezpečnosti, právním schválení ani plné GDPR shodě. Žádný redesign, jazyková změna, merge, release nebo aplikace nových změn. Další bod 4: nepotřebný/starý kód a assets, pouze inventář a návrh, ne automatické mazání funkcí.
+
+## 0.5.2 – autentizovaný bootstrap
+SEC-01: původní plaintext PAIR větev nahrazena. Párování používá 128bitový náhodný kód předaný mimo síť a oddělené HMAC-SHA256 kontexty pro požadavek, odvození klíče a potvrzení. Ruční zadání je delší kvůli odolnosti proti offline hádání. Ověřit CI, cross-platform handshake, ztracenou odpověď, odmítnutí starého PAIR, replay a odposlech; bez nezávislé kontroly nepovažovat za plně uzavřené. Titulky zůstávají autentizované, nikoli šifrované. SEC-03 není touto změnou uzavřeno.

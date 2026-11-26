@@ -87,7 +87,7 @@ def main():
     args = parser.parse_args()
     contract = json.loads(SOURCE.read_text(encoding="utf-8"))
     assert len(contract["tabs"]) == 5
-    assert len(contract["setupSteps"]) == 5
+    assert len(contract["setupSteps"]) == 3
     assert len(contract["settingsSections"]) == 4
     files = {
         SWIFT: generated_swift(contract),

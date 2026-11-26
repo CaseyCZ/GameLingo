@@ -17,95 +17,111 @@ object GameLingoAbout {
     /** Same About/Licence content on the tab and in the standalone TV dialog. */
     fun content(activity: Activity, onDismiss: () -> Unit = {},
                 showClose: Boolean = false): LinearLayout {
+        fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
+        val tv = GameLingoTVUi.isTV(activity)
         val d = GameLingoVisualKit.dp(activity, 1)
+        fun pad(v: Int) = if (tv) GameLingoVisualKit.dp(activity, v) else v*d
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(18*d, 17*d, 18*d, 30*d)
-            background = GameLingoVisualKit.pageBackground(activity)
+            setPadding(pad(18), pad(if (tv) 8 else 17), pad(18), pad(if (tv) 10 else 30))
+            if (!tv) background = GameLingoVisualKit.pageBackground(activity)
         }
         val close = TextView(activity).apply {
-            text = "✕   Zavřít"
-            textSize = 15f
+            text = "✕   " + tr("Zavřít")
+            textSize = GameLingoVisualKit.sp(activity, 15f)
             setTextColor(Color.WHITE)
-            gravity = Gravity.END
+            gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true
             setOnClickListener { onDismiss() }
-            setPadding(0, 6*d, 0, 14*d)
+            setPadding(0, pad(6), 0, pad(14))
         }
         if (showClose) page.addView(close)
-        page.addView(GameLingoVisualKit.wordmark(activity),
+        page.addView(GameLingoVisualKit.wordmark(activity, compact = tv),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 17*d })
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(if (tv) 6 else 17) })
 
         fun label(value: String, size: Float, strong: Boolean = false): TextView =
             TextView(activity).apply {
-                text = value
-                textSize = size
+                text = tr(value)
+                gravity = android.view.Gravity.CENTER
+                textSize = GameLingoVisualKit.sp(activity, size)
                 setTextColor(if (strong) Color.WHITE else Color.parseColor("#92A4C7"))
                 if (strong) setTypeface(null, Typeface.BOLD)
-                setPadding(4*d, 7*d, 4*d, 7*d)
+                setPadding(pad(4), pad(if (tv) 3 else 7), pad(4), pad(if (tv) 3 else 7))
             }
 
         val version = runCatching {
             activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
-        }.getOrNull().orEmpty().ifEmpty { "testovací sestavení" }
+        }.getOrNull().orEmpty().ifEmpty { tr("testovací sestavení") }
 
         page.addView(label("GameLingo · $version", 19f, true))
-        page.addView(label("Nezávislý překlad herních dialogů a textů " +
-            "pro Xbox, PlayStation a kompatibilní TV.", 14f))
+        page.addView(label("Nezávislý překlad herních dialogů a textů pro Xbox, PlayStation a kompatibilní TV.", 14f))
 
         page.addView(label("Licence a původní autoři", 19f, true))
         page.addView(label(
-            "GameLingo využívá open-source základy PlayCaption a Chiaki. " +
-            "Zdrojový kód a jeho úpravy jsou šířeny podle GNU AGPLv3 (AGPL-3.0). " +
-            "GameLingo není oficiální aplikací Sony, Microsoftu ani Google. " +
-            "Názvy Xbox a PlayStation jsou ochranné známky příslušných vlastníků.",
+            "GameLingo využívá open-source základy PlayCaption a Chiaki. Zdrojový kód a jeho úpravy jsou šířeny podle GNU AGPLv3 (AGPL-3.0). GameLingo není oficiální aplikací Sony, Microsoftu ani Google. Názvy Xbox a PlayStation jsou ochranné známky příslušných vlastníků.",
             14f
         ))
 
-        fun link(title: String, url: String) {
-            val row = GameLingoVisualKit.deviceCard(activity, "TV",
-                title, "Otevřít odkaz", false) {
-                activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        fun link(title: String, url: String): LinearLayout =
+            GameLingoVisualKit.detailRow(activity, "globe", tr(title), tr("Otevřít odkaz")) {
+                try {
+                    activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                } catch (_: android.content.ActivityNotFoundException) {
+                    android.app.AlertDialog.Builder(activity).setMessage(url)
+                        .setPositiveButton(tr("Zavřít"), null).show()
+                }
             }
-            page.addView(row, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9*d })
-        }
-        page.addView(label("Licenční texty v aplikaci", 19f, true))
-        page.addView(GameLingoVisualKit.deviceCard(activity, "TV",
-            "Licence třetích stran", "Číst bez internetu", false) {
+        val license = GameLingoVisualKit.detailRow(activity, "info.circle",
+            tr("Licence třetích stran"), tr("Číst bez internetu")) {
             val notices = runCatching {
                 activity.assets.open("GameLingoNotices.txt").bufferedReader(Charsets.UTF_8).use { it.readText() }
             }.getOrNull()
-            android.app.AlertDialog.Builder(activity)
-                .setTitle("Licence třetích stran")
-                .setMessage(notices ?: "Licenční soubor není v tomto sestavení dostupný.")
-                .setPositiveButton("Zavřít", null).show()
-        })
-        page.addView(label("Zdrojové kódy", 19f, true))
-        link("GameLingo na GitHubu", "https://github.com/CaseyCZ/GameLingo")
-        link("Původní PlayCaption", "https://github.com/AdamRuzick4/PlayCaption-app")
-        link("Chiaki / TP Play", "https://github.com/mB14ck22/tp-play")
+            if (tv) {
+                val body = TextView(activity).apply {
+                    text = notices ?: tr("Licenční soubor není v tomto sestavení dostupný.")
+                    textSize = GameLingoVisualKit.sp(activity, 16f)
+                    setTextColor(Color.WHITE)
+                    isFocusable = true
+                    setTextIsSelectable(true)
+                    setPadding(pad(12),pad(8),pad(12),pad(8))
+                }
+                GameLingoTVUi.page(activity, tr("Licence třetích stran"), body)
+            } else android.app.AlertDialog.Builder(activity)
+                .setTitle(tr("Licence třetích stran"))
+                .setMessage(notices ?: tr("Licenční soubor není v tomto sestavení dostupný."))
+                .setPositiveButton(tr("Zavřít"), null).show()
+        }
+        val sources = listOf(
+            link("GameLingo na GitHubu", "https://github.com/CaseyCZ/GameLingo"),
+            link("Původní PlayCaption", "https://github.com/AdamRuzick4/PlayCaption-app"),
+            link("Chiaki / TP Play", "https://github.com/mB14ck22/tp-play"))
+        if (tv) {
+            // Four compact cards, two columns. Only the actual long license text scrolls.
+            (listOf(license) + sources).chunked(2).forEach { pair ->
+                val row = LinearLayout(activity).apply { orientation=LinearLayout.HORIZONTAL }
+                pair.forEachIndexed { i, card ->
+                    row.addView(card, LinearLayout.LayoutParams(0,-2,1f).apply {
+                        if (i == 0) marginEnd = pad(12)
+                    })
+                }
+                page.addView(row, LinearLayout.LayoutParams(-1,-2).apply { topMargin=pad(8) })
+            }
+        } else {
+            page.addView(label("Licenční texty v aplikaci", 19f, true))
+            page.addView(license)
+            page.addView(label("Offline překlad na telefonu využívá Google ML Kit. Jazykové modely se stahují přes Wi-Fi.", 14f))
+            page.addView(link("Podmínky překladu Google ML Kit", "https://developers.google.com/ml-kit/language/translation/translation-terms"))
+            page.addView(label("Zdrojové kódy", 19f, true))
+            sources.forEach { page.addView(it, LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=pad(9) }) }
+        }
 
         return page
     }
 
     fun show(activity: Activity) {
-        if (activity.isFinishing) return
-        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
-        val page = content(activity, onDismiss = { dialog.dismiss() }, showClose = true)
-        val scroll = ScrollView(activity).apply {
-            isFillViewport = true
-            addView(page)
-        }
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        if (activity.isFinishing || activity.isDestroyed) return
+        GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity), helpTopic = "about")
     }
 }

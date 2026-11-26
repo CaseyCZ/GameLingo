@@ -1,5 +1,6 @@
 """Direct-on-TV rendering and OCR; receiver mode and mobile remain unchanged."""
 from pathlib import Path
+from tv_navigation import patch_navigation
 
 def patch_direct_tv(folder):
     service = folder / "RemotePlayService.kt"
@@ -196,8 +197,10 @@ def patch_direct_tv(folder):
     update_anchor = '        page.addView(label("Licence a původní autoři", 19f, true))'
     if about_text.count(update_anchor) != 1:
         raise RuntimeError("TV About update anchor changed")
-    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoTVUi.action(activity, "Zkontrolovat aktualizace") {
+    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoTVUi.action(activity, GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")) {
             GameLingoTVUpdater.show(activity)
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
         })
 ''' + update_anchor, 1)
     about.write_text(about_text, encoding="utf8")
@@ -239,17 +242,17 @@ def patch_direct_tv(folder):
     patch_main('else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()',
                'else vyberZdrojTelevize()')
     patch_main('private fun hratTelevizi() {', """private fun vyberZdrojTelevize() {
-        GameLingoTVUi.select(this,"Vyber zdroj překladu",arrayOf("PlayStation 4 / 5", "Xbox Series / One", "Samostatná TV")) { index ->
+        GameLingoTVUi.select(this,GameLingoLanguages.ui(this, "Vyber zdroj překladu"),arrayOf("PlayStation 4 / 5", "Xbox Series / One", GameLingoLanguages.ui(this, "Samostatná TV"))) { index ->
                 if (index == 2) {
                     if (!GameLingoScreenTranslationService.running && (RemotePlayService.aktivni || PrijemService.bezi)) {
-                        android.app.AlertDialog.Builder(this).setMessage("Nejdříve zastav překlad z konzole nebo telefonu.")
+                        android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Nejdříve zastav překlad z konzole nebo telefonu."))
                             .setPositiveButton("OK", null).show()
                     } else {
                         AutoStart.nastavZapnuto(this, false)
                         GameLingoScreenTranslationService.open(this)
                     }
                 } else if (RemotePlayService.aktivni) {
-                    android.app.AlertDialog.Builder(this).setMessage("Nejdřív zastav probíhající překlad.")
+                    android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Nejdřív zastav probíhající překlad."))
                         .setPositiveButton("OK", null).show()
                 } else if (index == 0) vyberPrimouPS() else vyberPrimyXbox()
             }
@@ -257,7 +260,7 @@ def patch_direct_tv(folder):
 
     private fun spustPrimyZdroj(xbox: Boolean) {
         if (GameLingoScreenTranslationService.running || PrijemService.bezi) {
-            android.app.AlertDialog.Builder(this).setMessage("Nejdříve zastav stávající překlad.")
+            android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Nejdříve zastav stávající překlad."))
                 .setPositiveButton("OK",null).show()
             return
         }
@@ -276,30 +279,30 @@ def patch_direct_tv(folder):
             if (udaje.sparovano) spustPrimyZdroj(false) else ukazPripojeni()
             return
         }
-        GameLingoTVUi.select(this,"Vyber PlayStation",(consoles.map { it.type + " · " + it.name } + "+ Přidat PlayStation").toTypedArray()) { index ->
+        GameLingoTVUi.select(this,GameLingoLanguages.ui(this, "Vyber PlayStation"),(consoles.map { it.type + " · " + it.name } + ("+ " + GameLingoLanguages.ui(this, "Přidat PlayStation"))).toTypedArray()) { index ->
                 if (index == consoles.size) ukazPripojeni()
                 else if (GameLingoPlayStationConsoles.select(this, consoles[index].ip)) spustPrimyZdroj(false)
-                else android.app.AlertDialog.Builder(this).setMessage("Konzoli se nepodařilo načíst.").setPositiveButton("OK", null).show()
+                else android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Konzoli se nepodařilo načíst.")).setPositiveButton("OK", null).show()
             }
     }
 
     private fun vyberPrimyXbox() {
         if (!XboxUcet.prihlasen(this)) { ukazPripojeniXbox(); return }
-        val loading = android.app.ProgressDialog.show(this, "Xbox", "Hledám konzole…", true, true)
+        val loading = android.app.ProgressDialog.show(this, "Xbox", GameLingoLanguages.ui(this, "Hledám konzole…"), true, true)
         Thread {
             val result = runCatching { XboxSpojeni.konzole(this) }
             ui.post {
                 if (isFinishing || isDestroyed || !loading.isShowing) return@post
                 loading.dismiss()
                 if (result.isFailure) {
-                    android.app.AlertDialog.Builder(this).setMessage("Seznam Xboxů se nepodařilo načíst.")
+                    android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Seznam Xboxů se nepodařilo načíst."))
                         .setPositiveButton("OK", null).show()
                     return@post
                 }
                 val prefs = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
                 val hidden = prefs.getStringSet("hiddenXboxIds", emptySet()).orEmpty()
                 val consoles = result.getOrDefault(emptyList()).filterNot { it.id in hidden }
-                GameLingoTVUi.select(this,"Vyber Xbox",(consoles.map { it.jmeno } + "+ Přidat Xbox").toTypedArray()) { index ->
+                GameLingoTVUi.select(this,GameLingoLanguages.ui(this, "Vyber Xbox"),(consoles.map { it.jmeno } + ("+ " + GameLingoLanguages.ui(this, "Přidat Xbox"))).toTypedArray()) { index ->
                         if (index == consoles.size) ukazPripojeniXbox()
                         else {
                             val x = consoles[index]
@@ -320,7 +323,8 @@ def patch_direct_tv(folder):
                '        // Active phone reception stays in the background; its tile opens it explicitly.')
     patch_main('private fun hratSTelefonem() {',
                'private fun hratSTelefonem() {\n        GameLingoScreenTranslationService.stop(this)')
-    patch_main("private val SKALA = 0.72f", "private val SKALA = 0.66f")
+    patch_main("private val SKALA = 0.72f", "private val SKALA: Float get() = GameLingoTVUi.menuScale(this)")
+    m = patch_navigation(m)
     main.write_text(m, encoding="utf8")
 
     # Receiver keys exist in the TV build only. Do not add dependencies on
@@ -332,23 +336,23 @@ def patch_direct_tv(folder):
         raise RuntimeError("TV phone list anchor changed")
     device_source = device_source.replace(marker, """            val phones = IPhoneTVPairing.phones(c)
             if (phones.isEmpty()) {
-                tvPanel.addView(label(c, "Zatím žádný spárovaný telefon.", 14f, muted))
+                tvPanel.addView(label(c, GameLingoLanguages.ui(c, "Zatím žádný spárovaný telefon."), 14f, muted))
             }
             for (phone in phones) {
                 add(tvPanel, line(c, phone.label,
-                    if (phone.connected) "Připojen" else "Spárován",
+                    if (phone.connected) GameLingoLanguages.ui(c, "Připojen") else GameLingoLanguages.ui(c, "Spárován"),
                     phone.connected) {
-                    chooseDevice(c, phone.label, arrayOf("Odpárovat")) {
+                    chooseDevice(c, phone.label, arrayOf(GameLingoLanguages.ui(c, "Odpárovat"))) {
                         AlertDialog.Builder(c)
-                            .setTitle("Odpárovat " + phone.label + "?")
-                            .setMessage("Ostatní telefony zůstanou spárované.")
-                            .setNegativeButton("Zrušit", null)
-                            .setPositiveButton("Odpárovat") { _, _ ->
+                            .setTitle(GameLingoLanguages.ui(c, "Odpárovat") + " " + phone.label + "?")
+                            .setMessage(GameLingoLanguages.ui(c, "Ostatní telefony zůstanou spárované."))
+                            .setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"), null)
+                            .setPositiveButton(GameLingoLanguages.ui(c, "Odpárovat")) { _, _ ->
                                 if (IPhoneTVPairing.unpair(c, phone.id)) {
                                     onDismiss()
                                     onUpdated()
                                 } else AlertDialog.Builder(c)
-                                    .setMessage("Odpárování se nepodařilo uložit.")
+                                    .setMessage(GameLingoLanguages.ui(c, "Odpárování se nepodařilo uložit."))
                                     .setPositiveButton("OK", null).show()
                             }.show()
                     }
@@ -459,7 +463,8 @@ def patch_direct_tv(folder):
         val views = listOfNotNull(textView, podklad, napoveda, seznamVoleb, ramecekTitulku, ramecekVoleb)
         val visible = views.any { it.visibility == android.view.View.VISIBLE && it.alpha > 0f }
         views.forEach { it.alpha = if (hidden) 0f else 1f }
-        return visible
+        val zonesVisible = automaticZoneOverlay.suppress(hidden)
+        return visible || zonesVisible
     }
 
     private fun showText(text: CharSequence, hideAfterMs: Long = 6000) {''')
@@ -563,6 +568,34 @@ def patch_direct_tv(folder):
         internal fun overlayTestReport(): String = synchronized(overlayTestEvents) {
             overlayTestEvents.joinToString("\\n")
         }
+        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"''')
+    # Authenticated full snapshots use the existing foreground overlay service.
+    for name in ("GameLingoZonePacket.kt", "GameLingoZoneOverlay.kt"):
+        (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
+    unit_dir = folder.parents[4] / "test/java/cz/titulky/tv"
+    unit_dir.mkdir(parents=True, exist_ok=True)
+    (unit_dir / "GameLingoZonePacketTest.kt").write_text(Path(__file__).with_name("GameLingoZonePacketTest.kt").read_text(encoding="utf8"), encoding="utf8")
+    overlay_one('    private lateinit var wm: WindowManager',
+        '''    private lateinit var wm: WindowManager
+    private val automaticZoneOverlay by lazy { GameLingoZoneOverlay(this, wm) }''')
+    overlay_one('        if (intent?.action == ACTION_ZRUS_PRIBEH) { zrusPribeh(); showText(""); return START_STICKY }',
+        '''        if (intent?.action == ACTION_SET_ZONES || intent?.action == ACTION_SET_LOCAL_ZONES) {
+            val packet = GameLingoZonePacket.parse(intent.getStringExtra(EXTRA_ZONE_PACKET).orEmpty().split('\\t'))
+            if (packet != null) {
+                if (packet.blocks.isNotEmpty()) { zrusPribeh(); showText("") }
+                automaticZoneOverlay.show(packet, local = intent.action == ACTION_SET_LOCAL_ZONES)
+            }
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_ZRUS_PRIBEH) { automaticZoneOverlay.clear(); zrusPribeh(); showText(""); return START_STICKY }''')
+    overlay_one('            val text = intent.getStringExtra(EXTRA_TEXT).orEmpty()\n            val box',
+        '            val text = intent.getStringExtra(EXTRA_TEXT).orEmpty()\n            if (text.isNotBlank()) automaticZoneOverlay.clear()\n            val box')
+    overlay_one('    override fun onDestroy() {\n        zrusPribeh()',
+        '    override fun onDestroy() {\n        automaticZoneOverlay.clear()\n        zrusPribeh()')
+    overlay_one('        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"',
+        '''        const val ACTION_SET_ZONES = "gamelingo.overlay.ZONES"
+        const val ACTION_SET_LOCAL_ZONES = "gamelingo.overlay.LOCAL_ZONES"
+        const val EXTRA_ZONE_PACKET = "zone_packet"
         const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"''')
     overlay.write_text(overlay_text, encoding="utf8")
 

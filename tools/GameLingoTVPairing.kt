@@ -29,7 +29,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 
 /**
- * Match the iPhone's six-digit GameLingo TV receiver handshake (PCPAIR1).
+ * Match the iPhone's authenticated GameLingo TV receiver handshake (PCPAIR1).
  *
  * Android mobile only. Google TV already supports PAIR/PING on UDP 41989;
  * never transmit Microsoft/PSN credentials. A receiver secret is stored via
@@ -153,6 +153,8 @@ object GameLingoTVPairing {
     }
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var lastVerifiedIp = ""
+    @Volatile private var zoneCapableIp = ""
+    fun supportsZones(ip: String) = connected(ip) && zoneCapableIp == ip
     @Volatile private var lastVerifiedAt = 0L
 
     private fun prefs(c: Context) =
@@ -229,7 +231,8 @@ object GameLingoTVPairing {
     }
 
     private fun sign(secret: String, value: String): String {
-        val bytes = ByteArray(32) { i -> secret.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
+        require(secret.length in setOf(32, 64))
+        val bytes = ByteArray(secret.length / 2) { i -> secret.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
         return Mac.getInstance("HmacSHA256").run {
             init(SecretKeySpec(bytes, "HmacSHA256"))
             doFinal(value.toByteArray(Charsets.UTF_8))
@@ -260,7 +263,7 @@ object GameLingoTVPairing {
                     Propojeni.Vysilac.outputGeneration() != generation) return@Thread
                 val clientId = pairingId(context)
                 val result = runCatching {
-                    val nonce = UUID.randomUUID().toString()
+                    val nonce = "Z1-" + UUID.randomUUID().toString()
                     val message = freshBody("PING\t$clientId\t$nonce")
                     val data = ("PCPAIR1\t$message\t" + sign(secret, message)).toByteArray(Charsets.UTF_8)
                     val address = InetAddress.getByName(ip)
@@ -271,15 +274,18 @@ object GameLingoTVPairing {
                         val reply = DatagramPacket(ByteArray(2048), 2048)
                         socket.receive(reply)
                         val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
-                        reply.address == address && reply.port == port && MessageDigest.isEqual(
-                            expected.toByteArray(Charsets.UTF_8),
-                            reply.data.copyOfRange(reply.offset, reply.offset + reply.length))
+                        val extended = expected + "\tPCZ1\t" + sign(secret,"PONG\t$clientId\t$nonce|PCZ1")
+                        val bytes=reply.data.copyOfRange(reply.offset,reply.offset+reply.length)
+                        val correctPeer=reply.address==address&&reply.port==port
+                        val capable=correctPeer&&MessageDigest.isEqual(extended.toByteArray(Charsets.UTF_8),bytes)
+                        (capable || correctPeer&&MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8),bytes)) to capable
                     }
-                }.getOrDefault(false)
+                }.getOrDefault(false to false)
                 main.post {
                     if (!RemotePlayService.aktivni || Propojeni.Vysilac.cilIp != ip ||
                         Propojeni.Vysilac.outputGeneration() != generation || token(context, ip) != secret) return@post
-                    if (result) {
+                    if (result.first) {
+                        zoneCapableIp = if(result.second)ip else ""
                         lastVerifiedIp = ip
                         lastVerifiedAt = SystemClock.elapsedRealtime()
                     } else {
@@ -338,38 +344,42 @@ object GameLingoTVPairing {
     }
 
     private fun handshake(ip: String, pin: String, clientId: String): String {
-        require(pin.matches(Regex("[0-9]{6}"))) { "Zadej šest číslic z TV." }
+        require(pin.matches(Regex("[0-9a-f]{32}"))) { "Zadej celý párovací kód z TV." }
+        val nonce = UUID.randomUUID().toString()
+        val context = "$clientId\tAndroid\t$nonce"
+        val proof = sign(pin, "PAIR2\t$context")
+        val token = sign(pin, "KEY2\t$context")
+        val payload = "PCPAIR1\tPAIR2\t$context\t$proof".toByteArray(Charsets.UTF_8)
+        val expected = "PCPAIR1\tOK2\t$clientId\t$nonce\t" + sign(token, "OK2\t$context")
+        val address = InetAddress.getByName(ip)
+        val port = receiverPort(ip)
         DatagramSocket().use { socket ->
-            socket.soTimeout = 10_000
-            val address = InetAddress.getByName(ip)
-            val payload = "PCPAIR1\tPAIR\t$pin\t$clientId\tAndroid".toByteArray(Charsets.UTF_8)
-            val port = receiverPort(ip)
-            socket.send(DatagramPacket(payload, payload.size, address, port))
-            val buffer = ByteArray(2048)
-            val packet = DatagramPacket(buffer, buffer.size)
-            socket.receive(packet)
-            require(packet.address == address && packet.port == port) { "Odpověď nepřišla od vybrané TV." }
-            val fields = String(packet.data, 0, packet.length, Charsets.UTF_8).split("\t")
-            if (fields.size >= 2 && fields[0] == "PCPAIR1" && fields[1] == "ERROR")
-                throw IllegalArgumentException("TV kód odmítla. Vytvoř nový kód.")
-            require(fields.size == 4 && fields[0] == "PCPAIR1" &&
-                fields[1] == "OK" && fields[2] == clientId && validToken(fields[3])) {
-                "Televize vrátila neplatnou odpověď."
+            socket.connect(address, port)
+            socket.soTimeout = 2500
+            repeat(3) {
+                socket.send(DatagramPacket(payload, payload.size, address, port))
+                val packet = DatagramPacket(ByteArray(2048), 2048)
+                try {
+                    socket.receive(packet)
+                    if (packet.address == address && packet.port == port && MessageDigest.isEqual(
+                            expected.toByteArray(Charsets.UTF_8), packet.data.copyOfRange(packet.offset, packet.offset + packet.length))) return token
+                } catch (_: java.net.SocketTimeoutException) { }
             }
-            return fields[3]
         }
+        throw IllegalArgumentException("TV nepotvrdila bezpečné párování. Vytvoř nový kód.")
     }
 
     fun show(activity: Activity, tv: TvProfil, initialPin: String = "", onPaired: () -> Unit = {}) {
         if (activity.isFinishing) return
         val pinInput = EditText(activity).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-            filters = arrayOf(InputFilter.LengthFilter(6))
-            hint = "000000"
-            setText(initialPin.takeIf { it.matches(Regex("[0-9]{6}")) }.orEmpty())
-            textSize = 26f
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            filters = arrayOf(InputFilter.LengthFilter(48))
+            hint = "xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx"
+            setText(initialPin.takeIf { it.matches(Regex("[0-9a-f]{32}")) }.orEmpty())
+            textSize = GameLingoVisualKit.sp(activity, 15f)
+            typeface = android.graphics.Typeface.MONOSPACE
             gravity = Gravity.CENTER
-            contentDescription = "Šestimístný kód z GameLingo TV"
+            contentDescription = GameLingoLanguages.ui(activity, "Párovací kód z GameLingo TV")
             setSingleLine(true)
         }
         val dialog=android.app.Dialog(activity,android.R.style.Theme_Material_NoActionBar_Fullscreen)
@@ -379,7 +389,7 @@ object GameLingoTVPairing {
             setPadding(d(18),d(18),d(18),d(24));background=GameLingoVisualKit.pageBackground(activity)
         }
         val header=android.widget.LinearLayout(activity).apply {gravity=Gravity.CENTER_VERTICAL}
-        header.addView(GameLingoVisualKit.heading(activity,"Párování televize"),android.widget.LinearLayout.LayoutParams(0,-2,1f))
+        header.addView(GameLingoVisualKit.heading(activity,GameLingoLanguages.ui(activity, "Párování televize")),android.widget.LinearLayout.LayoutParams(0,-2,1f))
         header.addView(GameLingoHelp.button(activity,"pairing"),GameLingoHelp.layout(activity,d(36),d(44)))
         root.addView(header)
         root.addView(GameLingoVisualKit.platformPanel(activity,"TV",tv.jmeno,tv.ip))
@@ -387,8 +397,8 @@ object GameLingoTVPairing {
             orientation=android.widget.LinearLayout.VERTICAL
             val pad=d(13);setPadding(pad,pad,pad,pad);background=GameLingoVisualKit.card(activity)
             addView(android.widget.TextView(activity).apply {
-                text="Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování. Používej jen důvěryhodnou domácí síť; párování a titulky nejsou šifrované."
-                textSize=14f;setTextColor(android.graphics.Color.parseColor("#92A4C7"))
+                text=GameLingoLanguages.ui(activity, "Na TV otevři Překlad z telefonu. Načti QR nebo opiš 32 znaků kódu. Titulky jsou podepsané, ne šifrované.")
+                gravity=Gravity.CENTER;textSize = GameLingoVisualKit.sp(activity, 14f);setTextColor(android.graphics.Color.parseColor("#92A4C7"))
             })
             pinInput.setTextColor(android.graphics.Color.WHITE)
             pinInput.setHintTextColor(android.graphics.Color.parseColor("#92A4C7"))
@@ -398,14 +408,14 @@ object GameLingoTVPairing {
             addView(pinInput,android.widget.LinearLayout.LayoutParams(-1,d(58)).apply{topMargin=d(13)})
         }
         root.addView(card,android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=d(13)})
-        val pair=GameLingoVisualKit.cta(activity,"Spárovat") {}
+        val pair=GameLingoVisualKit.cta(activity,GameLingoLanguages.ui(activity, "Spárovat")) {}
         root.addView(pair,android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=d(13)})
-        root.addView(GameLingoTVUi.action(activity,"Zrušit"){dialog.dismiss()})
+        root.addView(GameLingoTVUi.action(activity,GameLingoLanguages.ui(activity, "Zrušit")){dialog.dismiss()})
         dialog.setContentView(android.widget.ScrollView(activity).apply{isFillViewport=true;addView(root)})
         pair.setOnClickListener {
-                val pin = pinInput.text.toString().trim()
-                if (!pin.matches(Regex("[0-9]{6}"))) {
-                    pinInput.error = "Je nutných šest číslic"
+                val pin = pinInput.text.toString().filterNot { it.isWhitespace() || it == '-' }.lowercase(java.util.Locale.ROOT)
+                if (!pin.matches(Regex("[0-9a-f]{32}"))) {
+                    pinInput.error = GameLingoLanguages.ui(activity, "Zadej všech 32 znaků kódu")
                     return@setOnClickListener
                 }
                 pair.isEnabled = false;pair.alpha=.45f
@@ -415,7 +425,7 @@ object GameLingoTVPairing {
                         val secret = handshake(tv.ip, pin, id)
                         val encrypted = encrypt(secret)
                         prefs(activity).edit()
-                            .putString("tv_" + hashIp(tv.ip), encrypted).apply()
+                            .putString("tv_" + hashIp(tv.ip), encrypted).commit().also { check(it) }
                     }
                     main.post {
                         if (!activity.isFinishing) {
@@ -423,18 +433,18 @@ object GameLingoTVPairing {
                                 dialog.dismiss()
                                 onPaired()
                                 Toast.makeText(activity,
-                                    "TV přijala kód. Ověřuji spojení…",
+                                    GameLingoLanguages.ui(activity, "TV přijala kód. Ověřuji spojení…"),
                                     Toast.LENGTH_SHORT).show()
                                 verify(activity, tv) { connected ->
                                     Toast.makeText(activity,
-                                        if (connected) "GameLingo TV je připojená."
-                                        else "Kód uložen, ale TV zatím neodpovídá.",
+                                        if (connected) GameLingoLanguages.ui(activity, "GameLingo TV je připojená.")
+                                        else GameLingoLanguages.ui(activity, "Kód uložen, ale TV zatím neodpovídá."),
                                         Toast.LENGTH_LONG).show()
                                 }
                             }.onFailure { err ->
                                 pair.isEnabled = true;pair.alpha=1f
                                 AlertDialog.Builder(activity)
-                                    .setMessage(err.message ?: "TV neodpověděla. Ověř IP a síť.")
+                                    .setMessage(GameLingoLanguages.ui(activity, err.message ?: "TV neodpověděla. Ověř IP a síť."))
                                     .setPositiveButton("OK", null).show()
                             }
                         }

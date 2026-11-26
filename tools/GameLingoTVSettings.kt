@@ -17,39 +17,88 @@ import android.widget.SeekBar
 /** TV-specific category dashboard, not a phone-sized list of individual rows. */
 object GameLingoTVSettings {
     fun show(a: Activity, onDevices: () -> Unit, onUpdate: () -> Unit) {
+        if (a.isFinishing || a.isDestroyed) return
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        var openingDevices = false
+        var reopeningForScale = false
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(a)
             setPadding(d(a, 38), d(a, 24), d(a, 38), d(a, 24))
         }
-        val header = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
-        header.addView(GameLingoTVUi.title(a, "Nastavení GameLingo TV", 25f),
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        val back = GameLingoTVUi.action(a, "Zpět") { dialog.dismiss(); onUpdate() }
+        val heading = GameLingoTVUi.title(a, GameLingoLanguages.ui(a, "Nastavení GameLingo TV"), 25f)
+        val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
         back.id = View.generateViewId()
         val help=GameLingoHelp.button(a,"settings")
-        header.addView(help,GameLingoHelp.layout(a))
-        header.addView(back)
-        root.addView(header)
+        root.addView(GameLingoTVUi.header(a, heading, back, help))
         val cards = mutableListOf<View>()
+        val cardLabels = mutableListOf<Pair<String, String>>()
+        fun refreshLanguage() {
+            if (a.isFinishing || a.isDestroyed || !dialog.isShowing) return
+            heading.text = GameLingoLanguages.ui(a, "Nastavení GameLingo TV")
+            back.text = GameLingoLanguages.ui(a, "Zpět")
+            help.contentDescription = GameLingoLanguages.ui(a, "Otevřít nápovědu")
+            cards.forEachIndexed { index, card ->
+                val (label, detail) = cardLabels[index]
+                card.findViewWithTag<TextView>("gamelingo-title")?.text = GameLingoLanguages.ui(a, label)
+                card.findViewWithTag<TextView>("gamelingo-detail")?.text = when (index) {
+                    1 -> GameLingoAutomaticConfig.label(a)
+                    3 -> GameLingoLanguages.ui(a, if (GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti")
+                    else -> GameLingoLanguages.ui(a, detail)
+                }
+            }
+        }
         fun tile(symbol: String, label: String, detail: String, action: () -> Unit) {
-            val card = GameLingoVisualKit.detailRow(a,symbol,label,detail,action).apply {
+            val card = GameLingoVisualKit.detailRow(a,symbol,GameLingoLanguages.ui(a, label),GameLingoLanguages.ui(a, detail),action).apply {
                 id=View.generateViewId()
             }
             cards.add(card)
+            cardLabels.add(label to detail)
         }
-        tile("◎", "Jazyky", "Aplikace, hra, překlad") { GameLingoLanguages.show(a) }
-        tile("viewfinder", "OCR a rozpoznávání", "Režim, filtr a rozšíření") { ocr(a) }
-        tile("文", "Překlad", "Dialogy, herní texty, Story") { translation(a) }
-        tile("rectangle.dashed", "Oblasti obrazovky", "Čtyři oblasti") { GameLingoDirectTVLayout.show(a) {} }
-        tile("Aa", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }
+        tile("globe", "Jazyky", "Aplikace, hra, překlad") { GameLingoLanguages.show(a, onChanged = ::refreshLanguage) }
+        tile("viewfinder", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(a)) { if (!GameLingoScreenTranslationService.running) GameLingoAutomaticConfig.mode(a, onChanged = {
+            cards[1].findViewWithTag<android.widget.TextView>("gamelingo-detail")?.text = GameLingoAutomaticConfig.label(a)
+            cards[3].findViewWithTag<android.widget.TextView>("gamelingo-detail")?.text = GameLingoLanguages.ui(a, if(GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti")
+        }) { ocr(a) } }
+        tile("character.book.closed.fill", "Překlad", "Dialogy, herní texty, Story") { translation(a) }
+        tile("rectangle.dashed", "Oblasti obrazovky", if(GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti") { if (!GameLingoScreenTranslationService.running) { if(GameLingoAutomaticConfig.enabled(a)) GameLingoAutomaticConfig.showZones(a) else GameLingoDirectTVLayout.show(a) {} } }
+        tile("text.bubble", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }
         tile("gamecontroller", "Profily her", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a) }
-        tile("▭", "Zařízení", "Konzole a telefony") { dialog.dismiss(); onDevices() }
-        tile("文", "Herní slovník", "Vlastní výrazy") { GameLingoGlossaryUi.show(a) }
-        tile("clock.arrow.circlepath", "Historie překladů", "Překlady na TV") { GameLingoHistoryUi.show(a) }
-        tile("internaldrive", "Překladová cache", "Ukládání a vymazání") { GameLingoCachePrivacyUi.show(a) }
-        tile("≋", "Diagnostika", "Příjem, oprávnění, verze") { diagnostics(a) }
+        tile("display.2", "Zařízení", "Konzole a telefony") { openingDevices = true; dialog.dismiss(); onDevices() }
+        tile("slider.horizontal.3", "Pokročilé nastavení", "Slovník, historie a diagnostika") {
+            val options = arrayOf(
+                GameLingoLanguages.ui(a, "Velikost rozhraní") + " · " + GameLingoTVUi.menuPercent(a) + " %",
+                GameLingoLanguages.ui(a, "Herní slovník"),
+                GameLingoLanguages.ui(a, "Historie překladů"),
+                GameLingoLanguages.ui(a, "Překladová cache"),
+                GameLingoLanguages.ui(a, "Diagnostika"))
+            GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Pokročilé nastavení"), options, -1) { index ->
+                when (index) {
+                    0 -> {
+                        val sizes = GameLingoTVUi.menuSizes
+                        val labels = sizes.map { percent ->
+                            "$percent %" + if (percent == 100) " · " + GameLingoLanguages.ui(a, "Výchozí") else ""
+                        }.toTypedArray()
+                        GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Velikost rozhraní"), labels,
+                            sizes.indexOf(GameLingoTVUi.menuPercent(a))) { choice ->
+                            val next = sizes[choice]
+                            if (next != GameLingoTVUi.menuPercent(a) && !a.isFinishing && !a.isDestroyed) {
+                                GameLingoTVUi.setMenuPercent(a, next)
+                                // Recreate only the menu, not the Activity or running services.
+                                reopeningForScale = true
+                                dialog.dismiss()
+                                onUpdate()
+                                show(a, onDevices, onUpdate)
+                            }
+                        }
+                    }
+                    1 -> GameLingoGlossaryUi.show(a)
+                    2 -> GameLingoHistoryUi.show(a)
+                    3 -> GameLingoCachePrivacyUi.show(a)
+                    4 -> diagnostics(a)
+                }
+            }
+        }
         tile("info.circle", "O aplikaci / Licence", "Verze a licence") { GameLingoAbout.show(a) }
         val rows = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; clipChildren = false }
         cards.chunked(3).forEach { group ->
@@ -70,12 +119,16 @@ object GameLingoTVSettings {
             card.nextFocusUpId = if (i >= 3) cards[i-3].id else back.id
             card.nextFocusDownId = cards.getOrNull(i+3)?.id ?: card.id
         }
-        back.nextFocusDownId = cards[2].id
-        back.nextFocusLeftId=help.id
-        help.nextFocusRightId=back.id
-        help.nextFocusDownId=cards[1].id
-        cards[1].nextFocusUpId=help.id
+        back.nextFocusDownId = cards[0].id
+        back.nextFocusRightId=help.id
+        help.nextFocusLeftId=back.id
+        help.nextFocusDownId=cards[2].id
+        cards[2].nextFocusUpId=help.id
         dialog.setContentView(root)
+        // Both remote BACK and the visible button close through this path.
+        dialog.setOnDismissListener {
+            if (!reopeningForScale && !openingDevices && !a.isFinishing && !a.isDestroyed) onUpdate()
+        }
         dialog.show()
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         cards.first().requestFocus()
@@ -88,7 +141,7 @@ object GameLingoTVSettings {
     }
     private fun busy(a: Activity): Boolean {
         if (!RemotePlayService.aktivni && !PrijemService.bezi && !GameLingoScreenTranslationService.running) return false
-        AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show()
+        AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejdřív zastav překlad a příjem.")).setPositiveButton("OK", null).show()
         return true
     }
     private fun ocr(a: Activity) {
@@ -101,39 +154,40 @@ object GameLingoTVSettings {
             { GameLingoDirectTVLayout.show(a) {} }, { GameLingoLanguages.show(a) })
     }
     private fun diagnostics(a: Activity) {
-        val info = PrijemService.statistikaPrijmu() + "\n\nVerze: " +
+        fun tr(key: String) = GameLingoLanguages.ui(a, key)
+        val info = PrijemService.statistikaPrijmu() + "\n\n" + tr("Verze:") + " " +
             a.packageManager.getPackageInfo(a.packageName, 0).versionName +
-            "\nSamostatná TV: " + GameLingoScreenTranslationService.status +
-            "\nOCR obrazovky: pouze MediaProjection" +
+            "\n" + tr("Samostatná TV:") + " " + GameLingoScreenTranslationService.localizedStatus(a, GameLingoScreenTranslationService.status) +
+            "\n" + tr("OCR obrazovky: pouze MediaProjection") +
             "\n" + GameLingoXboxDiagnostics.summary() +
-            "\n\n" + GameLingoScreenTranslationService.phaseSummary()
+            "\n\n" + GameLingoScreenTranslationService.phaseSummary(a)
         val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
-        body.addView(GameLingoTVUi.title(a,"Stav",24f))
-        body.addView(GameLingoTVUi.title(a,info+"\nPřekryv: "+if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen",20f).apply {
+        body.addView(GameLingoTVUi.title(a,tr("Stav"),24f))
+        body.addView(GameLingoTVUi.title(a,info+"\n"+tr("Překryv:")+" "+tr(if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen"),20f).apply {
             background=GameLingoTVUi.panel(a); val pad=d(a,16);setPadding(pad,pad,pad,pad)
         })
-        body.addView(GameLingoTVUi.title(a,"Poslední překlad",24f))
+        body.addView(GameLingoTVUi.title(a,tr("Poslední překlad"),24f))
         val item=GameLingoTranslationHistory.snapshot().firstOrNull()
-        body.addView(GameLingoTVUi.title(a,if(item==null)"Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR." else item.original+"\n\n"+item.translated,20f).apply {
+        body.addView(GameLingoTVUi.title(a,if(item==null)tr("Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR.") else item.original+"\n\n"+item.translated,20f).apply {
             background=GameLingoTVUi.panel(a); val pad=d(a,16);setPadding(pad,pad,pad,pad)
         })
-        body.addView(GameLingoTVUi.action(a,"Povolit překryv") {
+        body.addView(GameLingoTVUi.action(a,tr("Povolit překryv")) {
             a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+a.packageName)))
         })
-        body.addView(GameLingoTVUi.action(a,"Další nastavení") {
+        body.addView(GameLingoTVUi.action(a,tr("Další nastavení")) {
                 val legacy = GameLingoTVPairing.legacyEnabled(a)
-                GameLingoTVUi.select(a,"Diagnostika a kompatibilita",arrayOf("Legacy příjem: " + if (legacy) "Zapnuto" else "Vypnuto", "Vymazat místní diagnostický log")) { i ->
+                GameLingoTVUi.select(a,tr("Diagnostika a kompatibilita"),arrayOf(tr("Legacy příjem:") + " " + tr(if (legacy) "Zapnuto" else "Vypnuto"), tr("Vymazat místní diagnostický log"))) { i ->
                         if (i == 0) {
                             if (legacy) GameLingoTVPairing.setLegacyEnabled(a, false)
-                            else AlertDialog.Builder(a).setMessage("Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?")
-                                .setNegativeButton("Zrušit", null).setPositiveButton("Povolit") { _, _ -> GameLingoTVPairing.setLegacyEnabled(a, true) }.show()
-                        } else if (!busy(a)) AlertDialog.Builder(a).setMessage("Vymazat místní diagnostické logy?")
-                            .setNegativeButton("Zrušit", null).setPositiveButton("Vymazat") { _, _ ->
+                            else AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?"))
+                                .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Povolit")) { _, _ -> GameLingoTVPairing.setLegacyEnabled(a, true) }.show()
+                        } else if (!busy(a)) AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Vymazat místní diagnostické logy?"))
+                            .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Vymazat")) { _, _ ->
                                 if (!busy(a)) listOf("titulky.log","titulky-private-v2.log").forEach { java.io.File(a.filesDir,it).delete() }
                             }.show()
                     }
         })
-        body.addView(GameLingoTVUi.action(a,"Test OCR") { GameLingoScreenTranslationService.diagnostics(a) })
-        GameLingoTVUi.page(a,"Diagnostika TV",body,helpTopic="diagnostics")
+        body.addView(GameLingoTVUi.action(a,tr("Test OCR")) { GameLingoScreenTranslationService.diagnostics(a) })
+        GameLingoTVUi.page(a,tr("Diagnostika TV"),body,helpTopic="diagnostics")
     }
 }

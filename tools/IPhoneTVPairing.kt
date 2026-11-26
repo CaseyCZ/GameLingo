@@ -17,8 +17,8 @@ import javax.crypto.spec.SecretKeySpec
 
 /**
  * Local-only iPhone -> TV pairing. NEVER transfers Xbox or Microsoft credentials.
- * Six-digit PIN authorizes a unique per-phone secret; signed heartbeats and
- * subtitles prove that the saved phone still knows that secret.
+ * A one-time 128-bit code is read from the TV, never sent over UDP.
+ * HMAC-SHA256 proves possession; a distinct per-phone key is derived locally.
  * Transport is local UDP, not encrypted. Only use on a trusted home network.
  */
 object IPhoneTVPairing {
@@ -28,9 +28,11 @@ object IPhoneTVPairing {
     @Volatile private var expiresAtMs = 0L
     @Volatile private var attempts = 0
     // The TV may receive the PIN but its UDP OK reply can be lost. Repeating
-    // the same successful request briefly must return the SAME secret.
+    // the same successful request briefly must return the SAME authenticated reply.
     // A newly generated PIN or an explicit unpair invalidates this cache.
-    private var lastSuccessPin: String? = null
+    private var lastSuccessProof: String? = null
+    private var lastSuccessNonce: String? = null
+    private var lastSuccessLabel: String? = null
     private var lastSuccessPhoneId: String? = null
     private var lastSuccessAddress: String? = null
     private var lastSuccessAtMs = 0L
@@ -45,7 +47,7 @@ object IPhoneTVPairing {
     private var activeAt = 0L
     private var sourceRevision = 0L
     private const val FRESHNESS_MS = 120_000L
-    private val replayLanes = setOf("PCT1", "PCV1", "PCO1", "STORY", "STYLE", "PING")
+    private val replayLanes = setOf("PCT1", "PCV1", "PCO1", "PCZ1", "STORY", "STYLE", "PING")
     @Volatile var lastAuthenticatedMs = 0L
         private set
 
@@ -185,6 +187,7 @@ object IPhoneTVPairing {
                 fields.getOrNull(9) == "1" ||
                 (fields.getOrNull(5) == "" && fields.getOrNull(10) == "1")
             "PCV1" -> present(8) || (fields.getOrNull(2)?.toIntOrNull() ?: 0) in 1..2
+            "PCZ1" -> (fields.getOrNull(3)?.toIntOrNull() ?: 0) in 1..32
             "PCO1" -> fields.getOrNull(1) == "1"
             "PCS1" -> present(3)
             else -> false // PCQ1 readiness queries and empty clears do not acquire ownership.
@@ -234,7 +237,9 @@ object IPhoneTVPairing {
         authenticatedAt.remove(phoneId)
         releaseSource(phoneId)
         if (lastSuccessPhoneId == phoneId) {
-            lastSuccessPin = null
+            lastSuccessProof = null
+        lastSuccessNonce = null
+        lastSuccessLabel = null
             lastSuccessPhoneId = null
         lastSuccessAddress = null
             lastSuccessAtMs = 0L
@@ -246,11 +251,13 @@ object IPhoneTVPairing {
     }
 
     fun startCode(): String = synchronized(lock) {
-        val pin = (random.nextInt(900_000) + 100_000).toString()
+        val pin = ByteArray(16).also(random::nextBytes).joinToString("") { "%02x".format(it) }
         code = pin
         expiresAtMs = SystemClock.elapsedRealtime() + 180_000L
         attempts = 0
-        lastSuccessPin = null
+        lastSuccessProof = null
+        lastSuccessNonce = null
+        lastSuccessLabel = null
         lastSuccessPhoneId = null
         lastSuccessAddress = null
         lastSuccessAtMs = 0L
@@ -266,29 +273,47 @@ object IPhoneTVPairing {
         else ((expiresAtMs - SystemClock.elapsedRealtime()).coerceAtLeast(0L) / 1000L).toInt()
     }
 
-    /** Returns a 32-byte secret (hex) only after PIN succeeds. */
-    fun confirm(ctx: Context, input: String, phoneId: String, label: String = "Telefon", address: String = ""): String? = synchronized(lock) {
-        migrateLegacy(ctx)
-        val now = SystemClock.elapsedRealtime()
-        if (lastSuccessAtMs > 0 && now - lastSuccessAtMs <= REPLY_RETRY_WINDOW_MS &&
-            input == lastSuccessPin && phoneId == lastSuccessPhoneId && address == lastSuccessAddress) {
-            // Never consume another PIN attempt or change the pairing secret.
-            return@synchronized loadSecret(ctx, phoneId)
+    private fun pairMac(keyHex: String, body: String): String? = runCatching {
+        val key = hexBytes(keyHex) ?: return null
+        Mac.getInstance("HmacSHA256").run {
+            init(SecretKeySpec(key, "HmacSHA256"))
+            doFinal(body.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
         }
-        val valid = input.length == 6 && input.all { it.isDigit() } &&
-            validPhoneId(phoneId) &&
-            (phoneId in ids(ctx) || ids(ctx).size < MAX_PHONES) &&
-            !storageWriteFailed &&
-            code != null && SystemClock.elapsedRealtime() < expiresAtMs &&
-            attempts < 5
-        if (!valid) return@synchronized null
-        attempts += 1
-        if (input != code) {
+    }.getOrNull()
+
+    private fun sameProof(a: String, b: String) =
+        MessageDigest.isEqual(a.toByteArray(Charsets.US_ASCII), b.toByteArray(Charsets.US_ASCII))
+
+    /** QR and manual pairing use the same high-entropy out-of-band code.
+     * Return only proof of the persisted, locally derived key, not the key itself.
+     * An identical authenticated retransmission is idempotent.
+     */
+    internal fun confirmProof(ctx: Context, phoneId: String, label: String, nonce: String,
+                              proof: String, address: String): String? = synchronized(lock) {
+        if (!validPhoneId(phoneId) || label !in setOf("iPhone", "Android") ||
+            !nonce.matches(Regex("[0-9a-fA-F-]{36}")) ||
+            !proof.matches(Regex("[0-9a-f]{64}")) || address.isBlank()) return@synchronized null
+        migrateLegacy(ctx)
+        if (storageWriteFailed) return@synchronized null
+        val now = SystemClock.elapsedRealtime()
+        val context = "$phoneId\t$label\t$nonce"
+        if (lastSuccessAtMs > 0 && now - lastSuccessAtMs <= REPLY_RETRY_WINDOW_MS &&
+            phoneId == lastSuccessPhoneId && label == lastSuccessLabel &&
+            nonce == lastSuccessNonce && address == lastSuccessAddress &&
+            lastSuccessProof?.let { sameProof(it, proof) } == true) {
+            val saved = loadSecret(ctx, phoneId) ?: return@synchronized null
+            return@synchronized pairMac(saved, "OK2\t$context")
+        }
+        val pairingCode = code ?: return@synchronized null
+        if (now >= expiresAtMs || attempts >= 5 ||
+            (phoneId !in ids(ctx) && ids(ctx).size >= MAX_PHONES)) return@synchronized null
+        val expected = pairMac(pairingCode, "PAIR2\t$context") ?: return@synchronized null
+        if (!sameProof(expected, proof)) {
+            attempts += 1
             if (attempts >= 5) code = null
             return@synchronized null
         }
-        val bytes = ByteArray(32).also(random::nextBytes)
-        val token = bytes.joinToString("") { "%02x".format(it) }
+        val token = pairMac(pairingCode, "KEY2\t$context") ?: return@synchronized null
         val encrypted = encryptToken(phoneId, token) ?: return@synchronized null
         val editor = prefs(ctx).edit().putStringSet(PHONE_IDS, ids(ctx) + phoneId)
             .putString(tokenSlot(phoneId), encrypted).putString(labelSlot(phoneId), platformLabel(label))
@@ -299,19 +324,19 @@ object IPhoneTVPairing {
             return@synchronized null
         }
         storageWriteFailed = false
-        lastSuccessPin = input
+        lastSuccessProof = proof
+        lastSuccessNonce = nonce
+        lastSuccessLabel = label
         lastSuccessPhoneId = phoneId
         lastSuccessAddress = address
         lastSuccessAtMs = now
         code = null
         expiresAtMs = 0
         attempts = 0
-        // A successful PIN is only pairing, not an authenticated live
-        // connection. Show "connected" only after a verified PING or TEXT.
         authenticatedAt.remove(phoneId)
         releaseSource(phoneId)
         lastAuthenticatedMs = authenticatedAt.values.maxOrNull() ?: 0L
-        token
+        pairMac(token, "OK2\t$context")
     }
 
     fun paired(ctx: Context): Boolean = synchronized(lock) {
@@ -332,7 +357,9 @@ object IPhoneTVPairing {
         lastAuthenticatedMs = 0L
         code = null
         expiresAtMs = 0L
-        lastSuccessPin = null
+        lastSuccessProof = null
+        lastSuccessNonce = null
+        lastSuccessLabel = null
         lastSuccessPhoneId = null
         lastSuccessAddress = null
         lastSuccessAtMs = 0L
@@ -344,7 +371,7 @@ object IPhoneTVPairing {
         if (encoded.length >= 11000) return null
         val inner = String(android.util.Base64.decode(encoded, android.util.Base64.DEFAULT), Charsets.UTF_8)
         when (val kind = inner.substringBefore('\t')) {
-            "PCT1", "PCV1", "PCO1" -> kind
+            "PCT1", "PCV1", "PCO1", "PCZ1" -> kind
             "PCQ1", "PCS1" -> "STORY"
             else -> null
         }

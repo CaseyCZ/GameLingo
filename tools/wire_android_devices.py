@@ -72,7 +72,7 @@ def main():
             '''        prevezmiAccountId(intent)
         if (telefon && !GameLingoFirstRun.completed(this) && nast.jazyk == null) {
             // First-run language choices are owned by GameLingo, not upstream.
-            nast.jazyk = "cs"
+            nast.jazyk = GameLingoLanguages.systemApp(this)
         }
         ukazUvod()
         if (telefon && !GameLingoFirstRun.completed(this)) {

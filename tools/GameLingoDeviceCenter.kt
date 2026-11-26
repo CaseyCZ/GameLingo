@@ -72,16 +72,18 @@ object GameLingoDeviceCenter {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(c).apply {
                     text = title
-                    textSize = if (tenFoot) 15f else 17f
+                    gravity = Gravity.CENTER
+                    textSize = GameLingoVisualKit.sp(c, 17f)
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
                 })
                 if (sub.isNotEmpty()) {
                     addView(TextView(c).apply {
                         text = sub
-                        textSize = if (tenFoot) 12f else 13f
+                        gravity = Gravity.CENTER
+                        textSize = GameLingoVisualKit.sp(c, 13f)
                         setTextColor(muted)
-                        setPadding(0, 6, 0, 0)
+                        setPadding(0, if (tenFoot) GameLingoVisualKit.dp(c, 6) else 6, 0, 0)
                     })
                 }
             }, LinearLayout.LayoutParams(0,
@@ -89,7 +91,7 @@ object GameLingoDeviceCenter {
             if (checked) {
                 addView(TextView(c).apply {
                     text = "✓"
-                    textSize = 26f
+                    textSize = GameLingoVisualKit.sp(c, 26f)
                     setTextColor(success)
                 })
             }
@@ -99,17 +101,18 @@ object GameLingoDeviceCenter {
                       color: Int = Color.WHITE): TextView =
         TextView(c).apply {
             text = value
-            textSize = size
+            gravity = Gravity.CENTER
+            textSize = GameLingoVisualKit.sp(c, size)
             setTextColor(color)
             typeface = Typeface.DEFAULT_BOLD
-            setPadding(4, 9, 4, 9)
+            if (GameLingoTVUi.isTV(c)) setPadding(GameLingoVisualKit.dp(c,4), GameLingoVisualKit.dp(c,9), GameLingoVisualKit.dp(c,4), GameLingoVisualKit.dp(c,9)) else setPadding(4, 9, 4, 9)
         }
 
     private fun add(root: LinearLayout, view: LinearLayout) {
         root.addView(view, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 13 })
+        ).apply { bottomMargin = if (GameLingoTVUi.isTV(root.context)) GameLingoVisualKit.dp(root.context,13) else 13 })
     }
 
     // Local aliases never change console credentials or Microsoft account data.
@@ -118,8 +121,8 @@ object GameLingoDeviceCenter {
             .getString("alias:"+family+":"+id,null)?.takeIf{it.isNotBlank()} ?: original
     private fun rename(c:Activity,family:String,id:String,original:String,onSaved:()->Unit) {
         val input=android.widget.EditText(c).apply {setSingleLine(true);setText(consoleName(c,family,id,original));selectAll()}
-        AlertDialog.Builder(c).setTitle("Přejmenovat konzoli").setView(input).setNegativeButton("Zrušit",null)
-            .setPositiveButton("Uložit"){_,_->
+        AlertDialog.Builder(c).setTitle(GameLingoLanguages.ui(c, "Přejmenovat konzoli")).setView(input).setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"),null)
+            .setPositiveButton(GameLingoLanguages.ui(c, "Uložit")){_,_->
                 if(!RemotePlayService.aktivni) {
                     val value=input.text.toString().trim().take(64)
                     val e=c.getSharedPreferences("gamelingo_devices",Activity.MODE_PRIVATE).edit()
@@ -136,7 +139,7 @@ object GameLingoDeviceCenter {
             GameLingoTVUi.select(c, heading, options, onSelect = onSelect)
         } else {
             AlertDialog.Builder(c).setTitle(heading).setItems(options) { _, i -> onSelect(i) }
-                .setNegativeButton("Zpět", null).show()
+                .setNegativeButton(GameLingoLanguages.ui(c, "Zpět"), null).show()
         }
     }
 
@@ -147,7 +150,7 @@ object GameLingoDeviceCenter {
              onTV: () -> Unit,
              onUpdated: () -> Unit = {},
              onDismiss: () -> Unit = {},
-             showClose: Boolean = false): LinearLayout {
+             showClose: Boolean = false, showHeader: Boolean = true): LinearLayout {
         val root = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(c)
@@ -164,17 +167,17 @@ object GameLingoDeviceCenter {
                 GameLingoVisualKit.dp(c, 48)).apply {
                 rightMargin = GameLingoVisualKit.dp(c, 12)
             })
-        header.addView(label(c, "Konzole a zařízení", 25f),
+        header.addView(label(c, GameLingoLanguages.ui(c, "Konzole a zařízení"), 25f),
             LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(GameLingoHelp.button(c, "console"),GameLingoHelp.layout(c))
-        root.addView(header)
+        if (showHeader) root.addView(header)
 
         val tenFoot = GameLingoTVUi.isTV(c)
-        val addDeviceButton = line(c, "＋  Přidat zařízení") {
-            val options = if (tenFoot) arrayOf("Xbox", "PlayStation 5 / 4", "Telefon · QR / PIN")
+        val addDeviceButton = line(c, "＋  " + GameLingoLanguages.ui(c, "Přidat zařízení")) {
+            val options = if (tenFoot) arrayOf("Xbox", "PlayStation 5 / 4", GameLingoLanguages.ui(c, "Telefon · QR / PIN"))
                 else arrayOf("Xbox", "PlayStation 5 / 4", "Google TV / Android TV")
-            chooseDevice(c, "Přidat zařízení", options) { selected ->
+            chooseDevice(c, GameLingoLanguages.ui(c, "Přidat zařízení"), options) { selected ->
                     onDismiss()
                     when (selected) {
                         0 -> onXbox()
@@ -194,7 +197,7 @@ object GameLingoDeviceCenter {
             columns.addView(tvPanel, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             root.addView(columns)
         }
-        consolePanel.addView(label(c, "Konzole", 16f))
+        consolePanel.addView(label(c, GameLingoLanguages.ui(c, "Konzole"), 16f))
         val consoles = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
         }
@@ -203,7 +206,7 @@ object GameLingoDeviceCenter {
         fun psRows() {
             val saved = GameLingoPlayStationConsoles.list(c)
             if (saved.isEmpty()) {
-                add(consoles, line(c, "PlayStation", "Přidat PS5 / PS4") {
+                add(consoles, line(c, "PlayStation", GameLingoLanguages.ui(c, "Přidat PS5 / PS4")) {
                     onDismiss()
                     onPlayStation()
                 })
@@ -211,12 +214,12 @@ object GameLingoDeviceCenter {
                 for (ps in saved) {
                     add(consoles, line(c, consoleName(c,"ps",ps.ip,ps.name), ps.type + " · " + ps.ip,
                                       ps.selected) {
-                        chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name), if(tenFoot) arrayOf("Použít", "Odebrat", "Přejmenovat") else arrayOf("Použít","Odebrat")) { option ->
+                        chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name), if(tenFoot) arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Odebrat"), GameLingoLanguages.ui(c, "Přejmenovat")) else arrayOf(GameLingoLanguages.ui(c, "Použít"),GameLingoLanguages.ui(c, "Odebrat"))) { option ->
                                 if(option==2) { if(!RemotePlayService.aktivni)rename(c,"ps",ps.ip,ps.name){onDismiss();onUpdated()};return@chooseDevice }
                                 if (option == 0) {
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
-                                            .setMessage("Nejdřív zastav probíhající překlad.")
+                                            .setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
                                             .setPositiveButton("OK", null).show()
                                     } else if (GameLingoPlayStationConsoles.select(c, ps.ip)) {
                                         onDismiss()
@@ -225,18 +228,18 @@ object GameLingoDeviceCenter {
                                 } else {
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
-                                            .setMessage("Nejdřív zastav probíhající překlad.")
+                                            .setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
                                             .setPositiveButton("OK", null).show()
                                         return@chooseDevice
                                     }
                                     AlertDialog.Builder(c)
-                                        .setMessage("Odebrat " + ps.name + "?")
-                                        .setPositiveButton("Odebrat") { _, _ ->
+                                        .setMessage(GameLingoLanguages.ui(c, "Odebrat") + " " + ps.name + "?")
+                                        .setPositiveButton(GameLingoLanguages.ui(c, "Odebrat")) { _, _ ->
                                             GameLingoPlayStationConsoles.remove(c, ps.ip)
                                             onDismiss()
                                             onUpdated()
                                         }
-                                        .setNegativeButton("Zrušit", null).show()
+                                        .setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"), null).show()
                                 }
                             }
                     })
@@ -246,7 +249,7 @@ object GameLingoDeviceCenter {
         psRows()
 
         // Fetch every Xbox owned by the Microsoft account, NOT firstOrNull.
-        val xboxStatus = label(c, "Xbox: vyhledávám…", 14f, muted)
+        val xboxStatus = label(c, GameLingoLanguages.ui(c, "Xbox: vyhledávám…"), 14f, muted)
         consolePanel.addView(xboxStatus)
         if (XboxUcet.prihlasen(c)) {
             Thread {
@@ -254,7 +257,7 @@ object GameLingoDeviceCenter {
                 c.runOnUiThread {
                     if (c.isFinishing) return@runOnUiThread
                     val list = found.getOrNull().orEmpty()
-                    xboxStatus.text = if (list.isEmpty()) "Xbox: žádná konzole"
+                    xboxStatus.text = if (list.isEmpty()) GameLingoLanguages.ui(c, "Xbox: žádná konzole")
                         else "Xbox"
                     val prefs = c.getSharedPreferences("gamelingo_devices",
                         Activity.MODE_PRIVATE)
@@ -264,19 +267,19 @@ object GameLingoDeviceCenter {
                     list.filterNot { it.id in hiddenXboxIds }.forEach { xbox ->
                         add(consoles, line(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), "Xbox Series / One",
                                           selectedID == xbox.id) {
-                            chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), if(tenFoot) arrayOf("Použít", "Připojit", "Odebrat", "Přejmenovat") else arrayOf("Použít", "Připojit", "Odebrat")) { option ->
+                            chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), if(tenFoot) arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Připojit"), GameLingoLanguages.ui(c, "Odebrat"), GameLingoLanguages.ui(c, "Přejmenovat")) else arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Připojit"), GameLingoLanguages.ui(c, "Odebrat"))) { option ->
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
-                                            .setMessage("Nejdřív zastav probíhající překlad.")
+                                            .setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
                                             .setPositiveButton("OK", null).show()
                                         return@chooseDevice
                                     }
                                     if(option==3) { rename(c,"xbox",xbox.id,xbox.jmeno){onDismiss();onUpdated()};return@chooseDevice }
                                     if (option == 2) {
                                         AlertDialog.Builder(c)
-                                            .setTitle("Odebrat Xbox?")
-                                            .setMessage("Konzole zmizí ze seznamu GameLingo, ale zůstane na tvém Microsoft účtu. Můžeš ji později znovu zobrazit.")
-                                            .setPositiveButton("Odebrat") { _, _ ->
+                                            .setTitle(GameLingoLanguages.ui(c, "Odebrat Xbox?"))
+                                            .setMessage(GameLingoLanguages.ui(c, "Konzole zmizí ze seznamu GameLingo, ale zůstane na tvém Microsoft účtu. Můžeš ji později znovu zobrazit."))
+                                            .setPositiveButton(GameLingoLanguages.ui(c, "Odebrat")) { _, _ ->
                                                 val hidden = prefs.getStringSet("hiddenXboxIds", emptySet())
                                                     .orEmpty().toMutableSet()
                                                 hidden.add(xbox.id)
@@ -288,7 +291,7 @@ object GameLingoDeviceCenter {
                                                 onDismiss()
                                                 onUpdated()
                                             }
-                                            .setNegativeButton("Zrušit", null)
+                                            .setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"), null)
                                             .show()
                                     } else {
                                         prefs.edit().putString("selectedXboxId", xbox.id).apply()
@@ -299,11 +302,11 @@ object GameLingoDeviceCenter {
                         })
                     }
                     if (hiddenXboxIds.isNotEmpty()) {
-                        add(consoles, line(c, "Vrátit odebrané Xboxy",
-                            "Znovu zobrazit ${hiddenXboxIds.size} konzolí") {
+                        add(consoles, line(c, GameLingoLanguages.ui(c, "Vrátit odebrané Xboxy"),
+                            GameLingoLanguages.ui(c, "Znovu zobrazit konzole") + " (" + hiddenXboxIds.size + ")") {
                             if (RemotePlayService.aktivni) {
                                 AlertDialog.Builder(c)
-                                    .setMessage("Nejdřív zastav probíhající překlad.")
+                                    .setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
                                     .setPositiveButton("OK", null).show()
                             } else {
                                 prefs.edit().remove("hiddenXboxIds").apply()
@@ -315,28 +318,28 @@ object GameLingoDeviceCenter {
                 }
             }.apply { name = "gamelingo-xbox-devices"; isDaemon = true }.start()
         } else {
-            xboxStatus.text = "Xbox: nepřihlášeno"
-            add(consoles, line(c, "Přidat Xbox", "Přihlásit Microsoft") {
+            xboxStatus.text = GameLingoLanguages.ui(c, "Xbox: nepřihlášeno")
+            add(consoles, line(c, GameLingoLanguages.ui(c, "Přidat Xbox"), GameLingoLanguages.ui(c, "Přihlásit Microsoft")) {
                 onDismiss()
                 onXbox()
             })
         }
 
         if (tenFoot) {
-            tvPanel.addView(label(c, "Telefony", 16f))
-            add(tvPanel, line(c, "Přidat telefon", "Párování pomocí QR kódu nebo PINu") {
+            tvPanel.addView(label(c, GameLingoLanguages.ui(c, "Telefony"), 16f))
+            add(tvPanel, line(c, GameLingoLanguages.ui(c, "Přidat telefon"), GameLingoLanguages.ui(c, "Párování pomocí QR kódu nebo PINu")) {
                 onDismiss()
                 onTV()
             })
             // TV_RECEIVER_PHONE_ROWS
-            if (showClose) add(root, line(c, "Hotovo") { onDismiss() })
+            if (showClose) add(root, line(c, GameLingoLanguages.ui(c, "Hotovo")) { onDismiss() })
             return root
         }
-        tvPanel.addView(label(c, "Televize", 16f))
+        tvPanel.addView(label(c, GameLingoLanguages.ui(c, "Televize"), 16f))
         val tvStore = TvProfily(c)
         val tvs = tvStore.seznam()
         if (tvs.isEmpty()) {
-            add(tvPanel, line(c, "Google TV", "Přidat televizor") {
+            add(tvPanel, line(c, "Google TV", GameLingoLanguages.ui(c, "Přidat televizor")) {
                 onDismiss()
                 onTV()
             })
@@ -344,9 +347,9 @@ object GameLingoDeviceCenter {
         val mobile = (c.resources.configuration.uiMode and
             android.content.res.Configuration.UI_MODE_TYPE_MASK) !=
             android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
-        if (mobile) add(root, line(c, "Načíst QR kód z TV", "Párování v domácí síti") {
+        if (mobile) add(root, line(c, GameLingoLanguages.ui(c, "Načíst QR kód z TV"), GameLingoLanguages.ui(c, "Párování v domácí síti")) {
             if (RemotePlayService.aktivni) {
-                AlertDialog.Builder(c).setMessage("Nejdřív zastav probíhající překlad.")
+                AlertDialog.Builder(c).setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
                     .setPositiveButton("OK", null).show()
             } else GameLingoQRScanner.scan(c) { qr ->
                 val existing = tvStore.seznam().firstOrNull { it.ip == qr.ip && !it.platforma.jenZobrazovac }
@@ -359,24 +362,24 @@ object GameLingoDeviceCenter {
             }
         })
         tvs.forEach { tv ->
-            // The six-digit GameLingo PIN protocol belongs to Android TV,
+            // The authenticated GameLingo pairing protocol belongs to Android TV,
             // not legacy LG webOS or Samsung display-only receivers.
             val pinSupported = mobile && !tv.platforma.jenZobrazovac
             val savedPairing = pinSupported && GameLingoTVPairing.paired(c, tv.ip)
             val descriptor = tv.ip + when {
                 !savedPairing -> ""
-                GameLingoTVPairing.connected(tv.ip) -> " · TV odpověděla"
-                else -> " · Kód uložen, spojení neověřeno"
+                GameLingoTVPairing.connected(tv.ip) -> " · " + GameLingoLanguages.ui(c, "TV odpověděla")
+                else -> " · " + GameLingoLanguages.ui(c, "Kód uložen, spojení neověřeno")
             }
             add(tvPanel, line(c, tv.jmeno, descriptor,
                           tvStore.posledniId == tv.id) {
                 chooseDevice(c, tv.jmeno, if (pinSupported)
-                        arrayOf("Použít", "Spárovat šest číslic z TV",
-                            "Ověřit spojení", "Odebrat")
-                        else arrayOf("Použít", "Odebrat")) { option ->
+                        arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Spárovat kódem z TV"),
+                            GameLingoLanguages.ui(c, "Ověřit spojení"), GameLingoLanguages.ui(c, "Odebrat"))
+                        else arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Odebrat"))) { option ->
                         if (RemotePlayService.aktivni) {
                             AlertDialog.Builder(c)
-                                .setMessage("Nejdřív zastav probíhající překlad.")
+                                .setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
                                 .setPositiveButton("OK", null).show()
                         } else if (option == 0) {
                             tvStore.vyber(tv.id)
@@ -393,27 +396,27 @@ object GameLingoDeviceCenter {
                                 onUpdated()
                                 AlertDialog.Builder(c)
                                     .setMessage(if (reachable)
-                                        "TV odpověděla na ověření. Příjem titulků ještě ověř ve hře."
-                                        else "TV neodpovídá. Ověř IP, připojení a případně zadej nový kód.")
+                                        GameLingoLanguages.ui(c, "TV odpověděla na ověření. Příjem titulků ještě ověř ve hře.")
+                                        else GameLingoLanguages.ui(c, "TV neodpovídá. Ověř IP, připojení a případně zadej nový kód."))
                                     .setPositiveButton("OK", null).show()
                             }
                         } else {
                             AlertDialog.Builder(c)
-                                .setMessage("Odebrat " + tv.jmeno + " z tohoto zařízení?" +
-                                    if (pinSupported) "\n\nPřístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači." else "")
-                                .setPositiveButton("Odebrat") { _, _ ->
+                                .setMessage(GameLingoLanguages.ui(c, "Odebrat") + " " + tv.jmeno + " " + GameLingoLanguages.ui(c, "z tohoto zařízení?") +
+                                    if (pinSupported) "\n\n" + GameLingoLanguages.ui(c, "Přístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači.") else "")
+                                .setPositiveButton(GameLingoLanguages.ui(c, "Odebrat")) { _, _ ->
                                     tvStore.odeber(tv.id)
                                     if (mobile) GameLingoTVPairing.forget(c, tv.ip)
                                     onDismiss()
                                     onUpdated()
                                 }
-                                .setNegativeButton("Zrušit", null).show()
+                                .setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"), null).show()
                         }
                     }
             })
         }
 
-        if (showClose) add(root, line(c, "Hotovo") { onDismiss() })
+        if (showClose) add(root, line(c, GameLingoLanguages.ui(c, "Hotovo")) { onDismiss() })
         return root
     }
 
@@ -425,18 +428,7 @@ object GameLingoDeviceCenter {
         if (c.isFinishing) return
         val dialog = Dialog(c, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val root = content(c, onXbox, onPlayStation, onTV, onUpdated,
-            onDismiss = { dialog.dismiss() }, showClose = true)
-        val scroll = ScrollView(c).apply { isFillViewport = true }
-        scroll.addView(root)
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
-        scroll.post {
-            root.findFocus()?.requestFocus() ?: root.focusSearch(android.view.View.FOCUS_DOWN)?.requestFocus()
-        }
+            onDismiss = { dialog.dismiss() }, showClose = false, showHeader = false)
+        GameLingoTVUi.mountPage(c, dialog, GameLingoLanguages.ui(c, "Konzole a zařízení"), root, helpTopic = "console")
     }
 }

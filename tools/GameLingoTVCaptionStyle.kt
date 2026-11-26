@@ -50,25 +50,27 @@ object GameLingoTVCaptionStyle {
         else false
 
     fun show(a: android.app.Activity) {
+        fun tr(cs: String) = GameLingoLanguages.ui(a, cs)
         if (RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running) {
-            android.app.AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show()
+            android.app.AlertDialog.Builder(a).setMessage(tr("Nejdřív zastav překlad a příjem.")).setPositiveButton("OK", null).show()
             return
         }
         val keys = arrayOf("white", "yellow", "cyan", "green", "purple")
-        val names = arrayOf("Bílá", "Žlutá", "Tyrkysová", "Zelená", "Fialová")
+        val names = arrayOf("Bílá", "Žlutá", "Tyrkysová", "Zelená", "Fialová").map(::tr).toTypedArray()
         val p = local(a)
         val root = android.widget.LinearLayout(a).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(24, 12, 24, 12)
         }
         val preview = android.widget.TextView(a).apply {
-            text = "Ukázka přeložených titulků"; textSize = 24f
+            text = tr("Ukázka přeložených titulků"); textSize = 24f
             gravity = android.view.Gravity.CENTER
             setPadding(12, 18, 12, 18)
         }
         val label = android.widget.TextView(a).apply {
+            gravity = android.view.Gravity.CENTER
             setTextColor(Color.WHITE)
-            textSize = 16f
+            textSize = GameLingoVisualKit.sp(a, 16f)
         }
         val opacityBar = android.widget.SeekBar(a).apply {
             max = 100; keyProgressIncrement = 5; isFocusable = true
@@ -78,7 +80,7 @@ object GameLingoTVCaptionStyle {
         val swatches=mutableListOf<android.widget.TextView>()
         val backgrounds=mutableListOf<android.widget.TextView>()
         val bgValues=intArrayOf(0,230,117)
-        val bgNames=arrayOf("Žádné","Tmavé","Průhledné")
+        val bgNames=arrayOf("Žádné","Tmavé","Průhledné").map(::tr).toTypedArray()
         fun paintSwatch(i:Int) {
             val button=swatches[i]
             val selected=p.getString("color","white")==keys[i]
@@ -90,23 +92,23 @@ object GameLingoTVCaptionStyle {
                     if(button.hasFocus()||selected)Color.rgb(2,214,255) else Color.argb(100,255,255,255))
             }
             button.isSelected=selected
-            button.contentDescription=names[i]+if(selected)" · vybráno" else ""
+            button.contentDescription=names[i]+if(selected)" · "+tr("vybráno") else ""
         }
         fun refresh() {
             swatches.indices.forEach{paintSwatch(it)}
             backgrounds.forEachIndexed{i,v->v.text=(if(p.getInt("opacity",230)==bgValues[i])"✓ " else "")+bgNames[i]}
             val percent = (p.getInt("opacity",230).coerceIn(0,255)*100+127)/255
-            label.text = "Neprůhlednost pozadí: $percent %"
+            label.text = "${tr("Neprůhlednost pozadí")}: $percent %"
             if(opacityBar.progress != percent) opacityBar.progress=percent
             preview.textSize=24f*GameLingoDirectTVLayout.storedGreen(a)[3]
             preview.setTextColor(textColor(a)); preview.setBackgroundColor(background(a))
         }
         root.addView(GameLingoVisualKit.captionPreview(a,preview))
-        root.addView(GameLingoTVUi.title(a,"Barva textu",18f))
-        val colorRow=android.widget.LinearLayout(a).apply{orientation=android.widget.LinearLayout.HORIZONTAL;clipChildren=false}
+        root.addView(GameLingoTVUi.title(a,tr("Barva textu"),18f))
+        val colorRow=android.widget.LinearLayout(a).apply{orientation=android.widget.LinearLayout.HORIZONTAL;gravity=android.view.Gravity.CENTER;clipChildren=false}
         keys.forEachIndexed{i,key->
             val swatch=android.widget.TextView(a).apply {
-                gravity=android.view.Gravity.CENTER;textSize=20f;setTextColor(Color.BLACK)
+                gravity=android.view.Gravity.CENTER;textSize=GameLingoVisualKit.sp(a, 20f);setTextColor(Color.BLACK)
                 isFocusable=true;isClickable=true
                 setOnClickListener {p.edit().putString("color",key).apply();refresh()}
                 setOnFocusChangeListener {_,_->paintSwatch(i)}
@@ -116,7 +118,7 @@ object GameLingoTVCaptionStyle {
             colorRow.addView(swatch,android.widget.LinearLayout.LayoutParams(size,size).apply{marginEnd=GameLingoVisualKit.dp(a,9)})
         }
         root.addView(colorRow)
-        root.addView(GameLingoTVUi.title(a,"Pozadí titulků",18f))
+        root.addView(GameLingoTVUi.title(a,tr("Pozadí titulků"),18f))
         val backgroundRow=android.widget.LinearLayout(a).apply{orientation=android.widget.LinearLayout.HORIZONTAL}
         bgNames.forEachIndexed{i,name->
             val button=GameLingoTVUi.action(a,name){p.edit().putInt("opacity",bgValues[i]).apply();refresh()}
@@ -135,17 +137,17 @@ object GameLingoTVCaptionStyle {
             })
         })
         fun geometry(labelText:String,index:Int,min:Int,max:Int) {
-            val title=android.widget.TextView(a).apply {setTextColor(Color.WHITE)}
+            val title=android.widget.TextView(a).apply {gravity=android.view.Gravity.CENTER;setTextColor(Color.WHITE)}
             val bar=android.widget.SeekBar(a).apply {
                 this.max=max-min;keyProgressIncrement=5;isFocusable=true
                 progress=(GameLingoDirectTVLayout.storedGreen(a)[index]*100).toInt().coerceIn(min,max)-min
                 isEnabled=!GameLingoDirectTVLayout.locked(a,"Green")
                 GameLingoTVUi.controlFocus(a,this)
             }
-            title.text=labelText+": "+(bar.progress+min)+" %"
+            title.text=tr(labelText)+": "+(bar.progress+min)+" %"
             bar.setOnSeekBarChangeListener(object:android.widget.SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(b:android.widget.SeekBar,v:Int,fromUser:Boolean){
-                    title.text=labelText+": "+(v+min)+" %"
+                    title.text=tr(labelText)+": "+(v+min)+" %"
                     if(fromUser && !GameLingoDirectTVLayout.locked(a,"Green")){
                         val r=GameLingoDirectTVLayout.storedGreen(a);r[index]=(v+min)/100f
                         if(index==2)r[0]=r[0].coerceIn(r[2]/2f,1f-r[2]/2f)
@@ -159,19 +161,19 @@ object GameLingoTVCaptionStyle {
         }
         geometry("Velikost písma",3,60,200)
         geometry("Šířka titulků",2,20,100)
-        root.addView(GameLingoTVUi.action(a,"Náhled na TV"){
+        root.addView(GameLingoTVUi.action(a,tr("Náhled na TV")){
             if(RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running || OverlayService.overlayTestActive) return@action
             if(!android.provider.Settings.canDrawOverlays(a)) {
-                android.widget.Toast.makeText(a,"Povol překryv v nastavení TV.",android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(a,tr("Povol překryv v nastavení TV."),android.widget.Toast.LENGTH_LONG).show()
                 return@action
             }
             OverlayService.posli(a,android.content.Intent(a,OverlayService::class.java)
-                .setAction(OverlayService.ACTION_SET_TEXT).putExtra(OverlayService.EXTRA_TEXT,"Ukázka přeložených titulků")
+                .setAction(OverlayService.ACTION_SET_TEXT).putExtra(OverlayService.EXTRA_TEXT,tr("Ukázka přeložených titulků"))
                 .putExtra(OverlayService.EXTRA_DOBA,6000L).putExtra(OverlayService.EXTRA_VLASTNI,GameLingoDirectTVLayout.storedGreen(a)))
             a.moveTaskToBack(true)
         })
-        root.addView(GameLingoTVUi.action(a, "Velikost a poloha titulků") { GameLingoDirectTVLayout.show(a) {refresh()} })
+        root.addView(GameLingoTVUi.action(a, tr("Velikost a poloha titulků")) { GameLingoDirectTVLayout.show(a) {refresh()} })
         refresh()
-        GameLingoTVUi.page(a,"Vzhled titulků",root,helpTopic="appearance")
+        GameLingoTVUi.page(a,tr("Vzhled titulků"),root,helpTopic="appearance")
     }
 }

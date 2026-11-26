@@ -43,7 +43,7 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 | **Xbox Series X/S a Xbox One** | Překlad přes iPhone a Android. |
 | **PlayStation 5 a PlayStation 4** | Vývojové implementace pro iPhone, Android a Google TV; fyzické testy čekají. |
 | **iPhone** | Vývojová IPA pro Xbox, PlayStation a výstup na TV; vyžaduje podpis. |
-| **Android telefon** | Vývojová APK pro Xbox a PlayStation; online překlad a lokální cache. Samostatný offline model není v aktuálním buildu obsažen. |
+| **Android telefon** | Vývojová APK pro Xbox a PlayStation; online překlad, lokální cache a mobilní offline záloha Google ML Kit (po stažení modelů přes Wi-Fi; vyžaduje fyzické ověření). |
 | **Google TV / Android TV** | Vývojová APK: přijímač z telefonu nebo vlastní OCR a online překlad, bez offline modelu. |
 | **PC** | Možné rozšíření do budoucna. |
 
@@ -57,13 +57,13 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 
 GameLingo je nový projekt s vlastním vzhledem v **modrobílém stylu CaseyCZ**. Navazujeme na funkční základ, který jsme již vyzkoušeli při skutečném hraní, a postupně připravujeme nové aplikace pro telefon i televizi.
 
-**GameLingo je ve vývoji.** Aktuální kandidát na větvi Master: viz [verze](shared/version.json) a [CI](https://github.com/CaseyCZ/GameLingo/actions/workflows/audit-0.5-ci.yml). Fyzické testy, bezpečnostní a licenční podmínky zůstávají otevřené. Dostupné instalátory najdeš v Releases.
+**GameLingo je ve vývoji.** Tato vývojová větev připravuje verzi 0.5.2, nástupce dosavadního vydání 0.5.1; není schváleným veřejným vydáním. Viz [řízení vydání](docs/RELEASE_CONTROL.md) a [aktuální stav](docs/STATUS-0.5.md). Dostupné starší instalátory najdeš v Releases. Fyzické testy, bezpečnostní a licenční podmínky zůstávají otevřené.
 
 - [Aktuální stav a podporované funkce](docs/STATUS-0.5.md)
 - [Návod pro testery (iPhone / Android / TV)](docs/USER-GUIDE-0.5.md)
 - [Informace o soukromí – pracovní návrh](docs/PRIVACY-0.5.md)
 
-Pro překlad z telefonu na TV je potřeba kompatibilní překryv a párování v důvěryhodné domácí síti. Přenos je podepsaný, nikoli šifrovaný. TV nemá samostatný offline překladač; OCR a online překlad zůstávají. Kompatibilita chráněného přehrávání (např. Netflix) není ověřena.
+Pro překlad z telefonu na TV je potřeba kompatibilní překryv a párování v důvěryhodné domácí síti. Nové QR i ruční párování 0.5.2 používá jednorázový 128bitový kód (32 znaků), který se neposílá po síti. Přenos titulků je podepsaný, nikoli šifrovaný. Pro nové párování aktualizuj obě zařízení. TV nemá samostatný offline překladač; OCR a online překlad zůstávají. Chráněné přehrávání (např. Netflix) může být pro OCR nepřístupné; podporu nelze slíbit. Samostatné TV OCR potřebuje systémový souhlas se snímáním. GameLingo nepřekládá zvuk ani mikrofon.
 
 <p align="center">
   <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>⬇️ ZOBRAZIT VYDÁNÍ GAMELINGO</strong></a>

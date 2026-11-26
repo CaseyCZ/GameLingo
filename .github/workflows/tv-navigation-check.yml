@@ -1,0 +1,76 @@
+name: Google TV navigation checks
+on:
+  push:
+    branches: [feature/ocr-lab]
+    paths:
+      - 'tools/tv_navigation.py'
+      - 'tools/direct_tv_mode.py'
+      - 'tools/redesign_gamelingo.py'
+      - 'tools/polish_all_screens.py'
+      - 'tools/GameLingoLanguages.kt'
+      - 'tools/GameLingoVisualKit.kt'
+      - 'tools/GameLingoAbout.kt'
+      - 'tools/GameLingoSettings.kt'
+      - 'tools/GameLingoHelp.kt'
+      - 'tools/GameLingoDirectTVLayout.kt'
+      - 'tools/GameLingoTVSettings.kt'
+      - 'tools/GameLingoTVUi.kt'
+      - 'tools/verify_tv_navigation.py'
+      - '.github/workflows/tv-navigation-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kit
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: AdamRuzick4/PlayCaption-app
+          ref: 633a847400b6c4bac1e7f034463e7847a53a9590
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Generate actual TV app source
+        run: |
+          set -euo pipefail
+          python -m pip install pillow
+          python kit/tools/patch_tv_iphone.py upstream
+          python kit/tools/brand_android.py tv upstream
+          python kit/tools/create_brand_assets.py android upstream
+          python kit/tools/polish_gamelingo.py upstream
+          python kit/tools/redesign_gamelingo.py tv upstream
+          python kit/tools/polish_all_screens.py tv upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
+          python kit/tools/wire_gamelingo_languages.py upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
+          python kit/tools/verify_tv_navigation.py upstream
+          python kit/tools/audit_tv_ui.py upstream --output gamelingo-tv-ui-inventory.md
+          python kit/tools/package_license_notices.py tv --kit kit --upstream upstream --output upstream/app/src/main/assets
+          sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
+      - name: Compile TV test APK (not released)
+        working-directory: upstream
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Test full zone packet bounds and malformed geometry
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoZonePacketTest' --tests 'cz.titulky.tv.GameLingoAutomaticTrackerTest' --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tv-navigation-debug
+          path: upstream/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7

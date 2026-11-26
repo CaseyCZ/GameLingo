@@ -11,7 +11,9 @@ from tv_translation_policy import tv_variant, strip_offline_translator, tv_trans
 from direct_tv_mode import patch_direct_tv
 from wire_mobile_update import patch_mobile_update
 from translation_backpressure import bound_translator, bound_choices
+from automatic_android import install_automatic
 from translation_privacy import protect_cache_writes, restrict_service_log, restrict_provider_transport
+from mobile_offline_translation import install_mobile_translator, finalize_mobile
 
 SRC = Path("app/src/main/java/cz/titulky/tv")
 
@@ -262,6 +264,8 @@ def main():
     t = bound_translator(t)
     t = protect_cache_writes(t)
     t = restrict_provider_transport(t)
+    if not tv_variant(root):
+        t = install_mobile_translator(t, folder)
     translator.write_text(t, encoding="utf8")
 
     service = folder / "RemotePlayService.kt"
@@ -696,12 +700,17 @@ def main():
     s = bound_choices(s, folder)
     s = restrict_service_log(s)
     service.write_text(s, encoding="utf8")
-    if tv_variant(root):
+    television = tv_variant(root)
+    if television:
         patch_direct_tv(folder)
-        install_tv_theme(root)
     else:
         patch_mobile_update(folder)
+    install_automatic(folder, television)
+    if television:
+        install_tv_theme(root)
     finalize_tv(root, folder)
+    if not television:
+        finalize_mobile(root, folder)
     print("GameLingo source and target languages connected to real Android translation")
 
 

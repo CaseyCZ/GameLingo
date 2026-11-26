@@ -14,9 +14,7 @@ enum GameLingoUIContract {
     static let setupSteps: [String] = [
         "Vítej v GameLingo",
         "Jazyky a překlad",
-        "Vyber konzoli",
-        "Kam zobrazit titulky?",
-        "Kontrola nastavení",
+        "Vyber zařízení",
     ]
     static let settingsSections: [String] = [
         "JAZYKY",

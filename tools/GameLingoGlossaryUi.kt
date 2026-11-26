@@ -11,7 +11,7 @@ import android.widget.Button
 internal object GameLingoGlossaryUi {
     private fun stopped(a: Activity): Boolean {
         if (!RemotePlayService.aktivni && !PrijemService.bezi) return true
-        AlertDialog.Builder(a).setMessage("Nejdřív zastav probíhající překlad.")
+        AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejdřív zastav probíhající překlad."))
             .setPositiveButton("OK", null).show()
         return false
     }
@@ -21,10 +21,11 @@ internal object GameLingoGlossaryUi {
         var source = saved?.source ?: GameLingoLanguages.game(a)
         var target = saved?.target ?: GameLingoLanguages.target(a)
         val body = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(20, 10, 20, 10) }
-        val pair = TextView(a).apply { text = "Jazyky slovníku: $source → $target" }
+        val pair = TextView(a).apply { gravity = android.view.Gravity.CENTER; text = GameLingoLanguages.ui(a, "Jazyky slovníku") + ": $source → $target" }
         body.addView(pair)
         body.addView(TextView(a).apply {
-            text = "Max. 50 řádků: originál | chybný překlad | správný překlad. Prázdný prostředek opraví jen celý přesný originál. Rozlišuje velikost písmen."
+            gravity = android.view.Gravity.CENTER
+            text = GameLingoLanguages.ui(a, "Max. 50 řádků: originál | chybný překlad | správný překlad. Prázdný prostředek opraví jen celý přesný originál. Rozlišuje velikost písmen.")
         })
         val input = EditText(a).apply {
             setText(saved?.text.orEmpty())
@@ -35,10 +36,10 @@ internal object GameLingoGlossaryUi {
         }
         body.addView(input)
         body.addView(Button(a).apply {
-            text = "Nový slovník pro aktuální jazyky"
+            text = GameLingoLanguages.ui(a, "Nový slovník pro aktuální jazyky")
             setOnClickListener {
                 source = GameLingoLanguages.game(a); target = GameLingoLanguages.target(a)
-                pair.text = "Jazyky slovníku: $source → $target"
+                pair.text = GameLingoLanguages.ui(a, "Jazyky slovníku") + ": $source → $target"
                 input.setText("")
             }
         })
@@ -47,24 +48,24 @@ internal object GameLingoGlossaryUi {
         if(GameLingoTVUi.isTV(a)) {
             var page:android.app.Dialog?=null
             GameLingoTVUi.controlFocus(a,input)
-            body.addView(GameLingoTVUi.action(a,"Uložit",primary=true) {
+            body.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Uložit"),primary=true) {
                 if(stopped(a)) {
                     if(!GameLingoGlossaryStore.save(a,name,source,target,input.text.toString()))
-                        error.text="Neplatný formát, duplicita originálu nebo překročený limit."
+                        error.text=GameLingoLanguages.ui(a, "Neplatný formát, duplicita originálu nebo překročený limit.")
                     else {page?.dismiss();onSaved()}
                 }
             })
-            page=GameLingoTVUi.page(a,"Herní slovník · "+name,body,helpTopic="glossary")
+            page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Herní slovník") + " · " + name,body,helpTopic="glossary")
             return
         }
-        val dialog = AlertDialog.Builder(a).setTitle("Herní slovník · " + name)
+        val dialog = AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Herní slovník") + " · " + name)
             .setView(ScrollView(a).apply { addView(body) })
-            .setNegativeButton("Zrušit", null).setPositiveButton("Uložit", null).create()
+            .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Uložit"), null).create()
         dialog.show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             if (!stopped(a)) return@setOnClickListener
             if (!GameLingoGlossaryStore.save(a, name, source, target, input.text.toString())) {
-                error.text = "Neplatný formát, duplicita originálu nebo překročený limit."
+                error.text = GameLingoLanguages.ui(a, "Neplatný formát, duplicita originálu nebo překročený limit.")
                 return@setOnClickListener
             }
             dialog.dismiss()
@@ -76,17 +77,17 @@ internal object GameLingoGlossaryUi {
     fun show(a: Activity) {
         if (!stopped(a)) return
         val names = GameLingoGlossaryStore.names(a)
-        val labels = listOf("Bez slovníku", "Nový herní slovník") + names.map {
-            it + if (GameLingoGlossaryStore.active(a) == it) " · aktivní" else ""
+        val labels = listOf(GameLingoLanguages.ui(a, "Bez slovníku"), GameLingoLanguages.ui(a, "Nový herní slovník")) + names.map {
+            it + if (GameLingoGlossaryStore.active(a) == it) " · " + GameLingoLanguages.ui(a, "aktivní") else ""
         }
         fun choose(i: Int) {
             if (!stopped(a)) return
             when (i) {
                 0 -> GameLingoGlossaryStore.activate(a, null)
                 1 -> {
-                    val name = EditText(a).apply { hint = "Název hry"; setSingleLine(true) }
-                    AlertDialog.Builder(a).setTitle("Nový herní slovník").setView(name)
-                        .setNegativeButton("Zrušit", null).setPositiveButton("Pokračovat") { _, _ ->
+                    val name = EditText(a).apply { hint = GameLingoLanguages.ui(a, "Název hry"); setSingleLine(true) }
+                    AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Nový herní slovník")).setView(name)
+                        .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Pokračovat")) { _, _ ->
                             val value = name.text.toString().trim()
                             if (value.isNotEmpty() && value.length <= 64) edit(a, value) { show(a) }
                         }.show()
@@ -98,20 +99,20 @@ internal object GameLingoGlossaryUi {
                         when(option) {
                             0 -> GameLingoGlossaryStore.activate(a, name)
                             1 -> edit(a, name) { show(a) }
-                            2 -> AlertDialog.Builder(a).setMessage("Smazat slovník " + name + "?")
-                                .setNegativeButton("Zrušit", null).setPositiveButton("Smazat") { _, _ ->
+                            2 -> AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Smazat slovník") + " " + name + "?")
+                                .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Smazat")) { _, _ ->
                                     if (stopped(a)) GameLingoGlossaryStore.remove(a, name)
                                 }.show()
                         }
                     }
-                    val options=arrayOf("Použít","Upravit","Smazat")
+                    val options=arrayOf(GameLingoLanguages.ui(a, "Použít"),GameLingoLanguages.ui(a, "Upravit"),GameLingoLanguages.ui(a, "Smazat"))
                     if(GameLingoTVUi.isTV(a)) GameLingoTVUi.select(a,name,options,onSelect=::action)
                     else AlertDialog.Builder(a).setTitle(name).setItems(options){_,option->action(option)}.show()
                 }
             }
         }
-        if(GameLingoTVUi.isTV(a)) GameLingoTVUi.select(a,"Herní slovník",labels.toTypedArray(),onSelect=::choose)
-        else AlertDialog.Builder(a).setTitle("Herní slovník").setItems(labels.toTypedArray()){_,i->choose(i)}
-            .setNegativeButton("Zavřít",null).show()
+        if(GameLingoTVUi.isTV(a)) GameLingoTVUi.select(a,GameLingoLanguages.ui(a, "Herní slovník"),labels.toTypedArray(),onSelect=::choose)
+        else AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Herní slovník")).setItems(labels.toTypedArray()){_,i->choose(i)}
+            .setNegativeButton(GameLingoLanguages.ui(a, "Zavřít"),null).show()
     }
 }

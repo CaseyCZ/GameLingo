@@ -48,17 +48,17 @@ def mobile(s):
         ('sloupec.addView(k0, odsazeni(bottom = 12))',
          '// Setup prerequisites are available under the ? Help button.'),
         ('k1.addView(text(t(if (telefon) "krok1Telefon" else "krok1"), 18f, Color.WHITE))',
-         'k1.addView(text("Účet PlayStation", 19f, Color.WHITE, tucne = true))'),
+         'k1.addView(text(GameLingoLanguages.ui(this, "Účet PlayStation"), 19f, Color.WHITE, tucne = true))'),
         ('k2.addView(text(t("krok2"), 18f, Color.WHITE))',
-         'k2.addView(text("Najít PlayStation", 19f, Color.WHITE, tucne = true))'),
+         'k2.addView(text(GameLingoLanguages.ui(this, "Najít PlayStation"), 19f, Color.WHITE, tucne = true))'),
         ('k3.addView(text(t(if (telefon) "krok3Telefon" else "krok3"), 18f, Color.WHITE))',
-         'k3.addView(text("Párovací PIN", 19f, Color.WHITE, tucne = true))'),
+         'k3.addView(text(GameLingoLanguages.ui(this, "Párovací PIN"), 19f, Color.WHITE, tucne = true))'),
         ('k1.addView(text(t("xboxKrok1"), 18f, Color.WHITE))',
-         'k1.addView(text("Účet Microsoft", 19f, Color.WHITE, tucne = true))'),
+         'k1.addView(text(GameLingoLanguages.ui(this, "Účet Microsoft"), 19f, Color.WHITE, tucne = true))'),
         ('k2.addView(text(t("xboxKrok2"), 18f, Color.WHITE))',
-         'k2.addView(text("Najít Xbox", 19f, Color.WHITE, tucne = true))'),
+         'k2.addView(text(GameLingoLanguages.ui(this, "Najít Xbox"), 19f, Color.WHITE, tucne = true))'),
         ('k3.addView(text(t("xboxKrok3"), 18f, Color.WHITE))',
-         'k3.addView(text("Připojení Xbox", 19f, Color.WHITE, tucne = true))')
+         'k3.addView(text(GameLingoLanguages.ui(this, "Připojení Xbox"), 19f, Color.WHITE, tucne = true))')
     ):
         if old == 'sloupec.addView(k0, odsazeni(bottom = 12))':
             n=s.count(old)
@@ -83,7 +83,7 @@ def tv(s):
             }
             hlava.addView(GameLingoTVUi.brand(this),
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            hlava.addView(GameLingoTVUi.action(this, "⚙  Nastavení") {
+            hlava.addView(GameLingoTVUi.action(this, "⚙  " + GameLingoLanguages.ui(this, "Nastavení")) {
                 GameLingoTVUi.showSettings(this) { ukazHlavni() }
             }, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -96,24 +96,24 @@ def tv(s):
             povoleni?.let { obsah.addView(it, odsazeni(bottom = 13)) }
 
             obsah.addView(GameLingoTVUi.title(this,
-                "Hraj. Rozuměj.", 28f), odsazeni(bottom = 4))
+                GameLingoLanguages.ui(this, "Hraj. Rozuměj."), 28f), odsazeni(bottom = 4))
             obsah.addView(GameLingoTVUi.title(this,
-                "Vyber způsob překladu nebo spravuj svá zařízení.",
+                GameLingoLanguages.ui(this, "Vyber způsob překladu nebo spravuj svá zařízení."),
                 16f, muted = true), odsazeni(bottom = 12))
 
-            obsah.addView(GameLingoTVUi.title(this, "ZPŮSOB PŘEKLADU", 16f).apply {
+            obsah.addView(GameLingoTVUi.title(this, GameLingoLanguages.ui(this, "ZPŮSOB PŘEKLADU"), 16f).apply {
                 setTextColor(Color.parseColor("#02D6FF"))
             }, odsazeni(bottom = 10))
             dlazdiceTel = GameLingoTVUi.tile(
-                this, "▣", "Překlad z telefonu",
-                if (PrijemService.bezi) "Příjem běží · otevřít párování a stav" else "Spustit příjem a párování telefonu."
+                this, "▣", GameLingoLanguages.ui(this, "Překlad z telefonu"),
+                if (PrijemService.bezi) GameLingoLanguages.ui(this, "Příjem běží · otevřít párování a stav") else GameLingoLanguages.ui(this, "Spustit příjem a párování telefonu.")
             ) {
                 if (!android.provider.Settings.canDrawOverlays(this)) pozadejOPovoleni()
                 else if (PrijemService.bezi) ukazPrijem() else hratSTelefonem()
             }
             dlazdiceTv = GameLingoTVUi.tile(
-                this, "▤", "Přímo na TV",
-                "Xbox, PlayStation nebo aplikace přímo na televizoru."
+                this, "▤", GameLingoLanguages.ui(this, "Přímo na TV"),
+                GameLingoLanguages.ui(this, "Xbox, PlayStation nebo aplikace přímo na televizoru.")
             ) {
                 if (!android.provider.Settings.canDrawOverlays(this)) pozadejOPovoleni()
                 else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()
@@ -146,20 +146,20 @@ def tv(s):
             val hasLegacyPS = savedPS.isEmpty() && udaje.sparovano
             val consoleCards = mutableListOf<View>()
             for (ps in savedPS) {
-                consoleCards.add(GameLingoTVUi.tile(this,"PS",GameLingoDeviceCenter.consoleName(this,"ps",ps.ip,ps.name),ps.type+" · uložená konzole") {
+                consoleCards.add(GameLingoTVUi.tile(this,"PS",GameLingoDeviceCenter.consoleName(this,"ps",ps.ip,ps.name),ps.type+" · "+GameLingoLanguages.ui(this, "Uložená konzole")) {
                     vyberPrimouPS()
                 })
             }
-            if (hasLegacyPS) consoleCards.add(GameLingoTVUi.tile(this,"PS","PlayStation","Uložená konzole") {
+            if (hasLegacyPS) consoleCards.add(GameLingoTVUi.tile(this,"PS","PlayStation",GameLingoLanguages.ui(this, "Uložená konzole")) {
                 vyberPrimouPS()
             })
             savedXbox?.let { xbox ->
-                consoleCards.add(GameLingoTVUi.tile(this,"ⓧ",GameLingoDeviceCenter.consoleName(this,"xbox",xbox.first,xbox.second),"Xbox · uložená konzole") {
+                consoleCards.add(GameLingoTVUi.tile(this,"ⓧ",GameLingoDeviceCenter.consoleName(this,"xbox",xbox.first,xbox.second),"Xbox · "+GameLingoLanguages.ui(this, "Uložená konzole")) {
                     vyberPrimyXbox()
                 })
             }
             if (consoleCards.isNotEmpty()) {
-                obsah.addView(GameLingoTVUi.title(this,"MOJE KONZOLE",16f).apply {
+                obsah.addView(GameLingoTVUi.title(this,GameLingoLanguages.ui(this, "MOJE KONZOLE"),16f).apply {
                     setTextColor(Color.parseColor("#02D6FF"))
                 },odsazeni(top=10,bottom=7))
                 consoleCards.chunked(2).forEach { group ->
@@ -175,7 +175,7 @@ def tv(s):
                     obsah.addView(row,odsazeni(bottom=6))
                 }
             } else {
-                obsah.addView(GameLingoTVUi.title(this,"Zatím nemáš přidanou žádnou konzoli.",17f,muted=true),
+                obsah.addView(GameLingoTVUi.title(this,GameLingoLanguages.ui(this, "Zatím nemáš přidanou žádnou konzoli."),17f,muted=true),
                     odsazeni(top=9,bottom=12))
             }
 
@@ -183,20 +183,20 @@ def tv(s):
             val statusy = vodorovne().apply {
                 setPadding(dp(7), dp(5), dp(7), dp(5))
             }
-            statusy.addView(GameLingoTVUi.statusPill(this, "Konzole",
-                if (RemotePlayService.aktivni) "Remote Play běží"
-                else if (consoleCards.isNotEmpty()) "Uložená · nepřipojena" else "Nepřidána",
+            statusy.addView(GameLingoTVUi.statusPill(this, GameLingoLanguages.ui(this, "Konzole"),
+                if (RemotePlayService.aktivni) GameLingoLanguages.ui(this, "Remote Play běží")
+                else if (consoleCards.isNotEmpty()) GameLingoLanguages.ui(this, "Uložená · nepřipojena") else GameLingoLanguages.ui(this, "Nepřidána"),
                 RemotePlayService.aktivni),
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(11) })
-            statusy.addView(GameLingoTVUi.statusPill(this, "Překryv titulků",
-                if (android.provider.Settings.canDrawOverlays(this)) "Povolen"
-                else "Vyžaduje povolení",
+            statusy.addView(GameLingoTVUi.statusPill(this, GameLingoLanguages.ui(this, "Překryv titulků"),
+                if (android.provider.Settings.canDrawOverlays(this)) GameLingoLanguages.ui(this, "Povolen")
+                else GameLingoLanguages.ui(this, "Vyžaduje povolení"),
                 android.provider.Settings.canDrawOverlays(this)),
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             obsah.addView(statusy, odsazeni(bottom = 11))
             obsah.addView(GameLingoTVUi.title(this,
-                "Ovládání: šipky pro výběr • OK potvrdit • Zpět pro návrat",
+                GameLingoLanguages.ui(this, "Ovládání: šipky pro výběr • OK potvrdit • Zpět pro návrat"),
                 14f, muted = true).apply { gravity = Gravity.CENTER })
 
             volby.post {
@@ -206,15 +206,7 @@ def tv(s):
 
 '''
     s=s[:s.index(start)]+new+s[s.index(end, s.index(start)):]
-    # TV receiver help is optional. Do not occupy extra width or remove the code.
-    s=one(s,
-        '        vrsek.addView(logo)\n',
-        '''        vrsek.addView(logo)
-        vrsek.addView(GameLingoHelp.button(this, "tv"),
-            GameLingoHelp.layout(this, dp(55), dp(55)).apply {
-                leftMargin = dp(15)
-            })
-''', "Google TV receiver header")
+    # Receiver already uses the shared fixed Back/title/Help header.
     s=s.replace(
         '"Otevřete GameLingo na telefonu a zadejte tento šestimístný kód."',
         '"Zadejte kód do telefonu"')
@@ -251,17 +243,17 @@ def tv(s):
     s=s.replace(prerequisite, '// See ? for setup prerequisites')
     for before,after in (
         ('k1.addView(text(t(if (telefon) "krok1Telefon" else "krok1"), 18f, Color.WHITE))',
-         'k1.addView(text("Účet PlayStation", 19f, Color.WHITE, tucne = true))'),
+         'k1.addView(text(GameLingoLanguages.ui(this, "Účet PlayStation"), 19f, Color.WHITE, tucne = true))'),
         ('k2.addView(text(t("krok2"), 18f, Color.WHITE))',
-         'k2.addView(text("Najít PlayStation", 19f, Color.WHITE, tucne = true))'),
+         'k2.addView(text(GameLingoLanguages.ui(this, "Najít PlayStation"), 19f, Color.WHITE, tucne = true))'),
         ('k3.addView(text(t(if (telefon) "krok3Telefon" else "krok3"), 18f, Color.WHITE))',
-         'k3.addView(text("Párovací PIN", 19f, Color.WHITE, tucne = true))'),
+         'k3.addView(text(GameLingoLanguages.ui(this, "Párovací PIN"), 19f, Color.WHITE, tucne = true))'),
         ('k1.addView(text(t("xboxKrok1"), 18f, Color.WHITE))',
-         'k1.addView(text("Účet Microsoft", 19f, Color.WHITE, tucne = true))'),
+         'k1.addView(text(GameLingoLanguages.ui(this, "Účet Microsoft"), 19f, Color.WHITE, tucne = true))'),
         ('k2.addView(text(t("xboxKrok2"), 18f, Color.WHITE))',
-         'k2.addView(text("Najít Xbox", 19f, Color.WHITE, tucne = true))'),
+         'k2.addView(text(GameLingoLanguages.ui(this, "Najít Xbox"), 19f, Color.WHITE, tucne = true))'),
         ('k3.addView(text(t("xboxKrok3"), 18f, Color.WHITE))',
-         'k3.addView(text("Připojit Xbox", 19f, Color.WHITE, tucne = true))')
+         'k3.addView(text(GameLingoLanguages.ui(this, "Připojit Xbox"), 19f, Color.WHITE, tucne = true))')
     ):
         s=one(s,before,after,"Google TV console step")
     return s

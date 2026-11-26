@@ -1,6 +1,14 @@
 name: GameLingo • quick regression checks
 
 on:
+  push:
+    branches: [feature/ocr-lab]
+    paths:
+      - 'ios/**'
+      - 'tools/**'
+      - 'tests/**'
+      - 'shared/**'
+      - '.github/workflows/fast-gamelingo-checks.yml'
   pull_request:
     branches: [Master]
     paths:
@@ -24,6 +32,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Python integration contracts
         run: python3 -m unittest discover -s tests -p 'test_v05_integrations.py' -v
+      - name: Release localization contracts
+        run: python3 -m unittest discover -s tests -p 'test_release_localization.py' -v
       - name: Python tooling syntax
         run: python3 -m compileall -q tools tests
       - name: Run latest-frame mailbox tests

@@ -33,7 +33,7 @@ def redesign_mobile(s: str) -> str:
                 if (nejakaKonzole)
                     startActivity(Intent(this, TelefonActivity::class.java))
                 else android.app.AlertDialog.Builder(this)
-                    .setMessage("Nejprve vyber a připoj konzoli.")
+                    .setMessage(GameLingoLanguages.ui(this, "Nejprve vyber a připoj konzoli."))
                     .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
                     .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
                     .setNegativeButton(android.R.string.cancel, null).show()
@@ -43,7 +43,7 @@ def redesign_mobile(s: str) -> str:
             obsah.addView(GameLingoVisualKit.brandHeader(this) { openSettings() },
                 odsazeni(bottom = 14))
             obsah.addView(GameLingoVisualKit.hero(this), odsazeni(bottom = 18))
-            obsah.addView(GameLingoVisualKit.section(this, "Moje zařízení"))
+            obsah.addView(GameLingoVisualKit.section(this, GameLingoLanguages.ui(this, "Moje zařízení")))
 
             val psSelected = GameLingoPlayStationConsoles.list(this)
                 .firstOrNull { it.selected }
@@ -61,13 +61,13 @@ def redesign_mobile(s: str) -> str:
             val primaryName = when (primaryFamily) {
                 "Xbox" -> "Xbox"
                 "PlayStation" -> psSelected?.name ?: "PlayStation"
-                else -> "Vybrat konzoli"
+                else -> GameLingoLanguages.ui(this, "Vybrat konzoli")
             }
             obsah.addView(GameLingoVisualKit.deviceCard(
                 this, primaryFamily, primaryName,
-                if (liveImage) "Snímání aktivní"
-                else if (nejakaKonzole) "Nastaveno · spojení ověřím při spuštění"
-                else "Přidat Xbox nebo PlayStation",
+                if (liveImage) GameLingoLanguages.ui(this, "Snímání aktivní")
+                else if (nejakaKonzole) GameLingoLanguages.ui(this, "Nastaveno · spojení ověřím při spuštění")
+                else GameLingoLanguages.ui(this, "Přidat Xbox nebo PlayStation"),
                 liveImage
             ) { openDevices() }, odsazeni(bottom = 10))
 
@@ -75,21 +75,21 @@ def redesign_mobile(s: str) -> str:
             val savedTv = tvStore.posledniId?.let { tvStore.najdi(it) }
             obsah.addView(GameLingoVisualKit.deviceCard(
                 this, "TV",
-                if (tvStore.pouzeTelefon) "Telefon"
+                if (tvStore.pouzeTelefon) GameLingoLanguages.ui(this, "Telefon")
                 else savedTv?.jmeno ?: "Google TV / Android TV",
-                if (tvStore.pouzeTelefon) "Titulky na telefonu"
-                else if (savedTv == null) "Vyber nebo spáruj televizi"
-                else "Televize uložena · spojení se ověří",
+                if (tvStore.pouzeTelefon) GameLingoLanguages.ui(this, "Titulky na telefonu")
+                else if (savedTv == null) GameLingoLanguages.ui(this, "Vyber nebo spáruj televizi")
+                else GameLingoLanguages.ui(this, "Televize uložena · spojení se ověří"),
                 tvStore.pouzeTelefon
             ) { openDevices() }, odsazeni(bottom = 18))
 
             obsah.addView(GameLingoVisualKit.cta(
                 this,
-                if (RemotePlayService.aktivni) "Zastavit překlad" else "Spustit překlad"
+                if (RemotePlayService.aktivni) GameLingoLanguages.ui(this, "Zastavit překlad") else GameLingoLanguages.ui(this, "Spustit překlad")
             ) {
                 if (nejakaKonzole) prepniPreklad()
                 else android.app.AlertDialog.Builder(this)
-                    .setTitle("Kterou konzoli používáš?")
+                    .setTitle(GameLingoLanguages.ui(this, "Kterou konzoli používáš?"))
                     .setItems(arrayOf("PlayStation 5 / 4", "Xbox Series / One")) { _, vyber ->
                         if (vyber == 0) ukazPripojeni() else ukazPripojeniXbox()
                     }.show()
@@ -97,40 +97,40 @@ def redesign_mobile(s: str) -> str:
 
             val prvni = vodorovne()
             prvni.addView(GameLingoVisualKit.navigationTile(this,
-                "▣", "Oblasti na obrazovce") { openAreas() },
+                "▣", GameLingoLanguages.ui(this, "Oblasti na obrazovce")) { openAreas() },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(10) })
             prvni.addView(GameLingoVisualKit.navigationTile(this,
-                "♧", "Profily her") {
+                "♧", GameLingoLanguages.ui(this, "Profily her")) {
                 GameLingoProfiles.show(this, nast) { ukazHlavni() }
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             obsah.addView(prvni, odsazeni(bottom = 10))
 
             val druhy = vodorovne()
             druhy.addView(GameLingoVisualKit.navigationTile(this,
-                "☷", "Nastavení překladu") { openSettings() },
+                "☷", GameLingoLanguages.ui(this, "Nastavení překladu")) { openSettings() },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(10) })
             druhy.addView(GameLingoVisualKit.navigationTile(this,
-                "▭", "Zařízení") { openDevices() },
+                "▭", GameLingoLanguages.ui(this, "Zařízení")) { openDevices() },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             obsah.addView(druhy, odsazeni(bottom = 15))
 
             // Show genuine connection state, not fabricated green indicators.
             obsah.addView(GameLingoVisualKit.status(this,
-                if (liveImage && tvStore.pouzeTelefon) "Snímání aktivní"
+                if (liveImage && tvStore.pouzeTelefon) GameLingoLanguages.ui(this, "Snímání aktivní")
                 else if (RemotePlayService.aktivni && !tvStore.pouzeTelefon)
-                    "Remote Play běží · TV spojení neověřeno"
-                else if (RemotePlayService.aktivni) "Připojuji / načítám snímky"
-                else if (!nejakaKonzole) "Nejprve připoj konzoli"
+                    GameLingoLanguages.ui(this, "Remote Play běží · TV spojení neověřeno")
+                else if (RemotePlayService.aktivni) GameLingoLanguages.ui(this, "Připojuji / načítám snímky")
+                else if (!nejakaKonzole) GameLingoLanguages.ui(this, "Nejprve připoj konzoli")
                 else if (!tvStore.pouzeTelefon && savedTv == null)
-                    "Vyber nebo spáruj televizi"
-                else "Konzole je nastavená · připojení neověřeno",
+                    GameLingoLanguages.ui(this, "Vyber nebo spáruj televizi")
+                else GameLingoLanguages.ui(this, "Konzole je nastavená · připojení neověřeno"),
                 if (liveImage && tvStore.pouzeTelefon)
-                    "Video snímky se přijímají, titulky zpracovává OCR."
+                    GameLingoLanguages.ui(this, "Video snímky se přijímají, titulky zpracovává OCR.")
                 else if (!tvStore.pouzeTelefon)
-                    "Uložený televizor nepotvrzuje živé přijetí titulků."
-                else "Uložené zařízení samo o sobě nepotvrzuje živé spojení.",
+                    GameLingoLanguages.ui(this, "Uložený televizor nepotvrzuje živé přijetí titulků.")
+                else GameLingoLanguages.ui(this, "Uložené zařízení samo o sobě nepotvrzuje živé spojení."),
                 // Green status only with an actual live video source and
                 // local phone output. The TV has no verified ACK in this lane.
                 liveImage && tvStore.pouzeTelefon
@@ -160,7 +160,8 @@ def redesign_mobile(s: str) -> str:
                     3 -> GameLingoSettings.content(this, nast,
                         onAreas = { editAreas() },
                         onLanguage = { GameLingoLanguages.show(this) { ukazHlavni() } },
-                        onDevices = { openDevices() })
+                        onDevices = { openDevices() },
+                        onRefresh = { openTab(3) })
                     4 -> GameLingoAbout.content(this)
                     else -> homePage
                 }
@@ -205,7 +206,7 @@ def redesign_mobile(s: str) -> str:
         }, LinearLayout.LayoutParams(dp(72), dp(72)))
         addView(svisle().apply {
             addView(text("GameLingo", 30f, Color.WHITE, tucne = true))
-            addView(text("Hraj. Rozuměj.", 15f,
+            addView(text(GameLingoLanguages.ui(this@MainActivity, "Hraj. Rozuměj."), 15f,
                 Color.parseColor("#94A3B8")))
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(13) })
@@ -283,29 +284,25 @@ def redesign_tv(s: str) -> str:
             setPadding(dp(13), dp(10), dp(13), dp(10))
         }
 
-        val vrsek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
-        vrsek.addView(ImageView(this).apply {
-            setImageResource(R.drawable.gamelingo_ikona)
-            adjustViewBounds = true
-        }, LinearLayout.LayoutParams(dp(65), dp(65)).apply { rightMargin = dp(12) })
-        val logo = svisle()
-        logo.addView(text("GameLingo", 28f, Color.WHITE, tucne = true))
-        logo.addView(text("TV", 16f, fialova, tucne = true))
-        vrsek.addView(logo)
-        vrsek.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        vrsek.addView(text(packageManager.getPackageInfo(packageName, 0).versionName ?: "GameLingo TV", 14f,
-            Color.parseColor("#94A3B8")))
+        val zastav = GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Zpět")) {
+            zpetNaVyber()
+        }
+        val logo = svisle().apply { gravity = Gravity.CENTER }
+        logo.addView(GameLingoVisualKit.wordmark(this@MainActivity, compact = true))
+        logo.addView(text(packageManager.getPackageInfo(packageName, 0).versionName ?: "GameLingo TV", 14f,
+            Color.parseColor("#94A3B8")).apply { gravity = Gravity.CENTER })
+        val vrsek = GameLingoTVUi.header(this, logo, zastav, GameLingoHelp.button(this, "tv"))
 
         val levá = modraKarta()
         levá.addView(GameLingoTVUi.title(this,
-            "Překlad z telefonu", 26f), odsazeni(bottom = 5))
+            GameLingoLanguages.ui(this@MainActivity, "Překlad z telefonu"), 26f), odsazeni(bottom = 5))
         levá.addView(GameLingoTVUi.title(this,
-            "Získej titulky z iPhonu nebo Androidu.", 17f, muted = true),
+            GameLingoLanguages.ui(this@MainActivity, "Získej titulky z iPhonu nebo Androidu."), 17f, muted = true),
             odsazeni(bottom = 5))
         listOf(
-            "1" to "Otevři GameLingo na telefonu",
-            "2" to "Spáruj TV šestimístným kódem",
-            "3" to "Spusť překlad a vrať se ke hře"
+            "1" to GameLingoLanguages.ui(this@MainActivity, "Otevři GameLingo na telefonu"),
+            "2" to GameLingoLanguages.ui(this@MainActivity, "Spáruj TV pomocí QR nebo kódu"),
+            "3" to GameLingoLanguages.ui(this@MainActivity, "Spusť překlad a vrať se ke hře")
         ).forEach { (index, title) ->
             val krok = vodorovne().apply {
                 gravity = Gravity.CENTER_VERTICAL
@@ -324,83 +321,79 @@ def redesign_tv(s: str) -> str:
             levá.addView(krok)
         }
         levá.addView(GameLingoTVUi.title(this,
-            "Titulky se zobrazí nad hrou, bez přepínání vstupu.",
+            GameLingoLanguages.ui(this@MainActivity, "Titulky se zobrazí nad hrou, bez přepínání vstupu."),
             15f, muted = true), odsazeni(top = 6))
 
         val pravá = modraKarta()
-        pravá.addView(text("Připojte svůj telefon", 25f,
+        pravá.addView(text(GameLingoLanguages.ui(this@MainActivity, "Připojte svůj telefon"), 25f,
             Color.WHITE, tucne = true))
         pravá.addView(text(
-            "Otevřete GameLingo na telefonu a zadejte tento šestimístný kód.",
+            GameLingoLanguages.ui(this@MainActivity, "Načti QR v telefonu nebo opiš celý kód."),
             19f, Color.parseColor("#CBD5E1")), odsazeni(top = 4, bottom = 5))
 
-        // Always show a fresh six-digit code when opening the receiver.
+        // Always show a fresh one-time code when opening the receiver.
         // Existing phones remain paired when another phone confirms a new code.
         var shownCode: String? = IPhoneTVPairing.startCode()
         val kodRadek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
-        val policka = (0 until 6).map {
-            text("•", 30f, Color.WHITE, tucne = true).apply {
-                gravity = Gravity.CENTER
-                background = zaobleni(Color.parseColor("#151B39"), 14f, fialova)
-                setPadding(dp(3), dp(5), dp(3), dp(5))
-                minWidth = dp(28)
-                kodRadek.addView(this,
-                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                        .apply { rightMargin = dp(if (it == 5) 0 else 4) })
-            }
+        val kodText = text("••••••••", 19f, Color.WHITE, tucne = true).apply {
+            gravity = Gravity.CENTER
+            typeface = android.graphics.Typeface.MONOSPACE
+            background = zaobleni(Color.parseColor("#151B39"), 14f, fialova)
+            setPadding(dp(8), dp(5), dp(8), dp(5))
         }
+        kodRadek.addView(kodText, LinearLayout.LayoutParams(-1, -2))
         val qrImage = ImageView(this).apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
-            contentDescription = "Párovací QR kód"
+            contentDescription = GameLingoLanguages.ui(this@MainActivity, "Párovací QR kód")
         }
         var displayedQR: String? = null
         val pinAndQr = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
         pinAndQr.addView(kodRadek, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         pinAndQr.addView(qrImage, LinearLayout.LayoutParams(dp(115), dp(115)).apply { leftMargin = dp(9) })
         pravá.addView(pinAndQr, odsazeni(top = 4, bottom = 4))
-        pravá.addView(GameLingoTVUi.action(this, "Zobrazit QR kód") {
+        pravá.addView(GameLingoTVUi.action(this, GameLingoLanguages.ui(this@MainActivity, "Zobrazit QR kód")) {
             val pin = IPhoneTVPairing.activeCode()
             val address = cm.activeNetwork?.let { cm.getLinkProperties(it) }
                 ?.linkAddresses?.firstOrNull { it.address is java.net.Inet4Address }?.address?.hostAddress
             if (pin != null && address != null) GameLingoQRDisplay.show(this, address, pin)
             else android.app.AlertDialog.Builder(this)
-                .setMessage("Vygeneruj nový PIN a ověř připojení k místní síti.")
+                .setMessage(GameLingoLanguages.ui(this@MainActivity, "Vygeneruj nový PIN a ověř připojení k místní síti."))
                 .setPositiveButton("OK", null).show()
         }, odsazeni(bottom = 4))
 
         val stavParovani = text("", 18f, Color.parseColor("#94A3B8"))
         pravá.addView(stavParovani, odsazeni(top = 12))
-        pravá.addView(text("IP televizoru: $ipTv", 17f,
+        pravá.addView(text(GameLingoLanguages.ui(this@MainActivity, "IP televizoru:") + " " + (if (ipTv == "Adresa se zjišťuje") GameLingoLanguages.ui(this@MainActivity, "Adresa se zjišťuje") else ipTv), 17f,
             akcent), odsazeni(top = 9))
         val akce = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
         akce.addView(GameLingoTVUi.action(
-            this, "Nový párovací kód", primary = true) {
+            this, GameLingoLanguages.ui(this@MainActivity, "Nový párovací kód"), primary = true) {
             shownCode = IPhoneTVPairing.startCode()
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             .apply { rightMargin = dp(9) })
         akce.addView(GameLingoTVUi.action(
-            this, "Spárované telefony") {
+            this, GameLingoLanguages.ui(this@MainActivity, "Spárované telefony")) {
             val phones = IPhoneTVPairing.phones(this)
             if (phones.isEmpty()) {
                 android.app.AlertDialog.Builder(this)
-                    .setTitle("Spárované telefony")
-                    .setMessage("Zatím žádný telefon.")
+                    .setTitle(GameLingoLanguages.ui(this@MainActivity, "Spárované telefony"))
+                    .setMessage(GameLingoLanguages.ui(this@MainActivity, "Zatím žádný telefon."))
                     .setPositiveButton("OK", null).show()
             } else {
-                val labels = phones.map { it.label + if (it.connected) " · připojen" else " · uložen" }.toTypedArray()
-                GameLingoTVUi.select(this,"Spárované telefony",labels) { index ->
+                val labels = phones.map { it.label + " · " + GameLingoLanguages.ui(this@MainActivity, if (it.connected) "Připojen" else "Spárován") }.toTypedArray()
+                GameLingoTVUi.select(this,GameLingoLanguages.ui(this@MainActivity, "Spárované telefony"),labels) { index ->
                         val phone = phones[index]
                         android.app.AlertDialog.Builder(this)
-                            .setTitle("Odpárovat " + phone.label + "?")
-                            .setMessage("Ostatní telefony zůstanou spárované.")
-                            .setPositiveButton("Odpárovat") { _, _ ->
+                            .setTitle(GameLingoLanguages.ui(this@MainActivity, "Odpárovat") + " " + phone.label + "?")
+                            .setMessage(GameLingoLanguages.ui(this@MainActivity, "Ostatní telefony zůstanou spárované."))
+                            .setPositiveButton(GameLingoLanguages.ui(this@MainActivity, "Odpárovat")) { _, _ ->
                                 if (!IPhoneTVPairing.unpair(this, phone.id)) {
                                     android.app.AlertDialog.Builder(this)
-                                        .setMessage("Odpárování se nepodařilo uložit.")
+                                        .setMessage(GameLingoLanguages.ui(this@MainActivity, "Odpárování se nepodařilo uložit."))
                                         .setPositiveButton("OK", null).show()
                                 }
                             }
-                            .setNegativeButton("Zpět", null).show()
+                            .setNegativeButton(GameLingoLanguages.ui(this@MainActivity, "Zpět"), null).show()
                     }
             }
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -440,15 +433,15 @@ def redesign_tv(s: str) -> str:
             background = zaobleni(Color.parseColor("#151B39"), 20f, obrys)
             setPadding(dp(12), dp(5), dp(12), dp(5))
         }
-        val sitStav = stavItem("⌁", "Síť", "Zjišťuji")
+        val sitStav = stavItem("⌁", GameLingoLanguages.ui(this@MainActivity, "Síť"), GameLingoLanguages.ui(this@MainActivity, "Zjišťuji"))
         val sitLabel = sitStav.getChildAt(2) as TextView
         statusy.addView(sitStav,
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        val prijimacStav = stavItem("▣", "Přijímač", "Čeká")
+        val prijimacStav = stavItem("▣", GameLingoLanguages.ui(this@MainActivity, "Přijímač"), GameLingoLanguages.ui(this@MainActivity, "Čeká"))
         val prijimacLabel = prijimacStav.getChildAt(2) as TextView
         statusy.addView(prijimacStav,
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        val stavTitulku = text("Čeká na telefon", 16f,
+        val stavTitulku = text(GameLingoLanguages.ui(this@MainActivity, "Čeká na telefon"), 16f,
             Color.parseColor("#94A3B8")).apply {
             gravity = Gravity.CENTER
         }
@@ -457,38 +450,35 @@ def redesign_tv(s: str) -> str:
             addView(text("▤", 28f, akcent).apply {
                 gravity = Gravity.CENTER
             })
-            addView(text("Titulky", 19f, Color.WHITE, tucne = true).apply {
+            addView(text(GameLingoLanguages.ui(this@MainActivity, "Titulky"), 19f, Color.WHITE, tucne = true).apply {
                 gravity = Gravity.CENTER
             }, odsazeni(top = 3))
             addView(stavTitulku, odsazeni(top = 3))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
 
-        val test = GameLingoTVUi.action(this, "▶  Vyzkoušet titulky") {
+        val test = GameLingoTVUi.action(this, "▶  " + GameLingoLanguages.ui(this@MainActivity, "Vyzkoušet titulky")) {
             if (!android.provider.Settings.canDrawOverlays(this))
                 pozadejOPovoleni()
             else OverlayService.posli(this, Intent(this, OverlayService::class.java)
                 .setAction(OverlayService.ACTION_SET_TEXT)
-                .putExtra(OverlayService.EXTRA_TEXT, "GameLingo · Ukázka titulků")
+                .putExtra(OverlayService.EXTRA_TEXT, GameLingoLanguages.ui(this@MainActivity, "GameLingo · Ukázka titulků"))
                 .putExtra(OverlayService.EXTRA_DOBA, 8000L)
                 .putExtra(OverlayService.EXTRA_VLASTNI,
                     floatArrayOf(0.5f, 0.84f, 0.78f, 1.10f, 1f)))
-        }
-        val zastav = GameLingoTVUi.action(this, "←  Zpět do nabídky") {
-            zpetNaVyber()
         }
         val paticka = vodorovne().apply {
             gravity = Gravity.CENTER_VERTICAL
         }
         paticka.addView(test)
         paticka.addView(View(this), LinearLayout.LayoutParams(dp(14), 1))
-        paticka.addView(GameLingoTVUi.action(this, "Podrobnosti") {
+        paticka.addView(GameLingoTVUi.action(this, GameLingoLanguages.ui(this@MainActivity, "Podrobnosti")) {
             prijemDiag.visibility =
                 if (prijemDiag.visibility == View.VISIBLE) View.INVISIBLE else View.VISIBLE
         })
         paticka.addView(prijemDiag, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
             leftMargin = dp(5); rightMargin = dp(5)
         })
-        paticka.addView(zastav)
+        // TV_RECEIVER_STOP_ACTION
 
         val obsah = svisle().apply {
             background = android.graphics.drawable.GradientDrawable(
@@ -500,7 +490,7 @@ def redesign_tv(s: str) -> str:
             addView(vrsek, odsazeni(bottom = 8))
             if (!android.provider.Settings.canDrawOverlays(this@MainActivity)) {
                 addView(GameLingoTVUi.action(this@MainActivity,
-                    "⚠  Povolit titulky přes obraz hry", primary = true) {
+                    "⚠  " + GameLingoLanguages.ui(this@MainActivity, "Povolit titulky přes obraz hry"), primary = true) {
                     pozadejOPovoleni()
                 }, odsazeni(bottom = 12))
             }
@@ -522,9 +512,7 @@ def redesign_tv(s: str) -> str:
                     displayedQR = qrKey
                     qrImage.setImageBitmap(code?.let { GameLingoQRDisplay.bitmap(ipTv, it) })
                 }
-                policka.forEachIndexed { index, policko ->
-                    policko.text = code?.getOrNull(index)?.toString() ?: "•"
-                }
+                kodText.text = code?.chunked(8)?.joinToString("\n") ?: "••••••••"
                 val phones = IPhoneTVPairing.phones(this@MainActivity)
                 val connectedCount = phones.count { it.connected }
                 val spojeno = connectedCount > 0
@@ -533,27 +521,27 @@ def redesign_tv(s: str) -> str:
                 val receiverError = receiverInfo.startsWith("Chyba UDP")
                 val receiverReady = PrijemService.bezi && !receiverError
                 val overlayReady = android.provider.Settings.canDrawOverlays(this@MainActivity)
-                sitLabel.text = if (networkReady) "IP: $ipTv" else "Nepřipojeno"
+                sitLabel.text = if (networkReady) "IP: $ipTv" else GameLingoLanguages.ui(this@MainActivity, "Nepřipojeno")
                 sitLabel.setTextColor(if (networkReady) zelena else Color.parseColor("#94A3B8"))
                 prijimacLabel.text = when {
-                    receiverError -> "Port UDP obsazen"
-                    receiverReady -> "Aktivní · UDP ${PrijemService.prijimaciPort()}"
-                    else -> "Zastaven"
+                    receiverError -> GameLingoLanguages.ui(this@MainActivity, "Port UDP obsazen")
+                    receiverReady -> GameLingoLanguages.ui(this@MainActivity, "Aktivní · UDP") + " ${PrijemService.prijimaciPort()}"
+                    else -> GameLingoLanguages.ui(this@MainActivity, "Zastaven")
                 }
                 prijimacLabel.setTextColor(if (receiverReady) zelena else Color.parseColor("#94A3B8"))
                 stavTitulku.text = when {
-                    !overlayReady -> "Povol překryv"
-                    spojeno && receiverReady -> "Telefon připojen"
-                    else -> "Čeká na telefon"
+                    !overlayReady -> GameLingoLanguages.ui(this@MainActivity, "Povol překryv")
+                    spojeno && receiverReady -> GameLingoLanguages.ui(this@MainActivity, "Telefon připojen")
+                    else -> GameLingoLanguages.ui(this@MainActivity, "Čeká na telefon")
                 }
                 stavTitulku.setTextColor(if (spojeno && receiverReady && overlayReady)
                     zelena else Color.parseColor("#94A3B8"))
                 stavParovani.text = when {
-                    receiverError -> "Nelze přijímat: všechny UDP porty 41989–41993 jsou obsazené"
-                    code != null -> "Kód platí ještě $zbyva s · spárováno: "+phones.size
-                    spojeno && receiverReady -> "✓ Připojeno: $connectedCount / "+phones.size
-                    phones.isNotEmpty() -> "Spárováno: "+phones.size+" · čekám na spojení"
-                    else -> "Zvol Nový párovací kód"
+                    receiverError -> GameLingoLanguages.ui(this@MainActivity, "Nelze přijímat: všechny UDP porty 41989–41993 jsou obsazené")
+                    code != null -> GameLingoLanguages.ui(this@MainActivity, "Kód platí ještě:") + " $zbyva s · " + GameLingoLanguages.ui(this@MainActivity, "Spárováno:") + " " + phones.size
+                    spojeno && receiverReady -> "✓ " + GameLingoLanguages.ui(this@MainActivity, "Připojeno:") + " $connectedCount / " + phones.size
+                    phones.isNotEmpty() -> GameLingoLanguages.ui(this@MainActivity, "Spárováno:") + " " + phones.size + " · " + GameLingoLanguages.ui(this@MainActivity, "Čekám na spojení")
+                    else -> GameLingoLanguages.ui(this@MainActivity, "Zvol Nový párovací kód")
                 }
                 // Show bind failures immediately: the user should not have to
                 // find a hidden developer panel to diagnose an iPhone timeout.
