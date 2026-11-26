@@ -181,11 +181,6 @@ object GameLingoFirstRun {
                         setTextColor(muted)
                         setPadding(0, px(16), 0, px(14))
                     })
-                    item("⚡  Překlad v reálném čase", false) { step = 1; redraw() }
-                    item("🎮  Xbox a PlayStation", false) { step = 2; redraw() }
-                    item("📺  Telefon a Google TV", false) { step = 3; redraw() }
-                }
-                1 -> {
                     item("🌐  Jazyk aplikace  •  " +
                          GameLingoLanguages.name(GameLingoLanguages.appLanguages,
                              GameLingoLanguages.app(activity)), true) {
@@ -193,6 +188,8 @@ object GameLingoFirstRun {
                             redraw()
                         }
                     }
+                }
+                1 -> {
                     item("🎮  Jazyk hry  •  " +
                          GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
                              GameLingoLanguages.game(activity)), true) {
@@ -231,8 +228,6 @@ object GameLingoFirstRun {
                         textSize = 14f
                         setTextColor(muted)
                     })
-                }
-                3 -> {
                     item("📱  Na telefonu", tvChoice == 0) {
                         tvChoice = 0
                         redraw()
@@ -245,26 +240,6 @@ object GameLingoFirstRun {
                         item("🔗  Spárovat TV", false) {
                             pairOrChooseTV()
                         }
-                    }
-                }
-                else -> {
-                    item("🎮  Konzole: " + when (consoleChoice) {
-                        0 -> "Xbox"
-                        1 -> "PlayStation"
-                        else -> "Nevybráno"
-                    }, consoleRegistered()) { step = 2; redraw() }
-                    item("📺  Titulky: " + when (tvChoice) {
-                        0 -> "Telefon"
-                        1 -> "Google TV"
-                        else -> "Nevybráno"
-                    }, televisionPaired()) { step = 3; redraw() }
-                    item("🌐  " + GameLingoLanguages.name(
-                        GameLingoLanguages.gameLanguages, GameLingoLanguages.game(activity)
-                    ) + "  →  " + GameLingoLanguages.name(
-                        GameLingoLanguages.targetLanguages,
-                        GameLingoLanguages.target(activity)), true) {
-                        step = 1
-                        redraw()
                     }
                     body.addView(TextView(activity).apply {
                         text = "Uložené zařízení neznamená aktivní Remote Play. " +
@@ -300,14 +275,13 @@ object GameLingoFirstRun {
                     rightMargin = 8
                 })
             }
-            val finalStep = step == 4
+            val finalStep = step == GameLingoUIContract.setupSteps.lastIndex
             val canContinue = when (step) {
-                2 -> consoleChoice >= 0
-                4 -> consoleRegistered() && televisionPaired()
+                2 -> consoleRegistered() && televisionPaired()
                 else -> true
             }
             footer.addView(button(if (finalStep) "Dokončit nastavení" else "Pokračovat") {
-                if (step < 4) {
+                if (!finalStep) {
                     step++
                     redraw()
                 } else {

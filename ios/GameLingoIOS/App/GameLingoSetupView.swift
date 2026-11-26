@@ -98,14 +98,14 @@ struct GameLingoSetupView: View {
         VStack(alignment: .leading, spacing: 12) {
             GLBrandWordmark()
             HStack(spacing: 8) {
-                ForEach(0..<3) { index in
+                ForEach(GameLingoUIContract.setupSteps.indices, id: \.self) { index in
                     Capsule()
                         .fill(index <= step ? GLNeon.cyan : GLStyle.surfaceAlt)
                         .frame(height: 5)
                 }
             }
             .padding(.bottom, 8)
-            Text(LocalizedStringKey(step == 2 ? "Vyber zařízení" : GameLingoUIContract.setupSteps[step]))
+            Text(LocalizedStringKey(GameLingoUIContract.setupSteps[step]))
                 .font(.title2.bold())
         }
     }

@@ -187,7 +187,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for step in ('Nastavit později', 'connectPlayStation()', 'connectTV()',
                      'GameLingoUIContract.setupSteps[step]'):
             self.assertIn(step,first_run)
-        self.assertIn('Vyber konzoli',code(ROOT/"shared/mobile-ui.json"))
+        self.assertIn('Vyber zařízení',code(ROOT/"shared/mobile-ui.json"))
         self.assertIn('AES/GCM/NoPadding',psstore)
         self.assertIn('setSingleChoiceItems',multi)
         self.assertIn('if (predvybrany >= 0)',multi)
@@ -218,7 +218,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         android=code(TOOLS/"redesign_gamelingo.py")
         first_run=code(TOOLS/"GameLingoFirstRun.kt")
         ios_setup=code(IOS/"GameLingoSetupView.swift")
-        self.assertIn("4 -> consoleRegistered() && televisionPaired()", first_run)
+        self.assertIn("2 -> consoleRegistered() && televisionPaired()", first_run)
         self.assertIn("GameLingoTVPairing.paired(activity, selected.ip)",first_run)
         self.assertIn("isEnabled = canContinue", first_run)
         self.assertIn("disabled: !canFinish", ios_setup)
@@ -255,7 +255,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
 
     def test_shared_mobile_contract_and_real_screens(self):
         spec=json.loads(code(ROOT/"shared/mobile-ui.json"))
-        self.assertEqual(len(spec["setupSteps"]), 5)
+        self.assertEqual(spec["setupSteps"], ["Vítej v GameLingo", "Jazyky a překlad", "Vyber zařízení"])
         self.assertEqual(len(spec["settingsSections"]), 4)
         self.assertEqual(spec["settingsSections"][-1], "OBECNÉ")
         self.assertIn("GameLingoUIContract.setupSteps[step]",
@@ -1356,8 +1356,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                        "GLNeonPanel(emphasized: connected)", "GLNeonBackground()"):
             self.assertIn(marker,home)
         for marker in ("GLBrandWordmark()", "GLPlatformBadge(family: family",
-                       "case 1: languageStep", "case 2: consoleStep", "case 3: outputStep",
-                       "ForEach(0..<5)", "GLNeonBackground()"):
+                       "case 1: languageStep", "consoleStep", "outputStep",
+                       "ForEach(GameLingoUIContract.setupSteps.indices", "GLNeonBackground()"):
             self.assertIn(marker,setup)
         for marker in ("GLNeonTitle(", "GLNeonPanel(emphasized: true)",
                        "ForEach(Area.allCases", "model.choicesOutputArea"):
@@ -1388,7 +1388,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('selection: $model.appLanguage',setup)
         self.assertIn('selection: $model.appLanguage',settings)
         self.assertIn('Vítej v GameLingo',setup)
-        self.assertIn('ForEach(0..<5)',setup)
+        self.assertIn('ForEach(GameLingoUIContract.setupSteps.indices',setup)
 
     def test_pinned_native_source_and_build(self):
         workflow=code(ROOT/".github/workflows/build-gamelingo.yml")

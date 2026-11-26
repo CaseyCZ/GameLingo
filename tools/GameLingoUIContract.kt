@@ -14,9 +14,7 @@ object GameLingoUIContract {
     val setupSteps: List<String> = listOf(
         "Vítej v GameLingo",
         "Jazyky a překlad",
-        "Vyber konzoli",
-        "Kam zobrazit titulky?",
-        "Kontrola nastavení",
+        "Vyber zařízení",
     )
     val settingsSections: List<String> = listOf(
         "JAZYKY",

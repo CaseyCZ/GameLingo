@@ -12,13 +12,13 @@ import android.widget.TextView
 
 /**
  * Three distinct settings: app UI, OCR/game source, translated output.
- * The app languages below are limited to the actually localized upstream
- * interface (Czech and Slovak). Source/target apply to real translation.
+ * English is the fallback selection for unsupported system languages.
+ * Legacy upstream screens may still use Czech until localized.
  */
 object GameLingoLanguages {
     data class Language(val code: String, val title: String)
     val appLanguages = listOf(
-        Language("cs", "Čeština"), Language("sk", "Slovenština"))
+        Language("cs", "Čeština"), Language("sk", "Slovenština"), Language("en", "English"))
     val gameLanguages = listOf(
         Language("en", "Angličtina"), Language("de", "Němčina"),
         Language("fr", "Francouzština"), Language("es", "Španělština"),
@@ -40,7 +40,10 @@ object GameLingoLanguages {
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(key, code).apply()
         changes.incrementAndGet()
     }
-    fun app(c: Context) = Nastaveni(c).jazykNeboCs
+    private fun systemLanguage(c: Context): String = c.resources.configuration.locales[0].language
+    fun systemApp(c: Context): String = systemLanguage(c).takeIf { code -> appLanguages.any { it.code == code } } ?: "en"
+    private fun systemTarget(c: Context): String = systemLanguage(c).takeIf { code -> targetLanguages.any { it.code == code } } ?: "en"
+    fun app(c: Context) = Nastaveni(c).jazyk?.takeIf { code -> appLanguages.any { it.code == code } } ?: systemApp(c)
     fun game(c: Context): String =
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString("game", "en")?.takeIf { code ->
@@ -48,9 +51,9 @@ object GameLingoLanguages {
             } ?: "en"
     fun target(c: Context): String =
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString("target", "cs")?.takeIf { code ->
+            .getString("target", null)?.takeIf { code ->
                 targetLanguages.any { it.code == code }
-            } ?: "cs"
+            } ?: systemTarget(c)
     /** Restore only validated, existing translation languages; never change UI language. */
     fun restoreProfile(c: Context, source: String?, target: String?) {
         if (source != null && gameLanguages.any { it.code == source }) setTranslationLanguage(c, "game", source)
