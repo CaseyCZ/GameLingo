@@ -35,23 +35,16 @@ object GameLingoNavigation {
 
         fun appearance(index: Int, focused: Boolean): GradientDrawable {
             val active = index == activeIndex
-            return if (active) {
-                // Same violet -> blue -> cyan accent direction as the iOS tab pill.
-                GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(
-                        Color.parseColor(GameLingoUIContract.Palette.purple),
-                        Color.parseColor(GameLingoUIContract.Palette.blue),
-                        Color.parseColor(GameLingoUIContract.Palette.cyan)
-                    )).apply {
-                    cornerRadius = dp(14).toFloat()
-                    setStroke(dp(if (focused) 2 else 1), Color.WHITE)
-                }
-            } else GradientDrawable().apply {
-                setColor(Color.parseColor(if (focused) "#253458" else GameLingoUIContract.Palette.background))
+            return GradientDrawable().apply {
+                // Match iOS: subtle translucent violet selected tab, not a
+                // full-strength gradient that dominates the navigation bar.
+                setColor(Color.parseColor(
+                    if (focused) "#38275C" else if (active) "#342047" else GameLingoUIContract.Palette.background
+                ))
                 cornerRadius = dp(14).toFloat()
                 setStroke(dp(if (focused) 2 else 1), Color.parseColor(
                     if (focused) GameLingoUIContract.Palette.cyan
-                    else GameLingoUIContract.Palette.background
+                    else if (active) "#75459F" else GameLingoUIContract.Palette.background
                 ))
             }
         }
@@ -74,7 +67,7 @@ object GameLingoNavigation {
             tag = "gamelingo-bottom-nav"
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(4), dp(7), dp(4), dp(6))
+            setPadding(dp(9), dp(5), dp(9), dp(3))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor(GameLingoUIContract.Palette.background))
                 setStroke(dp(1), Color.parseColor("#6B3BAF"))
@@ -86,8 +79,8 @@ object GameLingoNavigation {
                     textSize = 10.5f
                     maxLines = 2
                     gravity = Gravity.CENTER
-                    setPadding(dp(1), dp(10), dp(1), dp(10))
-                    minHeight = dp(44)
+                    setPadding(dp(1), dp(5), dp(1), dp(5))
+                    minHeight = dp(54)
                     isFocusable = true
                     isClickable = true
                     setOnClickListener {
