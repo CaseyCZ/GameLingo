@@ -23,7 +23,7 @@ def patch_mobile_update(folder):
     # TV updater lives inside the existing About page, not the dashboard grid.
     about = folder / "GameLingoAbout.kt"
     about_text = about.read_text(encoding="utf8")
-    update_anchor = '        page.addView(label("Licence a původní autoři", 19f, true))'
+    update_anchor = '        val licensePanel = if (tv) page else LinearLayout(activity).apply {'
     if about_text.count(update_anchor) != 1:
         raise RuntimeError("Mobile About update anchor changed")
     about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoVisualKit.deviceCard(activity, "TV", GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace"), GameLingoLanguages.ui(activity, "Stáhnout novou verzi"), false) {
