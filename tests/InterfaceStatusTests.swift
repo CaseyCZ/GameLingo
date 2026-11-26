@@ -58,6 +58,41 @@ struct InterfaceStatusTests {
                      "Connecting to TV on UDP 9876…")
         precondition(GLInterfaceText.localizedStatus("custom status", translate: { en[$0] ?? $0 }) == "custom status")
         precondition(GLInterfaceText.localizedStatus("Nalezeno konzolí: 2", translate: { $0 == "Nalezeno konzolí: %@" ? "invalid" : $0 }) == "Nalezeno konzolí: 2")
+        let metrics = "Průměr / P95 (posledních 128 vzorků)\nDialog OCR: 15 / 20 ms (n=3)\nXbox síť (video): 120 kb/s · ztráta 1 % (2 paketů) · jitter 3 ms\nPaměť: 100 MiB RSS · teplotní stav: nominal"
+        let translations: [String: String] = [
+            "Průměr / P95 (posledních 128 vzorků)": "Average / P95 (last 128 samples)",
+            "Dialog čekání snímku": "Dialogue frame wait",
+            "Dialog OCR": "Dialogue OCR",
+            "Dialog čekání po OCR": "Dialogue wait after OCR",
+            "Dialog překlad": "Dialogue translation",
+            "Dialog celkem k výstupu": "Dialogue total to output",
+            "Herní text čekání snímku": "Game text frame wait",
+            "Herní text OCR": "Game text OCR",
+            "Herní text překlad": "Game text translation",
+            "Herní text celkem k výstupu": "Game text total to output",
+            "dlouhé čekání ≥ 5 s": "long wait ≥ 5 s",
+            "Chyby překladu": "Translation errors",
+            "Xbox dekódovaný obraz": "Xbox decoded video",
+            "bez nového snímku ≥ 5 s": "no new frame ≥ 5 s",
+            "čekám na první snímek": "waiting for first frame",
+            "Xbox síť": "Xbox network",
+            "nedostupná": "unavailable",
+            "Xbox síť (video)": "Xbox network (video)",
+            "ztráta": "loss",
+            "paketů": "packets",
+            "Paměť": "Memory",
+            "RSS nedostupná": "RSS unavailable",
+            "teplotní stav": "thermal state",
+            "nominal": "nominal",
+            "fair": "fair",
+            "serious": "serious",
+            "critical": "critical",
+            "unknown": "unknown",
+            "Příklad pravidla (angličtina → čeština)": "Example rule (English → Czech)",
+        ]
+        let englishMetrics = GLInterfaceText.localizedDiagnostics(metrics, translate: { translations[$0] ?? $0 })
+        precondition(englishMetrics == "Average / P95 (last 128 samples)\nDialogue OCR: 15 / 20 ms (n=3)\nXbox network (video): 120 kb/s · loss 1 % (2 packets) · jitter 3 ms\nMemory: 100 MiB RSS · thermal state: nominal")
+        precondition(GLInterfaceText.localizedDiagnostics(metrics, translate: { $0 }) == metrics)
         print("Interface status tests passed")
     }
 }

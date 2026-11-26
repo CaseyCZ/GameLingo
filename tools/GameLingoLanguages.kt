@@ -113,6 +113,7 @@ object GameLingoLanguages {
         out["Chyba při uvolnění"] = "Release error"
         out["Chyba snímku:"] = "Frame error:"
         out["Chyba:"] = "Error:"
+        out["Chyby překladu"] = "Translation errors"
         out["Chybí adresa PlayStation"] = "Missing PlayStation address"
         out["Chybí cíl přesměrování."] = "Missing redirect destination."
         out["Chybí souhlas nebo překryv, případně běží jiný režim"] = "Consent or overlay permission is missing, or another mode is running"
@@ -130,7 +131,12 @@ object GameLingoLanguages {
         out["Diagnostika a kompatibilita"] = "Diagnostics and compatibility"
         out["Diagnostika samostatného OCR"] = "Standalone OCR diagnostics"
         out["Dialog"] = "Dialogue"
+        out["Dialog OCR"] = "Dialogue OCR"
+        out["Dialog celkem k výstupu"] = "Dialogue total to output"
+        out["Dialog překlad"] = "Dialogue translation"
         out["Dialog snímání:"] = "Capture consent dialog:"
+        out["Dialog čekání po OCR"] = "Dialogue wait after OCR"
+        out["Dialog čekání snímku"] = "Dialogue frame wait"
         out["Dialogy"] = "Dialogue"
         out["Dialogy, herní texty, Story"] = "Dialogue, game text, Story"
         out["Do jakého jazyka překládat"] = "Language to translate into"
@@ -175,6 +181,10 @@ object GameLingoLanguages {
         out["Google TV se páruje pomocí QR nebo kódu."] = "Google TV pairs using QR or a code."
         out["HRAJ. ROZUMĚJ."] = "PLAY. UNDERSTAND."
         out["Herní slovník"] = "Game glossary"
+        out["Herní text OCR"] = "Game text OCR"
+        out["Herní text celkem k výstupu"] = "Game text total to output"
+        out["Herní text překlad"] = "Game text translation"
+        out["Herní text čekání snímku"] = "Game text frame wait"
         out["Herní texty"] = "Game text"
         out["Herní texty a volby"] = "Game text and choices"
         out["Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti."] = "History is optional and keeps recent translations in memory. It is separate from the local translation cache."
@@ -225,6 +235,9 @@ object GameLingoLanguages {
         out["Je nutných šest číslic"] = "Six digits are required"
         out["Jeden přesný výraz na řádek"] = "One exact phrase per line"
         out["Jeden řádek = jedno pravidlo. Prostřední část je překlad, který chceš opravit."] = "One line = one rule. The middle part is the translation you want to correct."
+    }
+
+    private fun fill_en_1(out: MutableMap<String, String>) {
         out["Jedna"] = "One"
         out["Jiná aktualizace již probíhá."] = "Another update is already running."
         out["Kam zobrazit titulky"] = "Where to show subtitles"
@@ -235,9 +248,6 @@ object GameLingoLanguages {
         out["Kontrola se nezdařila:"] = "Update check failed:"
         out["Kontrolní součet APK nesouhlasí."] = "APK checksum mismatch."
         out["Kontrolní součet IPA nesouhlasí."] = "IPA checksum mismatch."
-    }
-
-    private fun fill_en_1(out: MutableMap<String, String>) {
         out["Kontroluji vydání na GitHubu…"] = "Checking GitHub releases…"
         out["Kontroluji vydání…"] = "Checking releases…"
         out["Konzole"] = "Console"
@@ -408,6 +418,9 @@ object GameLingoLanguages {
         out["Nápověda a úkoly"] = "Hints and objectives"
         out["Nápověda a úkoly v herním obraze"] = "Hints and objectives in the game image"
         out["Nápověda: "] = "Help: "
+    }
+
+    private fun fill_en_2(out: MutableMap<String, String>) {
         out["Název"] = "Name"
         out["Název hry"] = "Game name"
         out["Název hry nebo aplikace"] = "Game or app name"
@@ -418,9 +431,6 @@ object GameLingoLanguages {
         out["O aplikaci / Licence"] = "About / License"
         out["OBECNÉ"] = "GENERAL"
         out["OCR"] = "OCR"
-    }
-
-    private fun fill_en_2(out: MutableMap<String, String>) {
         out["OCR / Oblasti"] = "OCR / Regions"
         out["OCR A ROZPOZNÁVÁNÍ"] = "OCR AND RECOGNITION"
         out["OCR a rozpoznávání"] = "OCR and recognition"
@@ -500,6 +510,7 @@ object GameLingoLanguages {
         out["Ověřuji kód na TV (UDP %@)…"] = "Verifying the TV code (UDP %@)…"
         out["PIN"] = "PIN"
         out["PS5: Nastavení → Systém → Remote Play → Povolit Remote Play a Propojit zařízení. PS4: Nastavení → Nastavení připojení Remote Play. Uvidíš osmimístný párovací kód. Přihlaš se svým účtem PlayStation přes oficiální stránku Sony."] = "PS5: Settings → System → Remote Play → Enable Remote Play and Link Device. PS4: Settings → Remote Play Connection Settings. Use the eight-digit pairing PIN. Sign in through Sony's official site."
+        out["Paměť"] = "Memory"
         out["Pevná doba titulku"] = "Fixed subtitle duration"
         out["Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon."] = "Applies to reading directly on TV. When receiving subtitles, the phone controls reading."
         out["PlayStation"] = "PlayStation"
@@ -585,10 +596,14 @@ object GameLingoLanguages {
         out["První nastavení"] = "First-time setup"
         out["První spuštění"] = "First launch"
         out["Průhledné"] = "Translucent"
+        out["Průměr / P95 (posledních 128 vzorků)"] = "Average / P95 (last 128 samples)"
         out["Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních."] = "The wizard will not appear again. You can add consoles and TVs in Devices."
         out["Párovací PIN"] = "Pairing PIN"
         out["Párovací QR kód"] = "Pairing QR code"
         out["Párovací klíč TV je uložen, živé spojení se ověří při spuštění."] = "TV pairing key saved. The live connection will be checked when starting."
+    }
+
+    private fun fill_en_3(out: MutableMap<String, String>) {
         out["Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované."] = "The pairing key is not sent over the network. Subtitles are signed, not encrypted."
         out["Párovací kód z GameLingo TV"] = "GameLingo TV pairing code"
         out["Párovací kód z TV"] = "TV pairing code"
@@ -601,9 +616,6 @@ object GameLingoLanguages {
         out["Párování televize"] = "Pair TV"
         out["Párování v domácí síti"] = "Pair on home network"
         out["Páruji PlayStation…"] = "Pairing PlayStation…"
-    }
-
-    private fun fill_en_3(out: MutableMap<String, String>) {
         out["Páruji…"] = "Pairing…"
         out["Písmo"] = "Font"
         out["Písmo, velikost a poloha na TV"] = "Font, size and position on TV"
@@ -705,6 +717,7 @@ object GameLingoLanguages {
         out["Příběhový režim"] = "Story mode"
         out["Příjem běží · otevřít párování a stav"] = "Receiving · open pairing and status"
         out["Příjem, oprávnění, verze"] = "Receiver, permissions, version"
+        out["Příklad pravidla (angličtina → čeština)"] = "Example rule (English → Czech)"
         out["Příklad: Arthur Morgan | Artur Morgan | Arthur Morgan"] = "Example: Arthur Morgan | Artur Morgan | Arthur Morgan"
         out["Příliš mnoho přesměrování."] = "Too many redirects."
         out["Příliš starý překlad byl přeskočen."] = "Outdated translation skipped."
@@ -722,6 +735,7 @@ object GameLingoLanguages {
         out["QR není dostupný. Zkontroluj místní IP a platnost PINu, nebo použij ruční párování."] = "QR unavailable. Check local IP and PIN validity or use manual pairing."
         out["QR skener není dostupný"] = "QR scanner unavailable"
         out["ROZPOZNÁVÁNÍ A PŘEKLAD"] = "OCR AND TRANSLATION"
+        out["RSS nedostupná"] = "RSS unavailable"
         out["Relace není spuštěna"] = "Session not started"
         out["Relace spuštěna – snímky se ověřují zvlášť"] = "Session started – frames checked separately"
         out["Remote Play běží"] = "Remote Play running"
@@ -770,6 +784,9 @@ object GameLingoLanguages {
         out["Smazat zónu"] = "Delete zone"
         out["Snímky"] = "Frames"
         out["Snímání aktivní"] = "Capturing video"
+    }
+
+    private fun fill_en_4(out: MutableMap<String, String>) {
         out["Snímání nebylo povoleno"] = "Capture was not allowed"
         out["Snímání nelze spustit."] = "Could not start capture."
         out["Snímání:"] = "Capture:"
@@ -784,9 +801,6 @@ object GameLingoLanguages {
         out["Spravovat:"] = "Manage:"
         out["Správa konzolí, TV a výstupu titulků"] = "Manage consoles, TV and subtitle output"
         out["Spustit překlad"] = "Start translating"
-    }
-
-    private fun fill_en_4(out: MutableMap<String, String>) {
         out["Spustit překlad TV · vybrat profil"] = "Start TV translation · choose profile"
         out["Spustit překlad z vybrané konzole"] = "Start translating from the selected console"
         out["Spustit příjem a párování telefonu."] = "Start receiving and pair a phone."
@@ -953,6 +967,9 @@ object GameLingoLanguages {
         out["Velikost písma"] = "Font size"
         out["Velikost písma TV"] = "TV font size"
         out["Velikost písma:"] = "Font size:"
+    }
+
+    private fun fill_en_5(out: MutableMap<String, String>) {
         out["Velikost rozhraní"] = "Interface size"
         out["Velikost, šířka a poloha titulků"] = "Subtitle font size, width and position"
         out["Velikost:"] = "Size:"
@@ -967,9 +984,6 @@ object GameLingoLanguages {
         out["Vlastní text"] = "Custom text"
         out["Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. Přesná poloha rámečků zůstává v Oblastech obrazovky."] = "Customize phone subtitles and the green TV region. Edit exact frame positions in Screen regions."
         out["Vlastní výrazy"] = "Custom terms"
-    }
-
-    private fun fill_en_5(out: MutableMap<String, String>) {
         out["Vlastní výrazy pro přímé OCR"] = "Custom terms for direct OCR"
         out["Vlevo"] = "Left"
         out["Vložit odkaz po přihlášení"] = "Paste sign-in redirect link"
@@ -1063,7 +1077,10 @@ object GameLingoLanguages {
         out["Xbox"] = "Xbox"
         out["Xbox Remote Play"] = "Xbox Remote Play"
         out["Xbox a PlayStation"] = "Xbox and PlayStation"
+        out["Xbox dekódovaný obraz"] = "Xbox decoded video"
         out["Xbox přihlášení převzato z TV."] = "Xbox sign-in transferred from TV."
+        out["Xbox síť"] = "Xbox network"
+        out["Xbox síť (video)"] = "Xbox network (video)"
         out["Xbox účet uložen. Načti svoje konzole."] = "Xbox account saved. Load your consoles."
         out["Xbox – skutečný obraz"] = "Xbox – live image"
         out["Xbox – volba konzole"] = "Xbox – console selection"
@@ -1133,6 +1150,9 @@ object GameLingoLanguages {
         out["Zelená určuje místo zobrazení českých dialogů na TV. Velikost písma je nezávislá na oranžovém překladu herních textů."] = "Green is the translated dialogue display region on TV. Its font size is independent of the orange game-text output."
         out["Zelená · přeložené dialogy"] = "Green · translated dialogue"
         out["Zelený výstup titulků na Google TV. Barva a pozadí se mění přímo v televizním přijímači."] = "Green subtitle output on Google TV. Colours and background are controlled on the TV."
+    }
+
+    private fun fill_en_6(out: MutableMap<String, String>) {
         out["Zjišťuji"] = "Checking"
         out["Zkontrolovat aktualizace"] = "Check for updates"
         out["Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování."] = "Check that both devices are on the same home network, the TV receiver is running and pairing is complete."
@@ -1150,9 +1170,6 @@ object GameLingoLanguages {
         out["Zobrazení"] = "Display"
         out["Zobrazení přeložených titulků"] = "Display translated subtitles"
         out["Zobrazit QR kód"] = "Show QR code"
-    }
-
-    private fun fill_en_6(out: MutableMap<String, String>) {
         out["Zobrazit i předchozí repliku"] = "Show previous line too"
         out["Zobrazit na"] = "Display on"
         out["Zobrazit na TV"] = "Show on TV"
@@ -1171,13 +1188,23 @@ object GameLingoLanguages {
         out["Zóna"] = "Zone"
         out["aktivní"] = "active"
         out["bez hlášené chyby"] = "no reported error"
+        out["bez nového snímku ≥ 5 s"] = "no new frame ≥ 5 s"
+        out["critical"] = "critical"
+        out["dlouhé čekání ≥ 5 s"] = "long wait ≥ 5 s"
+        out["fair"] = "fair"
         out["hlášená chyba"] = "error reported"
         out["iPhone a TV mají nezávislé barvy, pozadí i velikost titulků. TV přijímá změny barev přes ověřené spárování; ukázku zobrazíš tlačítkem Náhled na TV."] = "iPhone and TV have independent subtitle colors, backgrounds and sizes. The TV receives color changes through verified pairing; use Preview on TV to view a sample."
         out["iPhone úspěšně spárován. Ověřuji spojení…"] = "iPhone paired successfully. Checking connection…"
         out["jedna vybraná"] = "one selected"
+        out["nedostupná"] = "unavailable"
+        out["nominal"] = "nominal"
+        out["paketů"] = "packets"
         out["písmo"] = "font"
         out["překlad:"] = "translation:"
+        out["serious"] = "serious"
+        out["teplotní stav"] = "thermal state"
         out["testovací sestavení"] = "test build"
+        out["unknown"] = "unknown"
         out["vybráno"] = "selected"
         out["vypnuto"] = "off"
         out["výřezy:"] = "crops:"
@@ -1187,6 +1214,7 @@ object GameLingoLanguages {
         out["zapnuto"] = "on"
         out["zbývá"] = "remaining"
         out["zdroj:"] = "source:"
+        out["ztráta"] = "loss"
         out["Úpravy ukončeny · šipkami vyber další ovládací prvek"] = "Editing finished · use arrows to choose another control"
         out["Úzká – pouze titulky"] = "Narrow – subtitles only"
         out["Účet Microsoft"] = "Microsoft account"
@@ -1227,6 +1255,7 @@ object GameLingoLanguages {
         out["Čtyři nezávislé rámečky"] = "Four independent regions"
         out["Čtyři oblasti"] = "Four regions"
         out["Číst bez internetu"] = "Read offline"
+        out["čekám na první snímek"] = "waiting for first frame"
         out["Šestimístný kód z GameLingo TV"] = "Six-digit GameLingo TV code"
         out["Šipkami uprav polohu a velikost zóny."] = "Use arrow keys to adjust the zone position and size."
         out["Široká – původní"] = "Wide – original"
@@ -1321,6 +1350,7 @@ object GameLingoLanguages {
         out["Chyba při uvolnění"] = "Chyba pri uvoľnení"
         out["Chyba snímku:"] = "Chyba snímky:"
         out["Chyba:"] = "Chyba:"
+        out["Chyby překladu"] = "Chyby prekladu"
         out["Chybí adresa PlayStation"] = "Chýba adresa PlayStation"
         out["Chybí cíl přesměrování."] = "Chýba cieľ presmerovania."
         out["Chybí souhlas nebo překryv, případně běží jiný režim"] = "Chýba súhlas alebo prekrytie, prípadne beží iný režim"
@@ -1338,7 +1368,12 @@ object GameLingoLanguages {
         out["Diagnostika a kompatibilita"] = "Diagnostika a kompatibilita"
         out["Diagnostika samostatného OCR"] = "Diagnostika samostatného OCR"
         out["Dialog"] = "Dialóg"
+        out["Dialog OCR"] = "Dialóg OCR"
+        out["Dialog celkem k výstupu"] = "Dialóg celkovo po výstup"
+        out["Dialog překlad"] = "Dialóg preklad"
         out["Dialog snímání:"] = "Dialóg snímania:"
+        out["Dialog čekání po OCR"] = "Dialóg čakanie po OCR"
+        out["Dialog čekání snímku"] = "Dialóg čakanie na snímku"
         out["Dialogy"] = "Dialógy"
         out["Dialogy, herní texty, Story"] = "Dialógy, herné texty, Story"
         out["Do jakého jazyka překládat"] = "Do akého jazyka prekladať"
@@ -1383,6 +1418,10 @@ object GameLingoLanguages {
         out["Google TV se páruje pomocí QR nebo kódu."] = "Google TV sa páruje pomocou QR alebo kódu."
         out["HRAJ. ROZUMĚJ."] = "HRAJ. ROZUMEJ."
         out["Herní slovník"] = "Herný slovník"
+        out["Herní text OCR"] = "Herný text OCR"
+        out["Herní text celkem k výstupu"] = "Herný text celkovo po výstup"
+        out["Herní text překlad"] = "Herný text preklad"
+        out["Herní text čekání snímku"] = "Herný text čakanie na snímku"
         out["Herní texty"] = "Herné texty"
         out["Herní texty a volby"] = "Herné texty a voľby"
         out["Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti."] = "História je voliteľná a uchováva posledné preklady v pamäti. Je oddelená od miestnej prekladovej pamäte."
@@ -1433,6 +1472,9 @@ object GameLingoLanguages {
         out["Je nutných šest číslic"] = "Je potrebných šesť číslic"
         out["Jeden přesný výraz na řádek"] = "Jeden presný výraz na riadok"
         out["Jeden řádek = jedno pravidlo. Prostřední část je překlad, který chceš opravit."] = "Jeden riadok = jedno pravidlo. Prostredná časť je preklad, ktorý chceš opraviť."
+    }
+
+    private fun fill_sk_1(out: MutableMap<String, String>) {
         out["Jedna"] = "Jedna"
         out["Jiná aktualizace již probíhá."] = "Iná aktualizácia už prebieha."
         out["Kam zobrazit titulky"] = "Kde zobraziť titulky"
@@ -1443,9 +1485,6 @@ object GameLingoLanguages {
         out["Kontrola se nezdařila:"] = "Kontrola zlyhala:"
         out["Kontrolní součet APK nesouhlasí."] = "Kontrolný súčet APK nesúhlasí."
         out["Kontrolní součet IPA nesouhlasí."] = "Kontrolný súčet IPA nesúhlasí."
-    }
-
-    private fun fill_sk_1(out: MutableMap<String, String>) {
         out["Kontroluji vydání na GitHubu…"] = "Kontrolujem vydania na GitHube…"
         out["Kontroluji vydání…"] = "Kontrolujem vydania…"
         out["Konzole"] = "Konzola"
@@ -1616,6 +1655,9 @@ object GameLingoLanguages {
         out["Nápověda a úkoly"] = "Pomoc a úlohy"
         out["Nápověda a úkoly v herním obraze"] = "Pomoc a úlohy v hernom obraze"
         out["Nápověda: "] = "Pomoc: "
+    }
+
+    private fun fill_sk_2(out: MutableMap<String, String>) {
         out["Název"] = "Názov"
         out["Název hry"] = "Názov hry"
         out["Název hry nebo aplikace"] = "Názov hry alebo aplikácie"
@@ -1626,9 +1668,6 @@ object GameLingoLanguages {
         out["O aplikaci / Licence"] = "O aplikácii / Licencia"
         out["OBECNÉ"] = "VŠEOBECNÉ"
         out["OCR"] = "OCR"
-    }
-
-    private fun fill_sk_2(out: MutableMap<String, String>) {
         out["OCR / Oblasti"] = "OCR / Oblasti"
         out["OCR A ROZPOZNÁVÁNÍ"] = "OCR A ROZPOZNÁVANIE"
         out["OCR a rozpoznávání"] = "OCR a rozpoznávanie"
@@ -1708,6 +1747,7 @@ object GameLingoLanguages {
         out["Ověřuji kód na TV (UDP %@)…"] = "Overujem kód na TV (UDP %@)…"
         out["PIN"] = "PIN"
         out["PS5: Nastavení → Systém → Remote Play → Povolit Remote Play a Propojit zařízení. PS4: Nastavení → Nastavení připojení Remote Play. Uvidíš osmimístný párovací kód. Přihlaš se svým účtem PlayStation přes oficiální stránku Sony."] = "PS5: Nastavenia → Systém → Remote Play → Povoliť Remote Play a Prepojiť zariadenie. PS4: Nastavenia → Nastavenia pripojenia Remote Play. Použi osemmiestny PIN. Prihlás sa cez oficiálny web Sony."
+        out["Paměť"] = "Pamäť"
         out["Pevná doba titulku"] = "Pevná doba titulku"
         out["Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon."] = "Platí pre čítanie priamo na TV. Pri príjme titulkov z telefónu rozhoduje telefón."
         out["PlayStation"] = "PlayStation"
@@ -1793,10 +1833,14 @@ object GameLingoLanguages {
         out["První nastavení"] = "Prvé nastavenie"
         out["První spuštění"] = "Prvé spustenie"
         out["Průhledné"] = "Priehľadné"
+        out["Průměr / P95 (posledních 128 vzorků)"] = "Priemer / P95 (posledných 128 vzoriek)"
         out["Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních."] = "Sprievodca sa už nezobrazí. Konzoly a TV môžeš pridať v Zariadeniach."
         out["Párovací PIN"] = "Párovací PIN"
         out["Párovací QR kód"] = "Párovací QR kód"
         out["Párovací klíč TV je uložen, živé spojení se ověří při spuštění."] = "Párovací kľúč TV je uložený. Aktívne pripojenie sa overí pri spustení."
+    }
+
+    private fun fill_sk_3(out: MutableMap<String, String>) {
         out["Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované."] = "Párovací kľúč sa neprenáša po sieti. Titulky sú podpísané, nie šifrované."
         out["Párovací kód z GameLingo TV"] = "Párovací kód z GameLingo TV"
         out["Párovací kód z TV"] = "Párovací kód z TV"
@@ -1809,9 +1853,6 @@ object GameLingoLanguages {
         out["Párování televize"] = "Párovanie televízora"
         out["Párování v domácí síti"] = "Párovanie v domácej sieti"
         out["Páruji PlayStation…"] = "Párujem PlayStation…"
-    }
-
-    private fun fill_sk_3(out: MutableMap<String, String>) {
         out["Páruji…"] = "Párujem…"
         out["Písmo"] = "Písmo"
         out["Písmo, velikost a poloha na TV"] = "Písmo, veľkosť a poloha na TV"
@@ -1913,6 +1954,7 @@ object GameLingoLanguages {
         out["Příběhový režim"] = "Príbehový režim"
         out["Příjem běží · otevřít párování a stav"] = "Príjem beží · otvoriť párovanie a stav"
         out["Příjem, oprávnění, verze"] = "Príjem, oprávnenia, verzia"
+        out["Příklad pravidla (angličtina → čeština)"] = "Príklad pravidla (angličtina → čeština)"
         out["Příklad: Arthur Morgan | Artur Morgan | Arthur Morgan"] = "Príklad: Arthur Morgan | Artur Morgan | Arthur Morgan"
         out["Příliš mnoho přesměrování."] = "Príliš veľa presmerovaní."
         out["Příliš starý překlad byl přeskočen."] = "Starý preklad bol preskočený."
@@ -1930,6 +1972,7 @@ object GameLingoLanguages {
         out["QR není dostupný. Zkontroluj místní IP a platnost PINu, nebo použij ruční párování."] = "QR nie je dostupný. Skontroluj miestnu IP a platnosť PINu alebo použi ručné párovanie."
         out["QR skener není dostupný"] = "QR skener nie je dostupný"
         out["ROZPOZNÁVÁNÍ A PŘEKLAD"] = "ROZPOZNÁVANIE A PREKLAD"
+        out["RSS nedostupná"] = "RSS nedostupná"
         out["Relace není spuštěna"] = "Relácia nie je spustená"
         out["Relace spuštěna – snímky se ověřují zvlášť"] = "Relácia spustená – snímky sa overujú zvlášť"
         out["Remote Play běží"] = "Remote Play beží"
@@ -1978,6 +2021,9 @@ object GameLingoLanguages {
         out["Smazat zónu"] = "Odstrániť zónu"
         out["Snímky"] = "Snímky"
         out["Snímání aktivní"] = "Snímanie aktívne"
+    }
+
+    private fun fill_sk_4(out: MutableMap<String, String>) {
         out["Snímání nebylo povoleno"] = "Snímanie nebolo povolené"
         out["Snímání nelze spustit."] = "Snímanie nemožno spustiť."
         out["Snímání:"] = "Snímanie:"
@@ -1992,9 +2038,6 @@ object GameLingoLanguages {
         out["Spravovat:"] = "Spravovať:"
         out["Správa konzolí, TV a výstupu titulků"] = "Správa konzol, TV a výstupu titulkov"
         out["Spustit překlad"] = "Spustiť preklad"
-    }
-
-    private fun fill_sk_4(out: MutableMap<String, String>) {
         out["Spustit překlad TV · vybrat profil"] = "Spustiť preklad TV · vybrať profil"
         out["Spustit překlad z vybrané konzole"] = "Spustiť preklad z vybranej konzoly"
         out["Spustit příjem a párování telefonu."] = "Spustiť príjem a párovanie telefónu."
@@ -2161,6 +2204,9 @@ object GameLingoLanguages {
         out["Velikost písma"] = "Veľkosť písma"
         out["Velikost písma TV"] = "Veľkosť písma TV"
         out["Velikost písma:"] = "Veľkosť písma:"
+    }
+
+    private fun fill_sk_5(out: MutableMap<String, String>) {
         out["Velikost rozhraní"] = "Veľkosť rozhrania"
         out["Velikost, šířka a poloha titulků"] = "Veľkosť, šírka a poloha titulkov"
         out["Velikost:"] = "Veľkosť:"
@@ -2175,9 +2221,6 @@ object GameLingoLanguages {
         out["Vlastní text"] = "Vlastný text"
         out["Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. Přesná poloha rámečků zůstává v Oblastech obrazovky."] = "Vlastný vzhľad titulkov pre telefón a nastavenia zelenej oblasti na TV. Presná poloha rámčekov zostáva v Oblastiach obrazovky."
         out["Vlastní výrazy"] = "Vlastné výrazy"
-    }
-
-    private fun fill_sk_5(out: MutableMap<String, String>) {
         out["Vlastní výrazy pro přímé OCR"] = "Vlastné výrazy pre priame OCR"
         out["Vlevo"] = "Vľavo"
         out["Vložit odkaz po přihlášení"] = "Vložiť odkaz po prihlásení"
@@ -2271,7 +2314,10 @@ object GameLingoLanguages {
         out["Xbox"] = "Xbox"
         out["Xbox Remote Play"] = "Xbox Remote Play"
         out["Xbox a PlayStation"] = "Xbox a PlayStation"
+        out["Xbox dekódovaný obraz"] = "Xbox dekódovaný obraz"
         out["Xbox přihlášení převzato z TV."] = "Prihlásenie Xbox prevzaté z TV."
+        out["Xbox síť"] = "Xbox sieť"
+        out["Xbox síť (video)"] = "Xbox sieť (video)"
         out["Xbox účet uložen. Načti svoje konzole."] = "Xbox účet uložený. Načítaj svoje konzoly."
         out["Xbox – skutečný obraz"] = "Xbox – skutočný obraz"
         out["Xbox – volba konzole"] = "Xbox – výber konzoly"
@@ -2341,6 +2387,9 @@ object GameLingoLanguages {
         out["Zelená určuje místo zobrazení českých dialogů na TV. Velikost písma je nezávislá na oranžovém překladu herních textů."] = "Zelená určuje miesto preložených dialógov na TV. Veľkosť písma je nezávislá od oranžového prekladu herných textov."
         out["Zelená · přeložené dialogy"] = "Zelená · preložené dialógy"
         out["Zelený výstup titulků na Google TV. Barva a pozadí se mění přímo v televizním přijímači."] = "Zelený výstup titulkov na Google TV. Farba a pozadie sa nastavujú priamo na televízore."
+    }
+
+    private fun fill_sk_6(out: MutableMap<String, String>) {
         out["Zjišťuji"] = "Zisťujem"
         out["Zkontrolovat aktualizace"] = "Skontrolovať aktualizácie"
         out["Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování."] = "Skontroluj rovnakú domácu sieť, spustený prijímač na TV a párovanie."
@@ -2358,9 +2407,6 @@ object GameLingoLanguages {
         out["Zobrazení"] = "Zobrazenie"
         out["Zobrazení přeložených titulků"] = "Zobrazenie preložených titulkov"
         out["Zobrazit QR kód"] = "Zobraziť QR kód"
-    }
-
-    private fun fill_sk_6(out: MutableMap<String, String>) {
         out["Zobrazit i předchozí repliku"] = "Zobraziť aj predchádzajúcu repliku"
         out["Zobrazit na"] = "Zobraziť na"
         out["Zobrazit na TV"] = "Zobraziť na TV"
@@ -2379,13 +2425,23 @@ object GameLingoLanguages {
         out["Zóna"] = "Zóna"
         out["aktivní"] = "aktívny"
         out["bez hlášené chyby"] = "bez hlásenej chyby"
+        out["bez nového snímku ≥ 5 s"] = "bez novej snímky ≥ 5 s"
+        out["critical"] = "kritický"
+        out["dlouhé čekání ≥ 5 s"] = "dlhé čakanie ≥ 5 s"
+        out["fair"] = "zvýšený"
         out["hlášená chyba"] = "hlásená chyba"
         out["iPhone a TV mají nezávislé barvy, pozadí i velikost titulků. TV přijímá změny barev přes ověřené spárování; ukázku zobrazíš tlačítkem Náhled na TV."] = "iPhone a TV majú nezávislé farby, pozadie aj veľkosť titulkov. TV prijíma zmeny farieb cez overené spárovanie; ukážku zobrazíš tlačidlom Náhľad na TV."
         out["iPhone úspěšně spárován. Ověřuji spojení…"] = "iPhone úspešne spárovaný. Overujem spojenie…"
         out["jedna vybraná"] = "jedna vybraná"
+        out["nedostupná"] = "nedostupná"
+        out["nominal"] = "normálny"
+        out["paketů"] = "paketov"
         out["písmo"] = "písmo"
         out["překlad:"] = "preklad:"
+        out["serious"] = "vážny"
+        out["teplotní stav"] = "teplotný stav"
         out["testovací sestavení"] = "testovacie zostavenie"
+        out["unknown"] = "neznámy"
         out["vybráno"] = "vybrané"
         out["vypnuto"] = "vypnuté"
         out["výřezy:"] = "výrezy:"
@@ -2395,6 +2451,7 @@ object GameLingoLanguages {
         out["zapnuto"] = "zapnuté"
         out["zbývá"] = "zostáva"
         out["zdroj:"] = "zdroj:"
+        out["ztráta"] = "strata"
         out["Úpravy ukončeny · šipkami vyber další ovládací prvek"] = "Úpravy ukončené · šípkami vyber ďalší ovládací prvok"
         out["Úzká – pouze titulky"] = "Úzka – iba titulky"
         out["Účet Microsoft"] = "Účet Microsoft"
@@ -2435,6 +2492,7 @@ object GameLingoLanguages {
         out["Čtyři nezávislé rámečky"] = "Štyri nezávislé rámčeky"
         out["Čtyři oblasti"] = "Štyri oblasti"
         out["Číst bez internetu"] = "Čítať bez internetu"
+        out["čekám na první snímek"] = "čakám na prvú snímku"
         out["Šestimístný kód z GameLingo TV"] = "Šesťmiestny kód z GameLingo TV"
         out["Šipkami uprav polohu a velikost zóny."] = "Šípkami uprav polohu a veľkosť zóny."
         out["Široká – původní"] = "Široká – pôvodná"

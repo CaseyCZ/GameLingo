@@ -29,14 +29,15 @@ internal object GameLingoGlossaryUi {
         })
         val input = EditText(a).apply {
             setText(saved?.text.orEmpty())
-            hint = "Save game | Zachránit hru | Uložit hru"
+            hint = GameLingoLanguages.ui(a, "Originál | chybný překlad | správný překlad")
             minLines = 4
             maxLines = 9
             setSingleLine(false)
         }
         body.addView(input)
         body.addView(TextView(a).apply {
-            text = "Save game | Zachránit hru | Uložit hru"
+            text = GameLingoLanguages.ui(a, "Příklad pravidla (angličtina → čeština)") + "\n" +
+                "Save game | Zachránit hru | Uložit hru"
             gravity = android.view.Gravity.CENTER
         })
         body.addView(Button(a).apply {

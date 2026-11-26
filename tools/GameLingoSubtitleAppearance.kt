@@ -46,23 +46,6 @@ object GameLingoSubtitleAppearance {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(12) })
         }
-        val header = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
-        header.addView(text("Vzhled titulků", 27f, bold = true),
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        header.addView(GameLingoHelp.button(activity,"appearance"),GameLingoHelp.layout(activity,dp(36),dp(44)))
-        header.addView(TextView(activity).apply {
-            this.text = "✕"
-            contentDescription = tr("Zavřít vzhled titulků")
-            textSize = 24f
-            gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            background = GameLingoVisualKit.card(activity)
-            isFocusable = true
-            setOnClickListener { dialog.dismiss() }
-        }, LinearLayout.LayoutParams(dp(48), dp(48)))
-        layout.addView(header, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = dp(18) })
         layout.addView(text(
             "Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. Přesná poloha rámečků zůstává v Oblastech obrazovky.",
             14f, muted
