@@ -54,6 +54,10 @@ jobs:
             git commit -m "Prepare next GameLingo release"
             git -c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:Master
             SOURCE="$(git rev-parse HEAD)"
+          fi
+          # Workflow-only commits may not trigger the path-filtered native CI.
+          RUN="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/audit-0.5-ci.yml/runs?branch=Master&head_sha=$SOURCE&per_page=1" --jq '.workflow_runs[0].id // empty')"
+          if [ -z "$RUN" ]; then
             gh workflow run audit-0.5-ci.yml --ref Master
           fi
           echo "RELEASE_SOURCE=$SOURCE" >> "$GITHUB_ENV"
