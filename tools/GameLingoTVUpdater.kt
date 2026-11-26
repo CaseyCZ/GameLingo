@@ -206,23 +206,73 @@ object GameLingoTVUpdater {
         }.apply { name = "gamelingo-tv-update-check"; isDaemon = true }.start()
     }
 
+    /** Resume the verified download after Android's unknown-app-source permission screen. */
     private fun install(a: Activity, apk: File) {
         if (!alive(a)) return
         if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
             AlertDialog.Builder(a).setTitle(tr(a, "Povolení instalace"))
-                .setMessage(tr(a, "Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace."))
+                .setMessage(tr(a, "Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování."))
                 .setNegativeButton(tr(a, "Zrušit")) { _, _ -> apk.delete() }
-                .setPositiveButton(tr(a, "Nastavení")) { _, _ ->
-                    runCatching { a.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + a.packageName))) }
-                        .onFailure { message(a, tr(a, "Systémový instalátor nelze otevřít.")) }
+                .setPositiveButton(tr(a, "Otevřít nastavení")) { _, _ ->
+                    val observer = object : android.app.Application.ActivityLifecycleCallbacks {
+                        private var paused = false
+                        override fun onActivityCreated(activity: Activity, state: android.os.Bundle?) {}
+                        override fun onActivityStarted(activity: Activity) {}
+                        override fun onActivityPaused(activity: Activity) {
+                            if (activity === a) paused = true
+                        }
+                        override fun onActivityResumed(activity: Activity) {
+                            if (activity !== a || !paused) return
+                            a.application.unregisterActivityLifecycleCallbacks(this)
+                            a.window.decorView.post {
+                                if (!alive(a)) return@post
+                                if (a.packageManager.canRequestPackageInstalls()) {
+                                    confirmInstall(a, apk)
+                                } else {
+                                    message(a, tr(a, "Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu."))
+                                }
+                            }
+                        }
+                        override fun onActivityStopped(activity: Activity) {}
+                        override fun onActivitySaveInstanceState(activity: Activity, state: android.os.Bundle) {}
+                        override fun onActivityDestroyed(activity: Activity) {
+                            if (activity === a) a.application.unregisterActivityLifecycleCallbacks(this)
+                        }
+                    }
+                    a.application.registerActivityLifecycleCallbacks(observer)
+                    runCatching {
+                        a.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                            Uri.parse("package:" + a.packageName)))
+                    }.onFailure {
+                        a.application.unregisterActivityLifecycleCallbacks(observer)
+                        message(a, tr(a, "Systémové nastavení instalace nelze otevřít."))
+                    }
                 }.show()
             return
         }
+        confirmInstall(a, apk)
+    }
+
+    /** The system package installer handles process shutdown; no invisible receiver lock. */
+    private fun confirmInstall(a: Activity, apk: File) {
+        if (!alive(a)) return
         runCatching {
+            require(apk.isFile && apk.length() in 1L..MAX_APK)
+            val archive = a.packageManager.getPackageArchiveInfo(apk.path, flags())
+                ?: error("APK není čitelná.")
+            val current = installed(a)
+            require(a.packageName == ID && archive.packageName == ID &&
+                code(archive) > code(current) &&
+                signers(archive).isNotEmpty() && signers(archive) == signers(current)) {
+                "Podpis, identita nebo verze APK nesouhlasí."
+            }
             val uri = FileProvider.getUriForFile(a, a.packageName + ".updates", apk)
-            a.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
+            a.startActivity(Intent(Intent.ACTION_VIEW)
+                .setDataAndType(uri, "application/vnd.android.package-archive")
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-        }.onFailure { apk.delete(); message(a, tr(a, "Systémový instalátor nelze otevřít.")) }
+        }.onFailure {
+            message(a, tr(a, "Systémový instalátor nelze otevřít.") + " " + updateError(a, it))
+        }
     }
 
     private fun download(a: Activity, next: Update) {
