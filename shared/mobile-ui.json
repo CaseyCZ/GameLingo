@@ -15,9 +15,9 @@
     },
     {
       "key": "devices",
-      "title": "Konzole",
-      "swift": "gamecontroller",
-      "android": "🎮"
+      "title": "Zařízení",
+      "swift": "display.2",
+      "android": "▭"
     },
     {
       "key": "settings",
