@@ -43,7 +43,8 @@ def redesign_mobile(s: str) -> str:
             obsah.addView(GameLingoVisualKit.brandHeader(this) { openSettings() },
                 odsazeni(bottom = 14))
             obsah.addView(GameLingoVisualKit.hero(this), odsazeni(bottom = 18))
-            obsah.addView(GameLingoVisualKit.section(this, GameLingoLanguages.ui(this, "Moje zařízení")))
+            obsah.addView(GameLingoVisualKit.deviceSection(this) { openDevices() },
+                odsazeni(bottom = 5))
 
             val psSelected = GameLingoPlayStationConsoles.list(this)
                 .firstOrNull { it.selected }
