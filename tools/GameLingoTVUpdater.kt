@@ -157,24 +157,40 @@ object GameLingoTVUpdater {
             .setMessage(text).setPositiveButton("OK", null).show()
     }
 
-    /** Passive once-per-process check. Never interrupts a running translation. */
+    /** Check once after the foreground window is ready; never interrupt translation. */
     fun checkAtStartup(a: Activity) {
-        if (!checked.compareAndSet(false, true)) return
-        a.window.decorView.postDelayed({
-            if (alive(a) && !busy() && working.compareAndSet(false, true)) {
-                Thread {
-                    val result = runCatching { find() }
-                    working.set(false)
-                    a.runOnUiThread {
-                        val next = result.getOrNull()
-                        if (alive(a) && a.hasWindowFocus() && !busy() && next != null &&
-                            runCatching { next.code > code(installed(a)) }.getOrDefault(false)) {
-                            Toast.makeText(a, tr(a, "Nová verze GameLingo · O aplikaci → Aktualizace"), Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }.apply { name = "gamelingo-tv-update-check"; isDaemon = true }.start()
+        fun attempt(remaining: Int) {
+            if (!alive(a) || checked.get()) return
+            if (!a.hasWindowFocus() || busy() || !working.compareAndSet(false, true)) {
+                if (remaining > 0) a.window.decorView.postDelayed({ attempt(remaining - 1) }, 1000L)
+                return
             }
-        }, 1800L)
+            Thread {
+                val result = runCatching { find() }
+                working.set(false)
+                a.runOnUiThread {
+                    if (!alive(a)) return@runOnUiThread
+                    if (!a.hasWindowFocus() || busy() || result.isFailure) {
+                        if (remaining > 0) a.window.decorView.postDelayed({ attempt(remaining - 1) }, 3000L)
+                        return@runOnUiThread
+                    }
+                    if (!checked.compareAndSet(false, true)) return@runOnUiThread
+                    val next = result.getOrNull() ?: return@runOnUiThread
+                    val current = runCatching { installed(a) }.getOrNull() ?: return@runOnUiThread
+                    if (next.code <= code(current)) return@runOnUiThread
+                    if (signers(current) != setOf(next.cert)) {
+                        message(a, tr(a, "Nová APK má jiný podpis. Aktualizace je zablokovaná, aby se nesmazalo nastavení. Je nutný jednorázový přechod na trvalý podpis."))
+                        return@runOnUiThread
+                    }
+                    AlertDialog.Builder(a).setTitle(tr(a, "Nová verze GameLingo"))
+                        .setMessage(tr(a, "Nainstalováno:") + " " + current.versionName + "\n" +
+                            tr(a, "Nová verze:") + " " + next.name)
+                        .setNegativeButton(tr(a, "Později"), null)
+                        .setPositiveButton(tr(a, "Stáhnout")) { _, _ -> download(a, next) }.show()
+                }
+            }.apply { name = "gamelingo-tv-update-check"; isDaemon = true }.start()
+        }
+        a.window.decorView.postDelayed({ attempt(5) }, 1800L)
     }
 
     fun show(a: Activity) {
