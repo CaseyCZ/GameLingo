@@ -197,6 +197,7 @@ struct GameLingoHome: View {
         GLNeonPanel(emphasized: true, radius: 23) {
             VStack(alignment: .center, spacing: 10) {
                 HStack(alignment: .center) {
+                    Color.clear.frame(width: 34, height: 34)
                     VStack(alignment: .center, spacing: 4) {
                         Text("HRAJ. ROZUMĚJ.")
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
@@ -207,11 +208,13 @@ struct GameLingoHome: View {
                             .foregroundStyle(.white)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Spacer(minLength: 8)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
                     Image(systemName: "waveform")
                         .font(.title2)
                         .foregroundStyle(GLNeon.accent)
                         .shadow(color: GLNeon.purple.opacity(0.55), radius: 10)
+                        .frame(width: 34, height: 34)
                 }
                 HStack(spacing: 9) {
                     GLPlatformBadge(family: .xbox, size: 42)
@@ -412,9 +415,11 @@ struct GameLingoHome: View {
                     .font(.system(size: 18, weight: .heavy, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.84)
-                Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
                 Image(systemName: "arrow.right")
                     .font(.system(size: 17, weight: .semibold))
+                    .frame(width: 34, height: 34)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 15)
@@ -441,6 +446,7 @@ struct GameLingoHome: View {
                     .foregroundStyle(consoleActuallyReady && outputActuallyReady
                                      ? GLStyle.green : GLNeon.mist)
                     .shadow(color: GLStyle.green.opacity(0.20), radius: 9)
+                    .frame(width: 44, height: 44)
                 VStack(alignment: .center, spacing: 4) {
                     Text(model.isRunning ? model.status :
                          (consoleActuallyReady && outputActuallyReady
@@ -457,9 +463,11 @@ struct GameLingoHome: View {
                         .foregroundStyle(GLNeon.mist)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: 0)
+.frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
                 GLHelpButton(title: "Stav překladu",
                     explanation: "Uložená konzole není automaticky připojená. Snímání aktivní se objeví až po přijetí video snímků; Google TV odpovídá na kontrolu spojení.")
+                    .frame(width: 44, height: 44)
             }
             .padding(15)
         }
