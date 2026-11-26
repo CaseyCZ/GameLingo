@@ -277,16 +277,16 @@ struct GameLingoHome: View {
     }
 
     private var activeConsoleName: String {
-        devices.chosenConsole?.name ?? "Vybrat konzoli"
+        devices.chosenConsole?.name ?? GLInterfaceText.localized("Vybrat konzoli")
     }
 
     private var activeConsoleStatus: String {
         guard model.isRunning else {
-            return consoleActuallyReady ? "Nastaveno" : "Připojit"
+            return consoleActuallyReady ? GLInterfaceText.localized("Nastaveno") : GLInterfaceText.localized("Připojit")
         }
         // Remote Play creation is asynchronous. No decoded video frame means
         // we are still connecting, not actively translating the game.
-        return model.frameCount > 0 ? "Snímání aktivní" : "Připojuji…"
+        return model.frameCount > 0 ? GLInterfaceText.localized("Snímání aktivní") : GLInterfaceText.localized("Připojuji…")
     }
 
     private var consoleActuallyReady: Bool {
@@ -488,17 +488,17 @@ struct GameLingoHome: View {
                     .shadow(color: GLStyle.green.opacity(0.20), radius: 9)
                     .frame(width: 44, height: 44)
                 VStack(alignment: .center, spacing: 4) {
-                    Text(model.isRunning ? model.status :
-                         (consoleActuallyReady && outputActuallyReady
+                    Text(verbatim: model.isRunning ? model.status :
+                         GLInterfaceText.localized(consoleActuallyReady && outputActuallyReady
                           ? "Připraveno ke spuštění" :
                              (!consoleActuallyReady
                               ? "Nejprve připoj konzoli" : "Spáruj televizi")))
                         .font(.subheadline.bold())
                         .foregroundStyle(consoleActuallyReady && outputActuallyReady
                                          ? GLStyle.green : .white)
-                    Text(model.isRunning
+                    Text(verbatim: GLInterfaceText.localized(model.isRunning
                          ? "Sleduj živý stav překladu"
-                         : "Překlad se spustí až po ověření konzole a výstupu.")
+                         : "Překlad se spustí až po ověření konzole a výstupu."))
                         .font(.caption)
                         .foregroundStyle(GLNeon.mist)
                         .fixedSize(horizontal: false, vertical: true)
