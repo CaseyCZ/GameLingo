@@ -132,8 +132,11 @@ struct GameLingoXboxScreen: View {
             .navigationTitle("Xbox")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    GLBackButton { dismiss() }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Zavřít") { dismiss() }
+                    GLHelpButton(title: "Xbox", explanation: "Nejdříve se přihlas ke svému účtu Microsoft.")
                 }
             }
         }

@@ -17,6 +17,10 @@ object GameLingoHelp {
     private const val CYAN = "#38BDF8"
 
     private fun info(screen: String): Pair<String, String> = when (screen) {
+        "languages" -> "Jazyky" to
+            "Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle."
+        "about" -> "O aplikaci / Licence" to
+            "Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty."
         "settings" -> "Nastavení TV" to
             "Jazyky, OCR a Překlad určují, co a jak se překládá. Rozložení nastavuje čtyři oblasti. Vzhled upravuje titulky a Profily ukládají konfiguraci pro hry, filmy a aplikace."
         "ocr" -> "OCR a rozpoznávání" to

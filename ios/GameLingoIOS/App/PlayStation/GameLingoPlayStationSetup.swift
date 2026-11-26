@@ -250,8 +250,8 @@ private struct GameLingoPSConnectionView: View {
             .navigationTitle("PlayStation")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Hotovo") { dismiss() }
+                ToolbarItem(placement: .topBarLeading) {
+                    GLBackButton { dismiss() }
                 }
             }
         }

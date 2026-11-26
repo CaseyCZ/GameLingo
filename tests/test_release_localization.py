@@ -71,7 +71,7 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("private const val TV_SCALE = 0.66f", ui)
         self.assertIn("density * value * GameLingoTVUi.menuScale(c)", kit)
         self.assertIn("value * GameLingoTVUi.menuScale(c)", kit)
-        self.assertIn('GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity))', about)
+        self.assertIn('GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity), helpTopic = "about")', about)
         self.assertIn("textSize = GameLingoVisualKit.sp(activity, size)", about)
 
     def test_tv_menu_size_is_persistent_and_separate_from_ocr(self):
@@ -112,6 +112,18 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("return mountPage(a, dialog, heading, body, scroll, helpTopic, onClose)", ui)
         self.assertIn("root.addView(top", ui)
         self.assertIn("root.addView(content", ui)
+
+    def test_ios_modal_navigation_uses_leading_back(self):
+        style = text(IOS / "GameLingoStyle.swift")
+        self.assertIn("struct GLBackButton: View", style)
+        self.assertIn('Label("Zpět", systemImage: "chevron.left")', style)
+        for path in ("SettingsHomeView.swift", "SubtitleSettingsView.swift",
+                     "GameLingoXboxScreen.swift", "GameLingoTVSetupScreen.swift",
+                     "PlayStation/GameLingoPlayStationSetup.swift", "GLAutomaticZonesView.swift"):
+            with self.subTest(path=path):
+                source = text(IOS / path)
+                self.assertIn("GLBackButton", source)
+                self.assertIn(".topBarLeading", source)
 
     def test_preview_uses_target_language(self):
         source = text(IOS / "SubtitleSettingsView.swift")

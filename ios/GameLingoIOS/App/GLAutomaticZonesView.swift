@@ -58,7 +58,13 @@ struct GLAutomaticZonesView: View {
         }
         .disabled(model.isRunning)
         .navigationTitle("Oblasti překladu")
-        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Hotovo") { dismiss() } } }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) { GLBackButton { dismiss() } }
+            ToolbarItem(placement: .topBarTrailing) {
+                GLHelpButton(title: "Oblasti překladu", explanation: "Vyber jen oblasti, které chceš překládat. Herní profil není povinný.")
+            }
+        }
     }
     private func edit(_ id: UUID, _ change: (inout AutomaticOCRZone) -> Void) {
         var zones = model.automaticZones

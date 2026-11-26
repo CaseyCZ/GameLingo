@@ -37,6 +37,17 @@ struct GLCard<Content: View>: View {
     }
 }
 
+/// Modal pages use the same leading navigation action as the system's pushed pages.
+struct GLBackButton: View {
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Label("Zpět", systemImage: "chevron.left")
+        }
+        .accessibilityLabel("Zpět")
+    }
+}
+
 struct GLHelpButton: View {
     let title: String
     let explanation: String
@@ -69,8 +80,8 @@ struct GLHelpButton: View {
                 .navigationTitle("Nápověda")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Hotovo") { showing = false }
+                    ToolbarItem(placement: .topBarLeading) {
+                        GLBackButton { showing = false }
                     }
                 }
             }

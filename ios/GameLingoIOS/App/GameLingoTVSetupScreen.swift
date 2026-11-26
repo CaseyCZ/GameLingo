@@ -125,8 +125,11 @@ struct GameLingoTVSetupScreen: View {
             .navigationTitle("Google TV")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    GLBackButton { onFinished(); dismiss() }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Zavřít") { onFinished(); dismiss() }
+                    GLHelpButton(title: "Google TV", explanation: "Google TV se páruje šestimístným kódem.")
                 }
             }
         }
@@ -332,8 +335,8 @@ private struct GameLingoTVPairingPanel: View {
                 .navigationTitle("Načíst QR z TV")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Zrušit") { showQRScanner = false }
+                    ToolbarItem(placement: .topBarLeading) {
+                        GLBackButton { showQRScanner = false }
                     }
                 }
             }

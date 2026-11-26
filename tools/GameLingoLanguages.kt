@@ -32,6 +32,8 @@ object GameLingoLanguages {
 
     // App-owned static UI only; never translate OCR results, identifiers or user text.
     private val uiLabels = mapOf(
+        "Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle." to Pair("Jazyk aplikácie mení ponuky. Jazyk hry určuje pôvodný text a jazyk prekladu určuje výstup. Nastavujú sa nezávisle.", "App language changes menus. Game language determines the source text and translation language determines the output. They are set independently."),
+        "Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty." to Pair("Tu nájdeš verziu aplikácie, aktualizácie, pôvodných autorov a úplné licenčné texty.", "Find the app version, updates, original authors and complete license texts here."),
         "Velikost rozhraní" to Pair("Veľkosť rozhrania", "Interface size"),
         "Výchozí" to Pair("Predvolené", "Default"),
         "Vyber způsob překladu nebo spravuj svá zařízení." to Pair("Vyber spôsob prekladu alebo spravuj svoje zariadenia.", "Choose a translation mode or manage your devices."),

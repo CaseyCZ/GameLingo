@@ -16,10 +16,14 @@ struct GameLingoSettingsView: View {
                     .padding(.bottom, 36)
             }
             .background(GLNeonBackground())
-            .navigationTitle("")
+            .navigationTitle("Nastavení")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Hotovo") { dismiss() }
+                    GLBackButton { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    GLHelpButton(title: "Nastavení", explanation: "Přizpůsobení překladu a titulků")
                 }
             }
         }
@@ -161,8 +165,8 @@ struct GameLingoSettingsOverview: View {
                 .background(GLNeonBackground())
                 .navigationTitle("Zařízení")
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Hotovo") { showDevices = false }
+                    ToolbarItem(placement: .topBarLeading) {
+                        GLBackButton { showDevices = false }
                     }
                 }
             }
@@ -290,8 +294,8 @@ struct GameLingoLicenseView: View {
                 }
                 .navigationTitle("Licence třetích stran")
                 .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Hotovo") { showNotices = false }
+                    ToolbarItem(placement: .topBarLeading) {
+                        GLBackButton { showNotices = false }
                     }
                 }
             }

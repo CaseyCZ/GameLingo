@@ -120,10 +120,6 @@ object GameLingoAbout {
 
     fun show(activity: Activity) {
         if (activity.isFinishing || activity.isDestroyed) return
-        if (GameLingoTVUi.isTV(activity)) {
-            GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity))
-            return
-        }
         GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity), helpTopic = "about")
     }
 }

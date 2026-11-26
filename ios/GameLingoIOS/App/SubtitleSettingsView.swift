@@ -128,12 +128,12 @@ struct SubtitleSettingsView: View {
             .navigationTitle("Oblasti")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     GLHelpButton(title: "Oblasti", explanation:
                         "Modrá: odkud číst dialogy. Zelená: kam zobrazit české titulky. Žlutá: odkud číst herní texty a volby. Oranžová: kam zobrazit jejich český překlad. Vyber barvu a přetáhni její oblast v náhledu. Každá oblast má vlastní velikost a polohu. Změny se ukládají automaticky.")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Hotovo") { dismiss() }
+                ToolbarItem(placement: .topBarLeading) {
+                    GLBackButton { dismiss() }
                 }
             }
         }

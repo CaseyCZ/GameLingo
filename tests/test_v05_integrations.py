@@ -1387,8 +1387,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoTVUi.panel(activity,focused)",help_ui)
         self.assertIn("setOnFocusChangeListener",help_ui)
         self.assertIn('GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title',help_ui)
-        for module in ("GameLingoTVSettings.kt","GameLingoOCRSettings.kt","GameLingoDirectTVLayout.kt"):
-            self.assertIn("GameLingoHelp.layout",code(TOOLS/module))
+        self.assertIn('GameLingoTVUi.header(a, heading, back, help)',code(TOOLS/"GameLingoTVSettings.kt"))
+        self.assertIn('helpTopic = "ocr"',code(TOOLS/"GameLingoOCRSettings.kt"))
+        self.assertIn("GameLingoHelp.layout",code(TOOLS/"GameLingoDirectTVLayout.kt"))
         self.assertIn("Independent help glyph",code(TOOLS/"audit_tv_ui.py"))
 
     def test_tv_fullscreen_pages_and_global_dialog_theme(self):
@@ -1399,7 +1400,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn("GameLingoTVUi.page(a",code(TOOLS/module))
         for marker in ("install_tv_theme(root)","GameLingoTVTheme","GameLingoTVAlert","state_focused","gamelingo_tv_focus"):
             self.assertIn(marker,wiring)
-        self.assertIn("if(television) ViewGroup.LayoutParams.MATCH_PARENT",code(TOOLS/"GameLingoSettings.kt"))
+        self.assertIn('GameLingoTVUi.mountPage(activity, dialog, tr("Překlad"), content, helpTopic = "translation")',code(TOOLS/"GameLingoSettings.kt"))
 
     def test_tv_diagnostics_distinguishes_stopped_resources_from_last_session_counters(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
