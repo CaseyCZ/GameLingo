@@ -18,6 +18,19 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_android_localized_ocr_translation_and_history(self):
+        lang = code(TOOLS/"GameLingoLanguages.kt")
+        settings = code(TOOLS/"GameLingoSettings.kt")
+        ocr = code(TOOLS/"GameLingoOCRSettings.kt")
+        history = code(TOOLS/"GameLingoHistoryUi.kt")
+        for label in ("Překládat dialogy", "Režim OCR", "Uchovávat historii", "Výchozí oblast", "Automaticky"):
+            self.assertIn('"' + label + '" to Pair(', lang)
+        self.assertIn("GameLingoLanguages.ui(c, title)", settings)
+        self.assertIn("this.text = tr(value)", ocr)
+        self.assertIn('text = tr("Uchovávat historii")', history)
+        self.assertIn("entry.translated", history)
+        self.assertIn("entry.original", history)
+
     def test_settings_mode_updates_without_reopening(self):
         automatic = code(TOOLS/"GameLingoAutomaticConfig.kt")
         phone = code(TOOLS/"GameLingoSettings.kt")

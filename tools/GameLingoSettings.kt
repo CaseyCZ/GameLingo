@@ -31,11 +31,11 @@ object GameLingoSettings {
         addView(LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             addView(TextView(c).apply {
-                text = title; gravity = Gravity.CENTER; textSize = 17f
+                text = GameLingoLanguages.ui(c, title); gravity = Gravity.CENTER; textSize = 17f
                 setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
             })
             addView(TextView(c).apply {
-                text = detail; gravity = Gravity.CENTER; textSize = 13f
+                text = GameLingoLanguages.ui(c, detail); gravity = Gravity.CENTER; textSize = 13f
                 setTextColor(muted)
                 setPadding(0, 5, 0, 0)
             })
@@ -58,6 +58,7 @@ object GameLingoSettings {
 
     fun showTranslation(activity: Activity, settings: Nastaveni,
              onAreas: () -> Unit, onLanguage: () -> Unit) {
+        fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         Volby.nacti(activity)
         OblastTitulku.nacti(activity)
         val television=GameLingoTVUi.isTV(activity)
@@ -69,7 +70,7 @@ object GameLingoSettings {
         }
         val header = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(TextView(activity).apply {
-            text = "Překlad"; gravity = Gravity.CENTER; textSize = 25f
+            text = tr("Překlad"); gravity = Gravity.CENTER; textSize = 25f
             setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(GameLingoHelp.button(activity, "translation"),
@@ -82,7 +83,7 @@ object GameLingoSettings {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = 12 })
         }
-        add(row(activity, "Překládat dialogy", "České titulky pro rozhovory ve hrách.",
+        add(row(activity, "Překládat dialogy", "Titulky pro rozhovory ve hrách.",
             settings.dialogy) { settings.dialogy = it })
         add(row(activity, "Zobrazit i předchozí repliku", "V běžném režimu bez překrývání originálu; nemění příběhovou frontu.",
             GameLingoOCRConfig.showPreviousDialogue(activity)) { GameLingoOCRConfig.setShowPreviousDialogue(activity, it) })
@@ -112,11 +113,11 @@ object GameLingoSettings {
             setPadding(17,14,17,16)
         }
         val label = TextView(activity).apply {
-            textSize = 16f; setTextColor(Color.WHITE)
+            textSize = 16f; gravity = Gravity.CENTER; setTextColor(Color.WHITE)
             setTypeface(null, Typeface.BOLD)
         }
         fun refresh() {
-            label.text = "Doba zobrazení: " + settings.casPribehuProcenta + " %"
+            label.text = tr("Doba zobrazení") + ": " + settings.casPribehuProcenta + " %"
         }
         refresh()
         sliderCard.addView(label)
@@ -143,14 +144,14 @@ object GameLingoSettings {
                 GameLingoOCRConfig.fixedTiming(activity)) { GameLingoOCRConfig.saveTiming(activity,fixed=it) })
             fun timingSlider(title:String,min:Int,max:Int,value:Int,save:(Int)->Unit) {
                 val panel=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL; background=rounded(card);setPadding(17,14,17,16) }
-                val caption=TextView(activity).apply { textSize=16f;setTextColor(Color.WHITE);text="$title: $value s" }
+                val caption=TextView(activity).apply { gravity=Gravity.CENTER;textSize=16f;setTextColor(Color.WHITE);text="${tr(title)}: $value s" }
                 panel.addView(caption)
                 panel.addView(SeekBar(activity).apply {
                     this.max=max-min;progress=value-min;keyProgressIncrement=1;isFocusable=true
                     GameLingoTVUi.controlFocus(activity,this)
                     setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener {
                         override fun onProgressChanged(bar:SeekBar, v:Int, fromUser:Boolean) {
-                            caption.text="$title: "+(v+min)+" s"
+                            caption.text="${tr(title)}: "+(v+min)+" s"
                             if(fromUser) save(v+min)
                         }
                         override fun onStartTrackingTouch(bar:SeekBar){}
@@ -184,20 +185,20 @@ object GameLingoSettings {
             }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 })
         }
-        button("Prodleva po zmizení: " + GameLingoOCRConfig.sourceGoneDelay(activity) + " s") {
-            val labels = arrayOf("Hned", "1 s", "2 s")
+        button(tr("Prodleva po zmizení") + ": " + GameLingoOCRConfig.sourceGoneDelay(activity) + " s") {
+            val labels = arrayOf(tr("Hned"), "1 s", "2 s")
             fun save(index: Int) {
                 GameLingoOCRConfig.setSourceGoneDelay(activity, index)
                 showTranslation(activity, settings, onAreas, onLanguage)
             }
-            if (television) GameLingoTVUi.select(activity, "Prodleva po zmizení", labels, GameLingoOCRConfig.sourceGoneDelay(activity), ::save)
-            else android.app.AlertDialog.Builder(activity).setTitle("Prodleva po zmizení")
+            if (television) GameLingoTVUi.select(activity, tr("Prodleva po zmizení"), labels, GameLingoOCRConfig.sourceGoneDelay(activity), ::save)
+            else android.app.AlertDialog.Builder(activity).setTitle(tr("Prodleva po zmizení"))
                 .setSingleChoiceItems(labels, GameLingoOCRConfig.sourceGoneDelay(activity)) { chooser, index -> chooser.dismiss(); save(index) }
-                .setNegativeButton("Zrušit", null).show()
+                .setNegativeButton(tr("Zrušit"), null).show()
         }
-        button("▣  Oblasti na obrazovce") { onAreas() }
-        button("🌐  Jazyk překladu") { onLanguage() }
-        button("Hotovo") {}
+        button("▣  " + tr("Oblasti na obrazovce")) { onAreas() }
+        button("🌐  " + tr("Jazyk překladu")) { onLanguage() }
+        button(tr("Hotovo")) {}
 
         val scroll = ScrollView(activity).apply { isFillViewport=television; addView(content) }
         dialog.setContentView(scroll)
