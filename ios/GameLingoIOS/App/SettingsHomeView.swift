@@ -643,7 +643,7 @@ private struct GameLingoGlossaryEditor: View {
         GLScreen(title: "Herní slovník", help:
             "Použij uložený profil před spuštěním hry. Jeden jazykový pár na profil, až 50 pravidel. Každý řádek: originál | chybný překlad | správný překlad. Prázdný prostřední sloupec opraví jen celý přesně shodný originál. Rozlišuje velká a malá písmena.") {
             GLCard {
-                Text("Jazyky slovníku: " + source + " → " + target)
+                Text(verbatim: GLInterfaceText.localized("Jazyky slovníku:") + " " + source + " → " + target)
                     .foregroundStyle(GLStyle.muted)
                 Text("Pro jiné jazyky změň jazyk hry a překladu, poté použij nový slovník. Změna páru nahradí předchozí slovník tohoto profilu.")
                     .font(.caption)

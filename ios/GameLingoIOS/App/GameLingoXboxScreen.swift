@@ -45,7 +45,7 @@ struct GameLingoXboxScreen: View {
                         GLHeader(title: "Moje konzole", help:
                             "Načti všechny Xboxy přiřazené k účtu. Zvol konkrétní konzoli pro překlad, zejména pokud jich máš více. Výběr se uloží do GameLingo a zobrazí na úvodní obrazovce. Samotné zobrazení v seznamu neznamená aktivní Remote Play.")
                         HStack(spacing: 9) {
-                            Text("\(auth.consoles.count) nalezených")
+                            Text(verbatim: GLInterfaceText.localized("Nalezeno:") + " " + String(auth.consoles.count))
                                 .foregroundStyle(GLStyle.muted)
                             Spacer()
                             Button {

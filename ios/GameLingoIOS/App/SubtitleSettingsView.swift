@@ -265,12 +265,12 @@ struct SubtitleSettingsView: View {
             if model.manualOCR {
                 Toggle("Zamknout oblast čtení", isOn: $model.manualOCRLocked)
                 if !model.manualOCRLocked {
-                    Text("Šířka: \(Int(model.manualOCRBox.width * 100)) %")
+                    Text(verbatim: GLInterfaceText.localized("Šířka:") + " " + String(Int(model.manualOCRBox.width * 100)) + " %")
                     Slider(value: Binding(
                         get: { Double(model.manualOCRBox.width) },
                         set: { updateOCRSize(width: CGFloat($0), height: nil) }
                     ), in: 0.20...1.0)
-                    Text("Výška: \(Int(model.manualOCRBox.height * 100)) %")
+                    Text(verbatim: GLInterfaceText.localized("Výška:") + " " + String(Int(model.manualOCRBox.height * 100)) + " %")
                     Slider(value: Binding(
                         get: { Double(model.manualOCRBox.height) },
                         set: { updateOCRSize(width: nil, height: CGFloat($0)) }
@@ -300,9 +300,9 @@ struct SubtitleSettingsView: View {
             GLHeader(title: "Přeložené titulky", help: "Zelená určuje místo zobrazení českých dialogů na TV. Velikost písma je nezávislá na oranžovém překladu herních textů.")
             Toggle("Zamknout polohu českých titulků", isOn: $model.outputLocked)
             if !model.outputLocked {
-                Text("Šířka titulků: \(Int(model.outputWidth * 100)) %")
+                Text(verbatim: GLInterfaceText.localized("Šířka titulků:") + " " + String(Int(model.outputWidth * 100)) + " %")
                 Slider(value: $model.outputWidth, in: 0.30...0.95)
-                Text("Velikost písma: \(Int(model.outputFont * 100)) %")
+                Text(verbatim: GLInterfaceText.localized("Velikost písma:") + " " + String(Int(model.outputFont * 100)) + " %")
                 Slider(value: $model.outputFont, in: 0.70...1.80)
             }
             Button("Náhled na TV") {
@@ -333,12 +333,12 @@ struct SubtitleSettingsView: View {
                 .pickerStyle(.segmented)
                 Toggle("Zamknout žlutý rámeček", isOn: $model.choicesLocked)
                 if !model.choicesLocked {
-                    Text("Šířka: \(Int(model.choicesArea.width * 100)) %")
+                    Text(verbatim: GLInterfaceText.localized("Šířka:") + " " + String(Int(model.choicesArea.width * 100)) + " %")
                     Slider(value: Binding(
                         get: { Double(model.choicesArea.width) },
                         set: { updateChoicesSize(width: CGFloat($0), height: nil) }
                     ), in: 0.10...1.0)
-                    Text("Výška: \(Int(model.choicesArea.height * 100)) %")
+                    Text(verbatim: GLInterfaceText.localized("Výška:") + " " + String(Int(model.choicesArea.height * 100)) + " %")
                     Slider(value: Binding(
                         get: { Double(model.choicesArea.height) },
                         set: { updateChoicesSize(width: nil, height: CGFloat($0)) }
@@ -353,7 +353,7 @@ struct SubtitleSettingsView: View {
                 .buttonStyle(.bordered)
                 .tint(.yellow)
                 if !model.lastChoices.isEmpty {
-                    Text("Poslední rozpoznané: \(model.lastChoices)")
+                    Text(verbatim: GLInterfaceText.localized("Poslední rozpoznané:") + " " + model.lastChoices)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -375,12 +375,12 @@ struct SubtitleSettingsView: View {
             if model.choicesEnabled {
                 Toggle("Zamknout oranžový rámeček", isOn: $model.choicesOutputLocked)
                 if !model.choicesOutputLocked {
-                    Text("Šířka: \(Int(model.choicesOutputArea.width * 100)) %")
+                    Text(verbatim: GLInterfaceText.localized("Šířka:") + " " + String(Int(model.choicesOutputArea.width * 100)) + " %")
                     Slider(value: Binding(
                         get: { Double(model.choicesOutputArea.width) },
                         set: { updateChoicesOutputSize(width: CGFloat($0), height: nil) }
                     ), in: 0.20...0.95)
-                    Text("Výška: \(Int(model.choicesOutputArea.height * 100)) %")
+                    Text(verbatim: GLInterfaceText.localized("Výška:") + " " + String(Int(model.choicesOutputArea.height * 100)) + " %")
                     Slider(value: Binding(
                         get: { Double(model.choicesOutputArea.height) },
                         set: { updateChoicesOutputSize(width: nil, height: CGFloat($0)) }
@@ -409,7 +409,7 @@ struct SubtitleSettingsView: View {
     /// The yellow rectangle is OCR input only.
     private var gameTextFontControl: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Velikost písma: \(Int(model.choicesOutputFont * 100)) %")
+            Text(verbatim: GLInterfaceText.localized("Velikost písma:") + " " + String(Int(model.choicesOutputFont * 100)) + " %")
             Slider(value: Binding(
                 get: { model.choicesOutputFont },
                 set: { newValue in

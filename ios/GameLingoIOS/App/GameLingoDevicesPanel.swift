@@ -208,7 +208,7 @@ struct GameLingoDevicesPanel: View {
                 Text(family.rawValue)
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                Text("\(devices.consoles.filter { $0.family == family }.count) uložených")
+                Text(verbatim: GLInterfaceText.localized("Uloženo:") + " " + String(devices.consoles.filter { $0.family == family }.count))
                     .font(.caption)
                     .foregroundStyle(GLNeon.mist)
             }
