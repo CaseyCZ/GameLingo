@@ -34,6 +34,7 @@ object GameLingoOCRSettings {
         }
         fun text(value: String, size: Float = 15f, bold: Boolean = false): TextView =
             TextView(activity).apply {
+                gravity = android.view.Gravity.CENTER
                 this.text = value
                 textSize = size
                 setTextColor(Color.WHITE)

@@ -41,6 +41,7 @@ object GameLingoAbout {
         fun label(value: String, size: Float, strong: Boolean = false): TextView =
             TextView(activity).apply {
                 text = value
+                gravity = android.view.Gravity.CENTER
                 textSize = size
                 setTextColor(if (strong) Color.WHITE else Color.parseColor("#92A4C7"))
                 if (strong) setTypeface(null, Typeface.BOLD)

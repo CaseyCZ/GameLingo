@@ -41,6 +41,7 @@ object GameLingoProfiles {
     private fun text(c: Context, label: String, size: Float = 16f,
                      color: Int = Color.WHITE, bold: Boolean = false): TextView =
         TextView(c).apply {
+            gravity = android.view.Gravity.CENTER
             this.text = label
             textSize = size
             setTextColor(color)

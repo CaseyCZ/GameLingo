@@ -102,7 +102,7 @@ internal object GameLingoAutomaticConfig {
         }
         body.addView(preview,LinearLayout.LayoutParams(-1,(a.resources.displayMetrics.widthPixels*.25f).toInt().coerceIn(100,300)))
         fun slider(title: String,value: Float,change: (Float)->Unit) {
-            val label=TextView(a).apply { text="$title: "+(value*100).toInt()+" %" }
+            val label=TextView(a).apply { gravity=android.view.Gravity.CENTER; text="$title: "+(value*100).toInt()+" %" }
             body.addView(label)
             body.addView(SeekBar(a).apply {
                 max=100;progress=(value*100).toInt().coerceIn(0,100);keyProgressIncrement=1;isFocusable=true

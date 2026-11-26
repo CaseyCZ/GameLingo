@@ -34,6 +34,7 @@ object GameLingoSubtitleAppearance {
 
         fun text(label: String, size: Float = 15f, color: Int = Color.WHITE,
                  bold: Boolean = false): TextView = TextView(activity).apply {
+            gravity = android.view.Gravity.CENTER
             this.text = label
             textSize = size
             setTextColor(color)

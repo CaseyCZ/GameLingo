@@ -25,12 +25,14 @@ object GameLingoRegions {
             background = GameLingoVisualKit.pageBackground(activity)
         }
         page.addView(TextView(activity).apply {
+            gravity = android.view.Gravity.CENTER
             text = "Oblasti obrazovky"
             textSize = 26f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         })
         page.addView(TextView(activity).apply {
+            gravity = android.view.Gravity.CENTER
             text = "Čtyři nezávislé oblasti pro rozpoznávání a překlad."
             textSize = 14f
             setTextColor(Color.parseColor("#92A4C7"))
@@ -53,12 +55,14 @@ object GameLingoRegions {
             line.addView(LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(activity).apply {
+                    gravity = android.view.Gravity.CENTER
                     text = name
                     textSize = 16f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
                 })
                 addView(TextView(activity).apply {
+                    gravity = android.view.Gravity.CENTER
                     text = detail
                     textSize = 13f
                     setTextColor(Color.parseColor("#92A4C7"))
@@ -71,6 +75,7 @@ object GameLingoRegions {
             ).apply { bottomMargin = d(11) })
         }
         page.addView(TextView(activity).apply {
+            gravity = android.view.Gravity.CENTER
             text = "Otevřít editor oblastí"
             gravity = Gravity.CENTER
             textSize = 17f
@@ -87,6 +92,7 @@ object GameLingoRegions {
             ViewGroup.LayoutParams.MATCH_PARENT, d(58)
         ).apply { topMargin = d(8); bottomMargin = d(12) })
         if (showClose) page.addView(TextView(activity).apply {
+            gravity = android.view.Gravity.CENTER
             text = "Zpět"
             gravity = Gravity.CENTER
             textSize = 16f

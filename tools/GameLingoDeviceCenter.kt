@@ -72,6 +72,7 @@ object GameLingoDeviceCenter {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(c).apply {
                     text = title
+                    gravity = Gravity.CENTER
                     textSize = if (tenFoot) 15f else 17f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
@@ -79,6 +80,7 @@ object GameLingoDeviceCenter {
                 if (sub.isNotEmpty()) {
                     addView(TextView(c).apply {
                         text = sub
+                        gravity = Gravity.CENTER
                         textSize = if (tenFoot) 12f else 13f
                         setTextColor(muted)
                         setPadding(0, 6, 0, 0)
@@ -99,6 +101,7 @@ object GameLingoDeviceCenter {
                       color: Int = Color.WHITE): TextView =
         TextView(c).apply {
             text = value
+            gravity = Gravity.CENTER
             textSize = size
             setTextColor(color)
             typeface = Typeface.DEFAULT_BOLD

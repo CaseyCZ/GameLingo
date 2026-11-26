@@ -114,7 +114,7 @@ object GameLingoHelp {
         if (GameLingoTVUi.isTV(activity)) {
             val body=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL }
             body.addView(TextView(activity).apply {
-                text=description; textSize=19f
+                text=description; gravity = android.view.Gravity.CENTER; textSize=19f
                 setTextColor(Color.WHITE); setLineSpacing(5f,1.18f)
                 background=GameLingoTVUi.panel(activity)
                 val padding=GameLingoTVUi.dp(activity,24)
@@ -132,14 +132,14 @@ object GameLingoHelp {
             }
         }
         container.addView(TextView(activity).apply {
-            text = title
+            text = title; gravity = android.view.Gravity.CENTER
             textSize = 23f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
             setPadding(6, 0, 6, 14)
         })
         container.addView(TextView(activity).apply {
-            text = description
+            text = description; gravity = android.view.Gravity.CENTER
             textSize = 16f
             setTextColor(Color.parseColor("#D8E2F0"))
             setLineSpacing(4f, 1.12f)
