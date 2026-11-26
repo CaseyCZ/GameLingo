@@ -30,7 +30,7 @@ object GameLingoSubtitleAppearance {
         val layout = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(activity)
-            setPadding(dp(20), dp(18), dp(20), dp(28))
+            setPadding(dp(16), dp(12), dp(16), dp(16))
         }
 
         fun text(label: String, size: Float = 15f, color: Int = Color.WHITE,
