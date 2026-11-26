@@ -71,7 +71,8 @@ object GameLingoTVSettings {
                 GameLingoLanguages.ui(a, "Herní slovník"),
                 GameLingoLanguages.ui(a, "Historie překladů"),
                 GameLingoLanguages.ui(a, "Překladová cache"),
-                GameLingoLanguages.ui(a, "Diagnostika"))
+                GameLingoLanguages.ui(a, "Diagnostika"),
+                GameLingoLanguages.ui(a, "Obnovit výchozí nastavení"))
             GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Pokročilé nastavení"), options, -1) { index ->
                 when (index) {
                     0 -> {
@@ -96,6 +97,13 @@ object GameLingoTVSettings {
                     2 -> GameLingoHistoryUi.show(a)
                     3 -> GameLingoCachePrivacyUi.show(a)
                     4 -> diagnostics(a)
+                    5 -> GameLingoSettings.confirmRestoreDefaults(a) {
+                        // Rebuild the cards to show the default mode and scale.
+                        reopeningForScale = true
+                        dialog.dismiss()
+                        onUpdate()
+                        show(a, onDevices, onUpdate)
+                    }
                 }
             }
         }
