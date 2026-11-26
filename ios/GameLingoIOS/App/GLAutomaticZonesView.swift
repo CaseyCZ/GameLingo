@@ -2,9 +2,10 @@ import SwiftUI
 
 struct GLTranslationModePicker: View {
     @ObservedObject var model: CaptionAppModel
+    var showTitle = true
     var body: some View {
         VStack(alignment: .center, spacing: 5) {
-            Text("Režim překladu").font(.caption)
+            if showTitle { Text("Režim překladu").font(.caption) }
             HStack(spacing: 6) {
                 ForEach([false, true], id: \.self) { automatic in
                     Button {
