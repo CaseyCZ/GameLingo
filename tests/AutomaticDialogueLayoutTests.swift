@@ -28,6 +28,19 @@ import CoreGraphics
         let many = (0..<11).map { AutomaticOCRZone(name: String($0), rect: crop) }
         precondition(AutomaticOCRZone.validated(many).count == 10)
         precondition(AutomaticDialogueLayout.select([hud], centered: false)?.text == "HUD")
+        let blocks = AutomaticDialogueLayout.blocks([hud, dialogue, upper], centered: false)
+        precondition(blocks.count == 3)
+        var tracker = AutomaticBlockTracker()
+        let zone = UUID(), other = UUID()
+        tracker.observe(zone: zone, blocks: blocks, now: 1)
+        let ids = Set(tracker.tracks.map(\.id))
+        tracker.observe(zone: zone, blocks: blocks, now: 2)
+        precondition(tracker.tracks.allSatisfy { $0.confirmations == 2 } && Set(tracker.tracks.map(\.id)) == ids)
+        tracker.observe(zone: other, blocks: [blocks[0]], now: 2)
+        tracker.observe(zone: zone, blocks: [], now: 3)
+        precondition(tracker.tracks.count == 1 && tracker.tracks[0].zone == other)
+        tracker.expire(now: 8)
+        precondition(tracker.tracks.isEmpty)
         print("AUTOMATIC_DIALOGUE_LAYOUT_TESTS passed")
     }
 }

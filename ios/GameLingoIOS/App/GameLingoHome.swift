@@ -337,7 +337,7 @@ struct GameLingoHome: View {
             if devices.subtitleOutput == .phone && model.automaticGameDialogue {
                 ForEach(model.automaticOutputs) { output in
                     GLCard {
-                        Text(model.automaticZones.first { $0.id == output.id }?.name ?? "Překlad")
+                        Text(model.automaticZones.first { $0.id == output.zone }?.name ?? "Překlad")
                             .font(.caption)
                         Text(output.text).font(.headline)
                     }

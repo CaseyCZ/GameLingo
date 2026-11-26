@@ -33,7 +33,17 @@ struct AutomaticDialogueLayout: Equatable, Sendable {
         rect.maxX <= 1.000001 && rect.maxY <= 1.000001
     }
 
+    struct Block: Equatable, Sendable {
+        let text: String
+        let rect: CGRect
+        let layout: AutomaticDialogueLayout
+    }
+
     static func select(_ lines: [Line], centered: Bool = true) -> (text: String, layout: Self)? {
+        blocks(lines, centered: centered).first.map { ($0.text, $0.layout) }
+    }
+
+    static func blocks(_ lines: [Line], centered: Bool) -> [Block] {
         // Only central dialogue candidates. Do not translate peripheral HUD.
         // Group vertically adjacent, horizontally overlapping text lines.
         let candidates = lines.filter {
@@ -57,19 +67,20 @@ struct AutomaticDialogueLayout: Equatable, Sendable {
                 groups.append([line])
             }
         }
-        // Prefer the bottom-centred group. The one-block receiver cannot
-        // display two independently located groups, so do not concatenate them.
+        // The default dialogue band deliberately retains its conservative
+        // bottom-centre selection. Explicit custom zones may contain many blocks.
         let ranked = groups.map { group in
             (group, group.reduce(CGRect.null) { $0.union($1.rect) })
+        }.sorted { a, b in
+            (a.1.midY - abs(a.1.midX - 0.5)) > (b.1.midY - abs(b.1.midX - 0.5))
         }
-        guard let selected = ranked.max(by: { a, b in
-            (a.1.midY - abs(a.1.midX - 0.5)) < (b.1.midY - abs(b.1.midX - 0.5))
-        }) else { return nil }
-        let r = selected.1
-        let width = min(1.0, max(0.15, Double(r.width) + 0.06))
-        let x = min(1 - width / 2, max(width / 2, Double(r.midX)))
-        let bottom = min(0.99, max(0.05, Double(r.maxY)))
-        let text = selected.0.map(\.text).joined(separator: " ")
-        return (text, Self(centerX: x, bottomY: bottom, width: width))
+        return ranked.prefix(centered ? 1 : 8).map { selected in
+            let r = selected.1
+            let width = min(1.0, max(0.15, Double(r.width) + 0.06))
+            let x = min(1 - width / 2, max(width / 2, Double(r.midX)))
+            let bottom = min(0.99, max(0.05, Double(r.maxY)))
+            let text = selected.0.map(\.text).joined(separator: " ")
+            return Block(text: text, rect: r, layout: Self(centerX: x, bottomY: bottom, width: width))
+        }
     }
 }

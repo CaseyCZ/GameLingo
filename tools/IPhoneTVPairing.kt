@@ -185,7 +185,7 @@ object IPhoneTVPairing {
                 fields.getOrNull(9) == "1" ||
                 (fields.getOrNull(5) == "" && fields.getOrNull(10) == "1")
             "PCV1" -> present(8) || (fields.getOrNull(2)?.toIntOrNull() ?: 0) in 1..2
-            "PCZ1" -> (fields.getOrNull(3)?.toIntOrNull() ?: 0) in 1..10
+            "PCZ1" -> (fields.getOrNull(3)?.toIntOrNull() ?: 0) in 1..32
             "PCO1" -> fields.getOrNull(1) == "1"
             "PCS1" -> present(3)
             else -> false // PCQ1 readiness queries and empty clears do not acquire ownership.

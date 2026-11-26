@@ -145,8 +145,7 @@ actor CaptionPipeline {
 
     struct AutomaticZoneReading {
         let zone: UUID
-        let text: String
-        let layout: AutomaticDialogueLayout?
+        let blocks: [AutomaticDialogueLayout.Block]
     }
     private struct AutomaticLane {
         var gate = OCRFrameGate(maximumSkip: 1.0)
@@ -198,8 +197,7 @@ actor CaptionPipeline {
                     else { return nil }
                     return .init(text: text, rect: rect)
                 }
-                let selected = AutomaticDialogueLayout.select(lines, centered: zone.centered)
-                return .init(zone: zone.id, text: selected?.text ?? "", layout: selected?.layout)
+                return .init(zone: zone.id, blocks: AutomaticDialogueLayout.blocks(lines, centered: zone.centered))
             } catch { return nil } // failed read is not an empty observation
         }
         return nil

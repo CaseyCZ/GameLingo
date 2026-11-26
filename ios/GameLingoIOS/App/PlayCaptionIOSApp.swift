@@ -38,20 +38,18 @@ final class CaptionAppModel: ObservableObject {
     }
     struct AutomaticOutput: Identifiable {
         let id: UUID
+        let zone: UUID
         let text: String
         let layout: AutomaticDialogueLayout
+        let rect: CGRect
     }
     @Published private(set) var automaticOutputs: [AutomaticOutput] = []
-    private struct AutomaticTrack {
-        var candidate = ""
-        var confirmations = 0
-        var revision = UUID()
-        var lastSeen: TimeInterval = 0
-        var retryAt: TimeInterval = 0
-        var layout: AutomaticDialogueLayout? = nil
-    }
-    private var automaticTracks: [UUID: AutomaticTrack] = [:]
+    private var automaticTracker = AutomaticBlockTracker()
+    private var automaticTranslations: [UUID: String] = [:]
+    private var automaticRetries: [UUID: TimeInterval] = [:]
     private var automaticTasks: [UUID: Task<Void, Never>] = [:]
+    private var automaticTimer: Task<Void, Never>?
+    private var automaticLastFrame: TimeInterval = 0
     private var automaticLastTV: AutomaticOutput?
     private var automaticLastTVAt: TimeInterval = 0
     private var automaticFrameAspect = 16.0 / 9.0
@@ -59,9 +57,14 @@ final class CaptionAppModel: ObservableObject {
     private func clearAutomaticOutputs() {
         automaticTasks.values.forEach { $0.cancel() }
         automaticTasks.removeAll()
-        automaticTracks.removeAll()
+        automaticTimer?.cancel()
+        automaticTimer = nil
+        automaticTracker.reset()
+        automaticTranslations.removeAll()
+        automaticRetries.removeAll()
         automaticOutputs.removeAll()
         automaticLastTV = nil
+        automaticLastFrame = 0
         automaticLastTVAt = 0
         automaticSnapshotKey = ""
     }
@@ -992,29 +995,42 @@ final class CaptionAppModel: ObservableObject {
     /// Zone results are independent; only the legacy TV transport is still
     /// restricted to one block. The iPhone retains all confirmed translations.
     private func publishAutomaticOutputs(now: TimeInterval) {
-        automaticOutputs.removeAll { output in
-            guard let track = automaticTracks[output.id] else { return true }
-            return now - track.lastSeen > 3.0
+        if now - automaticLastFrame > 2.0 { automaticTracker.reset() }
+        automaticTracker.expire(now: now)
+        let active = Set(automaticTracker.tracks.map(\.id))
+        for id in Array(automaticTasks.keys) where !active.contains(id) {
+            automaticTasks.removeValue(forKey: id)?.cancel()
         }
+        automaticTranslations = automaticTranslations.filter { active.contains($0.key) }
+        automaticRetries = automaticRetries.filter { active.contains($0.key) }
+        var ordered: [AutomaticOutput] = []
+        for zone in automaticZones {
+            for track in automaticTracker.tracks where track.zone == zone.id {
+                guard let text = automaticTranslations[track.id], !text.isEmpty else { continue }
+                if ordered.contains(where: {
+                    AutomaticBlockTracker.normalized($0.text) == AutomaticBlockTracker.normalized(text) &&
+                    AutomaticBlockTracker.overlaps($0.rect, track.block.rect)
+                }) { continue }
+                ordered.append(.init(id: track.id, zone: zone.id, text: text,
+                                     layout: track.block.layout, rect: track.block.rect))
+            }
+        }
+        automaticOutputs = Array(ordered.prefix(32))
         guard devices.subtitleOutput == .googleTV else { return }
         devices.prepareTV(tv)
         guard verifiedTelevisionOutput else { return }
-        let ordered = automaticZones.compactMap { zone in automaticOutputs.first { $0.id == zone.id } }
         if tv.receiverSupportsZones {
-            let key = ordered.map { "\($0.id)|\($0.text)|\($0.layout.centerX)|\($0.layout.bottomY)|\($0.layout.width)" }.joined(separator: ";")
+            let key = automaticOutputs.map { "\($0.id)|\($0.text)|\($0.layout.centerX)|\($0.layout.bottomY)|\($0.layout.width)" }.joined(separator: ";")
             if automaticLastTV != nil {
                 tv.sendSubtitle("", duration: 0)
                 automaticLastTV = nil
             }
-            if key != automaticSnapshotKey || (!ordered.isEmpty && now - automaticLastTVAt >= 0.8) {
-                tv.sendAutomaticZones(ordered, aspect: automaticFrameAspect)
+            if key != automaticSnapshotKey || (!automaticOutputs.isEmpty && now - automaticLastTVAt >= 0.8) {
+                tv.sendAutomaticZones(automaticOutputs, aspect: automaticFrameAspect)
                 automaticSnapshotKey = key
                 automaticLastTVAt = now
             }
-            return
-        }
-        let first = ordered.first
-        if let first {
+        } else if let first = automaticOutputs.first {
             if automaticLastTV?.id != first.id || automaticLastTV?.text != first.text ||
                 automaticLastTV?.layout != first.layout || now - automaticLastTVAt >= 1.0 {
                 tv.sendSubtitle(first.text, duration: 1800, automaticLayout: first.layout)
@@ -1027,62 +1043,62 @@ final class CaptionAppModel: ObservableObject {
         }
     }
 
-    private func processAutomaticFrame(_ buffer: CVPixelBuffer, currentSession: Int, contextRevision: Int) async {
+    private func scheduleAutomaticTranslations(currentSession: Int, contextRevision: UInt64) {
         let now = ProcessInfo.processInfo.systemUptime
-        let height = CVPixelBufferGetHeight(buffer)
-        if height > 0 { automaticFrameAspect = Double(CVPixelBufferGetWidth(buffer)) / Double(height) }
-        publishAutomaticOutputs(now: now)
-        await dialogueReset?.value
-        guard isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
         let source = gameLanguage, target = targetLanguage
-        guard let reading = await pipeline.recognizeAutomaticZone(buffer, zones: automaticZones, gameLanguage: source),
-              isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
-        let seen = ProcessInfo.processInfo.systemUptime
-        let id = reading.zone
-        var track = automaticTracks[id] ?? AutomaticTrack()
-        if reading.text.isEmpty || reading.layout == nil {
-            automaticTasks.removeValue(forKey: id)?.cancel()
-            automaticTracks.removeValue(forKey: id)
-            automaticOutputs.removeAll { $0.id == id }
-            publishAutomaticOutputs(now: seen)
-            return
-        }
-        if track.candidate != reading.text {
-            automaticTasks.removeValue(forKey: id)?.cancel()
-            automaticOutputs.removeAll { $0.id == id }
-            track = AutomaticTrack(candidate: reading.text, confirmations: 1, lastSeen: seen)
-        } else {
-            track.confirmations = min(2, track.confirmations + 1)
-            track.lastSeen = seen
-        }
-        track.layout = reading.layout
-        automaticTracks[id] = track
-        guard let layout = reading.layout else { return }
-        if let i = automaticOutputs.firstIndex(where: { $0.id == id }) {
-            automaticOutputs[i] = AutomaticOutput(id: id, text: automaticOutputs[i].text, layout: layout)
-        } else if track.confirmations >= 2, automaticTasks[id] == nil, seen >= track.retryAt {
-            let revision = track.revision
+        for track in automaticTracker.tracks where automaticTasks.count < 2 {
+            let id = track.id
+            guard track.confirmations >= 2, automaticTranslations[id] == nil,
+                  automaticTasks[id] == nil, now >= (automaticRetries[id] ?? 0),
+                  now - track.lastSeen <= AutomaticBlockTracker.staleAfter else { continue }
+            let original = track.block.text
             automaticTasks[id] = Task { @MainActor [weak self] in
                 guard let self else { return }
-                let outcome = await self.pipeline.translate(reading.text, from: source, to: target)
+                let outcome = await self.pipeline.translate(original, from: source, to: target)
                 guard !Task.isCancelled, self.isRunning, self.sessionRevision == currentSession,
                       self.dialogueRevision.accepts(contextRevision),
-                      self.automaticTracks[id]?.revision == revision else { return }
+                      let current = self.automaticTracker.tracks.first(where: { $0.id == id })
+                else { return }
                 self.automaticTasks.removeValue(forKey: id)
                 let finished = ProcessInfo.processInfo.systemUptime
-                guard let latest = self.automaticTracks[id], finished - latest.lastSeen <= 3 else { return }
-                if case .success(let raw) = outcome {
-                    let text = self.glossaryTranslation(original: reading.text, translated: raw,
+                if finished - current.lastSeen <= AutomaticBlockTracker.staleAfter,
+                   case .success(let raw) = outcome, !raw.isEmpty {
+                    self.automaticTranslations[id] = self.glossaryTranslation(original: original, translated: raw,
                         source: source.rawValue, target: target.rawValue)
-                    self.automaticOutputs.removeAll { $0.id == id }
-                    self.automaticOutputs.append(.init(id: id, text: text, layout: latest.layout ?? layout))
-                    self.publishAutomaticOutputs(now: finished)
                 } else {
-                    self.automaticTracks[id]?.retryAt = finished + 2
+                    self.automaticRetries[id] = finished + 2
+                }
+                self.publishAutomaticOutputs(now: finished)
+            }
+        }
+    }
+
+    private func processAutomaticFrame(_ buffer: CVPixelBuffer, currentSession: Int, contextRevision: UInt64) async {
+        let now = ProcessInfo.processInfo.systemUptime
+        automaticLastFrame = now
+        let height = CVPixelBufferGetHeight(buffer)
+        if height > 0 { automaticFrameAspect = Double(CVPixelBufferGetWidth(buffer)) / Double(height) }
+        if automaticTimer == nil {
+            automaticTimer = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(350))
+                    guard !Task.isCancelled, let self, self.isRunning,
+                          self.sessionRevision == currentSession,
+                          self.dialogueRevision.accepts(contextRevision) else { return }
+                    self.publishAutomaticOutputs(now: ProcessInfo.processInfo.systemUptime)
+                    self.scheduleAutomaticTranslations(currentSession: currentSession, contextRevision: contextRevision)
                 }
             }
         }
+        publishAutomaticOutputs(now: now)
+        await dialogueReset?.value
+        guard isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
+        guard let reading = await pipeline.recognizeAutomaticZone(buffer, zones: automaticZones, gameLanguage: gameLanguage),
+              isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
+        let seen = ProcessInfo.processInfo.systemUptime
+        automaticTracker.observe(zone: reading.zone, blocks: reading.blocks, now: seen)
         publishAutomaticOutputs(now: seen)
+        scheduleAutomaticTranslations(currentSession: currentSession, contextRevision: contextRevision)
     }
 
     private func processFrame(_ buffer: CVPixelBuffer, currentSession: Int, frameReceivedAt: TimeInterval) async {

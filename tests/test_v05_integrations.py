@@ -485,7 +485,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("profile.automaticZones", ios)
         self.assertIn("receiverSupportsZones", tv)
         self.assertIn("sendSignedSubtitle(Data((header + blocks)", tv)
-        self.assertIn("count in 0..10", parser)
+        self.assertIn("count in 0..32", parser)
         self.assertIn("bytes.size in 1..512", parser)
         self.assertIn("isFinite()", parser)
         self.assertIn("FLAG_NOT_TOUCHABLE", overlay)

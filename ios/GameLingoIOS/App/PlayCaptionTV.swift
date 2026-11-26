@@ -626,12 +626,15 @@ final class PlayCaptionTV: ObservableObject {
         guard !target.isEmpty else { return }
         let font = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1
         var blocks = [String]()
-        for output in outputs.prefix(10) {
+        let limit = min(512, 4608 / max(1, min(32, outputs.count)))
+        for output in outputs.prefix(32) {
             var text = output.text
-            while text.utf8.count > 512 { text.removeLast() }
+            while text.utf8.count > limit { text.removeLast() }
             guard !text.isEmpty else { continue }
             let l = output.layout
-            blocks += [Data(text.utf8).base64EncodedString(), String(l.centerX), String(l.bottomY), String(l.width)]
+            blocks += [Data(text.utf8).base64EncodedString(), String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.centerX),
+                       String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.bottomY),
+                       String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.width)]
         }
         let header = ["PCZ1", String(min(4, max(0.5, aspect))), String(min(2.5, max(0.5, font))), String(blocks.count / 4)]
         _ = sendSignedSubtitle(Data((header + blocks).joined(separator: "\t").utf8), to: target, reportStatus: false)
