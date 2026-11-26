@@ -527,9 +527,12 @@ object GameLingoVisualKit {
     fun cta(activity: Activity, title: String,
             onClick: () -> Unit): TextView = TextView(activity).apply {
         text = title
-        setCompoundDrawablesWithIntrinsicBounds(iconDrawable("play.fill",Color.WHITE,dp(activity,22)),null,
-            iconDrawable("arrow.right",Color.WHITE,dp(activity,17)),null)
-        setPadding(dp(activity,17),0,dp(activity,17),0)
+        // iOS uses matching leading/trailing action rails; avoid a left-shifted label.
+        setCompoundDrawablesWithIntrinsicBounds(
+            iconDrawable("play.fill", Color.WHITE, dp(activity, 22)), null,
+            iconDrawable("arrow.right", Color.WHITE, dp(activity, 22)), null)
+        compoundDrawablePadding = dp(activity, 8)
+        setPadding(dp(activity, 17), 0, dp(activity, 17), 0)
         textSize = sp(activity, 20f)
         setTextColor(Color.WHITE)
         setTypeface(null, Typeface.BOLD)
