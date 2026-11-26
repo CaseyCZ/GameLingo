@@ -1,0 +1,12 @@
+name: Native GameLingo candidate
+on:
+  push:
+    branches: [feature/ocr-lab]
+    paths:
+      - '.github/workflows/ocr-lab-native-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    uses: ./.github/workflows/build-gamelingo.yml

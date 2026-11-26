@@ -853,4 +853,6 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var tvTextColor: String?
     var tvBackground: String?
     var glossary: GameGlossary? = nil
+    var automaticMode: Bool? = nil
+    var automaticZones: [AutomaticOCRZone]? = nil
 }

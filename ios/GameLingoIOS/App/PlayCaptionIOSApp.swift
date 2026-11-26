@@ -53,6 +53,8 @@ final class CaptionAppModel: ObservableObject {
     private var automaticTasks: [UUID: Task<Void, Never>] = [:]
     private var automaticLastTV: AutomaticOutput?
     private var automaticLastTVAt: TimeInterval = 0
+    private var automaticFrameAspect = 16.0 / 9.0
+    private var automaticSnapshotKey = ""
     private func clearAutomaticOutputs() {
         automaticTasks.values.forEach { $0.cancel() }
         automaticTasks.removeAll()
@@ -60,6 +62,7 @@ final class CaptionAppModel: ObservableObject {
         automaticOutputs.removeAll()
         automaticLastTV = nil
         automaticLastTVAt = 0
+        automaticSnapshotKey = ""
     }
     func setAutomaticGameDialogue(_ enabled: Bool) {
         guard !isRunning else { return }
@@ -508,7 +511,9 @@ final class CaptionAppModel: ObservableObject {
             phoneTextColor: phoneTextColor.rawValue,
             phoneBackground: phoneBackground.rawValue,
             tvTextColor: tvTextColor.rawValue,
-            tvBackground: tvBackground.rawValue
+            tvBackground: tvBackground.rawValue,
+            automaticMode: automaticGameDialogue,
+            automaticZones: automaticZones
         )
         if let existingIndex {
             profile.glossary = gameProfiles[existingIndex].glossary
@@ -521,7 +526,8 @@ final class CaptionAppModel: ObservableObject {
 
     func applyGameProfile(_ profile: GameSubtitleProfile) {
         guard !isRunning else { return }
-        setAutomaticGameDialogue(false)
+        setAutomaticGameDialogue(profile.automaticMode ?? false)
+        if let zones = profile.automaticZones { updateAutomaticZones(zones) }
         selectGlossaryProfile(profile.id)
         subtitleRegion = SubtitleRegion(rawValue: profile.region) ?? .center
         manualOCR = profile.manualOCR
@@ -799,7 +805,10 @@ final class CaptionAppModel: ObservableObject {
         lastEnglish = ""
         lastCzech = ""
         phoneSubtitle = ""
-        if clearTV, isRunning, verifiedTelevisionOutput { tv.sendSubtitle("", duration: 0) }
+        if clearTV, isRunning, verifiedTelevisionOutput {
+            tv.sendAutomaticZones([], aspect: automaticFrameAspect)
+            tv.sendSubtitle("", duration: 0)
+        }
         let previous = dialogueReset
         dialogueReset = Task { [pipeline] in
             await previous?.value
@@ -989,7 +998,21 @@ final class CaptionAppModel: ObservableObject {
         guard devices.subtitleOutput == .googleTV else { return }
         devices.prepareTV(tv)
         guard verifiedTelevisionOutput else { return }
-        let first = automaticZones.compactMap { zone in automaticOutputs.first { $0.id == zone.id } }.first
+        let ordered = automaticZones.compactMap { zone in automaticOutputs.first { $0.id == zone.id } }
+        if tv.receiverSupportsZones {
+            let key = ordered.map { "\($0.id)|\($0.text)|\($0.layout.centerX)|\($0.layout.bottomY)|\($0.layout.width)" }.joined(separator: ";")
+            if automaticLastTV != nil {
+                tv.sendSubtitle("", duration: 0)
+                automaticLastTV = nil
+            }
+            if key != automaticSnapshotKey || now - automaticLastTVAt >= 0.8 {
+                tv.sendAutomaticZones(ordered, aspect: automaticFrameAspect)
+                automaticSnapshotKey = key
+                automaticLastTVAt = now
+            }
+            return
+        }
+        let first = ordered.first
         if let first {
             if automaticLastTV?.id != first.id || automaticLastTV?.text != first.text ||
                 automaticLastTV?.layout != first.layout || now - automaticLastTVAt >= 1.0 {
@@ -1005,6 +1028,8 @@ final class CaptionAppModel: ObservableObject {
 
     private func processAutomaticFrame(_ buffer: CVPixelBuffer, currentSession: Int, contextRevision: Int) async {
         let now = ProcessInfo.processInfo.systemUptime
+        let height = CVPixelBufferGetHeight(buffer)
+        if height > 0 { automaticFrameAspect = Double(CVPixelBufferGetWidth(buffer)) / Double(height) }
         publishAutomaticOutputs(now: now)
         await dialogueReset?.value
         guard isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
@@ -1269,6 +1294,7 @@ final class CaptionAppModel: ObservableObject {
         phoneSubtitle = ""
         isRunning = false
         UIApplication.shared.isIdleTimerDisabled = false
+        tv.sendAutomaticZones([], aspect: automaticFrameAspect)
         tv.sendSubtitle("", duration: 0)
         tv.sendChoices([], area: choicesArea, outputArea: choicesOutputArea)
         lastTranslatedChoiceItems = []

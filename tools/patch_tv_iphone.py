@@ -142,7 +142,9 @@ def main() -> None:
          '                                    if (casti.size == 7 && IPhoneTVPairing.verifyFresh(c, id, "PING\\t$id\\t$nonce", casti.getOrNull(4), casti.getOrNull(5), sig, "PING")) {\n'
          '                                        val pong = IPhoneTVPairing.pongSignature(c, id, nonce) ?: continue\n'
          '                                        if (IPhoneTVPairing.permitsStyle(id)) posledniZprava = System.currentTimeMillis()\n'
-         '                                        odpovez(s, p, "PCPAIR1\\tPONG\\t$nonce\\t$pong")\n'
+         '                                        val caps = if (nonce.startsWith("Z1-")) IPhoneTVPairing.pongSignature(c, id, "$nonce|PCZ1") else null\n'
+         '                                        val suffix = caps?.let { "\\tPCZ1\\t$it" }.orEmpty()\n'
+         '                                        odpovez(s, p, "PCPAIR1\\tPONG\\t$nonce\\t$pong$suffix")\n'
          '                                    }\n'
          '                                }\n'
          '                                "TEXT" -> {\n'
@@ -573,7 +575,8 @@ def main() -> None:
          '                                            !decoded.startsWith("PCV1\\t")) continue\n'
          '                                        casti = decoded.split("\\t")\n',
          '                                        val inner = decoded.split("\\t")\n'
-         '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")) continue\n'
+         '                                        if (inner.firstOrNull() !in (listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1") + "PCZ1")) continue\n'
+         '                                        if (inner.firstOrNull() == "PCZ1" && (!PrijemService.bezi || GameLingoZonePacket.parse(inner) == null)) continue\n'
          '                                        if (inner.firstOrNull() == "PCS1" && inner.getOrNull(1) in listOf("ZADOST", "KOD")) continue\n'
          '                                        casti = inner\n'
          '                                        if (inner.firstOrNull() == "PCQ1") {\n'
@@ -581,6 +584,10 @@ def main() -> None:
          '                                        } else if (!IPhoneTVPairing.claimGameData(id, IPhoneTVPairing.extendsSourceLease(inner))) continue\n'
          '                                        resetSourceIfChanged()\n'
          '                                        authenticatedGameData = true\n'
+         '                                        if (inner.firstOrNull() == "PCZ1") {\n'
+         '                                            OverlayService.posli(c, android.content.Intent(c, OverlayService::class.java).setAction(OverlayService.ACTION_SET_ZONES).putExtra(OverlayService.EXTRA_ZONE_PACKET, decoded))\n'
+         '                                            continue\n'
+         '                                        }\n'
          '                                        p.setData(decoded.toByteArray(Charsets.UTF_8))\n')
     once(networking,
          '                        if (pribeh.zpracuj(p)) {\n',

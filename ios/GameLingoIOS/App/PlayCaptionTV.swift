@@ -70,6 +70,7 @@ final class PlayCaptionTV: ObservableObject {
     @Published var receiverCode = ""
     @Published private(set) var receiverStatus = "Televize zatím není spárovaná s iPhonem."
     @Published private(set) var receiverConnected = false
+    @Published private(set) var receiverSupportsZones = false
     @Published private(set) var lastCaptionAcknowledgement = ""
 
     private let receiverID: String = {
@@ -374,6 +375,7 @@ final class PlayCaptionTV: ObservableObject {
         liveReceiver = nil
         liveReceiverReady = false
         receiverConnected = false
+        receiverSupportsZones = false
         lastPong = nil
         pendingPingNonce = nil
         lastCaptionAcknowledgement = ""
@@ -445,7 +447,7 @@ final class PlayCaptionTV: ObservableObject {
                         while !Task.isCancelled {
                             guard let self, let token = ReceiverSecretStore.load(target),
                                   self.liveReceiver === conn else { break }
-                            let nonce = UUID().uuidString
+                            let nonce = "Z1-" + UUID().uuidString
                             self.pendingPingNonce = nonce
                             let body = self.freshBody("PING\t\(self.receiverID)\t\(nonce)")
                             if let mac = self.signature(body, tokenHex: token) {
@@ -505,11 +507,13 @@ final class PlayCaptionTV: ObservableObject {
                 guard let self, self.liveReceiver === conn, self.ip == target else { return }
                 if let data, let raw = String(data: data, encoding: .utf8) {
                     let fields = raw.components(separatedBy: "\t")
-                    if fields.count == 4 && fields[0] == "PCPAIR1" && fields[1] == "PONG",
+                    if (fields.count == 4 || fields.count == 6) && fields[0] == "PCPAIR1" && fields[1] == "PONG",
                        fields[2] == self.pendingPingNonce,
                        let token = ReceiverSecretStore.load(target),
                        let expected = self.signature("PONG\t\(self.receiverID)\t\(fields[2])", tokenHex: token),
                        fields[3] == expected {
+                        self.receiverSupportsZones = fields.count == 6 && fields[4] == "PCZ1" &&
+                            self.signature("PONG\t\(self.receiverID)\t\(fields[2])|PCZ1", tokenHex: token) == fields[5]
                         self.pendingPingNonce = nil
                         self.lastPong = Date()
                         self.receiverRetrySeconds = 3
@@ -602,13 +606,35 @@ final class PlayCaptionTV: ObservableObject {
         sequence += 1
         let choices = Data("PCV1\t\(sequence)\t0\t0\t0\t1\t1\t-1\t".utf8)
 
-        for payload in [dialogue, choices] {
+        let zones = Data("PCZ1\t1.7777778\t1\t0".utf8)
+        for payload in [dialogue, choices, zones] {
             if !sendSignedSubtitle(payload, to: target,
                                    reportStatus: false, forceDatagram: true) {
                 // No authenticated receiver: do not send unsigned game text.
                 continue
             }
         }
+    }
+
+    /// One authenticated full snapshot, never a sequence of mutually
+    /// overwriting PCT1 captions. Old TV builds keep the legacy fallback.
+    func sendAutomaticZones(_ outputs: [CaptionAppModel.AutomaticOutput], aspect: Double) {
+        guard receiverSupportsZones else { return }
+        repeatTask?.cancel()
+        repeatTask = nil
+        let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !target.isEmpty else { return }
+        let font = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1
+        var blocks = [String]()
+        for output in outputs.prefix(10) {
+            var text = output.text
+            while text.utf8.count > 512 { text.removeLast() }
+            guard !text.isEmpty else { continue }
+            let l = output.layout
+            blocks += [Data(text.utf8).base64EncodedString(), String(l.centerX), String(l.bottomY), String(l.width)]
+        }
+        let header = ["PCZ1", String(min(4, max(0.5, aspect))), String(min(2.5, max(0.5, font))), String(blocks.count / 4)]
+        _ = sendSignedSubtitle(Data((header + blocks).joined(separator: "\t").utf8), to: target, reportStatus: false)
     }
 
     /// Sends one packet and repeats it once a second while the caption is valid,

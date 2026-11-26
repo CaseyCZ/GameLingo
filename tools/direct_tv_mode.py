@@ -566,5 +566,29 @@ def patch_direct_tv(folder):
             overlayTestEvents.joinToString("\\n")
         }
         const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"''')
+    # Authenticated full snapshots use the existing foreground overlay service.
+    for name in ("GameLingoZonePacket.kt", "GameLingoZoneOverlay.kt"):
+        (folder / name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"), encoding="utf8")
+    overlay_one('    private lateinit var wm: WindowManager',
+        '''    private lateinit var wm: WindowManager
+    private val automaticZoneOverlay by lazy { GameLingoZoneOverlay(this, wm) }''')
+    overlay_one('        if (intent?.action == ACTION_ZRUS_PRIBEH) { zrusPribeh(); showText(""); return START_STICKY }',
+        '''        if (intent?.action == ACTION_SET_ZONES) {
+            val packet = GameLingoZonePacket.parse(intent.getStringExtra(EXTRA_ZONE_PACKET).orEmpty().split('\\t'))
+            if (packet != null) {
+                if (packet.blocks.isNotEmpty()) { zrusPribeh(); showText("") }
+                automaticZoneOverlay.show(packet)
+            }
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_ZRUS_PRIBEH) { automaticZoneOverlay.clear(); zrusPribeh(); showText(""); return START_STICKY }''')
+    overlay_one('            val text = intent.getStringExtra(EXTRA_TEXT).orEmpty()\n            val box',
+        '            val text = intent.getStringExtra(EXTRA_TEXT).orEmpty()\n            if (text.isNotBlank()) automaticZoneOverlay.clear()\n            val box')
+    overlay_one('    override fun onDestroy() {\n        zrusPribeh()',
+        '    override fun onDestroy() {\n        automaticZoneOverlay.clear()\n        zrusPribeh()')
+    overlay_one('        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"',
+        '''        const val ACTION_SET_ZONES = "gamelingo.overlay.ZONES"
+        const val EXTRA_ZONE_PACKET = "zone_packet"
+        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"''')
     overlay.write_text(overlay_text, encoding="utf8")
 

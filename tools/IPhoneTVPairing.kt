@@ -45,7 +45,7 @@ object IPhoneTVPairing {
     private var activeAt = 0L
     private var sourceRevision = 0L
     private const val FRESHNESS_MS = 120_000L
-    private val replayLanes = setOf("PCT1", "PCV1", "PCO1", "STORY", "STYLE", "PING")
+    private val replayLanes = setOf("PCT1", "PCV1", "PCO1", "PCZ1", "STORY", "STYLE", "PING")
     @Volatile var lastAuthenticatedMs = 0L
         private set
 
@@ -185,6 +185,7 @@ object IPhoneTVPairing {
                 fields.getOrNull(9) == "1" ||
                 (fields.getOrNull(5) == "" && fields.getOrNull(10) == "1")
             "PCV1" -> present(8) || (fields.getOrNull(2)?.toIntOrNull() ?: 0) in 1..2
+            "PCZ1" -> (fields.getOrNull(3)?.toIntOrNull() ?: 0) in 1..10
             "PCO1" -> fields.getOrNull(1) == "1"
             "PCS1" -> present(3)
             else -> false // PCQ1 readiness queries and empty clears do not acquire ownership.
@@ -344,7 +345,7 @@ object IPhoneTVPairing {
         if (encoded.length >= 11000) return null
         val inner = String(android.util.Base64.decode(encoded, android.util.Base64.DEFAULT), Charsets.UTF_8)
         when (val kind = inner.substringBefore('\t')) {
-            "PCT1", "PCV1", "PCO1" -> kind
+            "PCT1", "PCV1", "PCO1", "PCZ1" -> kind
             "PCQ1", "PCS1" -> "STORY"
             else -> null
         }
