@@ -463,7 +463,7 @@ struct GameLingoHome: View {
                         .foregroundStyle(GLNeon.mist)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-.frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
                 GLHelpButton(title: "Stav překladu",
                     explanation: "Uložená konzole není automaticky připojená. Snímání aktivní se objeví až po přijetí video snímků; Google TV odpovídá na kontrolu spojení.")
