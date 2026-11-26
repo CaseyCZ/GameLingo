@@ -27,7 +27,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                       'openSelectedConsole', 'startCurrentSource'):
             self.assertIn(label,home)
         contract=code(ROOT/"shared/mobile-ui.json")
-        for label in ('Vyber konzoli', 'Kam zobrazit titulky?'):
+        for label in ('Jazyky a překlad', 'Vyber zařízení'):
             self.assertIn(label,contract)
         for label in ('PlayStation', 'Xbox', 'Spárovat TV'):
             self.assertIn(label,setup)
