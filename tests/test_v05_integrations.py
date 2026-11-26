@@ -18,6 +18,16 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_profiles_optional_and_localized_without_translating_names(self):
+        phone = code(TOOLS/"GameLingoProfiles.kt")
+        tv = code(TOOLS/"GameLingoTVProfiles.kt")
+        glossary = code(TOOLS/"GameLingoGlossaryUi.kt")
+        self.assertIn('if (names.isEmpty()) { onChosen(); return }', tv)
+        self.assertIn('GameLingoLanguages.ui(a, "Aktuální nastavení")', tv)
+        self.assertIn('text(activity,name,16f', phone)
+        self.assertIn('GameLingoVisualKit.detailRow(a,"gamecontroller",name,', tv)
+        self.assertIn('setText(saved?.text.orEmpty())', glossary)
+
     def test_localized_region_and_appearance_controls(self):
         lang = code(TOOLS/"GameLingoLanguages.kt")
         regions = code(TOOLS/"GameLingoRegions.kt")

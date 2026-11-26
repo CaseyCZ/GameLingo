@@ -201,8 +201,8 @@ object GameLingoProfiles {
     private fun canChangeProfile(activity: Activity): Boolean {
         if (!RemotePlayService.aktivni) return true
         AlertDialog.Builder(activity)
-            .setMessage("Profil hry změň před spuštěním překladu.")
-            .setPositiveButton("Rozumím", null).show()
+            .setMessage(GameLingoLanguages.ui(activity, "Profil hry změň před spuštěním překladu."))
+            .setPositiveButton(GameLingoLanguages.ui(activity, "Rozumím"), null).show()
         return false
     }
 
@@ -216,7 +216,7 @@ object GameLingoProfiles {
             background = GameLingoVisualKit.pageBackground(activity)
         }
         val heading = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
-        heading.addView(text(activity, "Profily her", 24f, Color.WHITE, true),
+        heading.addView(text(activity, GameLingoLanguages.ui(activity, "Profily her"), 24f, Color.WHITE, true),
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         heading.addView(GameLingoHelp.button(activity, "profiles"),
             LinearLayout.LayoutParams(54, 54))
@@ -227,7 +227,7 @@ object GameLingoProfiles {
         val scroll = ScrollView(activity)
         scroll.addView(outer)
         val input = EditText(activity).apply {
-            hint="Název hry";setSingleLine(true);setTextColor(Color.WHITE);setHintTextColor(muted)
+            hint=GameLingoLanguages.ui(activity, "Název hry");setSingleLine(true);setTextColor(Color.WHITE);setHintTextColor(muted)
             background=box(Color.parseColor("#172033"),radius=GameLingoVisualKit.dp(activity,11).toFloat())
             val pad=GameLingoVisualKit.dp(activity,10);setPadding(pad,pad,pad,pad)
         }
@@ -236,10 +236,10 @@ object GameLingoProfiles {
             val pad=GameLingoVisualKit.dp(activity,13);setPadding(pad,pad,pad,pad)
             addView(input,LinearLayout.LayoutParams(-1,-2))
         }
-        val save=GameLingoVisualKit.cta(activity,"Uložit profil") {
+        val save=GameLingoVisualKit.cta(activity,GameLingoLanguages.ui(activity, "Uložit profil")) {
             if(canChangeProfile(activity)) {
                 val name=input.text.toString().trim()
-                if(name.isEmpty()||name.length>64)input.error="Zadej název hry (max. 64 znaků)"
+                if(name.isEmpty()||name.length>64)input.error=GameLingoLanguages.ui(activity, "Zadej název hry (max. 64 znaků)")
                 else {
                     fun persist() {
                         if(canChangeProfile(activity)) {
@@ -247,8 +247,8 @@ object GameLingoProfiles {
                             dialog.dismiss();show(activity,settings,onApplied)
                         }
                     }
-                    if(saved.contains(name))AlertDialog.Builder(activity).setMessage("Přepsat profil „"+name+"“?")
-                        .setNegativeButton("Zrušit",null).setPositiveButton("Přepsat"){_,_->persist()}.show()
+                    if(saved.contains(name))AlertDialog.Builder(activity).setMessage(GameLingoLanguages.ui(activity, "Přepsat profil") + " „" + name + "“?")
+                        .setNegativeButton(GameLingoLanguages.ui(activity, "Zrušit"),null).setPositiveButton(GameLingoLanguages.ui(activity, "Přepsat")){_,_->persist()}.show()
                     else persist()
                 }
             }
@@ -256,7 +256,7 @@ object GameLingoProfiles {
         form.addView(save,LinearLayout.LayoutParams(-1,-2).apply{topMargin=GameLingoVisualKit.dp(activity,10)})
         outer.addView(form)
         val names = saved.all.keys.sorted()
-        if(names.isNotEmpty())outer.addView(button(activity,"Nepoužívat herní slovník") {
+        if(names.isNotEmpty())outer.addView(button(activity,GameLingoLanguages.ui(activity, "Nepoužívat herní slovník")) {
             if(canChangeProfile(activity)) {GameLingoGlossaryStore.activate(activity,null);dialog.dismiss();show(activity,settings,onApplied)}
         })
         names.forEach { name ->
@@ -271,9 +271,9 @@ object GameLingoProfiles {
                 if(GameLingoGlossaryStore.active(activity)==name)addView(text(activity,"✓",18f,Color.parseColor("#35E57D"),true))
             }
             row.addView(title)
-            row.addView(GameLingoVisualKit.detailRow(activity,"character.book.closed.fill","Herní slovník","") { GameLingoGlossaryUi.edit(activity,name) })
+            row.addView(GameLingoVisualKit.detailRow(activity,"character.book.closed.fill",GameLingoLanguages.ui(activity, "Herní slovník"),"") { GameLingoGlossaryUi.edit(activity,name) })
             val actions=LinearLayout(activity).apply{orientation=LinearLayout.HORIZONTAL}
-            actions.addView(button(activity, "Použít") {
+            actions.addView(button(activity, GameLingoLanguages.ui(activity, "Použít")) {
                 if (!canChangeProfile(activity)) return@button
                 val encoded = saved.getString(name, null)
                 val data = runCatching { JSONObject(encoded ?: "") }.getOrNull()
@@ -284,17 +284,17 @@ object GameLingoProfiles {
                     onApplied()
                 }
             },LinearLayout.LayoutParams(0,-2,1f))
-            actions.addView(button(activity, "Smazat") {
+            actions.addView(button(activity, GameLingoLanguages.ui(activity, "Smazat")) {
                 AlertDialog.Builder(activity)
-                    .setMessage("Smazat profil „$name“?")
-                    .setPositiveButton("Smazat") { _: DialogInterface, _: Int ->
+                    .setMessage(GameLingoLanguages.ui(activity, "Smazat profil") + " „" + name + "“?")
+                    .setPositiveButton(GameLingoLanguages.ui(activity, "Smazat")) { _: DialogInterface, _: Int ->
                         if (!canChangeProfile(activity)) return@setPositiveButton
                         saved.edit().remove(name).apply()
                         GameLingoGlossaryStore.remove(activity, name)
                         dialog.dismiss()
                         show(activity, settings, onApplied)
                     }
-                    .setNegativeButton("Zrušit", null)
+                    .setNegativeButton(GameLingoLanguages.ui(activity, "Zrušit"), null)
                     .show()
             },LinearLayout.LayoutParams(0,-2,1f))
             row.addView(actions)
@@ -303,9 +303,9 @@ object GameLingoProfiles {
             ).apply { topMargin = 10 })
         }
         if (names.isEmpty()) {
-            outer.addView(text(activity, "Zatím nemáš uložený žádný profil.", 14f, muted))
+            outer.addView(text(activity, GameLingoLanguages.ui(activity, "Zatím nemáš uložený žádný profil."), 14f, muted))
         }
-        outer.addView(button(activity, "Zavřít") { dialog.dismiss() },
+        outer.addView(button(activity, GameLingoLanguages.ui(activity, "Zavřít")) { dialog.dismiss() },
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = 10 })
         dialog.setContentView(scroll)

@@ -95,21 +95,22 @@ object GameLingoTVProfiles {
         if (busy()) return
         val items = all(a)
         val names = items.keys().asSequence().sorted().toList()
+        if (names.isEmpty()) { onChosen(); return }
         val current = store(a).getString("activeProfile", null)
-        GameLingoTVUi.select(a, "Vybrat profil", (listOf("Aktuální nastavení") + names).toTypedArray(),
+        GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Vybrat profil"), (listOf(GameLingoLanguages.ui(a, "Aktuální nastavení")) + names).toTypedArray(),
             names.indexOf(current ?: "")+1) { index ->
             if (index == 0) onChosen()
             else if (restore(a, items.getJSONObject(names[index-1]))) {
                 store(a).edit().putString("activeProfile", names[index-1]).apply()
                 activateGlossary(a,names[index-1])
                 onChosen()
-            } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_LONG).show()
+            } else android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil nelze načíst"),android.widget.Toast.LENGTH_LONG).show()
         }
     }
     fun saveCurrent(a: Activity, onSaved: () -> Unit = {}) {
         if (busy()) return
         val input = EditText(a).apply {
-            hint = "Název hry nebo aplikace"; setSingleLine(true)
+            hint = GameLingoLanguages.ui(a, "Název hry nebo aplikace"); setSingleLine(true)
             setText(store(a).getString("activeProfile","").orEmpty())
             selectAll()
         }
@@ -118,17 +119,17 @@ object GameLingoTVProfiles {
             val latest=all(a)
             latest.put(name,snapshot(a))
             store(a).edit().putString("profiles",latest.toString()).putString("activeProfile",name).apply()
-            android.widget.Toast.makeText(a,"Profil uložen: "+name,android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil uložen") + ": " + name,android.widget.Toast.LENGTH_SHORT).show()
             onSaved()
         }
-        AlertDialog.Builder(a).setTitle("Uložit profil").setView(input).setNegativeButton("Zrušit",null)
-            .setPositiveButton("Uložit") { _,_ ->
+        AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Uložit profil")).setView(input).setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null)
+            .setPositiveButton(GameLingoLanguages.ui(a, "Uložit")) { _,_ ->
                 val name=input.text.toString().trim().take(64)
                 if (name.isEmpty()) {
-                    android.widget.Toast.makeText(a,"Zadej název profilu.",android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Zadej název profilu."),android.widget.Toast.LENGTH_SHORT).show()
                 } else if (all(a).has(name)) {
-                    AlertDialog.Builder(a).setMessage("Přepsat profil "+name+"?")
-                        .setNegativeButton("Zrušit",null).setPositiveButton("Přepsat"){_,_->persist(name)}.show()
+                    AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Přepsat profil") + " " + name + "?")
+                        .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null).setPositiveButton(GameLingoLanguages.ui(a, "Přepsat")){_,_->persist(name)}.show()
                 } else persist(name)
             }.show()
     }
@@ -138,43 +139,43 @@ object GameLingoTVProfiles {
     private fun editSettings(a: Activity, name: String, openLayout: Boolean = false) {
         if(busy()) return
         val body=android.widget.LinearLayout(a).apply { orientation=android.widget.LinearLayout.VERTICAL }
-        body.addView(GameLingoTVUi.title(a,"Uprav aktuální nastavení. Tlačítkem Uložit změny do profilu přepíšeš uložený profil.",20f,true))
+        body.addView(GameLingoTVUi.title(a,GameLingoLanguages.ui(a, "Uprav aktuální nastavení. Tlačítkem Uložit změny do profilu přepíšeš uložený profil."),20f,true))
         fun add(title: String, run:()->Unit) { body.addView(GameLingoTVUi.action(a,title,onActivate=run)) }
-        add("Jazyky"){GameLingoLanguages.show(a)}
+        add(GameLingoLanguages.ui(a, "Jazyky")){GameLingoLanguages.show(a)}
         add("OCR"){GameLingoOCRSettings.show(a){GameLingoDirectTVLayout.show(a){}}}
-        add("Překlad"){GameLingoSettings.showTranslation(a,Nastaveni(a),{GameLingoDirectTVLayout.show(a){}},{GameLingoLanguages.show(a)})}
-        add("Rozložení"){GameLingoDirectTVLayout.show(a){}}
-        add("Vzhled titulků"){GameLingoTVCaptionStyle.show(a)}
-        add("Herní slovník"){GameLingoGlossaryUi.edit(a,name){activateGlossary(a,name)}}
+        add(GameLingoLanguages.ui(a, "Překlad")){GameLingoSettings.showTranslation(a,Nastaveni(a),{GameLingoDirectTVLayout.show(a){}},{GameLingoLanguages.show(a)})}
+        add(GameLingoLanguages.ui(a, "Rozložení")){GameLingoDirectTVLayout.show(a){}}
+        add(GameLingoLanguages.ui(a, "Vzhled titulků")){GameLingoTVCaptionStyle.show(a)}
+        add(GameLingoLanguages.ui(a, "Herní slovník")){GameLingoGlossaryUi.edit(a,name){activateGlossary(a,name)}}
         var page:android.app.Dialog?=null
-        add("Uložit změny do profilu"){
+        add(GameLingoLanguages.ui(a, "Uložit změny do profilu")){
             if(!busy()) {
                 val items=all(a); items.put(name,snapshot(a))
                 store(a).edit().putString("profiles",items.toString()).putString("activeProfile",name).apply()
                 page?.dismiss()
-                android.widget.Toast.makeText(a,"Profil uložen: "+name,android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil uložen") + ": " + name,android.widget.Toast.LENGTH_SHORT).show()
                 show(a)
             }
         }
-        page=GameLingoTVUi.page(a,"Upravit profil · "+name,body,helpTopic="profiles")
+        page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Upravit profil") + " · " + name,body,helpTopic="profiles")
         if(openLayout) GameLingoDirectTVLayout.show(a) {}
     }
     fun show(a: Activity) {
-        if (busy()) { AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show(); return }
+        if (busy()) { AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejdřív zastav překlad a příjem.")).setPositiveButton("OK", null).show(); return }
         val items = all(a)
         val names = items.keys().asSequence().sorted().toList()
         val body=android.widget.LinearLayout(a).apply{orientation=android.widget.LinearLayout.VERTICAL}
         var page:android.app.Dialog?=null
-        body.addView(GameLingoTVUi.action(a,"Uložit aktuální nastavení",primary=true){saveCurrent(a){page?.dismiss();show(a)}})
-        if(names.isEmpty())body.addView(GameLingoTVUi.title(a,"Zatím žádné profily",20f,true))
-        else body.addView(GameLingoTVUi.action(a,"Nepoužívat herní slovník"){
+        body.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Uložit aktuální nastavení"),primary=true){saveCurrent(a){page?.dismiss();show(a)}})
+        if(names.isEmpty())body.addView(GameLingoTVUi.title(a,GameLingoLanguages.ui(a, "Zatím žádné profily"),20f,true))
+        else body.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Nepoužívat herní slovník")){
             if(!busy()){GameLingoGlossaryStore.activate(a,null);page?.dismiss();show(a)}
         })
         names.forEach { name ->
             val selected=store(a).getString("activeProfile",null)==name
             val row=GameLingoVisualKit.detailRow(a,"gamecontroller",name,
-                if(selected)"Aktivní profil" else "Uložený profil") {
-                GameLingoTVUi.select(a,name,arrayOf("Použít","Upravit rozložení","Smazat","Upravit další nastavení","Herní slovník")) { action ->
+                if(selected)GameLingoLanguages.ui(a, "Aktivní profil") else GameLingoLanguages.ui(a, "Uložený profil")) {
+                GameLingoTVUi.select(a,name,arrayOf(GameLingoLanguages.ui(a, "Použít"),GameLingoLanguages.ui(a, "Upravit rozložení"),GameLingoLanguages.ui(a, "Smazat"),GameLingoLanguages.ui(a, "Upravit další nastavení"),GameLingoLanguages.ui(a, "Herní slovník"))) { action ->
                     page?.dismiss()
                     when(action) {
                         0,1 -> {
@@ -182,8 +183,8 @@ object GameLingoTVProfiles {
                                 store(a).edit().putString("activeProfile",name).apply()
                                 activateGlossary(a,name)
                                 if(action==1) editSettings(a,name,openLayout=true)
-                                else {android.widget.Toast.makeText(a,"Profil načten",android.widget.Toast.LENGTH_SHORT).show();show(a)}
-                            } else android.widget.Toast.makeText(a,"Profil nelze načíst",android.widget.Toast.LENGTH_SHORT).show()
+                                else {android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil načten"),android.widget.Toast.LENGTH_SHORT).show();show(a)}
+                            } else android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil nelze načíst"),android.widget.Toast.LENGTH_SHORT).show()
                         }
                         3 -> {
                             if(restore(a,all(a).getJSONObject(name))) {
@@ -193,8 +194,8 @@ object GameLingoTVProfiles {
                             }
                         }
                         4 -> GameLingoGlossaryUi.edit(a,name){show(a)}
-                        2 -> AlertDialog.Builder(a).setMessage("Smazat profil "+name+"?").setNegativeButton("Zrušit",null)
-                            .setPositiveButton("Smazat"){_,_->
+                        2 -> AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Smazat profil") + " " + name + "?").setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null)
+                            .setPositiveButton(GameLingoLanguages.ui(a, "Smazat")){_,_->
                                 if(!busy()) {
                                     val latest=all(a); latest.remove(name)
                                     GameLingoGlossaryStore.remove(a,name)
@@ -209,6 +210,6 @@ object GameLingoTVProfiles {
             }
             body.addView(row,android.widget.LinearLayout.LayoutParams(-1,-2).apply{topMargin=GameLingoTVUi.dp(a,10)})
         }
-        page=GameLingoTVUi.page(a,"Profily her a aplikací",body,helpTopic="profiles")
+        page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Profily her a aplikací"),body,helpTopic="profiles")
     }
 }
