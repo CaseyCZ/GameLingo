@@ -23,3 +23,5 @@ jobs:
         working-directory: game-profiles
       - run: node test-calibrate.mjs
         working-directory: game-profiles
+      - run: node test-holdout.mjs
+        working-directory: game-profiles
