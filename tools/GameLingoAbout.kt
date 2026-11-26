@@ -23,7 +23,7 @@ object GameLingoAbout {
         fun pad(v: Int) = if (tv) GameLingoVisualKit.dp(activity, v) else v*d
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(pad(18), pad(if (tv) 8 else 17), pad(18), pad(if (tv) 10 else 30))
+            setPadding(pad(if (tv) 18 else 16), pad(if (tv) 8 else 12), pad(if (tv) 18 else 16), pad(if (tv) 10 else 16))
             if (!tv) background = GameLingoVisualKit.pageBackground(activity)
         }
         val close = TextView(activity).apply {
@@ -80,11 +80,20 @@ object GameLingoAbout {
                 .apply { bottomMargin = pad(13) })
         }
 
-        page.addView(label("Licence a původní autoři", 19f, true))
-        page.addView(label(
+        val licensePanel = if (tv) page else LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            background = GameLingoVisualKit.card(activity)
+            setPadding(pad(12), pad(12), pad(12), pad(12))
+        }
+        licensePanel.addView(label("Licence a původní autoři", 19f, true))
+        licensePanel.addView(label(
             "GameLingo využívá open-source základy PlayCaption a Chiaki. Zdrojový kód a jeho úpravy jsou šířeny podle GNU AGPLv3 (AGPL-3.0). GameLingo není oficiální aplikací Sony, Microsoftu ani Google. Názvy Xbox a PlayStation jsou ochranné známky příslušných vlastníků.",
             14f
         ))
+        if (!tv) page.addView(licensePanel, LinearLayout.LayoutParams(-1,-2).apply {
+            bottomMargin = pad(12)
+        })
 
         fun link(title: String, url: String): LinearLayout =
             GameLingoVisualKit.detailRow(activity, "globe", tr(title), tr("Otevřít odkaz")) {
