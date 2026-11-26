@@ -25,11 +25,6 @@ struct GLTranslationModePicker: View {
                 }
             }
             .disabled(model.isRunning)
-            if model.automaticGameDialogue {
-                Text(GLInterfaceText.localized("Automatické umístění · aktivní zóny: ") + String(model.automaticZones.filter(\.enabled).count))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 }
