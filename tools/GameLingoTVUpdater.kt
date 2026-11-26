@@ -206,6 +206,25 @@ object GameLingoTVUpdater {
         }.apply { name = "gamelingo-tv-update-check"; isDaemon = true }.start()
     }
 
+    private fun install(a: Activity, apk: File) {
+        if (!alive(a)) return
+        if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
+            AlertDialog.Builder(a).setTitle(tr(a, "Povolení instalace"))
+                .setMessage(tr(a, "Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace."))
+                .setNegativeButton(tr(a, "Zrušit")) { _, _ -> apk.delete() }
+                .setPositiveButton(tr(a, "Nastavení")) { _, _ ->
+                    runCatching { a.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + a.packageName))) }
+                        .onFailure { message(a, tr(a, "Systémový instalátor nelze otevřít.")) }
+                }.show()
+            return
+        }
+        runCatching {
+            val uri = FileProvider.getUriForFile(a, a.packageName + ".updates", apk)
+            a.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+        }.onFailure { apk.delete(); message(a, tr(a, "Systémový instalátor nelze otevřít.")) }
+    }
+
     private fun download(a: Activity, next: Update) {
         if (!alive(a)) return
         if (!working.compareAndSet(false, true)) { message(a, tr(a, "Jiná aktualizace již probíhá.")); return }
@@ -262,11 +281,7 @@ object GameLingoTVUpdater {
                 if (!alive(a) || cancelled.get() || !progress.isShowing) { file?.delete(); return@runOnUiThread }
                 progress.dismiss()
                 result.fold(onSuccess = { apk ->
-                    runCatching {
-                        val uri = FileProvider.getUriForFile(a, a.packageName + ".updates", apk)
-                        a.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
-                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-                    }.onFailure { apk.delete(); message(a, tr(a, "Systémový instalátor nelze otevřít.")) }
+                    install(a, apk)
                 }, onFailure = { file?.delete(); message(a, tr(a, "Aktualizace nebyla nainstalována:") + " " + updateError(a, it)) })
             }
         }.apply { name = "gamelingo-tv-update-download"; isDaemon = true }.start()
