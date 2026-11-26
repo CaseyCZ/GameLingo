@@ -163,12 +163,12 @@ struct GameLingoHome: View {
             NavigationStack {
                 GLScreen(title: "Režim překladu", help:
                     "Standardní režim používá ověřené oblasti. Automatický režim rozpoznává dialogy v aktivních zónách. Režim měň před spuštěním překladu.") {
-                    GLTranslationModePicker(model: model)
-                }
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        GLBackButton { modeSheet = false }
-                    }
+                    GLTranslationModePicker(model: model, showTitle: false)
+                    NavigationLink {
+                        GameLingoOCRSettingsView(model: model)
+                    } label: {
+                        GLDetailRow(icon: "slider.horizontal.3", title: "Pokročilé nastavení OCR", detail: "Citlivost, režim a filtrování textu")
+                    }.buttonStyle(.plain)
                 }
             }
             .preferredColorScheme(.dark)
