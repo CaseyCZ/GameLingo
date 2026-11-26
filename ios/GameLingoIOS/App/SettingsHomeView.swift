@@ -694,7 +694,7 @@ private struct GameLingoGlossaryEditor: View {
                     .disabled(model.isRunning)
                 Text("Originál | chybný překlad | správný překlad")
                     .font(.caption.bold())
-                Text(verbatim: "Save game | Zachránit hru | Uložit hru")
+                Text(verbatim: GLInterfaceText.localized("Save game | Zachránit hru | Uložit hru"))
                     .font(.caption.monospaced()).foregroundStyle(GLStyle.muted)
                 Text("Jeden řádek = jedno pravidlo. Prostřední část je překlad, který chceš opravit.")
                     .font(.caption).foregroundStyle(GLStyle.muted)

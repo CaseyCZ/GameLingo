@@ -69,7 +69,7 @@ struct GameLingoTVSetupScreen: View {
                                         }
                                         Spacer()
                                         if selectedTelevision?.id == record.id {
-                                            Text(tv.receiverConnected ? "Připojeno" : "Vybraná")
+                                            Text(LocalizedStringKey(tv.receiverConnected ? "Připojeno" : "Vybraná"))
                                                 .font(.caption.weight(.semibold))
                                                 .foregroundStyle(tv.receiverConnected
                                                                  ? GLStyle.green : GLNeon.cyan)
@@ -146,7 +146,7 @@ private struct GameLingoTVPairingPanel: View {
     @State private var showQRScanner = false
     @State private var qrError = false
     @State private var showForgetConfirmation = false
-    @State private var sample = "GameLingo – zkušební titulek"
+    @State private var sample = GLInterfaceText.localized("GameLingo – zkušební titulek")
 
     private var selectedIP: String {
         tv.ip.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -246,9 +246,9 @@ private struct GameLingoTVPairingPanel: View {
                         .foregroundStyle(tv.receiverConnected
                                          ? GLStyle.green : GLNeon.cyan)
                     VStack(alignment: .center, spacing: 3) {
-                        Text(tv.receiverConnected ? "Přijímač připojen" :
+                        Text(LocalizedStringKey(tv.receiverConnected ? "Přijímač připojen" :
                              tv.receiverPaired ? "Spárováno, čekám na TV" :
-                             "Zatím nespárováno")
+                             "Zatím nespárováno"))
                             .font(.subheadline.bold())
                         if !tv.receiverStatus.isEmpty {
                             Text(tv.receiverStatus)
