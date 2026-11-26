@@ -45,7 +45,7 @@ object GameLingoProfiles {
             textSize = GameLingoVisualKit.sp(c, size)
             setTextColor(color)
             if (bold) setTypeface(null, Typeface.BOLD)
-            setPadding(14, 10, 14, 10)
+            setPadding(GameLingoVisualKit.dp(c,14), GameLingoVisualKit.dp(c,10), GameLingoVisualKit.dp(c,14), GameLingoVisualKit.dp(c,10))
         }
 
     private fun button(c: Context, label: String, action: () -> Unit): TextView =
@@ -55,7 +55,7 @@ object GameLingoProfiles {
             setOnClickListener { action() }
             isClickable = true
             isFocusable = true
-            minHeight = 50
+            minHeight = GameLingoVisualKit.dp(c,50)
         }
 
     private fun array(values: FloatArray) = JSONArray().apply {
@@ -217,7 +217,7 @@ object GameLingoProfiles {
          val dialog = android.app.Dialog(activity,
             android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val input = EditText(activity).apply {
-            hint=GameLingoLanguages.ui(activity, "Název hry");setSingleLine(true);setTextColor(Color.WHITE);setHintTextColor(muted)
+            gravity=Gravity.CENTER;hint=GameLingoLanguages.ui(activity, "Název hry");setSingleLine(true);setTextColor(Color.WHITE);setHintTextColor(muted)
             background=box(Color.parseColor("#172033"),radius=GameLingoVisualKit.dp(activity,11).toFloat())
             val pad=GameLingoVisualKit.dp(activity,10);setPadding(pad,pad,pad,pad)
         }
@@ -258,7 +258,12 @@ object GameLingoProfiles {
             val title=LinearLayout(activity).apply {gravity=Gravity.CENTER_VERTICAL
                 addView(GameLingoVisualKit.icon(activity,"gamecontroller",cyan),LinearLayout.LayoutParams(GameLingoVisualKit.dp(activity,25),GameLingoVisualKit.dp(activity,25)))
                 addView(text(activity,name,16f,Color.WHITE,true),LinearLayout.LayoutParams(0,-2,1f))
-                if(GameLingoGlossaryStore.active(activity)==name)addView(text(activity,"✓",18f,Color.parseColor("#35E57D"),true))
+                addView(TextView(activity).apply {
+                    text = if (GameLingoGlossaryStore.active(activity) == name) "✓" else ""
+                    gravity = Gravity.CENTER
+                    textSize = GameLingoVisualKit.sp(activity, 18f)
+                    setTextColor(Color.parseColor("#35E57D"))
+                }, LinearLayout.LayoutParams(GameLingoVisualKit.dp(activity,25),GameLingoVisualKit.dp(activity,25)))
             }
             row.addView(title)
             row.addView(GameLingoVisualKit.detailRow(activity,"character.book.closed.fill",GameLingoLanguages.ui(activity, "Herní slovník"),"") { GameLingoGlossaryUi.edit(activity,name) })
