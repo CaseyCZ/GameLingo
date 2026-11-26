@@ -45,14 +45,14 @@ class GameLingoScreenConsentActivity : Activity() {
                 }
                 GameLingoScreenTranslationService.startupFailed -> {
                     waitingForCapture = false
-                    Toast.makeText(this@GameLingoScreenConsentActivity, GameLingoScreenTranslationService.status, Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@GameLingoScreenConsentActivity, GameLingoLanguages.ui(this@GameLingoScreenConsentActivity, GameLingoScreenTranslationService.status), Toast.LENGTH_LONG).show()
                     finish()
                 }
                 SystemClock.elapsedRealtime() >= startupDeadline -> {
                     waitingForCapture = false
                     GameLingoScreenTranslationService.status = "Služba snímání neodpověděla"
                     GameLingoScreenTranslationService.stop(this@GameLingoScreenConsentActivity)
-                    Toast.makeText(this@GameLingoScreenConsentActivity, GameLingoScreenTranslationService.status, Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@GameLingoScreenConsentActivity, GameLingoLanguages.ui(this@GameLingoScreenConsentActivity, GameLingoScreenTranslationService.status), Toast.LENGTH_LONG).show()
                     finish()
                 }
                 else -> startupUi.postDelayed(this, 100L)
@@ -76,7 +76,7 @@ class GameLingoScreenConsentActivity : Activity() {
         super.onCreate(state)
         if (state != null) return
         if (!Settings.canDrawOverlays(this) || RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running) {
-            Toast.makeText(this, "Zastav ostatní režimy a povol překryv.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, GameLingoLanguages.ui(this, "Zastav ostatní režimy a povol překryv."), Toast.LENGTH_LONG).show()
             finish(); return
         }
         GameLingoScreenTranslationService.resetDiagnostics()
@@ -89,7 +89,7 @@ class GameLingoScreenConsentActivity : Activity() {
             startActivityForResult(request, 9231)
         } catch (e: Exception) {
             GameLingoScreenTranslationService.status = "Dialog snímání: " + e.javaClass.simpleName
-            Toast.makeText(this, "Snímání nelze spustit.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, GameLingoLanguages.ui(this, "Snímání nelze spustit."), Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -114,7 +114,7 @@ class GameLingoScreenConsentActivity : Activity() {
             startupUi.post(checkStartup)
         }.onFailure {
             GameLingoScreenTranslationService.status = "Start služby: " + it.javaClass.simpleName
-            Toast.makeText(this, "Překlad se nepodařilo spustit.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, GameLingoLanguages.ui(this, "Překlad se nepodařilo spustit."), Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -1031,13 +1031,13 @@ class GameLingoScreenTranslationService : Service() {
         fun stop(c: Context) { c.stopService(Intent(c,GameLingoScreenTranslationService::class.java)) }
         fun open(a: Activity) {
             if (running) {
-                AlertDialog.Builder(a).setTitle("Samostatná TV").setMessage("Překlad je spuštěný. " + status)
-                    .setPositiveButton("Zastavit") { _,_ -> stop(a) }
-                    .setNeutralButton("Pozastavit / pokračovat") { _,_ ->
+                AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Samostatná TV")).setMessage(GameLingoLanguages.ui(a, "Překlad je spuštěný.") + " " + GameLingoLanguages.ui(a, status))
+                    .setPositiveButton(GameLingoLanguages.ui(a, "Zastavit")) { _,_ -> stop(a) }
+                    .setNeutralButton(GameLingoLanguages.ui(a, "Pozastavit / pokračovat")) { _,_ ->
                         if (running) a.startService(Intent(a,GameLingoScreenTranslationService::class.java).setAction(PAUSE))
-                    }.setNegativeButton("Zpět",null).show()
-            } else GameLingoTVUi.select(a, "Samostatná TV", arrayOf(
-                "Spustit překlad TV · vybrat profil", "Rozložení oblastí", "Profily her a aplikací")) { index ->
+                    }.setNegativeButton(GameLingoLanguages.ui(a, "Zpět"),null).show()
+            } else GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Samostatná TV"), arrayOf(
+                GameLingoLanguages.ui(a, "Spustit překlad TV · vybrat profil"), GameLingoLanguages.ui(a, "Rozložení oblastí"), GameLingoLanguages.ui(a, "Profily her a aplikací"))) { index ->
                 when (index) {
                     0 -> GameLingoTVProfiles.chooseForStart(a) {
                         a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java))
@@ -1067,7 +1067,7 @@ class GameLingoScreenTranslationService : Service() {
             })
             preview?.let { bmp ->
                 panel.addView(android.widget.ImageView(a).apply {
-                    setImageBitmap(bmp); adjustViewBounds=true; contentDescription="Diagnostický výřez OCR"
+                    setImageBitmap(bmp); adjustViewBounds=true; contentDescription=GameLingoLanguages.ui(a, "Diagnostický výřez OCR")
                     maxHeight = (a.resources.displayMetrics.heightPixels * .22f).toInt()
                 })
             }
@@ -1075,15 +1075,15 @@ class GameLingoScreenTranslationService : Service() {
                 text = OverlayService.overlayTestReport(); textSize = 13f
             }
             val overlayAction = GameLingoTVUi.action(a,
-                if (OverlayService.overlayTestActive) "Vypnout test překryvu" else "Test překryvu") {
+                if (OverlayService.overlayTestActive) GameLingoLanguages.ui(a, "Vypnout test překryvu") else GameLingoLanguages.ui(a, "Test překryvu")) {
                 if (running || RemotePlayService.aktivni || PrijemService.bezi) {
-                    Toast.makeText(a,"Nejdříve zastav ostatní režimy.",Toast.LENGTH_LONG).show()
+                    Toast.makeText(a,GameLingoLanguages.ui(a, "Nejdříve zastav ostatní režimy."),Toast.LENGTH_LONG).show()
                 } else {
                     val stopTest = OverlayService.overlayTestActive
                     val allowed = Settings.canDrawOverlays(a)
                     OverlayService.recordOverlayTest("Oprávnění před spuštěním: " + allowed)
                     if (!allowed && !stopTest) {
-                        Toast.makeText(a,"Povol překryv v nastavení TV.",Toast.LENGTH_LONG).show()
+                        Toast.makeText(a,GameLingoLanguages.ui(a, "Povol překryv v nastavení TV."),Toast.LENGTH_LONG).show()
                     } else {
                         val request = Intent(a,OverlayService::class.java).setAction(
                             if (stopTest) OverlayService.ACTION_STOP_TEST_OVERLAY else OverlayService.ACTION_TEST_OVERLAY)
@@ -1096,8 +1096,8 @@ class GameLingoScreenTranslationService : Service() {
                         (overlayLog.parent as? android.widget.LinearLayout)?.let { parent ->
                             for (i in 0 until parent.childCount) {
                                 val v = parent.getChildAt(i) as? android.widget.TextView ?: continue
-                                if (v.text == "Test překryvu" || v.text == "Vypnout test překryvu")
-                                    v.text = if (OverlayService.overlayTestActive) "Vypnout test překryvu" else "Test překryvu"
+                                if (v.text == GameLingoLanguages.ui(a, "Test překryvu") || v.text == GameLingoLanguages.ui(a, "Vypnout test překryvu"))
+                                    v.text = if (OverlayService.overlayTestActive) GameLingoLanguages.ui(a, "Vypnout test překryvu") else GameLingoLanguages.ui(a, "Test překryvu")
                             }
                         }
                     },800L)
@@ -1105,9 +1105,9 @@ class GameLingoScreenTranslationService : Service() {
             }
             panel.addView(overlayAction)
             panel.addView(overlayLog)
-            panel.addView(GameLingoTVUi.action(a,"Test překladového jádra") {
+            panel.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Test překladového jádra")) {
                 if (running || RemotePlayService.aktivni || PrijemService.bezi) {
-                    Toast.makeText(a,"Nejdříve zastav ostatní režimy.",Toast.LENGTH_LONG).show()
+                    Toast.makeText(a,GameLingoLanguages.ui(a, "Nejdříve zastav ostatní režimy."),Toast.LENGTH_LONG).show()
                 } else {
                     val p = Prekladac(a,GameLingoLanguages.target(a),"en")
                     val done = AtomicBoolean(false)
@@ -1117,23 +1117,23 @@ class GameLingoScreenTranslationService : Service() {
                         handler.post {
                             runCatching { p.zavri() }
                             if (!a.isFinishing && !a.isDestroyed) AlertDialog.Builder(a)
-                                .setTitle("Test překladu").setMessage(text).setPositiveButton("OK",null).show()
+                                .setTitle(GameLingoLanguages.ui(a, "Test překladu")).setMessage(text).setPositiveButton("OK",null).show()
                         }
                     }
-                    handler.postDelayed({ finishTest("Vypršel čas testu.") },15000)
-                    try { p.preloz("This is a test of GameLingo subtitles.",{ finishTest(it) },{ finishTest("Překlad selhal.") }) }
-                    catch (e: Exception) { finishTest("Chyba: " + e.javaClass.simpleName) }
+                    handler.postDelayed({ finishTest(GameLingoLanguages.ui(a, "Vypršel čas testu.")) },15000)
+                    try { p.preloz("This is a test of GameLingo subtitles.",{ finishTest(it) },{ finishTest(GameLingoLanguages.ui(a, "Překlad selhal.")) }) }
+                    catch (e: Exception) { finishTest(GameLingoLanguages.ui(a, "Chyba:") + " " + e.javaClass.simpleName) }
                 }
             })
             var page: android.app.Dialog?=null
-            panel.addView(GameLingoTVUi.action(a,"Test snímání") {
+            panel.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Test snímání")) {
                 page?.dismiss()
-                    AlertDialog.Builder(a).setMessage("Po souhlasu otevři video do 10 sekund. Výřez a poslední rozpoznaný text zůstanou pouze v paměti do vymazání nebo nové relace. Po návratu sem se snímání zastaví.")
-                        .setPositiveButton("Spustit test") { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java).putExtra("diagnostic",true)) }
+                    AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Po souhlasu otevři video do 10 sekund. Výřez a poslední rozpoznaný text zůstanou pouze v paměti do vymazání nebo nové relace. Po návratu sem se snímání zastaví."))
+                        .setPositiveButton(GameLingoLanguages.ui(a, "Spustit test")) { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java).putExtra("diagnostic",true)) }
                         .setNegativeButton("Zrušit",null).show()
             })
-            panel.addView(GameLingoTVUi.action(a,"Vymazat náhled"){page?.dismiss();clearPreview();diagnostics(a)})
-            page=GameLingoTVUi.page(a,"Diagnostika samostatného OCR",panel,helpTopic="diagnostics")
+            panel.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Vymazat náhled")){page?.dismiss();clearPreview();diagnostics(a)})
+            page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Diagnostika samostatného OCR"),panel,helpTopic="diagnostics")
         }
     }
 }

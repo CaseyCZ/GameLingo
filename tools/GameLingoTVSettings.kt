@@ -142,10 +142,10 @@ object GameLingoTVSettings {
                 GameLingoTVUi.select(a,"Diagnostika a kompatibilita",arrayOf("Legacy příjem: " + if (legacy) "Zapnuto" else "Vypnuto", "Vymazat místní diagnostický log")) { i ->
                         if (i == 0) {
                             if (legacy) GameLingoTVPairing.setLegacyEnabled(a, false)
-                            else AlertDialog.Builder(a).setMessage("Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?")
-                                .setNegativeButton("Zrušit", null).setPositiveButton("Povolit") { _, _ -> GameLingoTVPairing.setLegacyEnabled(a, true) }.show()
-                        } else if (!busy(a)) AlertDialog.Builder(a).setMessage("Vymazat místní diagnostické logy?")
-                            .setNegativeButton("Zrušit", null).setPositiveButton("Vymazat") { _, _ ->
+                            else AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?"))
+                                .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Povolit")) { _, _ -> GameLingoTVPairing.setLegacyEnabled(a, true) }.show()
+                        } else if (!busy(a)) AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Vymazat místní diagnostické logy?"))
+                            .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Vymazat")) { _, _ ->
                                 if (!busy(a)) listOf("titulky.log","titulky-private-v2.log").forEach { java.io.File(a.filesDir,it).delete() }
                             }.show()
                     }
