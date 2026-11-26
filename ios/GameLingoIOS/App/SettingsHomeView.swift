@@ -63,7 +63,11 @@ struct GameLingoSettingsOverview: View {
 
             GLTranslationModePicker(model: model)
             sectionLabel(GameLingoUIContract.settingsSections[1])
-            DisclosureGroup("Pokročilé nastavení", isExpanded: $showAdvancedSettings) {
+            Button { showAdvancedSettings.toggle() } label: {
+                GLDetailRow(icon: "slider.horizontal.3", title: "Pokročilé nastavení", detail: "OCR a rozpoznávání · Překlad")
+            }
+            .buttonStyle(.plain)
+            if showAdvancedSettings {
             NavigationLink {
                 GameLingoOCRSettingsView(model: model)
             } label: {
