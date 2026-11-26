@@ -1408,8 +1408,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for marker in ("releaseDisplay.isSuccess", "releaseProjection.isSuccess",
                        "stopForeground(STOP_FOREGROUND_REMOVE)", "stopForegroundResult.isSuccess"):
             self.assertIn(marker, cleanup)
-        self.assertIn("reportView.text = report()", service)
+        self.assertIn("reportView.text = report(a)", service)
         self.assertIn("reportView.removeCallbacks(reportRefresh)", service)
+
+    def test_tv_diagnostic_display_localizes_without_rewriting_capture_state(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        settings = code(TOOLS/"GameLingoTVSettings.kt")
+        languages = code(TOOLS/"GameLingoLanguages.kt")
+        self.assertIn('localizedStatus(a, GameLingoScreenTranslationService.status)', settings)
+        self.assertIn('reportView.text = report(a)', capture)
+        self.assertIn('status.startsWith("Systém ukončil")', capture)
+        self.assertIn('foregroundState.startsWith("Aktivní")', capture)
+        self.assertIn('if (lastRaw.isNotBlank()) "\\nOCR: $lastRaw"', capture)
+        for key in ("Samostatný překlad TV", "Diagnostika TV", "Čekám na první snímek", "Přijaté snímky:"):
+            self.assertIn(f'"{key}" to Pair(', languages)
 
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")

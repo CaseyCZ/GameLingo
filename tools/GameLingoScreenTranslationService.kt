@@ -933,13 +933,14 @@ class GameLingoScreenTranslationService : Service() {
         OverlayService.posli(this, intent)
     }
     private fun notification() {
+        fun tr(key: String) = GameLingoLanguages.ui(this, key)
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel("gamelingo_screen", "Samostatný překlad TV", NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel("gamelingo_screen", tr("Samostatný překlad TV"), NotificationManager.IMPORTANCE_LOW))
         fun action(name: String, code: Int) = PendingIntent.getService(this,code,Intent(this,GameLingoScreenTranslationService::class.java).setAction(name),PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val n = Notification.Builder(this,"gamelingo_screen").setContentTitle("GameLingo · samostatná TV")
-            .setContentText(if (paused) "Pozastaveno" else source).setSmallIcon(android.R.drawable.ic_menu_camera)
-            .addAction(android.R.drawable.ic_media_pause, if (paused) "Pokračovat" else "Pozastavit", action(PAUSE,1))
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel,"Zastavit",action(STOP,2)).setOngoing(true).build()
+        val n = Notification.Builder(this,"gamelingo_screen").setContentTitle(tr("GameLingo · samostatná TV"))
+            .setContentText(localizedStatus(this, if (paused) "Pozastaveno" else source)).setSmallIcon(android.R.drawable.ic_menu_camera)
+            .addAction(android.R.drawable.ic_media_pause, tr(if (paused) "Pokračovat" else "Pozastavit"), action(PAUSE,1))
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel,tr("Zastavit"),action(STOP,2)).setOngoing(true).build()
         if (Build.VERSION.SDK_INT >= 29) startForeground(9231,n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
         else startForeground(9231,n)
     }
@@ -981,7 +982,17 @@ class GameLingoScreenTranslationService : Service() {
             "Dialog překlad včetně služby", "Dialog od přijetí textu k předání",
             "Herní text OCR", "Herní text překlad položky"))
         @Volatile private var currentPhases = newPhaseMetrics()
-        fun phaseSummary() = "Samostatná TV – průměr/P95 (předání není potvrzené zobrazení):\n" +
+        private fun tr(c: Context?, key: String) = if (c == null) key else GameLingoLanguages.ui(c, key)
+        // Localize UI only; preserve internal status values and exception details.
+        fun localizedStatus(c: Context?, value: String): String {
+            val prefix = listOf("Zastaveno · poslední stav:", "Dialog snímání:", "Start služby:",
+                "Aktivace foreground služby:", "Start snímání:", "Chyba OCR:", "Chyba:")
+                .firstOrNull { value.startsWith(it + " ") }
+            if (prefix == null) return tr(c, value)
+            val suffix = value.removePrefix(prefix + " ")
+            return tr(c, prefix) + " " + (if (prefix == "Zastaveno · poslední stav:") tr(c, suffix) else suffix)
+        }
+        fun phaseSummary(c: Context? = null) = tr(c, "Samostatná TV – průměr/P95 (předání není potvrzené zobrazení):") + "\n" +
             currentPhases.summary() + "\n" + GameLingoNetworkPerformance.summary()
         @Volatile var running = false
             private set
@@ -1019,19 +1030,28 @@ class GameLingoScreenTranslationService : Service() {
             lastOcrMs=0L; lastTranslationMs=0L; currentPhases=newPhaseMetrics(); clearPreview()
         }
         private fun clearPreview() { preview=null; lastRaw=""; lastTranslated="" }
-        fun report(): String = "Stav: $status\nForeground služba: $foregroundState\nSouhlas / projekce: $projectionState\nVirtualDisplay: $displayState" +
-            "\nSnímání: $resolution · zdroj: $capturedSize\nPřijaté snímky: ${received.get()} · výřezy: ${decoded.get()}" +
-            "\nChyba snímku: $frameError\nHlídač: $watchdogState\nOCR: $ocrState (${ocrHits.get()}/${ocrCalls.get()})" +
-            "\nPřekladač: $translationState (${translationHits.get()})" +
-            "\nOCR: $lastOcrMs ms · překlad: $lastTranslationMs ms\nRozložení: $layoutState" +
-            "\n" + phaseSummary() +
-            "\nPřekryv: " + (if (OverlayService.chyba != null) "hlášená chyba" else "bez hlášené chyby") +
-            (if (lastRaw.isNotBlank()) "\nOCR: $lastRaw" else "") +
-            (if (lastTranslated.isNotBlank()) "\nPřeklad: $lastTranslated" else "")
+        fun report(c: Context? = null): String {
+            fun label(key: String) = tr(c, key)
+            fun state(value: String) = localizedStatus(c, value)
+            return label("Stav:") + " " + state(status) +
+                "\n" + label("Foreground služba:") + " " + state(foregroundState) +
+                "\n" + label("Souhlas / projekce:") + " " + state(projectionState) +
+                "\nVirtualDisplay: " + state(displayState) +
+                "\n" + label("Snímání:") + " $resolution · " + label("zdroj:") + " $capturedSize" +
+                "\n" + label("Přijaté snímky:") + " ${received.get()} · " + label("výřezy:") + " ${decoded.get()}" +
+                "\n" + label("Chyba snímku:") + " $frameError\n" + label("Hlídač:") + " " + state(watchdogState) +
+                "\nOCR: " + state(ocrState) + " (${ocrHits.get()}/${ocrCalls.get()})" +
+                "\n" + label("Překladač:") + " " + state(translationState) + " (${translationHits.get()})" +
+                "\nOCR: $lastOcrMs ms · " + label("překlad:") + " $lastTranslationMs ms\n" + label("Rozložení:") + " $layoutState" +
+                "\n" + phaseSummary(c) +
+                "\n" + label("Překryv:") + " " + label(if (OverlayService.chyba != null) "hlášená chyba" else "bez hlášené chyby") +
+                (if (lastRaw.isNotBlank()) "\nOCR: $lastRaw" else "") +
+                (if (lastTranslated.isNotBlank()) "\n" + label("Překlad:") + " $lastTranslated" else "")
+        }
         fun stop(c: Context) { c.stopService(Intent(c,GameLingoScreenTranslationService::class.java)) }
         fun open(a: Activity) {
             if (running) {
-                AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Samostatná TV")).setMessage(GameLingoLanguages.ui(a, "Překlad je spuštěný.") + " " + GameLingoLanguages.ui(a, status))
+                AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Samostatná TV")).setMessage(GameLingoLanguages.ui(a, "Překlad je spuštěný.") + " " + localizedStatus(a, status))
                     .setPositiveButton(GameLingoLanguages.ui(a, "Zastavit")) { _,_ -> stop(a) }
                     .setNeutralButton(GameLingoLanguages.ui(a, "Pozastavit / pokračovat")) { _,_ ->
                         if (running) a.startService(Intent(a,GameLingoScreenTranslationService::class.java).setAction(PAUSE))
@@ -1050,14 +1070,14 @@ class GameLingoScreenTranslationService : Service() {
         fun diagnostics(a: Activity) {
             if (running) stop(a)
             val panel = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(20,8,20,8) }
-            val reportView = android.widget.TextView(a).apply { text = report(); textSize = 15f }
+            val reportView = android.widget.TextView(a).apply { text = report(a); textSize = 15f }
             panel.addView(reportView)
             // stopService is asynchronous; refresh when onDestroy has completed.
             // Preserve final counters for diagnosis, not stale active-state labels.
             val reportRefresh = object : Runnable {
                 override fun run() {
                     if (!reportView.isAttachedToWindow) return
-                    reportView.text = report()
+                    reportView.text = report(a)
                     reportView.postDelayed(this,500L)
                 }
             }
@@ -1130,7 +1150,7 @@ class GameLingoScreenTranslationService : Service() {
                 page?.dismiss()
                     AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Po souhlasu otevři video do 10 sekund. Výřez a poslední rozpoznaný text zůstanou pouze v paměti do vymazání nebo nové relace. Po návratu sem se snímání zastaví."))
                         .setPositiveButton(GameLingoLanguages.ui(a, "Spustit test")) { _,_ -> a.startActivity(Intent(a,GameLingoScreenConsentActivity::class.java).putExtra("diagnostic",true)) }
-                        .setNegativeButton("Zrušit",null).show()
+                        .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null).show()
             })
             panel.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Vymazat náhled")){page?.dismiss();clearPreview();diagnostics(a)})
             page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Diagnostika samostatného OCR"),panel,helpTopic="diagnostics")

@@ -118,28 +118,29 @@ object GameLingoTVSettings {
             { GameLingoDirectTVLayout.show(a) {} }, { GameLingoLanguages.show(a) })
     }
     private fun diagnostics(a: Activity) {
-        val info = PrijemService.statistikaPrijmu() + "\n\nVerze: " +
+        fun tr(key: String) = GameLingoLanguages.ui(a, key)
+        val info = PrijemService.statistikaPrijmu() + "\n\n" + tr("Verze:") + " " +
             a.packageManager.getPackageInfo(a.packageName, 0).versionName +
-            "\nSamostatná TV: " + GameLingoScreenTranslationService.status +
-            "\nOCR obrazovky: pouze MediaProjection" +
+            "\n" + tr("Samostatná TV:") + " " + GameLingoScreenTranslationService.localizedStatus(a, GameLingoScreenTranslationService.status) +
+            "\n" + tr("OCR obrazovky: pouze MediaProjection") +
             "\n" + GameLingoXboxDiagnostics.summary() +
-            "\n\n" + GameLingoScreenTranslationService.phaseSummary()
+            "\n\n" + GameLingoScreenTranslationService.phaseSummary(a)
         val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
-        body.addView(GameLingoTVUi.title(a,"Stav",24f))
-        body.addView(GameLingoTVUi.title(a,info+"\nPřekryv: "+if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen",20f).apply {
+        body.addView(GameLingoTVUi.title(a,tr("Stav"),24f))
+        body.addView(GameLingoTVUi.title(a,info+"\n"+tr("Překryv:")+" "+tr(if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen"),20f).apply {
             background=GameLingoTVUi.panel(a); val pad=d(a,16);setPadding(pad,pad,pad,pad)
         })
-        body.addView(GameLingoTVUi.title(a,"Poslední překlad",24f))
+        body.addView(GameLingoTVUi.title(a,tr("Poslední překlad"),24f))
         val item=GameLingoTranslationHistory.snapshot().firstOrNull()
-        body.addView(GameLingoTVUi.title(a,if(item==null)"Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR." else item.original+"\n\n"+item.translated,20f).apply {
+        body.addView(GameLingoTVUi.title(a,if(item==null)tr("Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR.") else item.original+"\n\n"+item.translated,20f).apply {
             background=GameLingoTVUi.panel(a); val pad=d(a,16);setPadding(pad,pad,pad,pad)
         })
-        body.addView(GameLingoTVUi.action(a,"Povolit překryv") {
+        body.addView(GameLingoTVUi.action(a,tr("Povolit překryv")) {
             a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:"+a.packageName)))
         })
-        body.addView(GameLingoTVUi.action(a,"Další nastavení") {
+        body.addView(GameLingoTVUi.action(a,tr("Další nastavení")) {
                 val legacy = GameLingoTVPairing.legacyEnabled(a)
-                GameLingoTVUi.select(a,"Diagnostika a kompatibilita",arrayOf("Legacy příjem: " + if (legacy) "Zapnuto" else "Vypnuto", "Vymazat místní diagnostický log")) { i ->
+                GameLingoTVUi.select(a,tr("Diagnostika a kompatibilita"),arrayOf(tr("Legacy příjem:") + " " + tr(if (legacy) "Zapnuto" else "Vypnuto"), tr("Vymazat místní diagnostický log"))) { i ->
                         if (i == 0) {
                             if (legacy) GameLingoTVPairing.setLegacyEnabled(a, false)
                             else AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?"))
@@ -150,7 +151,7 @@ object GameLingoTVSettings {
                             }.show()
                     }
         })
-        body.addView(GameLingoTVUi.action(a,"Test OCR") { GameLingoScreenTranslationService.diagnostics(a) })
-        GameLingoTVUi.page(a,"Diagnostika TV",body,helpTopic="diagnostics")
+        body.addView(GameLingoTVUi.action(a,tr("Test OCR")) { GameLingoScreenTranslationService.diagnostics(a) })
+        GameLingoTVUi.page(a,tr("Diagnostika TV"),body,helpTopic="diagnostics")
     }
 }
