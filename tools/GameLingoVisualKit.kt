@@ -284,8 +284,10 @@ object GameLingoVisualKit {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
+        top.addView(View(activity), LinearLayout.LayoutParams(dp(activity,36),dp(activity,36)))
         top.addView(LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
             addView(caption(GameLingoLanguages.ui(activity, "HRAJ. ROZUMĚJ."), 11f, cyan, true).apply {
                 letterSpacing = 0.14f
             })
