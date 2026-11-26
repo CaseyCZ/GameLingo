@@ -16,13 +16,14 @@ struct GameLingoDevicesPanel: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 15) {
-            HStack {
-                GLNeonTitle(title: "Konzole a zařízení",
-                            subtitle: "Správa konzolí, TV a výstupu titulků",
-                            icon: "display.2")
-                GLHelpButton(title: "Zařízení", explanation:
-                    "Můžeš přidat více Xboxů, PlayStationů i televizí. Uložené zařízení nemusí být právě online; skutečné spojení ověřujeme až při překladu.")
-            }
+            GLNeonTitle(title: "Konzole a zařízení",
+                        subtitle: "Správa konzolí, TV a výstupu titulků",
+                        icon: "display.2")
+                .overlay(alignment: .trailing) {
+                    GLHelpButton(title: "Zařízení", explanation:
+                        "Můžeš přidat více Xboxů, PlayStationů i televizí. Uložené zařízení nemusí být právě online; skutečné spojení ověřujeme až při překladu.")
+                        .frame(width: 44, height: 44)
+                }
             HStack(spacing: 11) {
                 Button(action: addXbox) {
                     platformCard(.xbox)
@@ -61,11 +62,12 @@ struct GameLingoDevicesPanel: View {
                         }
                         .frame(maxWidth: .infinity)
                         .multilineTextAlignment(.center)
-                        if devices.preferredConsoleID == console.id {
+                        HStack(spacing: 3) {
+                            if devices.preferredConsoleID == console.id {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(GLStyle.green)
                         }
-                        Menu {
+                            Menu {
                             Button("Použít", systemImage: "checkmark.circle") {
                                 if !model.isRunning { devices.selectConsole(console.id) }
                             }
@@ -83,7 +85,9 @@ struct GameLingoDevicesPanel: View {
                                 .font(.title2)
                                 .foregroundStyle(GLStyle.blue)
                         }
-                        .accessibilityLabel(GLInterfaceText.localized("Spravovat:") + " " + console.name)
+                            .accessibilityLabel(GLInterfaceText.localized("Spravovat:") + " " + console.name)
+                        }
+                        .frame(width: 54)
                     }
                     .contentShape(Rectangle())
                     .padding(13)
@@ -116,11 +120,12 @@ struct GameLingoDevicesPanel: View {
                         }
                         .frame(maxWidth: .infinity)
                         .multilineTextAlignment(.center)
-                        if devices.preferredTelevisionID == television.id {
+                        HStack(spacing: 3) {
+                            if devices.preferredTelevisionID == television.id {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(GLStyle.green)
                         }
-                        Menu {
+                            Menu {
                             Button("Použít") {
                                 guard !model.isRunning else { return }
                                 devices.selectTelevision(television.id)
@@ -141,6 +146,8 @@ struct GameLingoDevicesPanel: View {
                                 .font(.title2)
                                 .foregroundStyle(GLStyle.blue)
                         }
+                        }
+                        .frame(width: 54)
                     }
                     .padding(13)
                 }
