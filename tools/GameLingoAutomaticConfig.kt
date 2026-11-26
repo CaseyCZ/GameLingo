@@ -69,6 +69,69 @@ internal object GameLingoAutomaticConfig {
             }
         }
     }
+    /** Inline two-option control matching the SwiftUI GLTranslationModePicker. */
+    fun modePicker(a: Activity, onChanged: () -> Unit = {}): LinearLayout {
+        val d = GameLingoVisualKit.dp(a, 1)
+        val root = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 6 * d, 0, 6 * d)
+        }
+        root.addView(TextView(a).apply {
+            text = GameLingoLanguages.ui(a, "Režim překladu")
+            textSize = GameLingoVisualKit.sp(a, 13f)
+            setTextColor(Color.parseColor(GameLingoUIContract.Palette.muted))
+            gravity = android.view.Gravity.CENTER
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 6 * d })
+        val choices = LinearLayout(a).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+        }
+        val buttons = listOf(false, true).mapIndexed { index, automatic ->
+            TextView(a).apply {
+                text = GameLingoLanguages.ui(a, if (automatic) "Automatický" else "Standardní")
+                textSize = GameLingoVisualKit.sp(a, 14f)
+                setTextColor(Color.WHITE)
+                gravity = android.view.Gravity.CENTER
+                typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+                minHeight = 44 * d
+                setPadding(7 * d, 10 * d, 7 * d, 10 * d)
+                isFocusable = true
+                isClickable = true
+                choices.addView(this, LinearLayout.LayoutParams(0, -2, 1f).apply {
+                    if (index == 0) rightMargin = 6 * d
+                })
+            }
+        }
+        fun render() {
+            buttons.forEachIndexed { index, button ->
+                val active = enabled(a) == (index == 1)
+                button.isSelected = active
+                button.background = if (active) {
+                    android.graphics.drawable.GradientDrawable(
+                        android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                        intArrayOf(Color.parseColor(GameLingoUIContract.Palette.purple),
+                            Color.parseColor(GameLingoUIContract.Palette.blue),
+                            Color.parseColor(GameLingoUIContract.Palette.cyan))
+                    ).apply { cornerRadius = (12 * d).toFloat() }
+                } else {
+                    GameLingoVisualKit.card(a)
+                }
+            }
+        }
+        buttons.forEachIndexed { index, button ->
+            button.setOnClickListener {
+                if (!editable(a)) return@setOnClickListener
+                prefs(a).edit().putBoolean("enabled", index == 1).apply()
+                render()
+                onChanged()
+            }
+        }
+        root.addView(choices, LinearLayout.LayoutParams(-1, -2))
+        render()
+        return root
+    }
+
     fun showZones(a: Activity) {
         if(!editable(a))return
         val zones=zones(a)
