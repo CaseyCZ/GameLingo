@@ -144,7 +144,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         tv = code(TOOLS/"GameLingoTVSettings.kt")
         visual = code(TOOLS/"GameLingoVisualKit.kt")
         redesign = code(TOOLS/"redesign_gamelingo.py")
-        self.assertIn('putBoolean("enabled",i==1).apply()\n                onChanged()', automatic)
+        self.assertIn('putBoolean("enabled", index == 1).apply()', automatic)
+        self.assertIn("onChanged()", automatic)
         self.assertIn("onChanged = onRefresh", phone)
         self.assertIn("onRefresh = { openTab(3) }", redesign)
         self.assertRegex(visual, r'tag\s*=\s*"gamelingo-detail"')
@@ -283,7 +284,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         model=code(IOS/"PlayCaptionIOSApp.swift")
         home=code(IOS/"GameLingoHome.swift")
         self.assertIn("model.isRunning && model.frameCount > 0",home)
-        self.assertIn('model.frameCount > 0 ? "Snímání aktivní" : "Připojuji…"',home)
+        self.assertIn('model.frameCount > 0 ? GLInterfaceText.localized("Snímání aktivní") : GLInterfaceText.localized("Připojuji…")',home)
         xbox=model.split("func start(_ console: XboxConsole)",1)[1]
         xbox=xbox.split("private func processFrame",1)[0]
         self.assertIn("frameCount = 0",xbox)
