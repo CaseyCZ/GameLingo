@@ -1,4 +1,4 @@
-name: iOS native OCR gameplay video
+name: iOS native OCR GTA VI trailer smoke test
 on:
   push:
     branches: [feature/ocr-lab]
@@ -25,6 +25,8 @@ jobs:
           command -v ffmpeg || brew install ffmpeg
           ffmpeg -version
       - run: python mlkit-lab/video_fixtures.py
+        env:
+          OCR_VIDEO_SOURCE: gta-vi-trailer
       - run: brew install xcodegen
       - name: Generate standalone test project
         working-directory: ios-ocr-lab

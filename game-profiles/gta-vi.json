@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "gta-vi",
+  "title": "Grand Theft Auto VI",
+  "platforms": [
+    "xbox-series",
+    "ps5"
+  ],
+  "status": "experimental",
+  "releaseReady": false,
+  "coordinateSystem": "normalized-ltrb-video-content-top-left",
+  "maxZones": 10,
+  "ocr": {
+    "mode": "automatic",
+    "preprocessing": "none",
+    "sourceLanguage": "auto",
+    "overlay": "detected-text",
+    "manualOutputZones": false
+  },
+  "zones": [
+    {
+      "id": "dialogue-discovery",
+      "purpose": "dialogue",
+      "rect": [
+        0,
+        0.65,
+        1,
+        1
+      ],
+      "status": "unverified-search-area"
+    }
+  ],
+  "pendingZones": [
+    "phone",
+    "objectives",
+    "help"
+  ],
+  "validation": {
+    "xbox": false,
+    "ps5": false,
+    "referenceAnnotated": false
+  },
+  "sources": [
+    {
+      "kind": "official-gameplay-reference",
+      "url": "https://www.rockstargames.com/VI/an-extended-look",
+      "verifiedLayout": false
+    },
+    {
+      "kind": "trailer-smoke-test",
+      "url": "https://github.com/pigro141/livedub/blob/5666537f002c75c1b4697634ad42e64ae58cb6f1/assets/vetrina/trailer-multilingua.mp4",
+      "verifiedLayout": false
+    }
+  ]
+}

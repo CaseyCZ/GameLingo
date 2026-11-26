@@ -1,4 +1,4 @@
-name: Android native OCR gameplay video
+name: Android native OCR GTA VI trailer smoke test
 on:
   push:
     branches: [feature/ocr-lab]
@@ -28,6 +28,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends ffmpeg
       - run: python mlkit-lab/video_fixtures.py
+        env:
+          OCR_VIDEO_SOURCE: gta-vi-trailer
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
