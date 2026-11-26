@@ -17,7 +17,8 @@ def splice_once(text: str, first: str, last: str, replacement: str) -> str:
 def redesign_mobile(s: str) -> str:
     start = '        if (telefon) {\n            obsah.addView(logoRadek, odsazeni(bottom = 14))'
     end = '        } else {\n            // televize:'
-    replacement = r'''        if (telefon) {
+    replacement = r'''        var mobileBottomNavigation: View? = null
+        if (telefon) {
             // Native GameLingo layout matches iPhone: header -> hero -> saved
             // console/TV -> single CTA -> four shortcuts -> readiness -> tabs.
             // Console authentication, OCR and Remote Play are untouched.
@@ -179,11 +180,40 @@ def redesign_mobile(s: str) -> str:
                 onAbout = { openTab(4) },
                 initialIndex = selectedMobileTab
             )
-            obsah.addView(navigace, odsazeni(top = 7))
+            // Keep bottom navigation outside the scrollable page like SwiftUI.
+            mobileBottomNavigation = navigace
             openTab(selectedMobileTab)
 
 '''
     s = splice_once(s,start,end,replacement)
+    # The stock Activity scrolls its entire content, including any bottom tabs.
+    # Replace that layout only on the Android phone; TV keeps its own screen.
+    mount = "        nastavObsah(obsah, sirka = ViewGroup.LayoutParams.MATCH_PARENT)"
+    if s.count(mount) != 1:
+        raise RuntimeError("Android main content mount anchor changed")
+    s = s.replace(mount, r'''        if (telefon && mobileBottomNavigation != null) {
+            val root = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                background = GameLingoVisualKit.pageBackground(this@MainActivity)
+            }
+            val scroller = ScrollView(this).apply {
+                isFillViewport = true
+                overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+                addView(obsah, ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
+            root.addView(scroller, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+            mobileBottomNavigation?.let { tabBar ->
+                root.addView(tabBar, LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
+            setContentView(root)
+        } else {
+            nastavObsah(obsah, sirka = ViewGroup.LayoutParams.MATCH_PARENT)
+        }''', 1)
     # Remember the tab through live status refreshes, pairing screens and
     # returns from native editors. The initial app launch remains on Home.
     marker = "    private fun ukazHlavni() {"
