@@ -24,8 +24,8 @@ object GameLingoSettings {
 
     /** Reset only display and translation keys; never wipe profiles or pairing. */
     fun restoreDefaultSettings(a: Activity): Boolean {
-        if (RemotePlayService.aktivni || PrijemService.bezi ||
-            GameLingoScreenTranslationService.running) return false
+        if (RemotePlayService.aktivni || GameLingoScreenTranslationService.running ||
+            (PrijemService.bezi && PrijemService.telefonPripojen())) return false
         val keys = listOf(
             "pribehovy", "casPribehuProcenta", "prekryvat", "dialogy", "napovedy",
             "tvX", "tvY", "tvSirka", "tvPismo", "rozvrhZamek",
@@ -73,8 +73,8 @@ object GameLingoSettings {
 
     fun confirmRestoreDefaults(a: Activity, onReset: () -> Unit = {}) {
         fun tr(value: String) = GameLingoLanguages.ui(a, value)
-        if (RemotePlayService.aktivni || PrijemService.bezi ||
-            GameLingoScreenTranslationService.running) {
+        if (RemotePlayService.aktivni || GameLingoScreenTranslationService.running ||
+            (PrijemService.bezi && PrijemService.telefonPripojen())) {
             android.app.AlertDialog.Builder(a)
                 .setMessage(tr("Nejdřív zastav překlad a příjem."))
                 .setPositiveButton("OK", null).show()
