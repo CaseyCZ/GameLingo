@@ -240,17 +240,17 @@ def patch_direct_tv(folder):
     patch_main('else if (jeSlabaTv()) varovaniSlabaTv() else hratTelevizi()',
                'else vyberZdrojTelevize()')
     patch_main('private fun hratTelevizi() {', """private fun vyberZdrojTelevize() {
-        GameLingoTVUi.select(this,"Vyber zdroj překladu",arrayOf("PlayStation 4 / 5", "Xbox Series / One", "Samostatná TV")) { index ->
+        GameLingoTVUi.select(this,GameLingoLanguages.ui(this, "Vyber zdroj překladu"),arrayOf("PlayStation 4 / 5", "Xbox Series / One", GameLingoLanguages.ui(this, "Samostatná TV"))) { index ->
                 if (index == 2) {
                     if (!GameLingoScreenTranslationService.running && (RemotePlayService.aktivni || PrijemService.bezi)) {
-                        android.app.AlertDialog.Builder(this).setMessage("Nejdříve zastav překlad z konzole nebo telefonu.")
+                        android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Nejdříve zastav překlad z konzole nebo telefonu."))
                             .setPositiveButton("OK", null).show()
                     } else {
                         AutoStart.nastavZapnuto(this, false)
                         GameLingoScreenTranslationService.open(this)
                     }
                 } else if (RemotePlayService.aktivni) {
-                    android.app.AlertDialog.Builder(this).setMessage("Nejdřív zastav probíhající překlad.")
+                    android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Nejdřív zastav probíhající překlad."))
                         .setPositiveButton("OK", null).show()
                 } else if (index == 0) vyberPrimouPS() else vyberPrimyXbox()
             }
@@ -258,7 +258,7 @@ def patch_direct_tv(folder):
 
     private fun spustPrimyZdroj(xbox: Boolean) {
         if (GameLingoScreenTranslationService.running || PrijemService.bezi) {
-            android.app.AlertDialog.Builder(this).setMessage("Nejdříve zastav stávající překlad.")
+            android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Nejdříve zastav stávající překlad."))
                 .setPositiveButton("OK",null).show()
             return
         }
@@ -277,30 +277,30 @@ def patch_direct_tv(folder):
             if (udaje.sparovano) spustPrimyZdroj(false) else ukazPripojeni()
             return
         }
-        GameLingoTVUi.select(this,"Vyber PlayStation",(consoles.map { it.type + " · " + it.name } + "+ Přidat PlayStation").toTypedArray()) { index ->
+        GameLingoTVUi.select(this,GameLingoLanguages.ui(this, "Vyber PlayStation"),(consoles.map { it.type + " · " + it.name } + ("+ " + GameLingoLanguages.ui(this, "Přidat PlayStation"))).toTypedArray()) { index ->
                 if (index == consoles.size) ukazPripojeni()
                 else if (GameLingoPlayStationConsoles.select(this, consoles[index].ip)) spustPrimyZdroj(false)
-                else android.app.AlertDialog.Builder(this).setMessage("Konzoli se nepodařilo načíst.").setPositiveButton("OK", null).show()
+                else android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Konzoli se nepodařilo načíst.")).setPositiveButton("OK", null).show()
             }
     }
 
     private fun vyberPrimyXbox() {
         if (!XboxUcet.prihlasen(this)) { ukazPripojeniXbox(); return }
-        val loading = android.app.ProgressDialog.show(this, "Xbox", "Hledám konzole…", true, true)
+        val loading = android.app.ProgressDialog.show(this, "Xbox", GameLingoLanguages.ui(this, "Hledám konzole…"), true, true)
         Thread {
             val result = runCatching { XboxSpojeni.konzole(this) }
             ui.post {
                 if (isFinishing || isDestroyed || !loading.isShowing) return@post
                 loading.dismiss()
                 if (result.isFailure) {
-                    android.app.AlertDialog.Builder(this).setMessage("Seznam Xboxů se nepodařilo načíst.")
+                    android.app.AlertDialog.Builder(this).setMessage(GameLingoLanguages.ui(this, "Seznam Xboxů se nepodařilo načíst."))
                         .setPositiveButton("OK", null).show()
                     return@post
                 }
                 val prefs = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
                 val hidden = prefs.getStringSet("hiddenXboxIds", emptySet()).orEmpty()
                 val consoles = result.getOrDefault(emptyList()).filterNot { it.id in hidden }
-                GameLingoTVUi.select(this,"Vyber Xbox",(consoles.map { it.jmeno } + "+ Přidat Xbox").toTypedArray()) { index ->
+                GameLingoTVUi.select(this,GameLingoLanguages.ui(this, "Vyber Xbox"),(consoles.map { it.jmeno } + ("+ " + GameLingoLanguages.ui(this, "Přidat Xbox"))).toTypedArray()) { index ->
                         if (index == consoles.size) ukazPripojeniXbox()
                         else {
                             val x = consoles[index]

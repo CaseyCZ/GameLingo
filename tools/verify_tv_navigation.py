@@ -25,8 +25,8 @@ assert "finish()" not in back and "PrijemService.zastav(this)" not in back
 assert "ukazHlavni()" in return_home and "PrijemService.zastav" not in return_home
 assert "PrijemService.zastav(this)" in stop and "zpetNaVyber()" in stop
 assert 'if (!telefon && PrijemService.bezi) { ukazPrijem(); return }' not in main
-assert re.search(r'"←  Zpět do nabídky"\)\s*\{\s*zpetNaVyber\(\)', main)
-assert re.search(r'"Zastavit příjem"\)\s*\{\s*zastavPrijemANavrat\(\)', main)
+assert re.search(r'"←  " \+ GameLingoLanguages\.ui\(this@MainActivity, "Zpět do nabídky"\)\)\s*\{\s*zpetNaVyber\(\)', main)
+assert re.search(r'GameLingoLanguages\.ui\(this, "Zastavit příjem"\)\)\s*\{\s*zastavPrijemANavrat\(\)', main)
 assert 'val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }' in settings
 assert 'dialog.setOnDismissListener {' in settings and 'if (!openingDevices && !a.isFinishing && !a.isDestroyed) onUpdate()' in settings
 assert 'openingDevices = true; dialog.dismiss(); onDevices()' in settings

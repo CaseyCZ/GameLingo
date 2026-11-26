@@ -31,12 +31,12 @@ def patch_navigation(source: str) -> str:
         prefsBeta.edit().putString("rezimHry", "tv").apply()
         zpetNaVyber()
     }''')
-    one('''        val zastav = GameLingoTVUi.action(this, "←  Zpět do nabídky") {
+    one('''        val zastav = GameLingoTVUi.action(this, "←  " + GameLingoLanguages.ui(this@MainActivity, "Zpět do nabídky")) {
             zpetNaVyber()
-        }''', '''        val zastav = GameLingoTVUi.action(this, "←  Zpět do nabídky") {
+        }''', '''        val zastav = GameLingoTVUi.action(this, "←  " + GameLingoLanguages.ui(this@MainActivity, "Zpět do nabídky")) {
             zpetNaVyber()
         }
-        val zastavPrijem = GameLingoTVUi.action(this, "Zastavit příjem") {
+        val zastavPrijem = GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Zastavit příjem")) {
             zastavPrijemANavrat()
         }''')
     one('        paticka.addView(zastav)\n','        paticka.addView(zastavPrijem)\n        paticka.addView(zastav)\n')

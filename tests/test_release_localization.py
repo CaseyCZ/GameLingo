@@ -43,7 +43,8 @@ class ReleaseLocalizationTests(unittest.TestCase):
         keys = android_keys()
         self.assert_unique(keys)
         for name in ("redesign_gamelingo.py", "polish_all_screens.py",
-                     "GameLingoTVSettings.kt", "GameLingoScreenTranslationService.kt"):
+                     "GameLingoTVSettings.kt", "GameLingoScreenTranslationService.kt",
+                     "direct_tv_mode.py", "tv_navigation.py"):
             with self.subTest(file=name):
                 found = re.findall(
                     r"GameLingoLanguages\.ui\(\s*(?:this(?:@MainActivity)?|a|activity|c|context)\s*,\s*" + STRING,

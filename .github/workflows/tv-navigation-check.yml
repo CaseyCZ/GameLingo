@@ -5,6 +5,9 @@ on:
     paths:
       - 'tools/tv_navigation.py'
       - 'tools/direct_tv_mode.py'
+      - 'tools/redesign_gamelingo.py'
+      - 'tools/polish_all_screens.py'
+      - 'tools/GameLingoLanguages.kt'
       - 'tools/GameLingoTVSettings.kt'
       - 'tools/GameLingoTVUi.kt'
       - 'tools/verify_tv_navigation.py'
