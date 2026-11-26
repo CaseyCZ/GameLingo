@@ -23,8 +23,8 @@ object GameLingoSettings {
         GradientDrawable().apply { setColor(color); cornerRadius = radius }
 
     /** Reset only display and translation keys; never wipe profiles or pairing. */
-    fun restoreDefaultSettings(a: Activity): Boolean {
-        if (RemotePlayService.aktivni || GameLingoScreenTranslationService.running ||
+    fun restoreDefaultSettings(a: Activity, directTVBusy: () -> Boolean = { false }): Boolean {
+        if (RemotePlayService.aktivni || directTVBusy() ||
             (PrijemService.bezi && PrijemService.telefonPripojen())) return false
         val keys = listOf(
             "pribehovy", "casPribehuProcenta", "prekryvat", "dialogy", "napovedy",
@@ -71,9 +71,10 @@ object GameLingoSettings {
         return true
     }
 
-    fun confirmRestoreDefaults(a: Activity, onReset: () -> Unit = {}) {
+    fun confirmRestoreDefaults(a: Activity, directTVBusy: () -> Boolean = { false },
+                               onReset: () -> Unit = {}) {
         fun tr(value: String) = GameLingoLanguages.ui(a, value)
-        if (RemotePlayService.aktivni || GameLingoScreenTranslationService.running ||
+        if (RemotePlayService.aktivni || directTVBusy() ||
             (PrijemService.bezi && PrijemService.telefonPripojen())) {
             android.app.AlertDialog.Builder(a)
                 .setMessage(tr("Nejdřív zastav překlad a příjem."))
@@ -85,7 +86,7 @@ object GameLingoSettings {
             .setMessage(tr("Obnoví OCR, překlad, oblasti a vzhled titulků. Zařízení, účty a herní profily zůstanou zachované."))
             .setNegativeButton(tr("Zrušit"), null)
             .setPositiveButton(tr("Obnovit nastavení")) { _, _ ->
-                if (restoreDefaultSettings(a)) onReset()
+                if (restoreDefaultSettings(a, directTVBusy)) onReset()
                 else android.app.AlertDialog.Builder(a)
                     .setMessage(tr("Nejdřív zastav překlad a příjem."))
                     .setPositiveButton("OK", null).show()
