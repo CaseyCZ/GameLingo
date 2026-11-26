@@ -179,7 +179,6 @@ object GameLingoTVUpdater {
 
     fun show(a: Activity) {
         if (!alive(a)) return
-        if (busy()) { message(a, tr(a, "Nejprve zastav překlad a příjem.")); return }
         if (!working.compareAndSet(false, true)) { message(a, tr(a, "Kontrola již probíhá. Zkus to znovu.")); return }
         val status = AlertDialog.Builder(a).setTitle(tr(a, "Aktualizace GameLingo"))
             .setMessage(tr(a, "Kontroluji vydání na GitHubu…")).setNegativeButton(tr(a, "Zrušit"), null).show()
@@ -209,16 +208,6 @@ object GameLingoTVUpdater {
 
     private fun download(a: Activity, next: Update) {
         if (!alive(a)) return
-        if (busy()) { message(a, tr(a, "Nejprve zastav překlad a příjem.")); return }
-        if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
-            AlertDialog.Builder(a).setTitle(tr(a, "Povolení instalace"))
-                .setMessage(tr(a, "Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace."))
-                .setNegativeButton(tr(a, "Zrušit"), null).setPositiveButton(tr(a, "Otevřít nastavení")) { _, _ ->
-                    runCatching { a.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + a.packageName))) }
-                        .onFailure { message(a, tr(a, "Nastavení instalace není na této TV dostupné.")) }
-                }.show()
-            return
-        }
         if (!working.compareAndSet(false, true)) { message(a, tr(a, "Jiná aktualizace již probíhá.")); return }
         val cancelled = AtomicBoolean(false)
         val progress = AlertDialog.Builder(a).setTitle(tr(a, "Stahování aktualizace"))
@@ -273,7 +262,6 @@ object GameLingoTVUpdater {
                 if (!alive(a) || cancelled.get() || !progress.isShowing) { file?.delete(); return@runOnUiThread }
                 progress.dismiss()
                 result.fold(onSuccess = { apk ->
-                    if (busy()) { apk.delete(); message(a, tr(a, "Překlad je aktivní. Aktualizaci spusť po zastavení.")); return@fold }
                     runCatching {
                         val uri = FileProvider.getUriForFile(a, a.packageName + ".updates", apk)
                         a.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
