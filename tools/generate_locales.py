@@ -17,6 +17,7 @@ LOCALES = ROOT / "shared" / "locales"
 IOS = ROOT / "ios" / "GameLingoIOS" / "App"
 ANDROID = ROOT / "tools" / "GameLingoLanguages.kt"
 IOS_LANGUAGE = IOS / "GameLingoAppLanguage.swift"
+PROJECT = IOS.parent / "project.yml"
 BEGIN_LABELS = "    // BEGIN GENERATED UI LABELS"
 END_LABELS = "    // END GENERATED UI LABELS"
 BEGIN_ANDROID_LANGUAGES = "    // BEGIN GENERATED APP LANGUAGES"
@@ -160,6 +161,12 @@ def outputs(manifest, catalogs):
     swift = between(swift, BEGIN_IOS_LANGUAGES, END_IOS_LANGUAGES,
                     swift_language_list(manifest["languages"]))
     generated[IOS_LANGUAGE] = swift
+    project = PROJECT.read_text(encoding="utf-8")
+    match = re.search(r"(^\s*CFBundleLocalizations:\s*)\[[^]\n]*\]", project, re.M)
+    if not match:
+        raise ValueError("Xcode project is missing CFBundleLocalizations")
+    native_list = "[" + ", ".join(item["code"] for item in manifest["languages"]) + "]"
+    generated[PROJECT] = project[:match.start()] + match.group(1) + native_list + project[match.end():]
     return generated
 
 
