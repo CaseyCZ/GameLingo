@@ -1,5 +1,6 @@
 """Direct-on-TV rendering and OCR; receiver mode and mobile remain unchanged."""
 from pathlib import Path
+from tv_navigation import patch_navigation
 
 def patch_direct_tv(folder):
     service = folder / "RemotePlayService.kt"
@@ -321,6 +322,7 @@ def patch_direct_tv(folder):
     patch_main('private fun hratSTelefonem() {',
                'private fun hratSTelefonem() {\n        GameLingoScreenTranslationService.stop(this)')
     patch_main("private val SKALA = 0.72f", "private val SKALA = 0.66f")
+    m = patch_navigation(m)
     main.write_text(m, encoding="utf8")
 
     # Receiver keys exist in the TV build only. Do not add dependencies on

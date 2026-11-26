@@ -17,7 +17,9 @@ import android.widget.SeekBar
 /** TV-specific category dashboard, not a phone-sized list of individual rows. */
 object GameLingoTVSettings {
     fun show(a: Activity, onDevices: () -> Unit, onUpdate: () -> Unit) {
+        if (a.isFinishing || a.isDestroyed) return
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        var openingDevices = false
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(a)
@@ -26,7 +28,7 @@ object GameLingoTVSettings {
         val header = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(GameLingoTVUi.title(a, "Nastavení GameLingo TV", 25f),
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        val back = GameLingoTVUi.action(a, "Zpět") { dialog.dismiss(); onUpdate() }
+        val back = GameLingoTVUi.action(a, "Zpět") { dialog.dismiss() }
         back.id = View.generateViewId()
         val help=GameLingoHelp.button(a,"settings")
         header.addView(help,GameLingoHelp.layout(a))
@@ -45,7 +47,7 @@ object GameLingoTVSettings {
         tile("rectangle.dashed", "Oblasti obrazovky", "Čtyři oblasti") { GameLingoDirectTVLayout.show(a) {} }
         tile("Aa", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }
         tile("gamecontroller", "Profily her", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a) }
-        tile("▭", "Zařízení", "Konzole a telefony") { dialog.dismiss(); onDevices() }
+        tile("▭", "Zařízení", "Konzole a telefony") { openingDevices = true; dialog.dismiss(); onDevices() }
         tile("文", "Herní slovník", "Vlastní výrazy") { GameLingoGlossaryUi.show(a) }
         tile("clock.arrow.circlepath", "Historie překladů", "Překlady na TV") { GameLingoHistoryUi.show(a) }
         tile("internaldrive", "Překladová cache", "Ukládání a vymazání") { GameLingoCachePrivacyUi.show(a) }
@@ -76,6 +78,10 @@ object GameLingoTVSettings {
         help.nextFocusDownId=cards[1].id
         cards[1].nextFocusUpId=help.id
         dialog.setContentView(root)
+        // Both remote BACK and the visible button close through this path.
+        dialog.setOnDismissListener {
+            if (!openingDevices && !a.isFinishing && !a.isDestroyed) onUpdate()
+        }
         dialog.show()
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         cards.first().requestFocus()

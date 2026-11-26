@@ -334,7 +334,7 @@ object GameLingoTVUi {
             addView(title(a, "Nastavení GameLingo TV", 25f), LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
-        val close = action(a, "Zpět") { dialog.dismiss(); onUpdate() }
+        val close = action(a, "Zpět") { dialog.dismiss() }
         close.id = View.generateViewId()
         header.addView(close)
         root.addView(header)
@@ -531,6 +531,7 @@ object GameLingoTVUi {
         root.addView(scroll, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         dialog.setContentView(root)
+        dialog.setOnDismissListener { if (!a.isFinishing && !a.isDestroyed) onUpdate() }
         dialog.show()
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT)
