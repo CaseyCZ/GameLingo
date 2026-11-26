@@ -490,3 +490,8 @@
 "Párovací kód z TV" = "TV pairing code";
 "Zadej celý párovací kód z TV." = "Enter the full TV pairing code.";
 "TV nepotvrdila bezpečné párování. Vytvoř nový kód." = "TV did not confirm secure pairing. Generate a new code.";
+
+"OCR, překlad, oblasti a vzhled titulků" = "OCR, translation, regions and subtitle appearance";
+"Obnovit výchozí nastavení?" = "Restore default settings?";
+"Obnovit nastavení" = "Restore settings";
+"Obnoví nastavení překladu, OCR, oblastí a titulků. Spárovaná zařízení, účty a uložené herní profily zůstanou zachované." = "Translation, OCR, region and subtitle settings will return to defaults. Paired devices, accounts and saved game profiles will remain.";
