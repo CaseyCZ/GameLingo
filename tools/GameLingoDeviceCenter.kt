@@ -159,10 +159,11 @@ object GameLingoDeviceCenter {
         val root = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(c)
-            setPadding(GameLingoVisualKit.dp(c, 20),
-                       GameLingoVisualKit.dp(c, 20),
-                       GameLingoVisualKit.dp(c, 20),
-                       GameLingoVisualKit.dp(c, 26))
+            val tv = GameLingoTVUi.isTV(c)
+            setPadding(GameLingoVisualKit.dp(c, if (tv) 20 else 16),
+                       GameLingoVisualKit.dp(c, if (tv) 20 else 12),
+                       GameLingoVisualKit.dp(c, if (tv) 20 else 16),
+                       GameLingoVisualKit.dp(c, if (tv) 26 else 16))
         }
         val tenFoot = GameLingoTVUi.isTV(c)
         if (showHeader) {
