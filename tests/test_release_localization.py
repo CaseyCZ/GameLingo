@@ -52,7 +52,9 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("BEGIN GENERATED UI LABELS", android)
         self.assertIn('uiLabels["en"]?.get(cs)', android)
         project = text(IOS.parent / "project.yml")
-        self.assertIn("CFBundleLocalizations: [cs, en, sk]", project)
+        manifest = json.loads(text(ROOT / "shared" / "locales" / "manifest.json"))
+        codes = [item["code"] for item in manifest["languages"]]
+        self.assertIn("CFBundleLocalizations: [" + ", ".join(codes) + "]", project)
 
 
     def assert_unique(self, keys):
