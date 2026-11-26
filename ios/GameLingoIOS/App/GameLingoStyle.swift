@@ -206,6 +206,7 @@ struct GLValueSlider: View {
 }
 
 struct GLScreen<Content: View>: View {
+    @Environment(\.dismiss) private var dismiss
     let title: String
     let help: String
     @ViewBuilder var content: Content
@@ -227,7 +228,9 @@ struct GLScreen<Content: View>: View {
         .toolbar(.visible, for: .navigationBar)
         .navigationTitle(LocalizedStringKey(title))
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) { GLBackButton { dismiss() } }
             ToolbarItem(placement: .topBarTrailing) {
                 GLHelpButton(title: title, explanation: help)
             }
