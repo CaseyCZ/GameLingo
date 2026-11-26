@@ -105,25 +105,53 @@ object GameLingoVisualKit {
             Color.argb(184,2,214,255),Color.argb(199,163,41,250))).apply { cornerRadius=dp(activity,13).toFloat() }
         addView(icon(activity,name),FrameLayout.LayoutParams(dp(activity,21),dp(activity,21),Gravity.CENTER))
     }
-    // GLDetailRow: 42pt icon, 13pt icon radius, 11pt content inset, chevron.
-    fun detailRow(activity:Activity,symbol:String,title:String,detail:String,onClick:()->Unit):LinearLayout =
+    // Use a symmetrical 52dp icon / chevron rail so the central label truly
+    // occupies the physical centre of the card on both phone and TV.
+    // The colours, typography and corners match the shared iOS GLDetailRow.
+    fun detailRow(activity: Activity, symbol: String, title: String, detail: String,
+                  onClick: () -> Unit): LinearLayout =
         LinearLayout(activity).apply {
-            orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
-            val tv=GameLingoTVUi.isTV(activity)
-            background=if(tv)GameLingoTVUi.panel(activity) else card(activity)
-            setPadding(dp(activity,11),dp(activity,11),dp(activity,11),dp(activity,11))
-            isFocusable=true;isClickable=true
-            addView(iconBadge(activity,iconName(symbol,title)),LinearLayout.LayoutParams(dp(activity,42),dp(activity,42)).apply{marginEnd=dp(activity,10)})
-            addView(LinearLayout(activity).apply {
-                orientation=LinearLayout.VERTICAL
-                addView(TextView(activity).apply{ text=title;tag="gamelingo-title";gravity=Gravity.CENTER;textSize = sp(activity, 16f);setTextColor(Color.WHITE);typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL) })
-                addView(TextView(activity).apply{ text=detail;gravity=Gravity.CENTER;tag="gamelingo-detail";textSize = sp(activity, 12f);setTextColor(muted);setPadding(0,dp(activity,4),0,0) })
-            },LinearLayout.LayoutParams(0,-2,1f))
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            val tv = GameLingoTVUi.isTV(activity)
+            background = if (tv) GameLingoTVUi.panel(activity) else card(activity)
+            setPadding(dp(activity, 11), dp(activity, 11),
+                dp(activity, 11), dp(activity, 11))
+            isFocusable = true
+            isClickable = true
             addView(FrameLayout(activity).apply {
-                addView(icon(activity,"chevron.right",muted), FrameLayout.LayoutParams(dp(activity,16),dp(activity,16),Gravity.END or Gravity.CENTER_VERTICAL))
-            },LinearLayout.LayoutParams(dp(activity,52),dp(activity,42)))
-            setOnClickListener{onClick()}
-            if(tv)GameLingoTVUi.controlFocus(activity,this)
+                addView(iconBadge(activity, iconName(symbol, title)),
+                    FrameLayout.LayoutParams(dp(activity, 42), dp(activity, 42), Gravity.CENTER))
+            }, LinearLayout.LayoutParams(dp(activity, 52), dp(activity, 42)))
+            addView(LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                addView(TextView(activity).apply {
+                    text = title
+                    tag = "gamelingo-title"
+                    gravity = Gravity.CENTER
+                    textSize = sp(activity, 16f)
+                    setTextColor(Color.WHITE)
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT))
+                addView(TextView(activity).apply {
+                    text = detail
+                    tag = "gamelingo-detail"
+                    gravity = Gravity.CENTER
+                    textSize = sp(activity, 12f)
+                    setTextColor(muted)
+                    setPadding(0, dp(activity, 4), 0, 0)
+                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT))
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(FrameLayout(activity).apply {
+                addView(icon(activity, "chevron.right", muted),
+                    FrameLayout.LayoutParams(dp(activity, 16), dp(activity, 16),
+                        Gravity.CENTER))
+            }, LinearLayout.LayoutParams(dp(activity, 52), dp(activity, 42)))
+            setOnClickListener { onClick() }
+            if (tv) GameLingoTVUi.controlFocus(activity, this)
         }
 
     // GLBrandWordmark: same existing application mark, white Game and purple Lingo.
