@@ -1401,7 +1401,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
     def test_tv_review_fixes_focus_opacity_and_profile_editing(self):
         style=code(TOOLS/"GameLingoTVCaptionStyle.kt")
         self.assertIn("opacityBar.progress=percent",style)
-        self.assertIn("Neprůhlednost pozadí: $percent %",style)
+        self.assertIn('label.text = "${tr("Neprůhlednost pozadí")}: $percent %"',style)
+        self.assertIn('(p.getInt("opacity",230).coerceIn(0,255)*100+127)/255',style)
         self.assertIn("ViewGroup.FOCUS_BLOCK_DESCENDANTS",code(TOOLS/"GameLingoOCRSettings.kt"))
         self.assertIn("ViewGroup.FOCUS_BLOCK_DESCENDANTS",code(TOOLS/"GameLingoSettings.kt"))
         self.assertIn("Upravit další nastavení",code(TOOLS/"GameLingoTVProfiles.kt"))
@@ -1410,12 +1411,12 @@ class GameLingoIntegrationContracts(unittest.TestCase):
     def test_tv_device_manager_shows_phones_instead_of_other_tvs(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         tv=code(TOOLS/"direct_tv_mode.py")
-        self.assertIn('arrayOf("Xbox", "PlayStation 5 / 4", "Telefon · QR / PIN")',manager)
-        self.assertIn('label(c, "Telefony", 16f)',manager)
+        self.assertIn('arrayOf("Xbox", "PlayStation 5 / 4", GameLingoLanguages.ui(c, "Telefon · QR / PIN"))',manager)
+        self.assertIn('label(c, GameLingoLanguages.ui(c, "Telefony"), 16f)',manager)
         self.assertIn("TV_RECEIVER_PHONE_ROWS",manager)
         self.assertIn("IPhoneTVPairing.phones(c)",tv)
         self.assertIn("IPhoneTVPairing.unpair(c, phone.id)",tv)
-        self.assertIn("return root",manager.split("TV_RECEIVER_PHONE_ROWS",1)[1].split('label(c, "Televize"',1)[0])
+        self.assertIn("return root",manager.split("TV_RECEIVER_PHONE_ROWS",1)[1].split('label(c, GameLingoLanguages.ui(c, "Televize")',1)[0])
 
     def test_tv_mobile_downloads_use_public_prerelease_assets_and_two_home_actions(self):
         qr=code(TOOLS/"GameLingoQRDisplay.kt")
@@ -1434,14 +1435,14 @@ class GameLingoIntegrationContracts(unittest.TestCase):
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         self.assertIn("GameLingoTVUi.select(c, heading, options, onSelect = onSelect)",manager)
-        for marker in ('chooseDevice(c, "Přidat zařízení", options)', 'chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name)',
+        for marker in ('chooseDevice(c, GameLingoLanguages.ui(c, "Přidat zařízení"), options)', 'chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name)',
                        'chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno)', "chooseDevice(c, tv.jmeno"):
             self.assertIn(marker,manager)
 
     def test_android_can_remove_and_restore_xbox_without_signing_out(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")
         for marker in (
-            '"Použít", "Připojit", "Odebrat", "Přejmenovat"',
+            'arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Připojit"), GameLingoLanguages.ui(c, "Odebrat"), GameLingoLanguages.ui(c, "Přejmenovat"))',
             '"hiddenXboxIds"',
             'filterNot { it.id in hiddenXboxIds }',
             '"Vrátit odebrané Xboxy"',
