@@ -302,15 +302,6 @@ object GameLingoSubtitleAppearance {
             ViewGroup.LayoutParams.MATCH_PARENT, dp(54)
         ))
 
-        val scroll = ScrollView(activity).apply {
-            isFillViewport = true
-            addView(layout)
-        }
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        GameLingoTVUi.mountPage(activity, dialog, tr("Vzhled titulků"), layout, helpTopic = "appearance")
     }
 }
