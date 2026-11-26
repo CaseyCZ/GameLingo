@@ -214,10 +214,10 @@ object GameLingoVisualKit {
         }
         top.addView(LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            addView(caption("HRAJ. ROZUMĚJ.", 11f, cyan, true).apply {
+            addView(caption(GameLingoLanguages.ui(activity, "HRAJ. ROZUMĚJ."), 11f, cyan, true).apply {
                 letterSpacing = 0.14f
             })
-            addView(caption("Překlad přímo při hraní", 18f, Color.WHITE, true).apply {
+            addView(caption(GameLingoLanguages.ui(activity, "Překlad přímo při hraní"), 18f, Color.WHITE, true).apply {
                 setPadding(0, dp(activity, 5), 0, 0)
             })
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -280,7 +280,7 @@ object GameLingoVisualKit {
             orientation=LinearLayout.VERTICAL
             addView(wordmark(activity,true))
             addView(TextView(activity).apply {
-                text="Titulky a překlady her v reálném čase";textSize=12f;setTextColor(muted)
+                text=GameLingoLanguages.ui(activity, "Titulky a překlady her v reálném čase");textSize=12f;setTextColor(muted)
                 maxLines=1;ellipsize=android.text.TextUtils.TruncateAt.END
             })
         },LinearLayout.LayoutParams(0,-2,1f))

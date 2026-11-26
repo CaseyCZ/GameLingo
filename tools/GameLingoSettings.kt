@@ -279,18 +279,6 @@ object GameLingoSettings {
         menu("▣", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(activity)) {
             GameLingoAutomaticConfig.mode(activity) { GameLingoOCRSettings.show(activity, onAreas) }
         }
-        val advanced = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            visibility = android.view.View.GONE
-        }
-        val disclosure = GameLingoVisualKit.detailRow(activity, "⋯", tr("Pokročilé nastavení"), tr("Citlivost, režim a časování")) {
-            advanced.visibility = if (advanced.visibility == android.view.View.VISIBLE) android.view.View.GONE else android.view.View.VISIBLE
-        }
-        page.addView(disclosure, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 * d })
-        menu("文", "Překlad", "Režimy, dialogy a časování", parent = advanced) {
-            showTranslation(activity, settings, onAreas, onLanguage)
-        }
-        page.addView(advanced)
         menu("⌗", "Oblasti obrazovky",
              if(GameLingoAutomaticConfig.enabled(activity)) "Automatické zóny" else "Čtyři nezávislé oblasti") {
             if(GameLingoAutomaticConfig.enabled(activity))GameLingoAutomaticConfig.showZones(activity) else onAreas()
@@ -308,17 +296,29 @@ object GameLingoSettings {
         section(GameLingoUIContract.settingsSections[3])
         menu("▭", "Zařízení",
              "Xbox, PlayStation a Google TV") { onDevices() }
+        val advanced = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = android.view.View.GONE
+        }
+        val disclosure = GameLingoVisualKit.detailRow(activity, "⋯", tr("Pokročilé nastavení"), tr("Časování, historie a diagnostika")) {
+            advanced.visibility = if (advanced.visibility == android.view.View.VISIBLE) android.view.View.GONE else android.view.View.VISIBLE
+        }
+        page.addView(disclosure, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 * d })
+        menu("文", "Překlad", "Režimy, dialogy a časování", parent = advanced) {
+            showTranslation(activity, settings, onAreas, onLanguage)
+        }
         menu("◷", "Historie překladů",
-             "Poslední dialogy a herní texty · volitelné") {
+             "Poslední dialogy a herní texty · volitelné", parent = advanced) {
             GameLingoHistoryUi.show(activity)
         }
-        menu("▣", "Překladová cache", "Ukládání a vymazání místních překladů") {
+        menu("▣", "Překladová cache", "Ukládání a vymazání místních překladů", parent = advanced) {
             GameLingoCachePrivacyUi.show(activity)
         }
         menu("≋", "Diagnostika",
-             "Stav relace a uložených zařízení") {
+             "Stav relace a uložených zařízení", parent = advanced) {
             GameLingoDiagnostics.show(activity)
         }
+        page.addView(advanced)
         menu("ⓘ", "O aplikaci / Licence",
              "GameLingo, zdroje a AGPLv3") {
             GameLingoAbout.show(activity)

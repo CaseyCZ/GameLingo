@@ -18,6 +18,32 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_android_entry_localization_and_first_run_simplification(self):
+        import re
+        languages = code(TOOLS/"GameLingoLanguages.kt")
+        first = code(TOOLS/"GameLingoFirstRun.kt")
+        nav = code(TOOLS/"GameLingoNavigation.kt")
+        settings = code(TOOLS/"GameLingoSettings.kt")
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        auto = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        spec = json.loads(code(ROOT/"shared/mobile-ui.json"))
+        entries = re.findall(r'"([^"\n]+)" to Pair\("([^"\n]+)", "([^"\n]+)"\)', languages)
+        catalog = dict((cs, (sk, en)) for cs, sk, en in entries)
+        self.assertEqual(len(catalog), len(entries))
+        for title in spec["setupSteps"] + spec["settingsSections"] + [tab["title"] for tab in spec["tabs"]]:
+            self.assertIn(title, catalog)
+        for title in ("Jazyk aplikace", "Jazyk hry", "Jazyk překladu", "Standardní", "Automatický", "Nastavit později", "Pokročilé nastavení"):
+            self.assertIn(title, catalog)
+        self.assertIn('?: "en"', languages)
+        self.assertIn('GameLingoLanguages.ui(activity, destination.title)', nav)
+        self.assertEqual(first.count('tr("Spárovat TV")'), 1)
+        self.assertIn('2 -> consoleRegistered() && televisionPaired()', first)
+        self.assertIn('visibility = android.view.View.GONE', settings)
+        self.assertIn('parent = advanced', settings)
+        self.assertEqual(len(re.findall(r'^        tile\(', tv, re.M)), 9)
+        self.assertIn('getBoolean("enabled",false)', auto)
+        self.assertNotIn('if(i==1) showZones(a)', auto)
+
     def test_first_run_and_device_library(self):
         home=code(IOS/"GameLingoHome.swift")
         setup=code(IOS/"GameLingoSetupView.swift")

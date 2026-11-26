@@ -72,8 +72,8 @@ object GameLingoNavigation {
             }
             tabs.forEachIndexed { index, destination ->
                 val item = TextView(activity).apply {
-                    text = destination.title
-                    contentDescription = destination.title
+                    text = GameLingoLanguages.ui(activity, destination.title)
+                    contentDescription = GameLingoLanguages.ui(activity, destination.title)
                     textSize = 10.5f
                     maxLines = 2
                     gravity = Gravity.CENTER
