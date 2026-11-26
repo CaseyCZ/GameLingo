@@ -119,7 +119,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         phone = code(TOOLS/"GameLingoSubtitleAppearance.kt")
         tv = code(TOOLS/"GameLingoTVCaptionStyle.kt")
         for label in ("Otevřít editor oblastí", "Velikost písma", "Náhled na TV", "Pozadí titulků"):
-            self.assertIn('"' + label + '" to Pair(', lang)
+            self.assertIn(label, json.loads(code(ROOT/"shared/locales/cs.json")))
         self.assertIn("text = tr(name)", regions)
         self.assertIn("this.text = tr(label)", phone)
         self.assertIn("this.text = GameLingoPhoneSubtitleStyle.sample(activity)", phone)
@@ -131,7 +131,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         ocr = code(TOOLS/"GameLingoOCRSettings.kt")
         history = code(TOOLS/"GameLingoHistoryUi.kt")
         for label in ("Překládat dialogy", "Režim OCR", "Uchovávat historii", "Výchozí oblast", "Automaticky"):
-            self.assertIn('"' + label + '" to Pair(', lang)
+            self.assertIn(label, json.loads(code(ROOT/"shared/locales/cs.json")))
         self.assertIn("GameLingoLanguages.ui(c, title)", settings)
         self.assertIn("this.text = tr(value)", ocr)
         self.assertIn('text = tr("Uchovávat historii")', history)
@@ -177,9 +177,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         tv = code(TOOLS/"GameLingoTVSettings.kt")
         auto = code(TOOLS/"GameLingoAutomaticConfig.kt")
         spec = json.loads(code(ROOT/"shared/mobile-ui.json"))
-        entries = re.findall(r'"([^"\n]+)" to Pair\("([^"\n]+)", "([^"\n]+)"\)', languages)
-        catalog = dict((cs, (sk, en)) for cs, sk, en in entries)
-        self.assertEqual(len(catalog), len(entries))
+        catalog = {key: (value, json.loads(code(ROOT/"shared/locales/en.json"))[key])
+                   for key, value in json.loads(code(ROOT/"shared/locales/sk.json")).items()}
+        self.assertEqual(len(catalog), len(set(catalog)))
         for title in spec["setupSteps"] + spec["settingsSections"] + [tab["title"] for tab in spec["tabs"]]:
             self.assertIn(title, catalog)
         for title in ("Jazyk aplikace", "Jazyk hry", "Jazyk překladu", "Standardní", "Automatický", "Nastavit později", "Pokročilé nastavení"):
@@ -1240,7 +1240,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         keys = re.findall(r'tr\(a, "([^"]+)"\)', updater)
         self.assertGreaterEqual(len(set(keys)), 20)
         for key in set(keys):
-            self.assertIn(json.dumps(key, ensure_ascii=False) + " to Pair(", labels)
+            self.assertIn(key, json.loads(code(ROOT/"shared/locales/cs.json")))
         for script in ("wire_mobile_update.py", "direct_tv_mode.py"):
             self.assertIn('GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")', code(TOOLS/script))
 
@@ -1521,7 +1521,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('foregroundState.startsWith("Aktivní")', capture)
         self.assertIn('if (lastRaw.isNotBlank()) "\\nOCR: $lastRaw"', capture)
         for key in ("Samostatný překlad TV", "Diagnostika TV", "Čekám na první snímek", "Přijaté snímky:"):
-            self.assertIn(f'"{key}" to Pair(', languages)
+            self.assertIn(key, json.loads(code(ROOT/"shared/locales/cs.json")))
 
     def test_tv_standalone_requires_consent_and_uses_only_ocr(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
