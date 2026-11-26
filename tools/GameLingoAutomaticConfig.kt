@@ -132,66 +132,303 @@ internal object GameLingoAutomaticConfig {
         return root
     }
 
+
+    /**
+     * One editor for Android phone and Google TV. The selected zone is edited in
+     * place, like the four-region Standard editor, with one live 16:9 preview.
+     * TV uses focusable buttons and seek bars; touch devices can drag a zone.
+     */
     fun showZones(a: Activity) {
-        if(!editable(a))return
-        val zones=zones(a)
-        val labels=(zones.map { (if(it.enabled) "✓  " else "○  ")+it.name }+
-            listOfNotNull(GameLingoLanguages.ui(a,"Přidat zónu").takeIf { zones.size<10 },GameLingoLanguages.ui(a,"Obnovit výchozí"))).toTypedArray()
-        select(a,GameLingoLanguages.ui(a,"Oblasti překladu")+" ("+zones.size+"/10)",labels,-1) { index ->
-            when {
-                index<zones.size -> {
-                    val z=zones[index]
-                    select(a,z.name,arrayOf(if(z.enabled) "Vypnout" else "Zapnout","Upravit","Odstranit").map { GameLingoLanguages.ui(a,it) }.toTypedArray(),-1) { action ->
-                        if(action==1) edit(a,z,false)
-                        else { save(a,if(action==2) zones.filter { it.id!=z.id } else zones.map { if(it.id==z.id) it.copy(enabled=!it.enabled) else it });showZones(a) }
-                    }
+        if (!editable(a)) return
+        val tr: (String) -> String = { GameLingoLanguages.ui(a, it) }
+        val dp: (Int) -> Int = { GameLingoVisualKit.dp(a, it) }
+        val tv = GameLingoTVUi.isTV(a)
+        val entries = zones(a).toMutableList()
+        var selected = if (entries.isEmpty()) -1 else 0
+        var updating = false
+        val dialog = android.app.Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        val page = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(12))
+            background = GameLingoVisualKit.pageBackground(a)
+        }
+        page.addView(GameLingoVisualKit.neonTitle(
+            a, "Oblasti překladu", "Vyber oblast, potom uprav její polohu a velikost v náhledu.", "viewfinder"))
+
+        val tabs = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL }
+        page.addView(android.widget.HorizontalScrollView(a).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(tabs)
+        })
+        val editor = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = GameLingoVisualKit.card(a)
+        }
+        val title = TextView(a).apply {
+            setTextColor(Color.WHITE)
+            textSize = GameLingoVisualKit.sp(a, 17f)
+            gravity = android.view.Gravity.CENTER
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        editor.addView(title)
+        val name = EditText(a).apply {
+            hint = tr("Název")
+            setSingleLine(true)
+            setTextColor(Color.WHITE)
+            setHintTextColor(0xFF92A4C7.toInt())
+            filters = arrayOf(android.text.InputFilter.LengthFilter(60))
+        }
+        editor.addView(name)
+        val enabledRow = android.widget.Switch(a).apply {
+            text = tr("Aktivní zóna")
+            setTextColor(Color.WHITE)
+            textSize = GameLingoVisualKit.sp(a, 15f)
+        }
+        editor.addView(enabledRow)
+        val labels = mutableListOf<TextView>()
+        val bars = mutableListOf<SeekBar>()
+        for (axis in listOf("Vodorovná pozice", "Svislá pozice", "Šířka", "Výška")) {
+            val label = TextView(a).apply {
+                setTextColor(Color.WHITE)
+                textSize = GameLingoVisualKit.sp(a, 14f)
+                setPadding(0, dp(10), 0, 0)
+            }
+            editor.addView(label)
+            labels.add(label)
+            val seek = SeekBar(a).apply {
+                max = 1000
+                keyProgressIncrement = 10
+                isFocusable = true
+            }
+            editor.addView(seek)
+            bars.add(seek)
+        }
+        lateinit var refresh: () -> Unit
+        lateinit var refreshTabs: () -> Unit
+        lateinit var preview: View
+
+        fun updateSelected(change: (AutoZone) -> AutoZone, rerender: Boolean = true) {
+            if (selected !in entries.indices || RemotePlayService.aktivni || PrijemService.bezi) return
+            val updated = change(entries[selected])
+            if (!updated.rect.valid()) return
+            entries[selected] = updated
+            save(a, entries)
+            preview.invalidate()
+            if (rerender) refresh() else refreshTabs()
+        }
+
+        val blue = 0xFF4FB3FF.toInt()
+        preview = object : View(a) {
+            private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                val width = MeasureSpec.getSize(widthMeasureSpec).coerceAtLeast(dp(180))
+                setMeasuredDimension(width, (width * 9f / 16f).toInt())
+            }
+            override fun onDraw(c: Canvas) {
+                super.onDraw(c)
+                c.drawColor(0xFF111A33.toInt())
+                paint.style = Paint.Style.FILL
+                paint.color = 0xFF1A3050.toInt()
+                val mountains = android.graphics.Path().apply {
+                    moveTo(0f, height * .91f); lineTo(width * .30f, height * .3f)
+                    lineTo(width * .51f, height * .72f); lineTo(width * .7f, height * .19f)
+                    lineTo(width.toFloat(), height * .91f); close()
                 }
-                index==zones.size && zones.size<10 -> edit(a,AutoZone(UUID.randomUUID().toString(),GameLingoLanguages.ui(a,"Zóna")+" "+(zones.size+1),true,AutoRect(.2f,.2f,.8f,.45f),false),true)
-                else -> AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a,"Obnovit výchozí zóny?")).setNegativeButton(GameLingoLanguages.ui(a,"Zrušit"),null).setPositiveButton(GameLingoLanguages.ui(a,"Obnovit")) { _,_->save(a,initial(a));showZones(a) }.show()
+                c.drawPath(mountains, paint)
+                entries.forEachIndexed { index, zone ->
+                    val r = zone.rect
+                    val left = width * r.left
+                    val top = height * r.top
+                    val right = width * r.right
+                    val bottom = height * r.bottom
+                    paint.style = Paint.Style.FILL
+                    paint.color = if (index == selected) 0x604FB3FF else 0x184FB3FF
+                    c.drawRect(left, top, right, bottom, paint)
+                    paint.style = Paint.Style.STROKE
+                    paint.strokeWidth = dp(if (index == selected) 3 else 2).toFloat()
+                    paint.color = if (zone.enabled) blue else 0xFF64748B.toInt()
+                    paint.pathEffect = if (index == selected) null else android.graphics.DashPathEffect(floatArrayOf(dp(7).toFloat(), dp(4).toFloat()), 0f)
+                    c.drawRect(left, top, right, bottom, paint)
+                    paint.pathEffect = null
+                    paint.style = Paint.Style.FILL
+                    paint.textSize = dp(12).toFloat()
+                    paint.color = Color.WHITE
+                    c.save()
+                    c.clipRect(left, top, right, bottom)
+                    c.drawText(zone.name, left + dp(5), (top + dp(15)).coerceAtMost(bottom), paint)
+                    c.restore()
+                }
             }
-        }
-    }
-    private fun edit(a: Activity,z: AutoZone,new: Boolean) {
-        var rect=z.rect
-        val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL;setPadding(24,12,24,12) }
-        val name=EditText(a).apply { setText(z.name);hint=GameLingoLanguages.ui(a,"Název");maxLines=1 }
-        body.addView(name)
-        val preview=object: View(a) {
-            val p=Paint(Paint.ANTI_ALIAS_FLAG)
-            override fun onDraw(canvas: Canvas) {
-                canvas.drawColor(Color.BLACK)
-                p.color=Color.YELLOW;p.style=Paint.Style.STROKE;p.strokeWidth=3f
-                canvas.drawRect(rect.left*width,rect.top*height,rect.right*width,rect.bottom*height,p)
-            }
-        }
-        body.addView(preview,LinearLayout.LayoutParams(-1,(a.resources.displayMetrics.widthPixels*.25f).toInt().coerceIn(100,300)))
-        fun slider(title: String,value: Float,change: (Float)->Unit) {
-            val label=TextView(a).apply { gravity=android.view.Gravity.CENTER; text="$title: "+(value*100).toInt()+" %" }
-            body.addView(label)
-            body.addView(SeekBar(a).apply {
-                max=100;progress=(value*100).toInt().coerceIn(0,100);keyProgressIncrement=1;isFocusable=true
-                setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener {
-                    override fun onStartTrackingTouch(bar:SeekBar) {}
-                    override fun onStopTrackingTouch(bar:SeekBar) {}
-                    override fun onProgressChanged(bar:SeekBar,p:Int,fromUser:Boolean) {
-                        if(fromUser){change(p/100f);label.text="$title: $p %";preview.invalidate()}
-                    }
+            override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
+                if (tv || selected !in entries.indices) return false
+                if (event.actionMasked != android.view.MotionEvent.ACTION_DOWN &&
+                    event.actionMasked != android.view.MotionEvent.ACTION_MOVE &&
+                    event.actionMasked != android.view.MotionEvent.ACTION_UP) return true
+                if (event.actionMasked == android.view.MotionEvent.ACTION_UP) return true
+                val x = (event.x / width.coerceAtLeast(1)).coerceIn(0f, 1f)
+                val y = (event.y / height.coerceAtLeast(1)).coerceIn(0f, 1f)
+                updateSelected({ z ->
+                    val w = z.rect.width
+                    val h = z.rect.height
+                    val l = (x - w / 2f).coerceIn(0f, 1f - w)
+                    val t = (y - h / 2f).coerceIn(0f, 1f - h)
+                    z.copy(rect = AutoRect(l, t, l + w, t + h), centered = false)
                 })
+                return true
+            }
+        }
+        val previewPanel = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            background = GameLingoVisualKit.card(a, true)
+            addView(TextView(a).apply {
+                text = tr("Náhled obrazovky")
+                gravity = android.view.Gravity.CENTER
+                textSize = GameLingoVisualKit.sp(a, 17f)
+                setTextColor(Color.WHITE)
+            })
+            addView(preview, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+            addView(TextView(a).apply {
+                text = tr(if (tv) "Šipkami uprav polohu a velikost zóny." else "Přetáhni vybraný rámeček.")
+                gravity = android.view.Gravity.CENTER
+                textSize = GameLingoVisualKit.sp(a, 12f)
+                setTextColor(0xFF92A4C7.toInt())
             })
         }
-        slider(GameLingoLanguages.ui(a,"Vlevo"),rect.left){v->rect=rect.copy(left=v.coerceAtMost(rect.right-.08f))}
-        slider(GameLingoLanguages.ui(a,"Nahoře"),rect.top){v->rect=rect.copy(top=v.coerceAtMost(rect.bottom-.04f))}
-        slider(GameLingoLanguages.ui(a,"Vpravo"),rect.right){v->rect=rect.copy(right=v.coerceAtLeast(rect.left+.08f))}
-        slider(GameLingoLanguages.ui(a,"Dole"),rect.bottom){v->rect=rect.copy(bottom=v.coerceAtLeast(rect.top+.04f))}
-        val scroll=android.widget.ScrollView(a).apply {addView(body)}
-        AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a,"Upravit zónu")).setView(scroll).setNegativeButton(GameLingoLanguages.ui(a,"Zrušit"),null)
-            .setPositiveButton(GameLingoLanguages.ui(a,"Uložit")){_,_->
-                if(rect.valid()) {
-                    val updated=z.copy(name=name.text.toString().trim().take(60).ifBlank{GameLingoLanguages.ui(a,"Zóna")},rect=rect,centered=false)
-                    val all=zones(a)
-                    save(a,if(new)all+updated else all.map{if(it.id==z.id)updated else it})
+        val content = LinearLayout(a).apply { orientation = if (tv) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL }
+        if (tv) {
+            content.addView(previewPanel, LinearLayout.LayoutParams(0, -2, 1.25f).apply { rightMargin = dp(12) })
+            content.addView(editor, LinearLayout.LayoutParams(0, -2, 1f))
+        } else {
+            content.addView(previewPanel, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+            content.addView(editor, LinearLayout.LayoutParams(-1, -2))
+        }
+        page.addView(content, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+
+        fun action(label: String, onClick: () -> Unit): TextView =
+            TextView(a).apply {
+                text = tr(label)
+                textSize = GameLingoVisualKit.sp(a, 14f)
+                gravity = android.view.Gravity.CENTER
+                setTextColor(Color.WHITE)
+                setPadding(dp(13), dp(8), dp(13), dp(8))
+                minimumHeight = dp(if (tv) 48 else 44)
+                background = GameLingoVisualKit.card(a)
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { onClick() }
+                GameLingoTVUi.controlFocus(a, this)
+            }
+
+        val remove = action("Smazat zónu") {
+            if (selected !in entries.indices) return@action
+            AlertDialog.Builder(a).setMessage(tr("Smazat zónu") + "?")
+                .setNegativeButton(tr("Zrušit"), null)
+                .setPositiveButton(tr("Smazat zónu")) { _, _ ->
+                    if (RemotePlayService.aktivni || PrijemService.bezi) return@setPositiveButton
+                    entries.removeAt(selected)
+                    save(a, entries)
+                    selected = if (entries.isEmpty()) -1 else selected.coerceAtMost(entries.lastIndex)
+                    refresh()
+                }.show()
+        }
+        editor.addView(remove)
+        val reset = action("Obnovit výchozí") {
+            AlertDialog.Builder(a).setMessage(tr("Obnovit výchozí zóny?"))
+                .setNegativeButton(tr("Zrušit"), null)
+                .setPositiveButton(tr("Obnovit")) { _, _ ->
+                    if (RemotePlayService.aktivni || PrijemService.bezi) return@setPositiveButton
+                    entries.clear()
+                    entries.addAll(initial(a))
+                    save(a, entries)
+                    selected = 0
+                    refresh()
+                }.show()
+        }
+        editor.addView(reset)
+
+        refreshTabs = {
+            tabs.removeAllViews()
+            entries.forEachIndexed { index, zone ->
+                val tab = action((if (zone.enabled) "▣ " else "□ ") + zone.name) {
+                    selected = index
+                    refresh()
                 }
-                showZones(a)
-            }.show()
+                tab.background = if (index == selected) GameLingoVisualKit.primary(a) else GameLingoVisualKit.card(a)
+                tabs.addView(tab, LinearLayout.LayoutParams(-2, dp(52)).apply { rightMargin = dp(7) })
+            }
+            if (entries.size < 10) {
+                val add = action("＋ " + tr("Přidat zónu")) {
+                    if (RemotePlayService.aktivni || PrijemService.bezi) return@action
+                    val next = AutoZone(UUID.randomUUID().toString(), tr("Zóna") + " " + (entries.size + 1),
+                        true, AutoRect(.2f, .2f, .8f, .45f), false)
+                    entries.add(next)
+                    selected = entries.lastIndex
+                    save(a, entries)
+                    refresh()
+                }
+                tabs.addView(add, LinearLayout.LayoutParams(-2, dp(52)))
+            }
+        }
+        refresh = {
+            updating = true
+            refreshTabs()
+            val hasSelection = selected in entries.indices
+            editor.visibility = if (hasSelection) View.VISIBLE else View.GONE
+            if (hasSelection) {
+                val zone = entries[selected]
+                title.text = tr("Upravit zónu") + " · " + zone.name
+                if (name.text.toString() != zone.name) name.setText(zone.name)
+                enabledRow.isChecked = zone.enabled
+                val values = floatArrayOf(zone.rect.left, zone.rect.top, zone.rect.width, zone.rect.height)
+                listOf("Vodorovná pozice", "Svislá pozice", "Šířka", "Výška").forEachIndexed { axis, label ->
+                    labels[axis].text = tr(label) + ": " + (values[axis] * 100f).toInt() + " %"
+                    bars[axis].progress = (values[axis] * 1000f).toInt().coerceIn(0, 1000)
+                }
+            }
+            preview.invalidate()
+            updating = false
+        }
+
+        name.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (updating || selected !in entries.indices) return
+                updateSelected({ it.copy(name = s.toString().take(60)) }, false)
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+        enabledRow.setOnCheckedChangeListener { _, value ->
+            if (!updating) updateSelected({ it.copy(enabled = value) })
+        }
+        bars.forEachIndexed { axis, bar ->
+            bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onStartTrackingTouch(seekBar: SeekBar) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar) {}
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (!fromUser || updating || selected !in entries.indices) return
+                    updateSelected({ zone ->
+                        val rect = zone.rect
+                        val value = progress / 1000f
+                        val left = when (axis) {
+                            0 -> value.coerceIn(0f, 1f - rect.width)
+                            2 -> rect.left.coerceAtMost(1f - value.coerceIn(.08f, 1f))
+                            else -> rect.left
+                        }
+                        val top = when (axis) {
+                            1 -> value.coerceIn(0f, 1f - rect.height)
+                            3 -> rect.top.coerceAtMost(1f - value.coerceIn(.04f, 1f))
+                            else -> rect.top
+                        }
+                        val w = if (axis == 2) value.coerceIn(.08f, 1f) else rect.width
+                        val h = if (axis == 3) value.coerceIn(.04f, 1f) else rect.height
+                        zone.copy(rect = AutoRect(left, top, left + w, top + h), centered = false)
+                    })
+                }
+            })
+        }
+        refresh()
+        GameLingoTVUi.mountPage(a, dialog, tr("Oblasti překladu"), page, helpTopic = "regions")
     }
 }
