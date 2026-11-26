@@ -372,7 +372,7 @@ object GameLingoTVPairing {
             filters = arrayOf(InputFilter.LengthFilter(6))
             hint = "000000"
             setText(initialPin.takeIf { it.matches(Regex("[0-9]{6}")) }.orEmpty())
-            textSize = 26f
+            textSize = GameLingoVisualKit.sp(activity, 26f)
             gravity = Gravity.CENTER
             contentDescription = GameLingoLanguages.ui(activity, "Šestimístný kód z GameLingo TV")
             setSingleLine(true)
@@ -393,7 +393,7 @@ object GameLingoTVPairing {
             val pad=d(13);setPadding(pad,pad,pad,pad);background=GameLingoVisualKit.card(activity)
             addView(android.widget.TextView(activity).apply {
                 text=GameLingoLanguages.ui(activity, "Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování. Používej jen důvěryhodnou domácí síť; párování a titulky nejsou šifrované.")
-                gravity=Gravity.CENTER;textSize=14f;setTextColor(android.graphics.Color.parseColor("#92A4C7"))
+                gravity=Gravity.CENTER;textSize = GameLingoVisualKit.sp(activity, 14f);setTextColor(android.graphics.Color.parseColor("#92A4C7"))
             })
             pinInput.setTextColor(android.graphics.Color.WHITE)
             pinInput.setHintTextColor(android.graphics.Color.parseColor("#92A4C7"))

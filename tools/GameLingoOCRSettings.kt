@@ -37,7 +37,7 @@ object GameLingoOCRSettings {
             TextView(activity).apply {
                 gravity = android.view.Gravity.CENTER
                 this.text = tr(value)
-                textSize = size
+                textSize = GameLingoVisualKit.sp(activity, size)
                 setTextColor(Color.WHITE)
                 if (bold) typeface = Typeface.DEFAULT_BOLD
             }

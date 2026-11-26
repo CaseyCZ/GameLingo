@@ -27,7 +27,7 @@ object GameLingoDiagnostics {
         }
         val heading = TextView(activity).apply {
             text = GameLingoLanguages.ui(activity, "Diagnostika")
-            textSize = 27f
+            textSize = GameLingoVisualKit.sp(activity, 27f)
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         }
@@ -39,7 +39,7 @@ object GameLingoDiagnostics {
         root.addView(TextView(activity).apply {
             text = GameLingoLanguages.ui(activity, "Stav místních nastavení a zahájené relace. Uložené údaje nepotvrzují živé spojení s konzolí ani TV.")
             gravity = Gravity.CENTER
-            textSize = 14f
+            textSize = GameLingoVisualKit.sp(activity, 14f)
             setTextColor(Color.parseColor("#92A4C7"))
             setPadding(0, d(10), 0, d(18))
         })
@@ -52,7 +52,7 @@ object GameLingoDiagnostics {
         root.addView(GameLingoVisualKit.heading(activity,GameLingoLanguages.ui(activity, "Stav")))
         root.addView(states)
         val last=TextView(activity).apply {
-            setTextColor(Color.WHITE);textSize=16f;background=GameLingoVisualKit.card(activity)
+            setTextColor(Color.WHITE);textSize = GameLingoVisualKit.sp(activity, 16f);background=GameLingoVisualKit.card(activity)
             setPadding(d(13),d(13),d(13),d(13))
         }
         root.addView(GameLingoVisualKit.heading(activity,GameLingoLanguages.ui(activity, "Poslední překlad")))
@@ -66,13 +66,13 @@ object GameLingoDiagnostics {
             card.addView(TextView(activity).apply {
                 text = title
                 gravity = Gravity.CENTER
-                textSize = 13f
+                textSize = GameLingoVisualKit.sp(activity, 13f)
                 setTextColor(Color.parseColor("#92A4C7"))
             })
             card.addView(TextView(activity).apply {
                 text = actual
                 gravity = Gravity.CENTER
-                textSize = 16f
+                textSize = GameLingoVisualKit.sp(activity, 16f)
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.WHITE)
                 setPadding(0, d(4), 0, 0)
@@ -123,7 +123,7 @@ object GameLingoDiagnostics {
             root.addView(TextView(activity).apply {
                 text = title
                 gravity = Gravity.CENTER
-                textSize = 17f
+                textSize = GameLingoVisualKit.sp(activity, 17f)
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
                 minHeight = d(54)

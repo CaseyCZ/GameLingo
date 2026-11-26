@@ -1070,7 +1070,7 @@ class GameLingoScreenTranslationService : Service() {
         fun diagnostics(a: Activity) {
             if (running) stop(a)
             val panel = android.widget.LinearLayout(a).apply { orientation = android.widget.LinearLayout.VERTICAL; setPadding(20,8,20,8) }
-            val reportView = android.widget.TextView(a).apply { text = report(a); textSize = 15f }
+            val reportView = android.widget.TextView(a).apply { text = report(a); textSize = GameLingoVisualKit.sp(a, 15f) }
             panel.addView(reportView)
             // stopService is asynchronous; refresh when onDestroy has completed.
             // Preserve final counters for diagnosis, not stale active-state labels.
@@ -1092,7 +1092,7 @@ class GameLingoScreenTranslationService : Service() {
                 })
             }
             val overlayLog = android.widget.TextView(a).apply {
-                text = OverlayService.overlayTestReport(); textSize = 13f
+                text = OverlayService.overlayTestReport(); textSize = GameLingoVisualKit.sp(a, 13f)
             }
             val overlayAction = GameLingoTVUi.action(a,
                 if (OverlayService.overlayTestActive) GameLingoLanguages.ui(a, "Vypnout test překryvu") else GameLingoLanguages.ui(a, "Test překryvu")) {

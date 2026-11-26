@@ -28,14 +28,14 @@ object GameLingoRegions {
         page.addView(TextView(activity).apply {
             gravity = android.view.Gravity.CENTER
             text = tr("Oblasti obrazovky")
-            textSize = 26f
+            textSize = GameLingoVisualKit.sp(activity, 26f)
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         })
         page.addView(TextView(activity).apply {
             gravity = android.view.Gravity.CENTER
             text = tr("Čtyři nezávislé oblasti pro rozpoznávání a překlad.")
-            textSize = 14f
+            textSize = GameLingoVisualKit.sp(activity, 14f)
             setTextColor(Color.parseColor("#92A4C7"))
             setPadding(0, d(10), 0, d(20))
         })
@@ -58,14 +58,14 @@ object GameLingoRegions {
                 addView(TextView(activity).apply {
                     gravity = android.view.Gravity.CENTER
                     text = tr(name)
-                    textSize = 16f
+                    textSize = GameLingoVisualKit.sp(activity, 16f)
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
                 })
                 addView(TextView(activity).apply {
                     gravity = android.view.Gravity.CENTER
                     text = tr(detail)
-                    textSize = 13f
+                    textSize = GameLingoVisualKit.sp(activity, 13f)
                     setTextColor(Color.parseColor("#92A4C7"))
                     setPadding(0, d(4), 0, 0)
                 })
@@ -80,7 +80,7 @@ object GameLingoRegions {
             gravity = android.view.Gravity.CENTER
             text = tr("Otevřít editor oblastí")
             gravity = Gravity.CENTER
-            textSize = 17f
+            textSize = GameLingoVisualKit.sp(activity, 17f)
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
             background = GameLingoVisualKit.primary(activity)
@@ -97,7 +97,7 @@ object GameLingoRegions {
             gravity = android.view.Gravity.CENTER
             text = tr("Zpět")
             gravity = Gravity.CENTER
-            textSize = 16f
+            textSize = GameLingoVisualKit.sp(activity, 16f)
             setTextColor(Color.WHITE)
             background = GameLingoVisualKit.card(activity)
             minHeight = d(52)

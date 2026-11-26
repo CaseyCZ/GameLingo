@@ -73,7 +73,7 @@ object GameLingoDeviceCenter {
                 addView(TextView(c).apply {
                     text = title
                     gravity = Gravity.CENTER
-                    textSize = if (tenFoot) 15f else 17f
+                    textSize = GameLingoVisualKit.sp(c, 17f)
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
                 })
@@ -81,9 +81,9 @@ object GameLingoDeviceCenter {
                     addView(TextView(c).apply {
                         text = sub
                         gravity = Gravity.CENTER
-                        textSize = if (tenFoot) 12f else 13f
+                        textSize = GameLingoVisualKit.sp(c, 13f)
                         setTextColor(muted)
-                        setPadding(0, 6, 0, 0)
+                        setPadding(0, if (tenFoot) GameLingoVisualKit.dp(c, 6) else 6, 0, 0)
                     })
                 }
             }, LinearLayout.LayoutParams(0,
@@ -91,7 +91,7 @@ object GameLingoDeviceCenter {
             if (checked) {
                 addView(TextView(c).apply {
                     text = "✓"
-                    textSize = 26f
+                    textSize = GameLingoVisualKit.sp(c, 26f)
                     setTextColor(success)
                 })
             }
@@ -102,17 +102,17 @@ object GameLingoDeviceCenter {
         TextView(c).apply {
             text = value
             gravity = Gravity.CENTER
-            textSize = size
+            textSize = GameLingoVisualKit.sp(c, size)
             setTextColor(color)
             typeface = Typeface.DEFAULT_BOLD
-            setPadding(4, 9, 4, 9)
+            if (GameLingoTVUi.isTV(c)) setPadding(GameLingoVisualKit.dp(c,4), GameLingoVisualKit.dp(c,9), GameLingoVisualKit.dp(c,4), GameLingoVisualKit.dp(c,9)) else setPadding(4, 9, 4, 9)
         }
 
     private fun add(root: LinearLayout, view: LinearLayout) {
         root.addView(view, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 13 })
+        ).apply { bottomMargin = if (GameLingoTVUi.isTV(root.context)) GameLingoVisualKit.dp(root.context,13) else 13 })
     }
 
     // Local aliases never change console credentials or Microsoft account data.

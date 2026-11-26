@@ -43,7 +43,7 @@ object GameLingoProfiles {
         TextView(c).apply {
             gravity = android.view.Gravity.CENTER
             this.text = label
-            textSize = size
+            textSize = GameLingoVisualKit.sp(c, size)
             setTextColor(color)
             if (bold) setTypeface(null, Typeface.BOLD)
             setPadding(14, 10, 14, 10)

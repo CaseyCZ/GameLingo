@@ -49,7 +49,7 @@ internal object GameLingoQRDisplay {
         }
         val label = TextView(activity).apply {
             gravity = Gravity.CENTER
-            textSize = if(television) 22f else 18f
+            textSize = GameLingoVisualKit.sp(activity, if(television) 22f else 18f)
             setTextColor(Color.WHITE)
             setPadding(12,12,12,12)
         }

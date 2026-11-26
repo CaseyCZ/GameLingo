@@ -70,7 +70,7 @@ object GameLingoTVCaptionStyle {
         val label = android.widget.TextView(a).apply {
             gravity = android.view.Gravity.CENTER
             setTextColor(Color.WHITE)
-            textSize = 16f
+            textSize = GameLingoVisualKit.sp(a, 16f)
         }
         val opacityBar = android.widget.SeekBar(a).apply {
             max = 100; keyProgressIncrement = 5; isFocusable = true
@@ -108,7 +108,7 @@ object GameLingoTVCaptionStyle {
         val colorRow=android.widget.LinearLayout(a).apply{orientation=android.widget.LinearLayout.HORIZONTAL;gravity=android.view.Gravity.CENTER;clipChildren=false}
         keys.forEachIndexed{i,key->
             val swatch=android.widget.TextView(a).apply {
-                gravity=android.view.Gravity.CENTER;textSize=20f;setTextColor(Color.BLACK)
+                gravity=android.view.Gravity.CENTER;textSize=GameLingoVisualKit.sp(a, 20f);setTextColor(Color.BLACK)
                 isFocusable=true;isClickable=true
                 setOnClickListener {p.edit().putString("color",key).apply();refresh()}
                 setOnFocusChangeListener {_,_->paintSwatch(i)}

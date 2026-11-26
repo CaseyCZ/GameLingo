@@ -50,7 +50,7 @@ object GameLingoFirstRun {
         }
         val heading = TextView(activity).apply {
             gravity = Gravity.CENTER
-            textSize = 26f
+            textSize = GameLingoVisualKit.sp(activity, 26f)
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         }
@@ -80,7 +80,7 @@ object GameLingoFirstRun {
         fun button(text: String, checked: Boolean = false, primary: Boolean = false,
                    onClick: () -> Unit): TextView = TextView(activity).apply {
             this.text = (if (checked) "✓  " else "") + text
-            textSize = 18f
+            textSize = GameLingoVisualKit.sp(activity, 18f)
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
@@ -178,7 +178,7 @@ object GameLingoFirstRun {
                     body.addView(TextView(activity).apply {
                         gravity = Gravity.CENTER
                         text = tr("Překládej dialogy a herní texty přímo během hraní.")
-                        textSize = 15f
+                        textSize = GameLingoVisualKit.sp(activity, 15f)
                         setTextColor(muted)
                         setPadding(0, px(16), 0, px(14))
                     })
@@ -208,7 +208,7 @@ object GameLingoFirstRun {
                     body.addView(TextView(activity).apply {
                         gravity = Gravity.CENTER
                         text = tr("Tyto jazyky platí pro dialogy i herní texty. Změnit je můžeš později v Nastavení.")
-                        textSize = 14f
+                        textSize = GameLingoVisualKit.sp(activity, 14f)
                         setTextColor(muted)
                         setPadding(px(4), px(8), px(4), px(12))
                     })
@@ -227,7 +227,7 @@ object GameLingoFirstRun {
                         text = if (consoleRegistered())
                             tr("Vybraná konzole je uložená. Spojení ověříme při spuštění.")
                         else tr("Po výběru můžeš konzoli připojit v posledním kroku.")
-                        textSize = 14f
+                        textSize = GameLingoVisualKit.sp(activity, 14f)
                         setTextColor(muted)
                     })
                     item("📱  " + tr("Na telefonu"), tvChoice == 0) {
@@ -241,7 +241,7 @@ object GameLingoFirstRun {
                     body.addView(TextView(activity).apply {
                         gravity = Gravity.CENTER
                         text = tr("Uložené zařízení neznamená aktivní Remote Play. Živé spojení a překlad se ověří až při spuštění.")
-                        textSize = 14f
+                        textSize = GameLingoVisualKit.sp(activity, 14f)
                         setTextColor(muted)
                         setPadding(px(6), px(7), px(6), px(14))
                     })
