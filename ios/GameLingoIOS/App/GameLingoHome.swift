@@ -326,7 +326,6 @@ struct GameLingoHome: View {
                 )
             }
             .buttonStyle(.plain)
-            GLTranslationModePicker(model: model)
             actionButton
             LazyVGrid(columns: [GridItem(.flexible()),
                                 GridItem(.flexible())], spacing: 9) {
