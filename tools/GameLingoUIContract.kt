@@ -7,7 +7,7 @@ object GameLingoUIContract {
     val tabs: List<Tab> = listOf(
         Tab("Domů", "⌂"),
         Tab("Obrazovka", "▣"),
-        Tab("Konzole", "🎮"),
+        Tab("Zařízení", "▭"),
         Tab("Nastavení", "⚙"),
         Tab("O aplikaci", "ⓘ"),
     )
