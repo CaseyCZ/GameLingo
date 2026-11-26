@@ -32,13 +32,13 @@ public class CombinationTest {
             while((n=in.read(buf))!=-1)bytes.write(buf,0,n);
             samples=new JSONArray(bytes.toString("UTF-8"));
         }
-        assertEquals(13,samples.length());
+        assertEquals(24,samples.length());
         var engine=TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
         File result=new File(inst.getTargetContext().getFilesDir(),"combination.jsonl");
         try(PrintWriter out=new PrintWriter(new OutputStreamWriter(new FileOutputStream(result),StandardCharsets.UTF_8))){
             for(int i=0;i<samples.length();i++){
                 JSONObject sample=samples.getJSONObject(i);
-                for(String mode:new String[]{"raw","outline"}){
+                for(String mode:(i%2==0?new String[]{"raw","outline"}:new String[]{"outline","raw"})){
                     JSONObject row=new JSONObject(sample.toString());
                     row.put("engine","mlkit-android"); row.put("mode",mode);
                     JSONArray lines=new JSONArray();

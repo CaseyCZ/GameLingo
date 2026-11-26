@@ -1,4 +1,4 @@
-name: Android native OCR combination benchmark
+name: Android native OCR filter study
 on:
   push:
     branches: [feature/ocr-lab]
@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -r ocr-lab/requirements.txt
-      - run: python ocr-lab/combination_fixtures.py
+      - run: python mlkit-lab/filter_study_fixtures.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

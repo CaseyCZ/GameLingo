@@ -13,10 +13,10 @@ cleanup() {
 }
 trap cleanup EXIT
 set +e
-timeout 600 adb shell am instrument -w -r -e class cz.caseycz.mlkitlab.CombinationTest cz.caseycz.mlkitlab.test/androidx.test.runner.AndroidJUnitRunner | tee results/combination-instrumentation.txt
+timeout 1200 adb shell am instrument -w -r -e class cz.caseycz.mlkitlab.CombinationTest cz.caseycz.mlkitlab.test/androidx.test.runner.AndroidJUnitRunner | tee results/combination-instrumentation.txt
 status=${PIPESTATUS[0]}
 set -e
 cleanup
-python ../ocr-lab/score_combination.py results/combination.jsonl results/combination-summary.json
+python score_filter_study.py results/combination.jsonl results/filter-study-summary.json mlkit-android
 test "$status" -eq 0
 grep -F 'OK (1 test)' results/combination-instrumentation.txt

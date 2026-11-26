@@ -12,17 +12,17 @@ final class CombinationTests: XCTestCase {
             defer { done.fulfill() }
             do { try self.runCases() } catch { XCTFail("Combination: \(error)") }
         }
-        wait(for:[done],timeout:900)
+        wait(for:[done],timeout:2400)
     }
     private func runCases() throws {
         let bundle=Bundle(for:Self.self)
         let url=try XCTUnwrap(bundle.url(forResource:"combination",withExtension:"json",subdirectory:"assets"))
         let samples=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:url)) as? [[String:Any]])
-        XCTAssertEqual(samples.count,13)
+        XCTAssertEqual(samples.count,24)
         let ml=TextRecognizer.textRecognizer(options:TextRecognizerOptions())
-        for sample in samples {
+        for (index,sample) in samples.enumerated() {
             let id=try XCTUnwrap(sample["id"] as? String)
-            for mode in ["raw","outline"] {
+            for mode in (index % 2 == 0 ? ["raw","outline"] : ["outline","raw"]) {
                 let path=try XCTUnwrap(bundle.url(forResource:"\(id)_\(mode)",withExtension:"png",subdirectory:"assets"))
                 let image=try XCTUnwrap(UIImage(contentsOfFile:path.path))
                 let cg=try XCTUnwrap(image.cgImage)
