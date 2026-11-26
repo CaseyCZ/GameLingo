@@ -19,6 +19,13 @@ import kotlin.math.roundToInt
 internal class GameLingoZoneOverlay(private val context: Context, private val wm: WindowManager) {
     private val ui = Handler(Looper.getMainLooper())
     private var root: ZoneView? = null
+    private var captureHidden = false
+    fun suppress(hidden: Boolean): Boolean {
+        val visible = root?.let { it.visibility == View.VISIBLE && it.alpha > 0f } == true
+        captureHidden = hidden
+        root?.alpha = if(hidden) 0f else 1f
+        return visible
+    }
     private val expire = Runnable { clear() }
     fun clear() {
         ui.removeCallbacks(expire)
@@ -27,7 +34,7 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
     }
     fun show(packet: GameLingoZonePacket, local: Boolean = false) {
         check(Looper.myLooper() == Looper.getMainLooper())
-        val allowed = if(local) !PrijemService.bezi && RemotePlayService.aktivni else PrijemService.bezi
+        val allowed = if(local) !PrijemService.bezi && (RemotePlayService.aktivni || GameLingoScreenTranslationService.running) else PrijemService.bezi
         if (packet.blocks.isEmpty() || !allowed || !Settings.canDrawOverlays(context)) {
             clear()
             return
@@ -45,6 +52,7 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
             if (runCatching { wm.addView(candidate, lp) }.isFailure) return
             root = candidate
         }
+        view.alpha = if(captureHidden) 0f else 1f
         view.update(packet)
         ui.removeCallbacks(expire)
         ui.postDelayed(expire, 2200)

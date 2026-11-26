@@ -697,12 +697,14 @@ def main():
     s = bound_choices(s, folder)
     s = restrict_service_log(s)
     service.write_text(s, encoding="utf8")
-    if tv_variant(root):
+    television = tv_variant(root)
+    if television:
         patch_direct_tv(folder)
-        install_tv_theme(root)
     else:
         patch_mobile_update(folder)
-    install_automatic(folder, tv_variant(root))
+    install_automatic(folder, television)
+    if television:
+        install_tv_theme(root)
     finalize_tv(root, folder)
     print("GameLingo source and target languages connected to real Android translation")
 

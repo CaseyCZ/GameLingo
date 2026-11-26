@@ -461,7 +461,8 @@ def patch_direct_tv(folder):
         val views = listOfNotNull(textView, podklad, napoveda, seznamVoleb, ramecekTitulku, ramecekVoleb)
         val visible = views.any { it.visibility == android.view.View.VISIBLE && it.alpha > 0f }
         views.forEach { it.alpha = if (hidden) 0f else 1f }
-        return visible
+        val zonesVisible = automaticZoneOverlay.suppress(hidden)
+        return visible || zonesVisible
     }
 
     private fun showText(text: CharSequence, hideAfterMs: Long = 6000) {''')

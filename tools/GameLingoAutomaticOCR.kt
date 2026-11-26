@@ -53,6 +53,7 @@ internal class GameLingoAutomaticOCR(
     }
     init { ui.post(tick) }
     fun alive()=!closed.get() && valid()
+    fun readyForFrame() = alive() && !busy.get()
     fun close() {
         if(!closed.compareAndSet(false,true))return
         ui.removeCallbacks(tick)

@@ -129,10 +129,10 @@ class GameLingoScreenTranslationService : Service() {
     private var reader: ImageReader? = null
     private var ocr: Ctecka? = null
     private var translator: Prekladac? = null
-    private var active = false
+    @Volatile private var active = false
     private var starting = false
     private var pendingStart: Runnable? = null
-    private var paused = false
+    @Volatile private var paused = false
     private var source = "Čekám na první snímek"
     private var worker: HandlerThread? = null
     private var frameHandler: Handler? = null
@@ -176,7 +176,7 @@ class GameLingoScreenTranslationService : Service() {
             ?.activityInfo?.packageName
     }
     private var observedPackage: String? = null
-    private var blockedHome = false
+    @Volatile private var blockedHome = false
     private var hintText = ""
     private var hintEpoch = 0L
     private var hintBusy = false
@@ -225,6 +225,33 @@ class GameLingoScreenTranslationService : Service() {
     // Partial results are session-local and belong to one yellow revision.
     private var yellowPartialEpoch = -1L
     private val yellowPartial = mutableListOf<String>()
+    private var automaticCapture = false
+    @Volatile private var automaticReader: GameLingoAutomaticOCR? = null
+    private val automaticGeneration = AtomicLong()
+    private fun stopAutomaticCapture() {
+        automaticGeneration.incrementAndGet()
+        automaticReader?.close()
+        automaticReader = null
+        if(automaticCapture) OverlayService.posli(this,Intent(this,OverlayService::class.java)
+            .setAction(OverlayService.ACTION_SET_LOCAL_ZONES).putExtra(OverlayService.EXTRA_ZONE_PACKET,"PCZ1\t1.7778\t1\t0"))
+    }
+    private fun automaticCaptureTick() {
+        if(paused || blockedHome) return
+        val engine=automaticReader?.takeIf{it.alive()} ?: run {
+            stopAutomaticCapture()
+            val generation=automaticGeneration.get()
+            val language=GameLingoLanguages.revision
+            GameLingoAutomaticOCR(this,GameLingoAutomaticConfig.zones(this),
+                {active&&!paused&&!blockedHome&&generation==automaticGeneration.get()&&
+                    language==GameLingoLanguages.revision&&!RemotePlayService.aktivni&&!PrijemService.bezi},
+                {packet -> OverlayService.posli(this,Intent(this,OverlayService::class.java)
+                    .setAction(OverlayService.ACTION_SET_LOCAL_ZONES).putExtra(OverlayService.EXTRA_ZONE_PACKET,packet.encode()))}
+            ).also{automaticReader=it}
+        }
+        val now=SystemClock.elapsedRealtime()
+        if(!capturePending&&wantFrame.get()!=0&&sampleRequestedAt!=0L&&now-sampleRequestedAt>=1500L)cancelSample()
+        if(engine.readyForFrame()&&!capturePending&&wantFrame.get()==0)requestSample(3)
+    }
     private val tick = object : Runnable {
         override fun run() {
             if (!active) return
@@ -232,6 +259,7 @@ class GameLingoScreenTranslationService : Service() {
             val app = foreground.balicek()
             if (app != null && app != observedPackage) {
                 observedPackage = app
+                stopAutomaticCapture()
                 cancelSample(); resetText(); clearYellow(); clearHint(); render("")
             }
             blockedHome = app != null && (app == launcherPackage || app == packageName)
@@ -239,6 +267,11 @@ class GameLingoScreenTranslationService : Service() {
                 watchdogState = "Čekám na podporovaný zdroj"
                 setSource("Čekám na otevření videa nebo vstupu TV")
                 if (active) ui.postDelayed(this, 350L)
+                return
+            }
+            if (automaticCapture) {
+                automaticCaptureTick()
+                if (active) ui.postDelayed(this,350L)
                 return
             }
             if (!paused) {
@@ -294,7 +327,7 @@ class GameLingoScreenTranslationService : Service() {
         if (intent?.action == STOP) { stopSelf(); return START_NOT_STICKY }
         if (intent?.action == PAUSE) {
             if (!active) { stopSelf(); return START_NOT_STICKY }
-            paused = !paused; cancelSample(); resetText(); render(""); clearYellow(); clearHint()
+            paused = !paused; stopAutomaticCapture(); cancelSample(); resetText(); render(""); clearYellow(); clearHint()
             status = if (paused) "Pozastaveno" else source
             notification()
             return START_NOT_STICKY
@@ -349,7 +382,8 @@ class GameLingoScreenTranslationService : Service() {
             hintsEnabled = settings.napovedy
             yellowEnabled = Volby.zapnuto
             yellowTextMode = Volby.rezimText
-            check(dialogueEnabled || yellowEnabled || hintsEnabled) { "Zapni dialogy, nápovědu nebo žlutou oblast v nastavení Překlad." }
+            automaticCapture = GameLingoAutomaticConfig.enabled(this) && !diagnostic
+            check(automaticCapture || dialogueEnabled || yellowEnabled || hintsEnabled) { "Zapni dialogy, nápovědu nebo žlutou oblast v nastavení Překlad." }
             // Same saved regions and automatic dialogue crop as Remote Play.
             roi = if (OblastTitulku.rucne) GameLingoDirectTVLayout.blue(this)
                 else if (GameLingoOCRConfig.expandSearch && GameLingoOCRConfig.mode != "classic") floatArrayOf(0f,.50f,1f,1f)
@@ -365,6 +399,7 @@ class GameLingoScreenTranslationService : Service() {
             cleanCapture = coverOriginal || hintsEnabled || (dialogueEnabled &&
                 (useAutomaticOutput || overlaps(GameLingoDirectTVLayout.greenBounds(output)))) ||
                 (yellowEnabled && overlaps(orangeOutput))
+            if(automaticCapture) cleanCapture = true
             layoutState = "Modrá: " + roi.joinToString("/") { (it*100).toInt().toString() } +
                 " · zelená Y: " + (output[1]*100).toInt() + " % · žlutá: " +
                 if (yellowEnabled) yellowRoi.joinToString("/") { (it*100).toInt().toString() } else "vypnuta"
@@ -476,6 +511,26 @@ class GameLingoScreenTranslationService : Service() {
                 lastFrameReceivedAt.set(SystemClock.elapsedRealtime())
                 val requested = wantFrame.getAndSet(0)
                 if (requested == 0) return
+                if (requested == 3) {
+                    // The image lives only through the synchronous selected-ROI copy.
+                    // Protected/black sources are not bypassed or stored.
+                    try {
+                        automaticReader?.offer(image.width,image.height){x,y,w,h->
+                            val plane=image.planes[0];val data=plane.buffer.duplicate()
+                            require(plane.pixelStride==4 && plane.rowStride>=image.width*4)
+                            IntArray(w*h){i->
+                                val p=(y+i/w)*plane.rowStride+(x+i%w)*4
+                                val r=data.get(p).toInt() and 255
+                                val g=data.get(p+1).toInt() and 255
+                                val b=data.get(p+2).toInt() and 255
+                                (255 shl 24) or (r shl 16) or (g shl 8) or b
+                            }
+                        }
+                    } finally {
+                        ui.post{if(capturePending)cancelSample()}
+                    }
+                    return
+                }
                 cropStarted = SystemClock.elapsedRealtime()
                 yellow = requested == 2
                 val region = if (yellow) yellowRoi else roi
@@ -894,6 +949,7 @@ class GameLingoScreenTranslationService : Service() {
         if (starting) startupFailed = true
         starting = false
         pendingStart?.let { ui.removeCallbacks(it) }; pendingStart = null
+        stopAutomaticCapture()
         cancelSample(); story.reset(); storyPage=null
         active=false; running=false; wantFrame.set(0); epoch++; ui.removeCallbacks(tick)
         if (wasActive && !status.startsWith("Systém ukončil")) status = "Zastaveno · poslední stav: " + source

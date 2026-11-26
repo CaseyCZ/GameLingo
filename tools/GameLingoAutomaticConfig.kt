@@ -53,10 +53,15 @@ internal object GameLingoAutomaticConfig {
         AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad.").setPositiveButton("OK",null).show()
         return false
     }
+    private fun select(a:Activity,title:String,labels:Array<String>,selected:Int,action:(Int)->Unit) {
+        if(GameLingoTVUi.isTV(a))GameLingoTVUi.select(a,title,labels,selected,action)
+        else AlertDialog.Builder(a).setTitle(title).setSingleChoiceItems(labels,selected){dialog,index->dialog.dismiss();action(index)}
+            .setNegativeButton("Zrušit",null).show()
+    }
     fun mode(a: Activity, advanced: () -> Unit = {}) {
         if (!editable(a)) return
         val labels=arrayOf("Standardní","Automatický","Pokročilé nastavení OCR")
-        GameLingoTVUi.select(a,"Režim překladu",labels,if(enabled(a)) 1 else 0) { i ->
+        select(a,"Režim překladu",labels,if(enabled(a)) 1 else 0) { i ->
             if(i==2) advanced() else {
                 prefs(a).edit().putBoolean("enabled",i==1).apply()
                 if(i==1) showZones(a)
@@ -68,11 +73,11 @@ internal object GameLingoAutomaticConfig {
         val zones=zones(a)
         val labels=(zones.map { (if(it.enabled) "✓  " else "○  ")+it.name }+
             listOfNotNull("Přidat zónu".takeIf { zones.size<10 },"Obnovit výchozí")).toTypedArray()
-        GameLingoTVUi.select(a,"Oblasti překladu ("+zones.size+"/10)",labels,-1) { index ->
+        select(a,"Oblasti překladu ("+zones.size+"/10)",labels,-1) { index ->
             when {
                 index<zones.size -> {
                     val z=zones[index]
-                    GameLingoTVUi.select(a,z.name,arrayOf(if(z.enabled) "Vypnout" else "Zapnout","Upravit","Odstranit"),-1) { action ->
+                    select(a,z.name,arrayOf(if(z.enabled) "Vypnout" else "Zapnout","Upravit","Odstranit"),-1) { action ->
                         if(action==1) edit(a,z,false)
                         else { save(a,if(action==2) zones.filter { it.id!=z.id } else zones.map { if(it.id==z.id) it.copy(enabled=!it.enabled) else it });showZones(a) }
                     }

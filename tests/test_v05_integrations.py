@@ -507,6 +507,11 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("translating=true", engine)
         self.assertIn("GameLingoTVPairing.supportsZones(ip)", wiring)
         self.assertIn("GameLingoAutomaticConfig.profile(c)", code(TOOLS/"GameLingoProfiles.kt"))
+        standalone = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        self.assertIn("automaticCaptureTick()", standalone)
+        self.assertIn("automaticReader?.offer(image.width,image.height)", standalone)
+        self.assertIn("stopAutomaticCapture()", standalone)
+        self.assertIn("automaticZoneOverlay.suppress(hidden)", code(TOOLS/"direct_tv_mode.py"))
 
     def test_p1_3_persistent_translation_cache_uses_engine_and_language_keys(self):
         swift = code(IOS/"TranslationCache.swift")
