@@ -83,7 +83,7 @@ private enum IPAUpdates {
     }
     static func isNewer(_ manifest: IPAManifest) -> Bool {
         guard let build, manifest.versionCode > build else { return false }
-        return manifest.versionName.compare(version, options: .numeric) == .orderedDescending
+        return manifest.versionName.compare(version, options: .numeric) != .orderedAscending
     }
     static func request(_ url: URL) throws -> URLRequest {
         guard UpdateRedirects.trusted(url) else { throw UpdateFailure("Nepovolený zdroj aktualizace.") }
