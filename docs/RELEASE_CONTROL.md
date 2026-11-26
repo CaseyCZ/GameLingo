@@ -55,8 +55,14 @@ Závazný návrh a akceptační matice: [UI_UX_FUNCTIONAL_AUDIT.md](UI_UX_FUNCTI
 - Majitel potvrdil použití stávajících podpisových klíčů. Explicitní workflow checkpoint předává pouze čtyři existující GitHub Secrets po úspěšné rychlé regresi; běžný push zdrojů nespouští podpisový build. Žádné nové klíče, zveřejnění soukromého materiálu ani externí služba.
 - Podepsaný kandidát nesmí přejít na debug podpis. Finální balíčková kontrola porovnává oba veřejné SHA-256 certifikáty s CI 45638533060 a vyžaduje versionCode vyšší než 6019901; stejné podmínky na Masteru. Fyzický upgrade zůstává samostatný test. IPA unsigned.
 - Majitel potvrdil, že veřejně má zůstat pouze aktuální Release, starší binární vydání není třeba archivovat. Současné vydání nemažeme před dokončením validace nového; Git historie zůstává. Starý zdroj není zárukou reprodukovatelnosti binárek, podpisové klíče a provenance zůstávají důležité. Žádné vydání ani merge nyní.
-- Offline překlad mobilního Androidu je schválen k obnovení; TV nadále bez ML Kit Translation. Zatím není implementován. Podepsaný checkpoint není finální kandidát po této budoucí změně.
+- Offline překlad mobilního Androidu schválen k obnovení; TV nadále bez ML Kit Translation. Následující checkpoint obsahuje implementaci a vyžaduje vlastní CI.
 - Metodika agency-roster Secrets Management Specialist: minimální rozsah secrets, žádná rotace trvalého podpisu bez důvodu, ověřování kontinuity certifikátů. Nový build dosud neověřen.
+
+## Obnovení mobilní offline zálohy 0.5.2 (26. 11. 2026)
+- Předchozí podepsaný kandidát `302e7efa`: [CI 45853119647](https://github.com/CaseyCZ/GameLingo/actions/runs/45853119647) 6/6 PASS; obě APK versionCode 7003001, certifikáty shodné s publikovanou 0.5.1, IPA unsigned. Po této změně nutný nový build.
+- Mobilní Android: oddělený offline ML Kit klient, download modelů pouze přes Wi-Fi, jeden pár jazyků, omezený počet paralelních požadavků, uvolnění klienta a odmítnutí zastaralých výsledků. Online poskytovatelé a jejich circuit breaker zůstávají; offline při výpadku nebo rychlém náhledu. Nepovoluje se použití na TV, žádné nové placené API. Cache epoch zůstává zachována; rychlý náhled nezapisuje horší výsledek do cache.
+- TV: Gradle guard a negativní DEX kontrola; mobilní APK musí obsahovat Translation SDK a projít kontrolou zdrojů. Syntetické DEX testy pokrývají obě varianty. About a dokumentace aktualizovány. Zvláštní podmínky Google vyžadují relevantní atribuci výsledků, úplná kontrola zůstává G4. Fyzický test: stáhnout modely, odpojit internet (nikoli LAN), přeložit nový necacheovaný dialog, změnit jazyky, zastavit relaci.
+- Změna je ve zdroji, nové nativní CI a fyzické testy zatím nepotvrzeny. Otevřené bezpečnostní/provider podmínky zůstávají; žádný merge ani release. Metodika agency-roster code reviewer a test engineer.
 
 ## Povinné brány vydání
 | Brána | Akceptační důkaz | Stav |

@@ -43,7 +43,7 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 | **Xbox Series X/S a Xbox One** | Překlad přes iPhone a Android. |
 | **PlayStation 5 a PlayStation 4** | Vývojové implementace pro iPhone, Android a Google TV; fyzické testy čekají. |
 | **iPhone** | Vývojová IPA pro Xbox, PlayStation a výstup na TV; vyžaduje podpis. |
-| **Android telefon** | Vývojová APK pro Xbox a PlayStation; online překlad a lokální cache. Samostatný offline model není v aktuálním buildu obsažen. |
+| **Android telefon** | Vývojová APK pro Xbox a PlayStation; online překlad, lokální cache a mobilní offline záloha Google ML Kit (po stažení modelů přes Wi-Fi; vyžaduje fyzické ověření). |
 | **Google TV / Android TV** | Vývojová APK: přijímač z telefonu nebo vlastní OCR a online překlad, bez offline modelu. |
 | **PC** | Možné rozšíření do budoucna. |
 

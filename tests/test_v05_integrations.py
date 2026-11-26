@@ -1073,12 +1073,34 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                         out.writestr("classes.dex" if i == 0 else f"classes{i+1}.dex", b"dex\n035\x00"+part)
             make(b"Lcom/google/mlkit/vision/text/TextRecognition;")
             gate.verify(apk, "tv")
-            gate.verify(apk, "mobile")
+            with self.assertRaises(AssertionError):
+                gate.verify(apk, "mobile")
             for marker in gate.MARKERS:
                 make(b"normal", marker)
-                for mode in ("tv", "mobile"):
-                    with self.assertRaises(AssertionError):
-                        gate.verify(apk, mode)
+                with self.assertRaises(AssertionError):
+                    gate.verify(apk, "tv")
+            make(b"normal", gate.MOBILE_MARKER)
+            gate.verify(apk, "mobile")
+            with self.assertRaises(AssertionError):
+                gate.verify(apk, "tv")
+
+    def test_mobile_offline_isolated_and_preserves_privacy_contract(self):
+        mobile = code(TOOLS/"mobile_offline_translation.py")
+        helper = code(TOOLS/"GameLingoMobileOffline.kt")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        brand = code(TOOLS/"brand_android.py")
+        self.assertIn('if not tv_variant(root):\n        t = install_mobile_translator(t, folder)', wiring)
+        self.assertLess(wiring.index("t = protect_cache_writes(t)"), wiring.index("t = install_mobile_translator(t, folder)"))
+        self.assertIn('        gradle.write_text(strip_dependency', brand)
+        self.assertIn('remember("mlkit-v1", source, target, vstup, result, cacheRevision)', mobile)
+        self.assertIn("GameLingoLanguages.revision != languageRevision", mobile)
+        self.assertIn("offline.close()", mobile)
+        self.assertIn("requireWifi()", helper)
+        self.assertIn("pending >= MAX_PENDING", helper)
+        self.assertIn("UI_MODE_TYPE_TELEVISION", helper)
+        self.assertIn("FEATURE_LEANBACK", helper)
+        self.assertIn("active !== client", helper)
+        self.assertIn("translator.close()", helper)
 
     def test_tv_automatic_udp_port_fallback_is_coordinated(self):
         """Do not move TV port without moving iOS/Android pairing and captions."""

@@ -1,6 +1,6 @@
-"""Removal of offline Translation API on both Android variants.
+"""Remove inherited offline paths before shared patches; prohibit Translation SDK on TV.
 
-Strip offline SDK before common language/cache/provider patches. Both variants use identical online translation policy.
+Mobile-only integration is installed separately after the common privacy and queue patches.
 The direct TV reader retains online providers, OCR and the SQLite cache.
 """
 from pathlib import Path
@@ -124,7 +124,8 @@ def tv_translator(text):
 
 
 def finalize_tv(root, folder):
-    tv_variant(root)  # validate branded variant
+    if not tv_variant(root):
+        return
     service = folder / "RemotePlayService.kt"
     text = service.read_text(encoding="utf8")
     text = once(text, '            prekladac.priprav(hotovo = { prekladac.preloz("Hello, friend.", {}, {}) }, chyba = {})',
@@ -141,7 +142,8 @@ def finalize_tv(root, folder):
 
 
 def assert_tv_source(root):
-    tv_variant(root)  # validate branded variant
+    if not tv_variant(root):
+        raise AssertionError("TV policy requires TV variant")
     gradle = (root / "app/build.gradle.kts").read_text(encoding="utf8")
     if re.search(r'["\']com\.google\.mlkit:translate:', gradle):
         raise AssertionError("TV Gradle still declares ML Kit Translation")

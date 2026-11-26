@@ -111,6 +111,8 @@ object GameLingoAbout {
         } else {
             page.addView(label("Licenční texty v aplikaci", 19f, true))
             page.addView(license)
+            page.addView(label("Offline překlad na telefonu využívá Google ML Kit. Jazykové modely se stahují přes Wi-Fi.", 14f))
+            page.addView(link("Podmínky překladu Google ML Kit", "https://developers.google.com/ml-kit/language/translation/translation-terms"))
             page.addView(label("Zdrojové kódy", 19f, true))
             sources.forEach { page.addView(it, LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=pad(9) }) }
         }

@@ -7,6 +7,7 @@ import zipfile
 
 MARKERS = (b"Lcom/google/mlkit/nl/translate/",
            b"Lcom/google/android/gms/internal/mlkit_translate")
+MOBILE_MARKER = b"Lcom/google/mlkit/nl/translate/Translation;"
 
 
 def verify(path, mode):
@@ -18,14 +19,18 @@ def verify(path, mode):
         if not names:
             raise AssertionError("APK contains no DEX payload")
         found = []
+        mobile_translation = False
         for name in names:
             dex = apk.read(name)
             if not dex.startswith(b"dex\n"):
                 raise AssertionError(f"Invalid DEX header: {name}")
             if any(marker in dex for marker in MARKERS):
                 found.append(name)
-        if found:
-            raise AssertionError(f"{mode} APK contains ML Kit Translation references: " + ", ".join(found))
+            mobile_translation |= MOBILE_MARKER in dex
+        if mode == "tv" and found:
+            raise AssertionError("TV APK contains ML Kit Translation references: " + ", ".join(found))
+        if mode == "mobile" and not mobile_translation:
+            raise AssertionError("Mobile APK lost its offline ML Kit Translation SDK")
     print(f"{mode}: translation SDK DEX check passed ({path.name})")
 
 
