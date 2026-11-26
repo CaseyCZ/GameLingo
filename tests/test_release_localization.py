@@ -76,6 +76,28 @@ class ReleaseLocalizationTests(unittest.TestCase):
                 self.assert_unique(actual)
                 self.assertEqual(set(actual), source)
 
+    def test_ios_main_screen_czech_ui_literals_have_shared_translations(self):
+        source = set(json.loads(text(ROOT / "shared" / "locales" / "cs.json")))
+        screens = (
+            "GLAutomaticZonesView.swift", "GameLingoHome.swift",
+            "GameLingoTVSetupScreen.swift", "SettingsHomeView.swift",
+            "SubtitleSettingsView.swift", "GameLingoDevicesPanel.swift",
+            "GameLingoXboxScreen.swift", "GameLingoSetupView.swift",
+            "GameLingoSubtitleAppearance.swift", "GameLingoUpdates.swift",
+            "GameLingoVisualSystem.swift", "GameLingoStyle.swift",
+            "GameLingoDevices.swift",
+        )
+        for name in screens:
+            with self.subTest(screen=name):
+                literals = re.findall(STRING, text(IOS / name))
+                untranslated = {
+                    value for value in literals
+                    if re.search(r"[áčďéěíňóřšťúůýž]", value, re.I)
+                    and value not in source and r"\(" not in value
+                    and len(value) < 350
+                }
+                self.assertEqual(untranslated, set(), "Missing common UI translations")
+
     def test_ios_explicit_dynamic_localization_keys_exist(self):
         keys = set(catalog_keys(IOS / "en.lproj" / "Localizable.strings"))
         for name in ("GameLingoDevicesPanel.swift", "GameLingoXboxScreen.swift",
