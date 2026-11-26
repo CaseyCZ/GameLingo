@@ -26,9 +26,9 @@ object GameLingoTVSettings {
             setPadding(d(a, 38), d(a, 24), d(a, 38), d(a, 24))
         }
         val header = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
-        header.addView(GameLingoTVUi.title(a, "Nastavení GameLingo TV", 25f),
+        header.addView(GameLingoTVUi.title(a, GameLingoLanguages.ui(a, "Nastavení GameLingo TV"), 25f),
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        val back = GameLingoTVUi.action(a, "Zpět") { dialog.dismiss() }
+        val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
         back.id = View.generateViewId()
         val help=GameLingoHelp.button(a,"settings")
         header.addView(help,GameLingoHelp.layout(a))
@@ -36,7 +36,7 @@ object GameLingoTVSettings {
         root.addView(header)
         val cards = mutableListOf<View>()
         fun tile(symbol: String, label: String, detail: String, action: () -> Unit) {
-            val card = GameLingoVisualKit.detailRow(a,symbol,label,detail,action).apply {
+            val card = GameLingoVisualKit.detailRow(a,symbol,GameLingoLanguages.ui(a, label),GameLingoLanguages.ui(a, detail),action).apply {
                 id=View.generateViewId()
             }
             cards.add(card)
@@ -94,7 +94,7 @@ object GameLingoTVSettings {
     }
     private fun busy(a: Activity): Boolean {
         if (!RemotePlayService.aktivni && !PrijemService.bezi && !GameLingoScreenTranslationService.running) return false
-        AlertDialog.Builder(a).setMessage("Nejdřív zastav překlad a příjem.").setPositiveButton("OK", null).show()
+        AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejdřív zastav překlad a příjem.")).setPositiveButton("OK", null).show()
         return true
     }
     private fun ocr(a: Activity) {

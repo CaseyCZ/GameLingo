@@ -34,6 +34,7 @@ object GameLingoFirstRun {
         val cyan = Color.parseColor("#02D6FF")
         val muted = Color.parseColor("#92A4C7")
         val px: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
+        fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         var step = 0
         val savedChoices = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
         var consoleChoice = savedChoices.getInt("console", -1)
@@ -75,7 +76,7 @@ object GameLingoFirstRun {
         }
         root.addView(footer)
 
-        fun button(text: String, checked: Boolean = false,
+        fun button(text: String, checked: Boolean = false, primary: Boolean = false,
                    onClick: () -> Unit): TextView = TextView(activity).apply {
             this.text = (if (checked) "✓  " else "") + text
             textSize = 18f
@@ -83,15 +84,14 @@ object GameLingoFirstRun {
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER_VERTICAL
             setPadding(px(19), px(17), px(19), px(17))
-            background = if (text == "Pokračovat" || text == "Dokončit nastavení" ||
-                text == "Připojit konzoli" || text == "Spárovat TV")
+            background = if (primary)
                 GameLingoVisualKit.primary(activity)
                 else GameLingoVisualKit.card(activity, selected = checked)
             isFocusable = true
             setOnClickListener { onClick() }
         }
         fun item(label: String, checked: Boolean, run: () -> Unit) {
-            body.addView(button(label, checked, run),
+            body.addView(button(label, checked, onClick = run),
                 LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
@@ -122,8 +122,7 @@ object GameLingoFirstRun {
             val selected = store.posledniId?.let { store.najdi(it) }
             if (selected != null && selected.platforma.jenZobrazovac) {
                 android.app.AlertDialog.Builder(activity)
-                    .setMessage("Vybraná televize nepodporuje šestimístné párování " +
-                        "GameLingo TV. Pro tento výstup vyber Android TV nebo telefon.")
+                    .setMessage(tr("Vybraná televize nepodporuje šestimístné párování GameLingo TV. Pro tento výstup vyber Android TV nebo telefon."))
                     .setPositiveButton("OK", null).show()
             } else if (selected != null) {
                 GameLingoTVPairing.show(activity, selected) { redraw() }
@@ -171,17 +170,17 @@ object GameLingoFirstRun {
                     rightMargin = GameLingoVisualKit.dp(activity, 8)
                 })
             }
-            heading.text = GameLingoUIContract.setupSteps[step]
+            heading.text = tr(GameLingoUIContract.setupSteps[step])
             when (step) {
                 0 -> {
                     body.addView(GameLingoVisualKit.hero(activity))
                     body.addView(TextView(activity).apply {
-                        text = "Překládej dialogy a herní texty přímo během hraní."
+                        text = tr("Překládej dialogy a herní texty přímo během hraní.")
                         textSize = 15f
                         setTextColor(muted)
                         setPadding(0, px(16), 0, px(14))
                     })
-                    item("🌐  Jazyk aplikace  •  " +
+                    item(("🌐  " + tr("Jazyk aplikace") + "  •  ") +
                          GameLingoLanguages.name(GameLingoLanguages.appLanguages,
                              GameLingoLanguages.app(activity)), true) {
                         GameLingoLanguages.choose(activity, GameLingoLanguages.Kind.APP) {
@@ -190,14 +189,14 @@ object GameLingoFirstRun {
                     }
                 }
                 1 -> {
-                    item("🎮  Jazyk hry  •  " +
+                    item(("🎮  " + tr("Jazyk hry") + "  •  ") +
                          GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
                              GameLingoLanguages.game(activity)), true) {
                         GameLingoLanguages.choose(activity, GameLingoLanguages.Kind.GAME) {
                             redraw()
                         }
                     }
-                    item("文  Překládat do  •  " +
+                    item(("文  " + tr("Překládat do") + "  •  ") +
                          GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
                              GameLingoLanguages.target(activity)), true) {
                         GameLingoLanguages.choose(activity, GameLingoLanguages.Kind.TARGET) {
@@ -205,8 +204,7 @@ object GameLingoFirstRun {
                         }
                     }
                     body.addView(TextView(activity).apply {
-                        text = "Tyto jazyky platí pro dialogy i herní texty. " +
-                            "Změnit je můžeš později v Nastavení."
+                        text = tr("Tyto jazyky platí pro dialogy i herní texty. Změnit je můžeš později v Nastavení.")
                         textSize = 14f
                         setTextColor(muted)
                         setPadding(px(4), px(8), px(4), px(12))
@@ -223,12 +221,12 @@ object GameLingoFirstRun {
                     }
                     body.addView(TextView(activity).apply {
                         text = if (consoleRegistered())
-                            "Vybraná konzole je uložená. Spojení ověříme při spuštění."
-                        else "Po výběru můžeš konzoli připojit v posledním kroku."
+                            tr("Vybraná konzole je uložená. Spojení ověříme při spuštění.")
+                        else tr("Po výběru můžeš konzoli připojit v posledním kroku.")
                         textSize = 14f
                         setTextColor(muted)
                     })
-                    item("📱  Na telefonu", tvChoice == 0) {
+                    item("📱  " + tr("Na telefonu"), tvChoice == 0) {
                         tvChoice = 0
                         redraw()
                     }
@@ -236,38 +234,32 @@ object GameLingoFirstRun {
                         tvChoice = 1
                         redraw()
                     }
-                    if (tvChoice == 1) {
-                        item("🔗  Spárovat TV", false) {
-                            pairOrChooseTV()
-                        }
-                    }
                     body.addView(TextView(activity).apply {
-                        text = "Uložené zařízení neznamená aktivní Remote Play. " +
-                            "Živé spojení a překlad se ověří až při spuštění."
+                        text = tr("Uložené zařízení neznamená aktivní Remote Play. Živé spojení a překlad se ověří až při spuštění.")
                         textSize = 14f
                         setTextColor(muted)
                         setPadding(px(6), px(7), px(6), px(14))
                     })
                     if (!consoleRegistered() && consoleChoice >= 0) {
-                        item("🎮  Připojit konzoli", false) {
+                        item("🎮  " + tr("Připojit konzoli"), false) {
                             finish(open = if (consoleChoice == 0) 1 else 2)
                         }
                     }
                     if (tvChoice == 1 && !televisionPaired()) {
-                        item("📺  Spárovat TV", false) { pairOrChooseTV() }
+                        item("📺  " + tr("Spárovat TV"), false) { pairOrChooseTV() }
                     }
                 }
             }
             // Skipping is offered on every step. The completed flag only
             // means the welcome flow was dismissed, never "console paired".
-            item("Nastavit později", false) {
+            item(tr("Nastavit později"), false) {
                 activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
                     .edit().putBoolean(COMPLETE, true).apply()
                 dialog.dismiss()
                 finished()
             }
             if (step > 0) {
-                footer.addView(button("Zpět") {
+                footer.addView(button(tr("Zpět")) {
                     step--
                     redraw()
                 }, LinearLayout.LayoutParams(0,
@@ -280,7 +272,7 @@ object GameLingoFirstRun {
                 2 -> consoleRegistered() && televisionPaired()
                 else -> true
             }
-            footer.addView(button(if (finalStep) "Dokončit nastavení" else "Pokračovat") {
+            footer.addView(button(tr(if (finalStep) "Dokončit nastavení" else "Pokračovat"), primary = true) {
                 if (!finalStep) {
                     step++
                     redraw()

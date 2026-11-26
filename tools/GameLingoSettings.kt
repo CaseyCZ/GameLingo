@@ -218,6 +218,7 @@ object GameLingoSettings {
              onAreas: () -> Unit, onLanguage: () -> Unit,
              onDevices: () -> Unit = {},
              onDismiss: () -> Unit = {}, showClose: Boolean = false): LinearLayout {
+        fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         val d = GameLingoVisualKit.dp(activity, 1)
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -229,7 +230,7 @@ object GameLingoSettings {
             gravity = Gravity.CENTER_VERTICAL
         }
         heading.addView(TextView(activity).apply {
-            text = "Nastavení"
+            text = tr("Nastavení")
             textSize = 29f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.WHITE)
@@ -239,7 +240,7 @@ object GameLingoSettings {
             text = "✕"
             textSize = 23f
             gravity = Gravity.CENTER
-            contentDescription = "Zavřít nastavení"
+            contentDescription = tr("Zavřít nastavení")
             setTextColor(Color.WHITE)
             background = GameLingoVisualKit.card(activity)
             isFocusable = true
@@ -249,7 +250,7 @@ object GameLingoSettings {
 
         fun section(title: String) {
             page.addView(TextView(activity).apply {
-                text = title
+                text = tr(title)
                 textSize = 12f
                 letterSpacing = 0.10f
                 setTypeface(null, Typeface.BOLD)
@@ -257,9 +258,9 @@ object GameLingoSettings {
                 setPadding(3 * d, 23 * d, 0, 12 * d)
             })
         }
-        fun menu(symbol: String, title: String, sub: String, open: () -> Unit) {
-            val row = GameLingoVisualKit.detailRow(activity,symbol,title,sub) { onDismiss();open() }
-            page.addView(row, LinearLayout.LayoutParams(
+        fun menu(symbol: String, title: String, sub: String, parent: LinearLayout = page, open: () -> Unit) {
+            val row = GameLingoVisualKit.detailRow(activity,symbol,tr(title),tr(sub)) { onDismiss();open() }
+            parent.addView(row, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = 9 * d
@@ -278,9 +279,18 @@ object GameLingoSettings {
         menu("▣", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(activity)) {
             GameLingoAutomaticConfig.mode(activity) { GameLingoOCRSettings.show(activity, onAreas) }
         }
-        menu("文", "Překlad", "Režimy, dialogy a časování") {
+        val advanced = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = android.view.View.GONE
+        }
+        val disclosure = GameLingoVisualKit.detailRow(activity, "⋯", tr("Pokročilé nastavení"), tr("Citlivost, režim a časování")) {
+            advanced.visibility = if (advanced.visibility == android.view.View.VISIBLE) android.view.View.GONE else android.view.View.VISIBLE
+        }
+        page.addView(disclosure, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 * d })
+        menu("文", "Překlad", "Režimy, dialogy a časování", parent = advanced) {
             showTranslation(activity, settings, onAreas, onLanguage)
         }
+        page.addView(advanced)
         menu("⌗", "Oblasti obrazovky",
              if(GameLingoAutomaticConfig.enabled(activity)) "Automatické zóny" else "Čtyři nezávislé oblasti") {
             if(GameLingoAutomaticConfig.enabled(activity))GameLingoAutomaticConfig.showZones(activity) else onAreas()
