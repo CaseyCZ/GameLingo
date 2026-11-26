@@ -62,7 +62,7 @@ object GameLingoHelp {
     fun button(activity: Activity, topic: String = "home",
                size: Float = 24f): TextView = TextView(activity).apply {
         text = "?"
-        textSize = size
+        textSize = GameLingoVisualKit.sp(activity, size)
         gravity = Gravity.CENTER
         typeface = Typeface.DEFAULT_BOLD
         setTextColor(Color.parseColor(CYAN))
@@ -86,7 +86,7 @@ object GameLingoHelp {
             minWidth=0;minHeight=0
         }
         if (GameLingoTVUi.isTV(activity)) {
-            textSize = 23f
+            textSize = GameLingoVisualKit.sp(activity, 23f)
             setPadding(0,0,0,0)
             minWidth=GameLingoTVUi.dp(activity,64)
             minHeight=GameLingoTVUi.dp(activity,64)
@@ -116,7 +116,7 @@ object GameLingoHelp {
         if (GameLingoTVUi.isTV(activity)) {
             val body=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL }
             body.addView(TextView(activity).apply {
-                text=description; gravity = android.view.Gravity.CENTER; textSize=19f
+                text=description; gravity = android.view.Gravity.CENTER; textSize = GameLingoVisualKit.sp(activity, 19f)
                 setTextColor(Color.WHITE); setLineSpacing(5f,1.18f)
                 background=GameLingoTVUi.panel(activity)
                 val padding=GameLingoTVUi.dp(activity,24)
@@ -135,14 +135,14 @@ object GameLingoHelp {
         }
         container.addView(TextView(activity).apply {
             text = title; gravity = android.view.Gravity.CENTER
-            textSize = 23f
+            textSize = GameLingoVisualKit.sp(activity, 23f)
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
             setPadding(6, 0, 6, 14)
         })
         container.addView(TextView(activity).apply {
             text = description; gravity = android.view.Gravity.CENTER
-            textSize = 16f
+            textSize = GameLingoVisualKit.sp(activity, 16f)
             setTextColor(Color.parseColor("#D8E2F0"))
             setLineSpacing(4f, 1.12f)
             setPadding(6, 0, 6, 12)

@@ -116,8 +116,8 @@ object GameLingoVisualKit {
             addView(iconBadge(activity,iconName(symbol,title)),LinearLayout.LayoutParams(dp(activity,42),dp(activity,42)).apply{marginEnd=dp(activity,10)})
             addView(LinearLayout(activity).apply {
                 orientation=LinearLayout.VERTICAL
-                addView(TextView(activity).apply{ text=title;tag="gamelingo-title";gravity=Gravity.CENTER;textSize=16f;setTextColor(Color.WHITE);typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL) })
-                addView(TextView(activity).apply{ text=detail;gravity=Gravity.CENTER;tag="gamelingo-detail";textSize=12f;setTextColor(muted);setPadding(0,dp(activity,4),0,0) })
+                addView(TextView(activity).apply{ text=title;tag="gamelingo-title";gravity=Gravity.CENTER;textSize = sp(activity, 16f);setTextColor(Color.WHITE);typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL) })
+                addView(TextView(activity).apply{ text=detail;gravity=Gravity.CENTER;tag="gamelingo-detail";textSize = sp(activity, 12f);setTextColor(muted);setPadding(0,dp(activity,4),0,0) })
             },LinearLayout.LayoutParams(0,-2,1f))
             addView(FrameLayout(activity).apply {
                 addView(icon(activity,"chevron.right",muted), FrameLayout.LayoutParams(dp(activity,16),dp(activity,16),Gravity.END or Gravity.CENTER_VERTICAL))
@@ -138,7 +138,7 @@ object GameLingoVisualKit {
             text=android.text.SpannableString("GameLingo").apply {
                 setSpan(android.text.style.ForegroundColorSpan(purple),4,9,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
-            textSize=if(compact)25f else 31f;setTextColor(Color.WHITE)
+            textSize=sp(activity, if(compact)25f else 31f);setTextColor(Color.WHITE)
             typeface=Typeface.create("sans-serif-black",Typeface.NORMAL);maxLines=1
         })
         contentDescription="GameLingo"
@@ -165,8 +165,11 @@ object GameLingoVisualKit {
         })
         addView(scene,FrameLayout.LayoutParams(-1,dp(activity,176)))
     }
+    /** Menu sizes only. Never use these helpers to transform video/OCR coordinates. */
     fun dp(c: Context, value: Int): Int =
-        (c.resources.displayMetrics.density * value + 0.5f).toInt()
+        (c.resources.displayMetrics.density * value * GameLingoTVUi.menuScale(c) + 0.5f).toInt()
+
+    fun sp(c: Context, value: Float): Float = value * GameLingoTVUi.menuScale(c)
 
     fun card(context: Context, selected: Boolean = false): GradientDrawable =
         GradientDrawable(
@@ -190,7 +193,7 @@ object GameLingoVisualKit {
         TextView(context).apply {
             text = title
             gravity = Gravity.CENTER
-            textSize = 20f
+            textSize = sp(context, 20f)
             setTextColor(Color.WHITE)
             setTypeface(null, Typeface.BOLD)
             setPadding(dp(context, 2), dp(context, 8),
@@ -202,7 +205,7 @@ object GameLingoVisualKit {
                     strong: Boolean = false) = TextView(activity).apply {
             text = label
             gravity = Gravity.CENTER
-            textSize = size
+            textSize = sp(activity, size)
             setTextColor(color)
             if (strong) setTypeface(null, Typeface.BOLD)
         }
@@ -243,7 +246,7 @@ object GameLingoVisualKit {
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         consoles.addView(TextView(activity).apply {
             text = "│"
-            textSize = 24f
+            textSize = sp(activity, 24f)
             setTextColor(Color.parseColor("#554078"))
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(dp(activity, 25), dp(activity, 44)))
@@ -261,7 +264,7 @@ object GameLingoVisualKit {
                  onClick: () -> Unit): TextView = TextView(activity).apply {
         text = symbol + "\n" + title
         gravity = Gravity.CENTER
-        textSize = 15f
+        textSize = sp(activity, 15f)
         setTextColor(Color.WHITE)
         setTypeface(null, Typeface.BOLD)
         minHeight = dp(activity, 103)
@@ -285,7 +288,7 @@ object GameLingoVisualKit {
             gravity=Gravity.CENTER_HORIZONTAL
             addView(wordmark(activity,true))
             addView(TextView(activity).apply {
-                text=GameLingoLanguages.ui(activity, "Titulky a překlady her v reálném čase");gravity=Gravity.CENTER;textSize=12f;setTextColor(muted)
+                text=GameLingoLanguages.ui(activity, "Titulky a překlady her v reálném čase");gravity=Gravity.CENTER;textSize = sp(activity, 12f);setTextColor(muted)
                 maxLines=1;ellipsize=android.text.TextUtils.TruncateAt.END
             })
         },LinearLayout.LayoutParams(0,-2,1f))
@@ -296,7 +299,7 @@ object GameLingoVisualKit {
             setPadding(dp(activity,12),0,0,0)
             contentDescription = "Nastavení"
             gravity = Gravity.CENTER
-            textSize = 26f
+            textSize = sp(activity, 26f)
             setTextColor(Color.WHITE)
             background = card(activity)
             isFocusable = true
@@ -342,8 +345,8 @@ object GameLingoVisualKit {
             addView(platformEmblem(activity,family),LinearLayout.LayoutParams(dp(activity,64),dp(activity,64)).apply{marginEnd=dp(activity,13)})
             addView(LinearLayout(activity).apply {
                 orientation=LinearLayout.VERTICAL
-                addView(TextView(activity).apply{text=title;gravity=Gravity.CENTER;textSize=18f;setTextColor(Color.WHITE);typeface=Typeface.DEFAULT_BOLD})
-                addView(TextView(activity).apply{text=subtitle;gravity=Gravity.CENTER;textSize=13f;setTextColor(muted);setPadding(0,dp(activity,4),0,0)})
+                addView(TextView(activity).apply{text=title;gravity=Gravity.CENTER;textSize = sp(activity, 18f);setTextColor(Color.WHITE);typeface=Typeface.DEFAULT_BOLD})
+                addView(TextView(activity).apply{text=subtitle;gravity=Gravity.CENTER;textSize = sp(activity, 13f);setTextColor(muted);setPadding(0,dp(activity,4),0,0)})
             },LinearLayout.LayoutParams(0,-2,1f))
         }
     fun deviceCard(activity: Activity, family: String, title: String,
@@ -369,7 +372,7 @@ object GameLingoVisualKit {
             addView(TextView(activity).apply {
                 text = title
                 gravity = Gravity.CENTER
-                textSize = 17f
+                textSize = sp(activity, 17f)
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
                 maxLines = 1
@@ -377,7 +380,7 @@ object GameLingoVisualKit {
             addView(TextView(activity).apply {
                 text = subtitle
                 gravity = Gravity.CENTER
-                textSize = 12.5f
+                textSize = sp(activity, 12.5f)
                 setTextColor(if (selected) Color.parseColor("#3BE781") else muted)
                 maxLines = 2
                 setPadding(0, dp(activity, 4), 0, 0)
@@ -385,7 +388,7 @@ object GameLingoVisualKit {
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         row.addView(TextView(activity).apply {
             text = "›"
-            textSize = 27f
+            textSize = sp(activity, 27f)
             setTextColor(muted)
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(dp(activity, 25),
@@ -406,7 +409,7 @@ object GameLingoVisualKit {
         }
         row.addView(TextView(activity).apply {
             text = if (ready) "✓" else "!"
-            textSize = 23f
+            textSize = sp(activity, 23f)
             gravity = Gravity.CENTER
             setTextColor(if (ready) Color.parseColor("#3BE781") else muted)
         }, LinearLayout.LayoutParams(dp(activity, 39), dp(activity, 39)))
@@ -415,14 +418,14 @@ object GameLingoVisualKit {
             addView(TextView(activity).apply {
                 text = title
                 gravity = Gravity.CENTER
-                textSize = 15.5f
+                textSize = sp(activity, 15.5f)
                 setTextColor(if (ready) Color.parseColor("#3BE781") else Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
             })
             addView(TextView(activity).apply {
                 text = message
                 gravity = Gravity.CENTER
-                textSize = 12f
+                textSize = sp(activity, 12f)
                 setTextColor(muted)
                 setPadding(0, dp(activity, 3), 0, 0)
             })
@@ -470,7 +473,7 @@ object GameLingoVisualKit {
         item.addView(TextView(activity).apply {
             text = title
             gravity = Gravity.CENTER
-            textSize = 13.5f
+            textSize = sp(activity, 13.5f)
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
@@ -486,7 +489,7 @@ object GameLingoVisualKit {
         setCompoundDrawablesWithIntrinsicBounds(iconDrawable("play.fill",Color.WHITE,dp(activity,22)),null,
             iconDrawable("arrow.right",Color.WHITE,dp(activity,17)),null)
         setPadding(dp(activity,17),0,dp(activity,17),0)
-        textSize = 20f
+        textSize = sp(activity, 20f)
         setTextColor(Color.WHITE)
         setTypeface(null, Typeface.BOLD)
         gravity = Gravity.CENTER

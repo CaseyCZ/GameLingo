@@ -22,6 +22,10 @@ Pracovní větev: `feature/ocr-lab`. Master a stabilní 0.5.1 zůstávají beze 
 - [GameLingo • quick regression checks 45838722416](https://github.com/CaseyCZ/GameLingo/actions/runs/45838722416) na `b6ea5e14`: success.
 - Další technický krok: ověřit CI této revize, audit zbývajících dynamických textů a zděděných obrazovek iOS/Android/TV, zkontrolovat pravdivou dokumentaci a release metadata, teprve poté úplný build zmrazeného kandidáta. G1–G7 se zatím neuzavírají; fyzické výsledky neexistují.
 
+## Fyzická zpětná vazba TCL (2026-11-26)
+- Majitel produktu potvrdil správnou velikost párovací obrazovky na dřívějším dev sestavení; jiné obrazovky (zejména O aplikaci / Licence) mají odlišné měřítko a obsah je mimo výšku. Jde o konkrétní vizuální důkaz, nikoli potvrzení funkčnosti párování ani nového kandidáta. Fotografie ani údaje o síti/PIN neukládat do repozitáře.
+- Oprava: společné kompaktní TV jednotky (0,66), konzistentní velikost prvků/písma, About v jednotném TV kontejneru se stálým návratem a scrollováním dlouhých licencí. Telefonní měřítko 1,0, OCR geometrie a skutečné titulky nedotčeny. Ověřit výsledný vzhled všech stránek na TCL; G1/G2 zůstávají otevřené do akceptace.
+
 ## Povinné brány vydání
 | Brána | Akceptační důkaz | Stav |
 |---|---|---|

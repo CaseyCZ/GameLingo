@@ -33,6 +33,8 @@ object GameLingoTVUi {
     // Android TV already has an enlarged interface density. Match the
     // original compact 10-foot UI and preserve readable D-pad focus targets.
     private const val TV_SCALE = 0.66f
+    /** Shared compact menu units; phone components keep their original sizes. */
+    fun menuScale(c: android.content.Context): Float = if (isTV(c)) TV_SCALE else 1f
     fun dp(a: Activity, v: Int): Int =
         (a.resources.displayMetrics.density * v * TV_SCALE + .5f).toInt()
 
@@ -57,7 +59,7 @@ object GameLingoTVUi {
         setTypeface(null, if (muted) Typeface.NORMAL else Typeface.BOLD)
     }
 
-    fun isTV(a: Activity): Boolean = (a.resources.configuration.uiMode and
+    fun isTV(a: android.content.Context): Boolean = (a.resources.configuration.uiMode and
         android.content.res.Configuration.UI_MODE_TYPE_MASK) == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
 
     // Selected is a persistent checkmark; focus is an independent bright ring.
@@ -77,7 +79,7 @@ object GameLingoTVUi {
             }.apply {
                 id = View.generateViewId()
                 gravity = Gravity.CENTER
-                textSize = 16f
+                textSize = 16f * TV_SCALE
                 minimumHeight = dp(a, 50)
                 setPadding(dp(a, 14), dp(a, 7), dp(a, 14), dp(a, 7))
                 setTextColor(if (index == selected) Color.parseColor("#57EBA3") else Color.WHITE)

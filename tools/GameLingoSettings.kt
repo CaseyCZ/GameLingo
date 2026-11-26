@@ -31,11 +31,11 @@ object GameLingoSettings {
         addView(LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             addView(TextView(c).apply {
-                text = GameLingoLanguages.ui(c, title); gravity = Gravity.CENTER; textSize = 17f
+                text = GameLingoLanguages.ui(c, title); gravity = Gravity.CENTER; textSize = GameLingoVisualKit.sp(c, 17f)
                 setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
             })
             addView(TextView(c).apply {
-                text = GameLingoLanguages.ui(c, detail); gravity = Gravity.CENTER; textSize = 13f
+                text = GameLingoLanguages.ui(c, detail); gravity = Gravity.CENTER; textSize = GameLingoVisualKit.sp(c, 13f)
                 setTextColor(muted)
                 setPadding(0, 5, 0, 0)
             })
@@ -70,7 +70,7 @@ object GameLingoSettings {
         }
         val header = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(TextView(activity).apply {
-            text = tr("Překlad"); gravity = Gravity.CENTER; textSize = 25f
+            text = tr("Překlad"); gravity = Gravity.CENTER; textSize = GameLingoVisualKit.sp(activity, 25f)
             setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(GameLingoHelp.button(activity, "translation"),
@@ -113,7 +113,7 @@ object GameLingoSettings {
             setPadding(17,14,17,16)
         }
         val label = TextView(activity).apply {
-            textSize = 16f; gravity = Gravity.CENTER; setTextColor(Color.WHITE)
+            textSize = GameLingoVisualKit.sp(activity, 16f); gravity = Gravity.CENTER; setTextColor(Color.WHITE)
             setTypeface(null, Typeface.BOLD)
         }
         fun refresh() {
@@ -144,7 +144,7 @@ object GameLingoSettings {
                 GameLingoOCRConfig.fixedTiming(activity)) { GameLingoOCRConfig.saveTiming(activity,fixed=it) })
             fun timingSlider(title:String,min:Int,max:Int,value:Int,save:(Int)->Unit) {
                 val panel=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL; background=rounded(card);setPadding(17,14,17,16) }
-                val caption=TextView(activity).apply { gravity=Gravity.CENTER;textSize=16f;setTextColor(Color.WHITE);text="${tr(title)}: $value s" }
+                val caption=TextView(activity).apply { gravity=Gravity.CENTER;textSize = GameLingoVisualKit.sp(activity, 16f);setTextColor(Color.WHITE);text="${tr(title)}: $value s" }
                 panel.addView(caption)
                 panel.addView(SeekBar(activity).apply {
                     this.max=max-min;progress=value-min;keyProgressIncrement=1;isFocusable=true
@@ -168,7 +168,7 @@ object GameLingoSettings {
 
         fun button(title: String, action: () -> Unit) {
             content.addView(TextView(activity).apply {
-                text = title; gravity = Gravity.CENTER; textSize = 17f
+                text = title; gravity = Gravity.CENTER; textSize = GameLingoVisualKit.sp(activity, 17f)
                 gravity = Gravity.CENTER
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
@@ -233,14 +233,14 @@ object GameLingoSettings {
         }
         heading.addView(TextView(activity).apply {
             text = tr("Nastavení"); gravity = Gravity.CENTER
-            textSize = 29f
+            textSize = GameLingoVisualKit.sp(activity, 29f)
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.WHITE)
         }, LinearLayout.LayoutParams(0,
             ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         if (showClose) heading.addView(TextView(activity).apply {
             text = "✕"
-            textSize = 23f
+            textSize = GameLingoVisualKit.sp(activity, 23f)
             gravity = Gravity.CENTER
             contentDescription = tr("Zavřít nastavení")
             setTextColor(Color.WHITE)
@@ -253,7 +253,7 @@ object GameLingoSettings {
         fun section(title: String) {
             page.addView(TextView(activity).apply {
                 text = tr(title); gravity = Gravity.CENTER
-                textSize = 12f
+                textSize = GameLingoVisualKit.sp(activity, 12f)
                 letterSpacing = 0.10f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(Color.parseColor("#02D6FF"))

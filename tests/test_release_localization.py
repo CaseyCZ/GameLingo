@@ -63,6 +63,17 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertNotIn("dialog.dismiss()", refresh)
         self.assertIn('tag="gamelingo-title"', visual)
 
+    def test_tv_menu_uses_one_scale_and_shared_about_page(self):
+        ui = text(TOOLS / "GameLingoTVUi.kt")
+        kit = text(TOOLS / "GameLingoVisualKit.kt")
+        about = text(TOOLS / "GameLingoAbout.kt")
+        self.assertIn("if (isTV(c)) TV_SCALE else 1f", ui)
+        self.assertIn("private const val TV_SCALE = 0.66f", ui)
+        self.assertIn("density * value * GameLingoTVUi.menuScale(c)", kit)
+        self.assertIn("value * GameLingoTVUi.menuScale(c)", kit)
+        self.assertIn('GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity))', about)
+        self.assertIn("textSize = GameLingoVisualKit.sp(activity, size)", about)
+
     def test_preview_uses_target_language(self):
         source = text(IOS / "SubtitleSettingsView.swift")
         self.assertIn("model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle,", source)

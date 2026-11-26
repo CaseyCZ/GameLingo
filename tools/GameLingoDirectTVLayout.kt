@@ -187,7 +187,7 @@ object GameLingoDirectTVLayout {
         }
         fun d(v:Int)=GameLingoTVUi.dp(a,v)
         fun button(label:String, run:()->Unit)=GameLingoTVUi.action(a,tr(label),onActivate=run).apply {
-            minimumHeight=d(42); textSize=15f; setPadding(d(8),d(6),d(8),d(6))
+            minimumHeight=d(42); textSize=GameLingoVisualKit.sp(a, 15f); setPadding(d(8),d(6),d(8),d(6))
         }
         fun row()=LinearLayout(a).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
         fun addWeighted(parent:LinearLayout, view:View) {
@@ -205,13 +205,13 @@ object GameLingoDirectTVLayout {
         body.addView(left,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,1.6f).apply { marginEnd=d(12) })
         val preview=AreaCanvas(a,boxes,{selected},false,{locks[it]})
         left.addView(preview,LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f))
-        val guide=TextView(a).apply { setTextColor(Color.WHITE); textSize=14f; gravity=Gravity.CENTER }
+        val guide=TextView(a).apply { setTextColor(Color.WHITE); textSize=GameLingoVisualKit.sp(a, 14f); gravity=Gravity.CENTER }
         left.addView(guide)
         val side=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
         val scroll=ScrollView(a).apply { addView(side); isFillViewport=true }
         body.addView(scroll,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,1f))
         val active=GameLingoTVUi.title(a,"",18f)
-        val metricsLabel=TextView(a).apply { gravity=Gravity.CENTER; setTextColor(Color.WHITE); textSize=13f; setPadding(d(6),d(6),d(6),d(6)) }
+        val metricsLabel=TextView(a).apply { gravity=Gravity.CENTER; setTextColor(Color.WHITE); textSize=GameLingoVisualKit.sp(a, 13f); setPadding(d(6),d(6),d(6),d(6)) }
         side.addView(active); side.addView(metricsLabel)
         val tabButtons=mutableListOf<TextView>()
         val modeButtons=mutableListOf<TextView>()

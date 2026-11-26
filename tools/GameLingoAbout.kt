@@ -18,35 +18,37 @@ object GameLingoAbout {
     fun content(activity: Activity, onDismiss: () -> Unit = {},
                 showClose: Boolean = false): LinearLayout {
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
+        val tv = GameLingoTVUi.isTV(activity)
         val d = GameLingoVisualKit.dp(activity, 1)
+        fun pad(v: Int) = if (tv) GameLingoVisualKit.dp(activity, v) else v*d
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(18*d, 17*d, 18*d, 30*d)
-            background = GameLingoVisualKit.pageBackground(activity)
+            setPadding(pad(18), pad(if (tv) 8 else 17), pad(18), pad(if (tv) 10 else 30))
+            if (!tv) background = GameLingoVisualKit.pageBackground(activity)
         }
         val close = TextView(activity).apply {
             text = "✕   " + tr("Zavřít")
-            textSize = 15f
+            textSize = GameLingoVisualKit.sp(activity, 15f)
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true
             setOnClickListener { onDismiss() }
-            setPadding(0, 6*d, 0, 14*d)
+            setPadding(0, pad(6), 0, pad(14))
         }
         if (showClose) page.addView(close)
         page.addView(GameLingoVisualKit.wordmark(activity),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 17*d })
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(if (tv) 6 else 17) })
 
         fun label(value: String, size: Float, strong: Boolean = false): TextView =
             TextView(activity).apply {
                 text = tr(value)
                 gravity = android.view.Gravity.CENTER
-                textSize = size
+                textSize = GameLingoVisualKit.sp(activity, size)
                 setTextColor(if (strong) Color.WHITE else Color.parseColor("#92A4C7"))
                 if (strong) setTypeface(null, Typeface.BOLD)
-                setPadding(4*d, 7*d, 4*d, 7*d)
+                setPadding(pad(4), pad(if (tv) 3 else 7), pad(4), pad(if (tv) 3 else 7))
             }
 
         val version = runCatching {
@@ -69,7 +71,7 @@ object GameLingoAbout {
             }
             page.addView(row, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9*d })
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(9) })
         }
         page.addView(label("Licenční texty v aplikaci", 19f, true))
         page.addView(GameLingoVisualKit.deviceCard(activity, "TV",
@@ -91,7 +93,11 @@ object GameLingoAbout {
     }
 
     fun show(activity: Activity) {
-        if (activity.isFinishing) return
+        if (activity.isFinishing || activity.isDestroyed) return
+        if (GameLingoTVUi.isTV(activity)) {
+            GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity))
+            return
+        }
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val page = content(activity, onDismiss = { dialog.dismiss() }, showClose = true)
         val scroll = ScrollView(activity).apply {
