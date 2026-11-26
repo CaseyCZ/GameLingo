@@ -591,7 +591,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("preserveDisplay: Boolean = false", reset)
         self.assertIn('if (!preserveDisplay) {\n            translatedText = ""; shownAt = 0L; shownUntil = 0L', reset)
         self.assertIn('cancelSample(); resetText(); clearYellow(); clearHint(); render("")', capture)
-        self.assertIn('paused = !paused; cancelSample(); resetText(); render("")', capture)
+        self.assertIn('paused = !paused; stopAutomaticCapture(); cancelSample(); resetText(); render("")', capture)
         self.assertIn('shownUntil = 0L; translatedText = ""; render("")', capture)
         self.assertIn('if (wasActive) { render(""); clearYellow(); clearHint() }', capture)
     def test_point2_dialogue_replacement_preserves_old_deadline_until_success(self):

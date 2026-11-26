@@ -344,3 +344,20 @@
 "Překlad textů" = "Text translation";
 "Přeložené titulky" = "Translated subtitles";
 "Xbox, PlayStation a Google TV" = "Xbox, PlayStation and Google TV";
+
+"Režim překladu" = "Translation mode";
+"Standardní" = "Standard";
+"Automatický" = "Automatic";
+"Automatické umístění · aktivní zóny: " = "Automatic placement · active zones: ";
+"Přidat zónu" = "Add zone";
+"Vyber jen oblasti, které chceš překládat. Herní profil není povinný." = "Choose only the regions you want to translate. A game profile is optional.";
+"Oblasti překladu" = "Translation zones";
+"Upravit zónu" = "Edit zone";
+"Vodorovná pozice" = "Horizontal position";
+"Svislá pozice" = "Vertical position";
+"Pokročilé nastavení" = "Advanced settings";
+"Vyber zařízení" = "Choose devices";
+"Automatické oblasti překladu" = "Automatic translation zones";
+"Aktivní" = "Enabled";
+"Vypnutá" = "Disabled";
+"Standardní oblasti" = "Standard regions";

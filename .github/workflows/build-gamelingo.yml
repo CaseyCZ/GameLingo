@@ -69,6 +69,10 @@ jobs:
         run: |
           swiftc ios/GameLingoIOS/App/OCRFrameFingerprint.swift tests/OCRFrameFingerprintTests.swift -o "$RUNNER_TEMP/ocr-fingerprint-tests"
           "$RUNNER_TEMP/ocr-fingerprint-tests"
+      - name: Run automatic OCR block and zone tests
+        run: |
+          xcrun --sdk macosx swiftc -framework CoreGraphics ios/GameLingoIOS/App/AutomaticDialogueLayout.swift ios/GameLingoIOS/App/AutomaticOCRZone.swift ios/GameLingoIOS/App/AutomaticBlockTracker.swift tests/AutomaticDialogueLayoutTests.swift -o "$RUNNER_TEMP/automatic-ocr-tests"
+          "$RUNNER_TEMP/automatic-ocr-tests"
       - name: Run persistent translation cache tests
         run: |
           swiftc ios/GameLingoIOS/App/TranslationCache.swift tests/TranslationCacheTests.swift -lsqlite3 -o "$RUNNER_TEMP/translation-cache-tests"
@@ -187,6 +191,9 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Run Android native automatic tracker tests
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoAutomaticTrackerTest' --no-daemon --stacktrace
       - name: Verify Android mobile identity
         run: |
           set -euo pipefail
@@ -282,6 +289,9 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Test native zone tracker and bounded TV packet
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoAutomaticTrackerTest' --tests 'cz.titulky.tv.GameLingoZonePacketTest' --no-daemon --stacktrace
       - name: Run Android circuit breaker unit tests
         working-directory: upstream
         run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoCircuitBreakerTest' --no-daemon --stacktrace

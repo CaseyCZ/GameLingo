@@ -14,7 +14,7 @@ struct GLTranslationModePicker: View {
             .pickerStyle(.segmented)
             .disabled(model.isRunning)
             if model.automaticGameDialogue {
-                Text("Automatické umístění · aktivní zóny: " + String(model.automaticZones.filter(\.enabled).count))
+                Text(GLInterfaceText.localized("Automatické umístění · aktivní zóny: ") + String(model.automaticZones.filter(\.enabled).count))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -100,7 +100,7 @@ private struct GLAutomaticZoneEditor: View {
     }
     private func slider(_ label: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
         VStack(alignment: .leading) {
-            Text(label)
+            Text(LocalizedStringKey(label))
             Slider(value: value, in: range)
         }
     }

@@ -103,6 +103,8 @@ internal class GameLingoAutomaticOCR(
                     lane.gate.record(hash,now)
                     publish(SystemClock.elapsedRealtime())
                     translate(SystemClock.elapsedRealtime())
+                } catch (_: Exception) {
+                    // A malformed or failed recognition never replaces a zone.
                 } finally { image.recycle();busy.set(false) }
             }
         } catch(e:Exception) {
