@@ -264,6 +264,7 @@ object GameLingoLanguages {
                       selected: () -> String, onSelect: (String) -> Unit) {
             val heading = TextView(activity).apply {
                 text = title
+                gravity = Gravity.CENTER
                 textSize = 18f
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
@@ -271,6 +272,7 @@ object GameLingoLanguages {
             container.addView(heading)
             container.addView(TextView(activity).apply {
                 text = caption
+                gravity = Gravity.CENTER
                 textSize = 12.5f
                 setTextColor(Color.parseColor("#9FB1D4"))
                 setPadding(0, 2, 0, 8)
@@ -279,7 +281,7 @@ object GameLingoLanguages {
                 text = name(languages, selected()) + "    ▾"
                 textSize = 16f
                 setTextColor(Color.WHITE)
-                gravity = Gravity.CENTER_VERTICAL
+                gravity = Gravity.CENTER
                 minHeight = GameLingoVisualKit.dp(activity, 55)
                 background = GameLingoVisualKit.card(activity)
                 val pad = GameLingoVisualKit.dp(activity, 13)

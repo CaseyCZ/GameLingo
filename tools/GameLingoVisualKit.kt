@@ -116,17 +116,19 @@ object GameLingoVisualKit {
             addView(iconBadge(activity,iconName(symbol,title)),LinearLayout.LayoutParams(dp(activity,42),dp(activity,42)).apply{marginEnd=dp(activity,10)})
             addView(LinearLayout(activity).apply {
                 orientation=LinearLayout.VERTICAL
-                addView(TextView(activity).apply{ text=title;textSize=16f;setTextColor(Color.WHITE);typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL) })
-                addView(TextView(activity).apply{ text=detail;textSize=12f;setTextColor(muted);setPadding(0,dp(activity,4),0,0) })
+                addView(TextView(activity).apply{ text=title;gravity=Gravity.CENTER;textSize=16f;setTextColor(Color.WHITE);typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL) })
+                addView(TextView(activity).apply{ text=detail;gravity=Gravity.CENTER;textSize=12f;setTextColor(muted);setPadding(0,dp(activity,4),0,0) })
             },LinearLayout.LayoutParams(0,-2,1f))
-            addView(icon(activity,"chevron.right",muted),LinearLayout.LayoutParams(dp(activity,16),dp(activity,16)))
+            addView(FrameLayout(activity).apply {
+                addView(icon(activity,"chevron.right",muted), FrameLayout.LayoutParams(dp(activity,16),dp(activity,16),Gravity.END or Gravity.CENTER_VERTICAL))
+            },LinearLayout.LayoutParams(dp(activity,52),dp(activity,42)))
             setOnClickListener{onClick()}
             if(tv)GameLingoTVUi.controlFocus(activity,this)
         }
 
     // GLBrandWordmark: same existing application mark, white Game and purple Lingo.
     fun wordmark(activity:Activity,compact:Boolean=false):LinearLayout=LinearLayout(activity).apply {
-        orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+        orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
         val size=dp(activity,if(compact)39 else 50)
         addView(ImageView(activity).apply {
             setImageResource(R.drawable.gamelingo_ikona);adjustViewBounds=true
@@ -187,6 +189,7 @@ object GameLingoVisualKit {
     fun heading(context: Context, title: String): TextView =
         TextView(context).apply {
             text = title
+            gravity = Gravity.CENTER
             textSize = 20f
             setTextColor(Color.WHITE)
             setTypeface(null, Typeface.BOLD)
@@ -198,6 +201,7 @@ object GameLingoVisualKit {
         fun caption(label: String, size: Float, color: Int,
                     strong: Boolean = false) = TextView(activity).apply {
             text = label
+            gravity = Gravity.CENTER
             textSize = size
             setTextColor(color)
             if (strong) setTypeface(null, Typeface.BOLD)
@@ -278,9 +282,10 @@ object GameLingoVisualKit {
         }
         bar.addView(LinearLayout(activity).apply {
             orientation=LinearLayout.VERTICAL
+            gravity=Gravity.CENTER_HORIZONTAL
             addView(wordmark(activity,true))
             addView(TextView(activity).apply {
-                text=GameLingoLanguages.ui(activity, "Titulky a překlady her v reálném čase");textSize=12f;setTextColor(muted)
+                text=GameLingoLanguages.ui(activity, "Titulky a překlady her v reálném čase");gravity=Gravity.CENTER;textSize=12f;setTextColor(muted)
                 maxLines=1;ellipsize=android.text.TextUtils.TruncateAt.END
             })
         },LinearLayout.LayoutParams(0,-2,1f))
@@ -337,8 +342,8 @@ object GameLingoVisualKit {
             addView(platformEmblem(activity,family),LinearLayout.LayoutParams(dp(activity,64),dp(activity,64)).apply{marginEnd=dp(activity,13)})
             addView(LinearLayout(activity).apply {
                 orientation=LinearLayout.VERTICAL
-                addView(TextView(activity).apply{text=title;textSize=18f;setTextColor(Color.WHITE);typeface=Typeface.DEFAULT_BOLD})
-                addView(TextView(activity).apply{text=subtitle;textSize=13f;setTextColor(muted);setPadding(0,dp(activity,4),0,0)})
+                addView(TextView(activity).apply{text=title;gravity=Gravity.CENTER;textSize=18f;setTextColor(Color.WHITE);typeface=Typeface.DEFAULT_BOLD})
+                addView(TextView(activity).apply{text=subtitle;gravity=Gravity.CENTER;textSize=13f;setTextColor(muted);setPadding(0,dp(activity,4),0,0)})
             },LinearLayout.LayoutParams(0,-2,1f))
         }
     fun deviceCard(activity: Activity, family: String, title: String,
@@ -363,6 +368,7 @@ object GameLingoVisualKit {
             orientation = LinearLayout.VERTICAL
             addView(TextView(activity).apply {
                 text = title
+                gravity = Gravity.CENTER
                 textSize = 17f
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
@@ -370,6 +376,7 @@ object GameLingoVisualKit {
             })
             addView(TextView(activity).apply {
                 text = subtitle
+                gravity = Gravity.CENTER
                 textSize = 12.5f
                 setTextColor(if (selected) Color.parseColor("#3BE781") else muted)
                 maxLines = 2
@@ -407,12 +414,14 @@ object GameLingoVisualKit {
             orientation = LinearLayout.VERTICAL
             addView(TextView(activity).apply {
                 text = title
+                gravity = Gravity.CENTER
                 textSize = 15.5f
                 setTextColor(if (ready) Color.parseColor("#3BE781") else Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
             })
             addView(TextView(activity).apply {
                 text = message
+                gravity = Gravity.CENTER
                 textSize = 12f
                 setTextColor(muted)
                 setPadding(0, dp(activity, 3), 0, 0)
@@ -460,6 +469,7 @@ object GameLingoVisualKit {
             LinearLayout.LayoutParams(dp(activity,28),dp(activity,28)))
         item.addView(TextView(activity).apply {
             text = title
+            gravity = Gravity.CENTER
             textSize = 13.5f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.WHITE)

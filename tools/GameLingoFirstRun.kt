@@ -49,6 +49,7 @@ object GameLingoFirstRun {
             background = GameLingoVisualKit.pageBackground(activity)
         }
         val heading = TextView(activity).apply {
+            gravity = Gravity.CENTER
             textSize = 26f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
@@ -82,7 +83,7 @@ object GameLingoFirstRun {
             textSize = 18f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER_VERTICAL
+            gravity = Gravity.CENTER
             setPadding(px(19), px(17), px(19), px(17))
             background = if (primary)
                 GameLingoVisualKit.primary(activity)
@@ -175,6 +176,7 @@ object GameLingoFirstRun {
                 0 -> {
                     body.addView(GameLingoVisualKit.hero(activity))
                     body.addView(TextView(activity).apply {
+                        gravity = Gravity.CENTER
                         text = tr("Překládej dialogy a herní texty přímo během hraní.")
                         textSize = 15f
                         setTextColor(muted)
@@ -204,6 +206,7 @@ object GameLingoFirstRun {
                         }
                     }
                     body.addView(TextView(activity).apply {
+                        gravity = Gravity.CENTER
                         text = tr("Tyto jazyky platí pro dialogy i herní texty. Změnit je můžeš později v Nastavení.")
                         textSize = 14f
                         setTextColor(muted)
@@ -220,6 +223,7 @@ object GameLingoFirstRun {
                         redraw()
                     }
                     body.addView(TextView(activity).apply {
+                        gravity = Gravity.CENTER
                         text = if (consoleRegistered())
                             tr("Vybraná konzole je uložená. Spojení ověříme při spuštění.")
                         else tr("Po výběru můžeš konzoli připojit v posledním kroku.")
@@ -235,6 +239,7 @@ object GameLingoFirstRun {
                         redraw()
                     }
                     body.addView(TextView(activity).apply {
+                        gravity = Gravity.CENTER
                         text = tr("Uložené zařízení neznamená aktivní Remote Play. Živé spojení a překlad se ověří až při spuštění.")
                         textSize = 14f
                         setTextColor(muted)

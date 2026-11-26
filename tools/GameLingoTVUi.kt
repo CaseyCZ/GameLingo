@@ -51,6 +51,7 @@ object GameLingoTVUi {
     fun title(a: Activity, text: String, size: Float = 24f,
               muted: Boolean = false): TextView = TextView(a).apply {
         this.text = text
+        gravity = Gravity.CENTER
         textSize = size * TV_SCALE
         setTextColor(if (muted) dim else Color.WHITE)
         setTypeface(null, if (muted) Typeface.NORMAL else Typeface.BOLD)
@@ -75,7 +76,7 @@ object GameLingoTVUi {
                 dialog.dismiss(); onSelect(index)
             }.apply {
                 id = View.generateViewId()
-                gravity = Gravity.CENTER_VERTICAL
+                gravity = Gravity.CENTER
                 textSize = 16f
                 minimumHeight = dp(a, 50)
                 setPadding(dp(a, 14), dp(a, 7), dp(a, 14), dp(a, 7))
@@ -167,7 +168,7 @@ object GameLingoTVUi {
              onActivate: () -> Unit): LinearLayout {
         val box = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
+            gravity = Gravity.CENTER
             setPadding(dp(a, 16), dp(a, 12), dp(a, 16), dp(a, 12))
             background = panel(a)
             isFocusable = true

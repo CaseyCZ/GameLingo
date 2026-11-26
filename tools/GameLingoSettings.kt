@@ -31,11 +31,11 @@ object GameLingoSettings {
         addView(LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             addView(TextView(c).apply {
-                text = title; textSize = 17f
+                text = title; gravity = Gravity.CENTER; textSize = 17f
                 setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
             })
             addView(TextView(c).apply {
-                text = detail; textSize = 13f
+                text = detail; gravity = Gravity.CENTER; textSize = 13f
                 setTextColor(muted)
                 setPadding(0, 5, 0, 0)
             })
@@ -69,7 +69,7 @@ object GameLingoSettings {
         }
         val header = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(TextView(activity).apply {
-            text = "Překlad"; textSize = 25f
+            text = "Překlad"; gravity = Gravity.CENTER; textSize = 25f
             setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(GameLingoHelp.button(activity, "translation"),
@@ -167,7 +167,7 @@ object GameLingoSettings {
 
         fun button(title: String, action: () -> Unit) {
             content.addView(TextView(activity).apply {
-                text = title; textSize = 17f
+                text = title; gravity = Gravity.CENTER; textSize = 17f
                 gravity = Gravity.CENTER
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
@@ -230,7 +230,7 @@ object GameLingoSettings {
             gravity = Gravity.CENTER_VERTICAL
         }
         heading.addView(TextView(activity).apply {
-            text = tr("Nastavení")
+            text = tr("Nastavení"); gravity = Gravity.CENTER
             textSize = 29f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.WHITE)
@@ -250,7 +250,7 @@ object GameLingoSettings {
 
         fun section(title: String) {
             page.addView(TextView(activity).apply {
-                text = tr(title)
+                text = tr(title); gravity = Gravity.CENTER
                 textSize = 12f
                 letterSpacing = 0.10f
                 setTypeface(null, Typeface.BOLD)
