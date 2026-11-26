@@ -229,7 +229,8 @@ object GameLingoSettings {
             isFocusable = true
             setOnClickListener { onDismiss() }
         }, LinearLayout.LayoutParams(48 * d, 48 * d))
-        if (showHeader) page.addView(heading)
+        if (showHeader) page.addView(GameLingoVisualKit.neonTitle(activity,
+            "Nastavení", "Přizpůsobení překladu a titulků", "gearshape.fill"))
 
         fun section(title: String) {
             page.addView(TextView(activity).apply {
