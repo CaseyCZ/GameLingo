@@ -110,7 +110,7 @@ def redesign_mobile(s: str) -> str:
 
             val druhy = vodorovne()
             druhy.addView(GameLingoVisualKit.navigationTile(this,
-                "☷", GameLingoLanguages.ui(this, "Režim překladu")) { GameLingoAutomaticConfig.mode(this) },
+                "☷", GameLingoLanguages.ui(this, "Režim překladu")) { GameLingoAutomaticConfig.mode(this, advanced = { GameLingoOCRSettings.show(this) { editAreas() } }) },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(10) })
             druhy.addView(GameLingoVisualKit.navigationTile(this,
