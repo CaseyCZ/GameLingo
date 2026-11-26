@@ -63,7 +63,7 @@ struct GLNeonPanel<Content: View>: View {
 
     var body: some View {
         content
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .background {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .fill(LinearGradient(
@@ -181,12 +181,15 @@ struct GLNeonTitle: View {
                 .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14)
                     .strokeBorder(GLNeon.cyan.opacity(0.30)))
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .center, spacing: 3) {
                 Text(LocalizedStringKey(title)).font(.system(size: 19, weight: .bold)).foregroundStyle(.white)
                 Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(GLNeon.mist)
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity)
+            Color.clear.frame(width: 41, height: 1).accessibilityHidden(true)
         }
+        .frame(maxWidth: .infinity)
+        .multilineTextAlignment(.center)
     }
 }
 
@@ -208,7 +211,7 @@ struct GLDetailRow: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing),
                         in: RoundedRectangle(cornerRadius: 13))
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .center, spacing: 4) {
                     Text(LocalizedStringKey(title))
                         .font(.system(size: 16, weight: .semibold,
                                       design: .rounded))
@@ -218,10 +221,12 @@ struct GLDetailRow: View {
                         .foregroundStyle(GLNeon.mist)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
                 Image(systemName: "chevron.right")
                     .font(.subheadline.bold())
                     .foregroundStyle(GLNeon.mist)
+                    .frame(width: 42, alignment: .trailing)
             }
              .padding(11)
         }

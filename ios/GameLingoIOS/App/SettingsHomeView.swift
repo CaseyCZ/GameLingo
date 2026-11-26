@@ -39,7 +39,7 @@ struct GameLingoSettingsOverview: View {
     @State private var showTV = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
+        VStack(alignment: .center, spacing: 13) {
             GLNeonTitle(title: "Nastavení",
                         subtitle: "Přizpůsobení překladu a titulků",
                         icon: "gearshape.fill")

@@ -19,10 +19,11 @@ enum GLStyle {
 struct GLCard<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
+        VStack(alignment: .center, spacing: 13) {
             content
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
         .padding(13)
         .background {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -85,10 +86,12 @@ struct GLHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
+            if help != nil { Color.clear.frame(width: 24, height: 1).accessibilityHidden(true) }
             Text(LocalizedStringKey(title)).font(.system(size: 17, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            Spacer(minLength: 0)
-            if let help { GLHelpButton(title: title, explanation: help) }
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
+            if let help { GLHelpButton(title: title, explanation: help).frame(width: 24) }
         }
     }
 }
@@ -109,9 +112,11 @@ struct GLPrimaryButton: View {
                 .font(.system(size: 17, weight: .bold, design: .rounded))
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
-            Spacer(minLength: 0)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
             Image(systemName: "arrow.right")
                 .font(.system(size: 13, weight: .bold))
+                .frame(width: 30, alignment: .trailing)
             }
             .font(.headline)
             .foregroundStyle(.white)
@@ -148,10 +153,12 @@ struct GLSettingsLink: View {
             Text(LocalizedStringKey(title))
                 .font(.body.weight(.medium))
                 .foregroundStyle(.white)
-            Spacer()
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(GLStyle.muted)
+                .frame(width: 42, alignment: .trailing)
         }
         .padding(.vertical, 7)
         .contentShape(Rectangle())
@@ -193,9 +200,11 @@ struct GLScreen<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 13) {
+            VStack(alignment: .center, spacing: 13) {
                 content
             }
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
             .padding(.horizontal, 16)
             .padding(.top, 14)
             .padding(.bottom, 25)

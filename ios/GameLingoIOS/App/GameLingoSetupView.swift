@@ -45,7 +45,7 @@ struct GameLingoSetupView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 21) {
+                    VStack(alignment: .center, spacing: 21) {
                         header
                         switch step {
                         case 0: welcomeStep
@@ -55,6 +55,8 @@ struct GameLingoSetupView: View {
                             outputStep
                         }
                     }
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
                     .padding(20)
                 }
                 footer
@@ -95,7 +97,7 @@ struct GameLingoSetupView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .center, spacing: 12) {
             GLBrandWordmark()
             HStack(spacing: 8) {
                 ForEach(GameLingoUIContract.setupSteps.indices, id: \.self) { index in
@@ -137,7 +139,7 @@ struct GameLingoSetupView: View {
                 .padding(20)
             }
             GLNeonPanel(emphasized: true) {
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .center, spacing: 10) {
                     Label("Jazyk aplikace", systemImage: "globe")
                         .font(.headline)
                     Picker("Jazyk aplikace", selection: $model.appLanguage) {
@@ -166,7 +168,7 @@ struct GameLingoSetupView: View {
                 } label: {
                     HStack(spacing: 14) {
                         GLPlatformBadge(family: family, size: 57)
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .center, spacing: 3) {
                             Text(family.rawValue)
                                 .font(.system(size: 18, weight: .bold,
                                               design: .rounded))
@@ -224,7 +226,7 @@ struct GameLingoSetupView: View {
     }
 
     private var languageStep: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .center, spacing: 14) {
             GLCard {
                 GLHeader(title: "Jazyk hry")
                 Picker("Rozpoznávat jazyk", selection: $model.gameLanguage) {
