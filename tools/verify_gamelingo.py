@@ -64,7 +64,7 @@ def android(root: Path, mode: str):
         contains(base / "GameLingoNavigation.kt",
             "GameLingoUIContract.tabs", "onSettings: () -> Unit")
         contains(base / "GameLingoUIContract.kt",
-            '"Domů"', '"Obrazovka"', '"Konzole"', '"Nastavení"', '"O aplikaci"')
+            '"Domů"', '"Obrazovka"', '"Zařízení"', '"Nastavení"', '"O aplikaci"')
         contains(base / "GameLingoSettings.kt",
             "GameLingoUIContract.settingsSections", "GameLingoDiagnostics.show")
         contains(base / "GameLingoRegions.kt",
