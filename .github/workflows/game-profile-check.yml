@@ -21,3 +21,5 @@ jobs:
           python-version: '3.11'
       - run: python validate.py && python -m unittest -v test_profile
         working-directory: game-profiles
+      - run: node test-calibrate.mjs
+        working-directory: game-profiles
