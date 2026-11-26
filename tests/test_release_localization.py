@@ -16,7 +16,8 @@ def text(path):
     return path.read_text(encoding="utf-8")
 
 def catalog_keys(path):
-    return re.findall(r"^\s*" + STRING + r"\s*=", text(path), re.M)
+    return [json.loads('"' + encoded + '"') for encoded in
+            re.findall(r"^\s*" + STRING + r"\s*=", text(path), re.M)]
 
 def android_keys():
     # Both Android variants and iOS now build their UI tables from one source.
