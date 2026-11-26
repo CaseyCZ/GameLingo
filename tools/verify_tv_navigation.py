@@ -25,7 +25,10 @@ assert "finish()" not in back and "PrijemService.zastav(this)" not in back
 assert "ukazHlavni()" in return_home and "PrijemService.zastav" not in return_home
 assert "PrijemService.zastav(this)" in stop and "zpetNaVyber()" in stop
 assert 'if (!telefon && PrijemService.bezi) { ukazPrijem(); return }' not in main
-assert re.search(r'"←  " \+ GameLingoLanguages\.ui\(this@MainActivity, "Zpět do nabídky"\)\)\s*\{\s*zpetNaVyber\(\)', main)
+assert re.search(r'val zastav = GameLingoTVUi\.action\(this, GameLingoLanguages\.ui\(this, "Zpět"\)\)\s*\{\s*zpetNaVyber\(\)', main)
+receiver = section(main, "private fun ukazPrijem()", "private val obnova:")
+assert 'GameLingoTVUi.header(this, logo, zastav, GameLingoHelp.button(this, "tv"))' in receiver
+assert "paticka.addView(zastav)" not in receiver
 assert re.search(r'GameLingoLanguages\.ui\(this, "Zastavit příjem"\)\)\s*\{\s*zastavPrijemANavrat\(\)', main)
 assert 'val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }' in settings
 assert 'dialog.setOnDismissListener {' in settings and 'if (!reopeningForScale && !openingDevices && !a.isFinishing && !a.isDestroyed) onUpdate()' in settings

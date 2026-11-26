@@ -152,12 +152,12 @@ object GameLingoTVProfiles {
             if(!busy()) {
                 val items=all(a); items.put(name,snapshot(a))
                 store(a).edit().putString("profiles",items.toString()).putString("activeProfile",name).apply()
-                page?.dismiss()
                 android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil uložen") + ": " + name,android.widget.Toast.LENGTH_SHORT).show()
-                show(a)
+                page?.dismiss()
             }
         }
-        page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Upravit profil") + " · " + name,body,helpTopic="profiles")
+        page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Upravit profil") + " · " + name,body,helpTopic="profiles",
+            onClose = { if (!a.isFinishing && !a.isDestroyed) show(a) })
         if(openLayout) GameLingoDirectTVLayout.show(a) {}
     }
     fun show(a: Activity) {
@@ -176,10 +176,11 @@ object GameLingoTVProfiles {
             val row=GameLingoVisualKit.detailRow(a,"gamecontroller",name,
                 if(selected)GameLingoLanguages.ui(a, "Aktivní profil") else GameLingoLanguages.ui(a, "Uložený profil")) {
                 GameLingoTVUi.select(a,name,arrayOf(GameLingoLanguages.ui(a, "Použít"),GameLingoLanguages.ui(a, "Upravit rozložení"),GameLingoLanguages.ui(a, "Smazat"),GameLingoLanguages.ui(a, "Upravit další nastavení"),GameLingoLanguages.ui(a, "Herní slovník"))) { action ->
-                    page?.dismiss()
                     when(action) {
                         0,1 -> {
-                            if(restore(a,all(a).getJSONObject(name))) {
+                            val saved = all(a).optJSONObject(name)
+                            if(saved != null && restore(a,saved)) {
+                                page?.dismiss()
                                 store(a).edit().putString("activeProfile",name).apply()
                                 activateGlossary(a,name)
                                 if(action==1) editSettings(a,name,openLayout=true)
@@ -187,13 +188,15 @@ object GameLingoTVProfiles {
                             } else android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil nelze načíst"),android.widget.Toast.LENGTH_SHORT).show()
                         }
                         3 -> {
-                            if(restore(a,all(a).getJSONObject(name))) {
+                            val saved = all(a).optJSONObject(name)
+                            if(saved != null && restore(a,saved)) {
+                                page?.dismiss()
                                 store(a).edit().putString("activeProfile",name).apply()
                                 activateGlossary(a,name)
                                 editSettings(a,name)
-                            }
+                            } else android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil nelze načíst"),android.widget.Toast.LENGTH_SHORT).show()
                         }
-                        4 -> GameLingoGlossaryUi.edit(a,name){show(a)}
+                        4 -> GameLingoGlossaryUi.edit(a,name){page?.dismiss();show(a)}
                         2 -> AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Smazat profil") + " " + name + "?").setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null)
                             .setPositiveButton(GameLingoLanguages.ui(a, "Smazat")){_,_->
                                 if(!busy()) {
@@ -202,8 +205,9 @@ object GameLingoTVProfiles {
                                     val e=store(a).edit().putString("profiles",latest.toString())
                                     if(store(a).getString("activeProfile",null)==name)e.remove("activeProfile")
                                     e.apply()
+                                    page?.dismiss()
+                                    show(a)
                                 }
-                                show(a)
                             }.show()
                     }
                 }

@@ -206,15 +206,7 @@ def tv(s):
 
 '''
     s=s[:s.index(start)]+new+s[s.index(end, s.index(start)):]
-    # TV receiver help is optional. Do not occupy extra width or remove the code.
-    s=one(s,
-        '        vrsek.addView(logo)\n',
-        '''        vrsek.addView(logo)
-        vrsek.addView(GameLingoHelp.button(this, "tv"),
-            GameLingoHelp.layout(this, dp(55), dp(55)).apply {
-                leftMargin = dp(15)
-            })
-''', "Google TV receiver header")
+    # Receiver already uses the shared fixed Back/title/Help header.
     s=s.replace(
         '"Otevřete GameLingo na telefonu a zadejte tento šestimístný kód."',
         '"Zadejte kód do telefonu"')

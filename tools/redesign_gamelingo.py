@@ -284,18 +284,14 @@ def redesign_tv(s: str) -> str:
             setPadding(dp(13), dp(10), dp(13), dp(10))
         }
 
-        val vrsek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
-        vrsek.addView(ImageView(this).apply {
-            setImageResource(R.drawable.gamelingo_ikona)
-            adjustViewBounds = true
-        }, LinearLayout.LayoutParams(dp(65), dp(65)).apply { rightMargin = dp(12) })
-        val logo = svisle()
-        logo.addView(text("GameLingo", 28f, Color.WHITE, tucne = true))
-        logo.addView(text("TV", 16f, fialova, tucne = true))
-        vrsek.addView(logo)
-        vrsek.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        vrsek.addView(text(packageManager.getPackageInfo(packageName, 0).versionName ?: "GameLingo TV", 14f,
-            Color.parseColor("#94A3B8")))
+        val zastav = GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Zpět")) {
+            zpetNaVyber()
+        }
+        val logo = svisle().apply { gravity = Gravity.CENTER }
+        logo.addView(GameLingoVisualKit.wordmark(this@MainActivity, compact = true))
+        logo.addView(text(packageManager.getPackageInfo(packageName, 0).versionName ?: "GameLingo TV", 14f,
+            Color.parseColor("#94A3B8")).apply { gravity = Gravity.CENTER })
+        val vrsek = GameLingoTVUi.header(this, logo, zastav, GameLingoHelp.button(this, "tv"))
 
         val levá = modraKarta()
         levá.addView(GameLingoTVUi.title(this,
@@ -474,9 +470,6 @@ def redesign_tv(s: str) -> str:
                 .putExtra(OverlayService.EXTRA_VLASTNI,
                     floatArrayOf(0.5f, 0.84f, 0.78f, 1.10f, 1f)))
         }
-        val zastav = GameLingoTVUi.action(this, "←  " + GameLingoLanguages.ui(this@MainActivity, "Zpět do nabídky")) {
-            zpetNaVyber()
-        }
         val paticka = vodorovne().apply {
             gravity = Gravity.CENTER_VERTICAL
         }
@@ -489,7 +482,7 @@ def redesign_tv(s: str) -> str:
         paticka.addView(prijemDiag, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
             leftMargin = dp(5); rightMargin = dp(5)
         })
-        paticka.addView(zastav)
+        // TV_RECEIVER_STOP_ACTION
 
         val obsah = svisle().apply {
             background = android.graphics.drawable.GradientDrawable(

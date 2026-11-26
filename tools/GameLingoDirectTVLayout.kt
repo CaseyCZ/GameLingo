@@ -193,11 +193,9 @@ object GameLingoDirectTVLayout {
         fun addWeighted(parent:LinearLayout, view:View) {
             parent.addView(view,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f).apply { marginEnd=d(6) })
         }
-        val top=row()
-        top.addView(GameLingoTVUi.title(a,tr("Rozložení oblastí"),24f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
-        top.addView(GameLingoHelp.button(a,"regions"),GameLingoHelp.layout(a))
-        top.addView(button("Zrušit"){dialog.dismiss()})
-        root.addView(top)
+        val cancel = button("Zrušit"){dialog.dismiss()}
+        root.addView(GameLingoTVUi.header(a, GameLingoTVUi.title(a,tr("Rozložení oblastí"),24f),
+            cancel, GameLingoHelp.button(a,"regions")))
         val tabs=row(); root.addView(tabs)
         val body=row()
         root.addView(body,LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,0,1f))

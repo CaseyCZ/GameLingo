@@ -1389,8 +1389,26 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title',help_ui)
         self.assertIn('GameLingoTVUi.header(a, heading, back, help)',code(TOOLS/"GameLingoTVSettings.kt"))
         self.assertIn('helpTopic = "ocr"',code(TOOLS/"GameLingoOCRSettings.kt"))
-        self.assertIn("GameLingoHelp.layout",code(TOOLS/"GameLingoDirectTVLayout.kt"))
+        self.assertIn("GameLingoTVUi.header(a, GameLingoTVUi.title",code(TOOLS/"GameLingoDirectTVLayout.kt"))
         self.assertIn("Independent help glyph",code(TOOLS/"audit_tv_ui.py"))
+
+    def test_tv_receiver_and_editor_fixed_header_and_separate_stop(self):
+        receiver = code(TOOLS/"redesign_gamelingo.py")
+        nav = code(TOOLS/"tv_navigation.py")
+        editor = code(TOOLS/"GameLingoDirectTVLayout.kt")
+        self.assertIn('GameLingoTVUi.header(this, logo, zastav, GameLingoHelp.button(this, "tv"))',receiver)
+        self.assertNotIn("paticka.addView(zastav)",receiver)
+        self.assertIn("paticka.addView(zastavPrijem)",nav)
+        self.assertIn('val cancel = button("Zrušit"){dialog.dismiss()}',editor)
+        self.assertIn("GameLingoTVUi.header(activity, heading, back",code(TOOLS/"GameLingoFirstRun.kt"))
+
+    def test_tv_profile_cancel_keeps_parent_and_editor_returns_to_list(self):
+        source = code(TOOLS/"GameLingoTVProfiles.kt")
+        lane = source.split("fun show(a: Activity)",1)[1]
+        self.assertNotIn("page?.dismiss()\n                    when(action)",lane)
+        self.assertIn("all(a).optJSONObject(name)",lane)
+        self.assertIn('onClose = { if (!a.isFinishing && !a.isDestroyed) show(a) }',source)
+        self.assertIn("GameLingoGlossaryUi.edit(a,name){page?.dismiss();show(a)}",lane)
 
     def test_tv_fullscreen_pages_and_global_dialog_theme(self):
         ui=code(TOOLS/"GameLingoTVUi.kt")

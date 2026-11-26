@@ -28,6 +28,9 @@ Pracovní větev: `feature/ocr-lab`. Master a stabilní 0.5.1 zůstávají beze 
 
 - Rozšíření schválené majitelem produktu: v Pokročilém nastavení TV jednotná volba velikosti 80/90/100/110/120 % (100 % = původní kompaktní 0,66). Uložená lokálně mimo OCR/profily; menu se znovu vykreslí bez restartu aplikace. Nutno ověřit všechny stránky včetně podstránek, dialogů, D-pad a krajních hodnot. Systémové dialogy, klávesnice a externí weby nejsou součástí vlastního rozhraní.
 
+## Audit rozhraní a funkčnosti (26. 11. 2026)
+Závazný návrh a akceptační matice: [UI_UX_FUNCTIONAL_AUDIT.md](UI_UX_FUNCTIONAL_AUDIT.md). Fyzická zpětná vazba potvrdila další vady: slabý/neviditelný fokus, příliš široké karty, zbytečný scroll a nekonzistentní Back/Help. Jde o blokátory G1/G2, nikoli kosmetické požadavky. Zdrojové opravy napříč platformami a regresní kontroly jsou v této větvi; vizuální průchod a nativní build aktuální revize zůstávají povinné.
+
 ## Povinné brány vydání
 | Brána | Akceptační důkaz | Stav |
 |---|---|---|

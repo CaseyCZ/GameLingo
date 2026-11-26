@@ -54,13 +54,8 @@ object GameLingoFirstRun {
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         }
-        val headingRow = LinearLayout(activity).apply {
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        headingRow.addView(heading, LinearLayout.LayoutParams(
-            0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        headingRow.addView(GameLingoHelp.button(activity, "home"),GameLingoHelp.layout(activity))
-        root.addView(headingRow)
+        val back = GameLingoTVUi.action(activity, tr("Zpět")) {}
+        root.addView(GameLingoTVUi.header(activity, heading, back, GameLingoHelp.button(activity, "home")))
         val progress = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, 15, 0, 0)
@@ -70,7 +65,8 @@ object GameLingoFirstRun {
             orientation = LinearLayout.VERTICAL
             setPadding(0, 20, 0, 0)
         }
-        root.addView(body)
+        val bodyScroll = ScrollView(activity).apply { isFillViewport = false; addView(body) }
+        root.addView(bodyScroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         val footer = LinearLayout(activity).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, 16, 0, 0)
@@ -263,15 +259,9 @@ object GameLingoFirstRun {
                 dialog.dismiss()
                 finished()
             }
-            if (step > 0) {
-                footer.addView(button(tr("Zpět")) {
-                    step--
-                    redraw()
-                }, LinearLayout.LayoutParams(0,
-                    ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    rightMargin = 8
-                })
-            }
+            back.visibility = if (step > 0) android.view.View.VISIBLE else android.view.View.INVISIBLE
+            back.setOnClickListener { if (step > 0) { step--; redraw() } }
+            bodyScroll.scrollTo(0, 0)
             val finalStep = step == GameLingoUIContract.setupSteps.lastIndex
             val canContinue = when (step) {
                 2 -> consoleRegistered() && televisionPaired()
@@ -293,11 +283,7 @@ object GameLingoFirstRun {
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
         redraw()
-        val scroll = ScrollView(activity).apply {
-            isFillViewport = true
-        }
-        scroll.addView(root)
-        dialog.setContentView(scroll)
+        dialog.setContentView(root)
         dialog.setCancelable(false)
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
