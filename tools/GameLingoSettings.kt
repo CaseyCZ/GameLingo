@@ -22,6 +22,73 @@ object GameLingoSettings {
     private fun rounded(color: Int, radius: Float = 17f) =
         GradientDrawable().apply { setColor(color); cornerRadius = radius }
 
+    /** Reset only display and translation keys; never wipe profiles or pairing. */
+    fun restoreDefaultSettings(a: Activity): Boolean {
+        if (RemotePlayService.aktivni || PrijemService.bezi ||
+            GameLingoScreenTranslationService.running) return false
+        val keys = listOf(
+            "pribehovy", "casPribehuProcenta", "prekryvat", "dialogy", "napovedy",
+            "tvX", "tvY", "tvSirka", "tvPismo", "rozvrhZamek",
+            "volbyZap", "volbyUkazat", "volbyZamek", "volbyRezimText",
+            "volbyL", "volbyT", "volbyR", "volbyB",
+            "titRucne", "titZamek", "titL", "titT", "titR", "titB",
+            "directGreenEnabled", "directLockBlue", "directLockGreen",
+            "directLockYellow", "directLockOrange"
+        ) + (0..4).flatMap { i -> listOf("directOrange$i", "directGreen$i") }
+        val local = a.getSharedPreferences("gamelingo", android.content.Context.MODE_PRIVATE)
+        val active = TvProfily.nastaveni(a)
+        for (prefs in listOf(local, active).distinct()) {
+            val editor = prefs.edit()
+            keys.forEach { editor.remove(it) }
+            editor.apply()
+        }
+        a.getSharedPreferences("gamelingo_tv_parity",
+            android.content.Context.MODE_PRIVATE).edit().apply {
+            listOf("region", "showPreviousDialogue", "previousDialogueCount",
+                "hideOnSourceGone", "sourceGoneDelay", "fixedTiming",
+                "seconds", "skipOld", "maxAge").forEach { remove(it) }
+        }.apply()
+        a.getSharedPreferences("gamelingo_automatic",
+            android.content.Context.MODE_PRIVATE).edit()
+            .remove("enabled").remove("zones").apply()
+        a.getSharedPreferences("gamelingo_tv_local_style",
+            android.content.Context.MODE_PRIVATE).edit()
+            .remove("color").remove("opacity").apply()
+        a.getSharedPreferences("gamelingo_tv_caption_style",
+            android.content.Context.MODE_PRIVATE).edit()
+            .remove("color").remove("background").apply()
+        a.getSharedPreferences("gamelingo_languages",
+            android.content.Context.MODE_PRIVATE).edit()
+            .remove("game").remove("target").apply()
+        Nastaveni(a).jazyk = GameLingoLanguages.systemApp(a)
+        GameLingoTVUi.setMenuPercent(a, 100)
+        GameLingoOCRConfig.reset(a)
+        Volby.nacti(a)
+        OblastTitulku.nacti(a)
+        return true
+    }
+
+    fun confirmRestoreDefaults(a: Activity, onReset: () -> Unit = {}) {
+        fun tr(value: String) = GameLingoLanguages.ui(a, value)
+        if (RemotePlayService.aktivni || PrijemService.bezi ||
+            GameLingoScreenTranslationService.running) {
+            android.app.AlertDialog.Builder(a)
+                .setMessage(tr("Nejdřív zastav překlad a příjem."))
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        android.app.AlertDialog.Builder(a)
+            .setTitle(tr("Obnovit výchozí nastavení?"))
+            .setMessage(tr("Obnoví OCR, překlad, oblasti a vzhled titulků. Zařízení, účty a herní profily zůstanou zachované."))
+            .setNegativeButton(tr("Zrušit"), null)
+            .setPositiveButton(tr("Obnovit nastavení")) { _, _ ->
+                if (restoreDefaultSettings(a)) onReset()
+                else android.app.AlertDialog.Builder(a)
+                    .setMessage(tr("Nejdřív zastav překlad a příjem."))
+                    .setPositiveButton("OK", null).show()
+            }.show()
+    }
+
     private fun row(c: Activity, title: String, detail: String, state: Boolean,
                     update: (Boolean) -> Unit) = LinearLayout(c).apply {
         orientation = LinearLayout.HORIZONTAL
@@ -307,6 +374,10 @@ object GameLingoSettings {
         menu("info.circle", "O aplikaci / Licence",
              "GameLingo, zdroje a AGPLv3") {
             GameLingoAbout.show(activity)
+        }
+        menu("arrow.counterclockwise", "Obnovit výchozí nastavení",
+             "OCR, překlad, oblasti a vzhled titulků") {
+            confirmRestoreDefaults(activity) { onRefresh() }
         }
         return page
     }
