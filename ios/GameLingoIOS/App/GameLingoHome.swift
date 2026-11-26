@@ -249,7 +249,7 @@ struct GameLingoHome: View {
                         .frame(width: 34, height: 34)
                 }
                 HStack(spacing: 8) {
-                    HStack(spacing: 6) {
+                    VStack(alignment: .center, spacing: 6) {
                         GLPlatformBadge(family: .xbox, size: 42)
                         Text("Xbox")
                             .font(.subheadline.bold())
@@ -257,11 +257,11 @@ struct GameLingoHome: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, alignment: .center)
                     Rectangle()
                         .fill(GLNeon.edge)
-                        .frame(width: 1, height: 34)
-                    HStack(spacing: 6) {
+                        .frame(width: 1, height: 58)
+                    VStack(alignment: .center, spacing: 6) {
                         GLPlatformBadge(family: .playStation, size: 42)
                         Text("PlayStation")
                             .font(.subheadline.bold())
@@ -269,7 +269,7 @@ struct GameLingoHome: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             .padding(12)
