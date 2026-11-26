@@ -269,7 +269,7 @@ object GameLingoSettings {
             })
         }
         section(GameLingoUIContract.settingsSections[0])
-        menu("◎", "Jazyky",
+        menu("globe", "Jazyky",
             GameLingoLanguages.name(GameLingoLanguages.gameLanguages,
                 GameLingoLanguages.game(activity)) + " → " +
             GameLingoLanguages.name(GameLingoLanguages.targetLanguages,
@@ -278,50 +278,50 @@ object GameLingoSettings {
         }
 
         section(GameLingoUIContract.settingsSections[1])
-        menu("▣", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(activity)) {
+        menu("viewfinder", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(activity)) {
             GameLingoAutomaticConfig.mode(activity, onChanged = onRefresh) { GameLingoOCRSettings.show(activity, onAreas) }
         }
-        menu("⌗", "Oblasti obrazovky",
+        menu("rectangle.dashed", "Oblasti obrazovky",
              if(GameLingoAutomaticConfig.enabled(activity)) "Automatické zóny" else "Čtyři nezávislé oblasti") {
             if(GameLingoAutomaticConfig.enabled(activity))GameLingoAutomaticConfig.showZones(activity) else onAreas()
         }
 
         section(GameLingoUIContract.settingsSections[2])
-        menu("Aa", "Vzhled titulků",
+        menu("text.bubble", "Vzhled titulků",
              "Velikost, šířka a poloha titulků") {
              GameLingoSubtitleAppearance.show(activity)
          }
-        menu("♧", "Profily her",
+        menu("gamecontroller", "Profily her",
              "Vlastní nastavení pro každou hru") {
             GameLingoProfiles.show(activity, settings) {}
         }
         section(GameLingoUIContract.settingsSections[3])
-        menu("▭", "Zařízení",
+        menu("display.2", "Zařízení",
              "Xbox, PlayStation a Google TV") { onDevices() }
         val advanced = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             visibility = android.view.View.GONE
         }
-        val disclosure = GameLingoVisualKit.detailRow(activity, "⋯", tr("Pokročilé nastavení"), tr("Časování, historie a diagnostika")) {
+        val disclosure = GameLingoVisualKit.detailRow(activity, "slider.horizontal.3", tr("Pokročilé nastavení"), tr("Časování, historie a diagnostika")) {
             advanced.visibility = if (advanced.visibility == android.view.View.VISIBLE) android.view.View.GONE else android.view.View.VISIBLE
         }
         page.addView(disclosure, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 * d })
-        menu("文", "Překlad", "Režimy, dialogy a časování", parent = advanced) {
+        menu("character.book.closed.fill", "Překlad", "Režimy, dialogy a časování", parent = advanced) {
             showTranslation(activity, settings, onAreas, onLanguage)
         }
-        menu("◷", "Historie překladů",
+        menu("clock.arrow.circlepath", "Historie překladů",
              "Poslední dialogy a herní texty · volitelné", parent = advanced) {
             GameLingoHistoryUi.show(activity)
         }
-        menu("▣", "Překladová cache", "Ukládání a vymazání místních překladů", parent = advanced) {
+        menu("internaldrive", "Překladová cache", "Ukládání a vymazání místních překladů", parent = advanced) {
             GameLingoCachePrivacyUi.show(activity)
         }
-        menu("≋", "Diagnostika",
+        menu("waveform.path.ecg", "Diagnostika",
              "Stav relace a uložených zařízení", parent = advanced) {
             GameLingoDiagnostics.show(activity)
         }
         page.addView(advanced)
-        menu("ⓘ", "O aplikaci / Licence",
+        menu("info.circle", "O aplikaci / Licence",
              "GameLingo, zdroje a AGPLv3") {
             GameLingoAbout.show(activity)
         }

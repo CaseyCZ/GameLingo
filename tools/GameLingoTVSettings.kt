@@ -41,17 +41,17 @@ object GameLingoTVSettings {
             }
             cards.add(card)
         }
-        tile("◎", "Jazyky", "Aplikace, hra, překlad") { GameLingoLanguages.show(a) }
+        tile("globe", "Jazyky", "Aplikace, hra, překlad") { GameLingoLanguages.show(a) }
         tile("viewfinder", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(a)) { if (!GameLingoScreenTranslationService.running) GameLingoAutomaticConfig.mode(a, onChanged = {
             cards[1].findViewWithTag<android.widget.TextView>("gamelingo-detail")?.text = GameLingoAutomaticConfig.label(a)
             cards[3].findViewWithTag<android.widget.TextView>("gamelingo-detail")?.text = GameLingoLanguages.ui(a, if(GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti")
         }) { ocr(a) } }
-        tile("文", "Překlad", "Dialogy, herní texty, Story") { translation(a) }
+        tile("character.book.closed.fill", "Překlad", "Dialogy, herní texty, Story") { translation(a) }
         tile("rectangle.dashed", "Oblasti obrazovky", if(GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti") { if (!GameLingoScreenTranslationService.running) { if(GameLingoAutomaticConfig.enabled(a)) GameLingoAutomaticConfig.showZones(a) else GameLingoDirectTVLayout.show(a) {} } }
-        tile("Aa", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }
+        tile("text.bubble", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }
         tile("gamecontroller", "Profily her", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a) }
-        tile("▭", "Zařízení", "Konzole a telefony") { openingDevices = true; dialog.dismiss(); onDevices() }
-        tile("⋯", "Pokročilé nastavení", "Slovník, historie a diagnostika") {
+        tile("display.2", "Zařízení", "Konzole a telefony") { openingDevices = true; dialog.dismiss(); onDevices() }
+        tile("slider.horizontal.3", "Pokročilé nastavení", "Slovník, historie a diagnostika") {
             val options = arrayOf("Herní slovník", "Historie překladů", "Překladová cache", "Diagnostika")
                 .map { GameLingoLanguages.ui(a, it) }.toTypedArray()
             GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Pokročilé nastavení"), options, -1) { index ->

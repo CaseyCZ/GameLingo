@@ -18,6 +18,17 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_localized_region_editor_preserves_geometry_and_menu_icons(self):
+        layout = code(TOOLS/"GameLingoDirectTVLayout.kt")
+        phone = code(TOOLS/"GameLingoSettings.kt")
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        self.assertIn('active.text=tr(names[selected])', layout)
+        self.assertIn('GameLingoLanguages.ui(context, names[i].substringBefore(" ·"))', layout)
+        self.assertIn('KEYCODE_DPAD_LEFT', layout)
+        self.assertIn('storedGreen', layout)
+        self.assertIn('menu("globe", "Jazyky"', phone)
+        self.assertIn('tile("globe", "Jazyky"', tv)
+
     def test_localized_tv_welcome_qr_and_cache(self):
         ui = code(TOOLS/"GameLingoTVUi.kt")
         qr = code(TOOLS/"GameLingoQRDisplay.kt")

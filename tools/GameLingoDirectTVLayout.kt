@@ -111,7 +111,7 @@ object GameLingoDirectTVLayout {
                 canvas.drawRect(left,top,right,bottom,paint)
                 paint.style=Paint.Style.FILL
                 paint.textSize=(if (overVideo) 15f else 12f)*density
-                val label=names[i].substringBefore(" ·") + if (locked(i)) " · zamčeno" else ""
+                val label=GameLingoLanguages.ui(context, names[i].substringBefore(" ·")) + if (locked(i)) " · " + GameLingoLanguages.ui(context, "zamčeno") else ""
                 canvas.save(); canvas.clipRect(left,top,right,bottom)
                 canvas.drawText(label,left+5*density,minOf(bottom-2*density,top+paint.textSize+3*density),paint)
                 canvas.restore()
@@ -121,7 +121,7 @@ object GameLingoDirectTVLayout {
                 val tw= minOf(w, 360*density)
                 canvas.drawRoundRect(x+(w-tw)/2,y+8*density,x+(w+tw)/2,y+42*density,8*density,8*density,paint)
                 paint.color=Color.WHITE; paint.textSize=14*density; paint.textAlign=Paint.Align.CENTER
-                canvas.drawText("Náhled oblastí · zmizí za 30 s",x+w/2,y+30*density,paint)
+                canvas.drawText(GameLingoLanguages.ui(context, "Náhled oblastí · zmizí za 30 s"),x+w/2,y+30*density,paint)
                 paint.textAlign=Paint.Align.LEFT
             }
         }
@@ -131,7 +131,7 @@ object GameLingoDirectTVLayout {
     private fun showOnTV(a: Activity, boxes: Array<FloatArray>, selected: Int, locks: BooleanArray) {
         if (busy()) return
         if (!android.provider.Settings.canDrawOverlays(a)) {
-            Toast.makeText(a,"Nejdříve povol překryv v nastavení TV.",Toast.LENGTH_LONG).show()
+            Toast.makeText(a,GameLingoLanguages.ui(a, "Nejdříve povol překryv v nastavení TV."),Toast.LENGTH_LONG).show()
             return
         }
         removePreview()
@@ -152,13 +152,14 @@ object GameLingoDirectTVLayout {
             a.moveTaskToBack(true)
         } catch (e: Exception) {
             removePreview()
-            Toast.makeText(a,"Náhled nelze zobrazit: "+e.javaClass.simpleName,Toast.LENGTH_LONG).show()
+            Toast.makeText(a,GameLingoLanguages.ui(a, "Náhled nelze zobrazit")+": "+e.javaClass.simpleName,Toast.LENGTH_LONG).show()
         }
     }
 
     fun show(a: Activity, onSaved: () -> Unit) {
+        fun tr(cs: String) = GameLingoLanguages.ui(a, cs)
         if (busy()) {
-            AlertDialog.Builder(a).setMessage("Nejdříve zastav překlad i příjem z telefonu.")
+            AlertDialog.Builder(a).setMessage(tr("Nejdříve zastav překlad i příjem z telefonu."))
                 .setPositiveButton("OK",null).show()
             return
         }
@@ -185,7 +186,7 @@ object GameLingoDirectTVLayout {
             setPadding(GameLingoTVUi.dp(a,20),GameLingoTVUi.dp(a,12),GameLingoTVUi.dp(a,20),GameLingoTVUi.dp(a,12))
         }
         fun d(v:Int)=GameLingoTVUi.dp(a,v)
-        fun button(label:String, run:()->Unit)=GameLingoTVUi.action(a,label,onActivate=run).apply {
+        fun button(label:String, run:()->Unit)=GameLingoTVUi.action(a,tr(label),onActivate=run).apply {
             minimumHeight=d(42); textSize=15f; setPadding(d(8),d(6),d(8),d(6))
         }
         fun row()=LinearLayout(a).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
@@ -193,7 +194,7 @@ object GameLingoDirectTVLayout {
             parent.addView(view,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f).apply { marginEnd=d(6) })
         }
         val top=row()
-        top.addView(GameLingoTVUi.title(a,"Rozložení oblastí",24f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
+        top.addView(GameLingoTVUi.title(a,tr("Rozložení oblastí"),24f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
         top.addView(GameLingoHelp.button(a,"regions"),GameLingoHelp.layout(a))
         top.addView(button("Zrušit"){dialog.dismiss()})
         root.addView(top)
@@ -210,7 +211,7 @@ object GameLingoDirectTVLayout {
         val scroll=ScrollView(a).apply { addView(side); isFillViewport=true }
         body.addView(scroll,LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.MATCH_PARENT,1f))
         val active=GameLingoTVUi.title(a,"",18f)
-        val metricsLabel=TextView(a).apply { setTextColor(Color.WHITE); textSize=13f; setPadding(d(6),d(6),d(6),d(6)) }
+        val metricsLabel=TextView(a).apply { gravity=Gravity.CENTER; setTextColor(Color.WHITE); textSize=13f; setPadding(d(6),d(6),d(6),d(6)) }
         side.addView(active); side.addView(metricsLabel)
         val tabButtons=mutableListOf<TextView>()
         val modeButtons=mutableListOf<TextView>()
@@ -220,22 +221,22 @@ object GameLingoDirectTVLayout {
         lateinit var presetButton:TextView
         lateinit var editor:TextView
         fun refresh() {
-            active.text=names[selected]; active.setTextColor(colors[selected])
-            tabButtons.forEachIndexed { i,v -> v.text=(if(i==selected) "✓ " else "")+names[i].substringBefore(" ·"); v.setTextColor(colors[i]) }
-            modeButtons.forEachIndexed { i,v -> v.text=(if(i==mode) "✓ " else "")+arrayOf("Posun","Velikost","Písmo")[i] }
+            active.text=tr(names[selected]); active.setTextColor(colors[selected])
+            tabButtons.forEachIndexed { i,v -> v.text=(if(i==selected) "✓ " else "")+tr(names[i].substringBefore(" ·")); v.setTextColor(colors[i]) }
+            modeButtons.forEachIndexed { i,v -> v.text=(if(i==mode) "✓ " else "")+tr(arrayOf("Posun","Velikost","Písmo")[i]) }
             modeButtons[2].visibility=if(selected==1 || selected==3) View.VISIBLE else View.GONE
-            lockButton.text=if(locks[selected]) "Odemknout oblast" else "Zamknout oblast"
-            option.text=when(selected) {0->if(manual)"Čtení: ruční" else "Čtení: automatické";1->if(custom)"Poloha: vlastní" else "Poloha: automatická";else->if(enabled)"Další texty: zapnuto" else "Další texty: vypnuto"}
+            lockButton.text=tr(if(locks[selected]) "Odemknout oblast" else "Zamknout oblast")
+            option.text=tr(when(selected) {0->if(manual)"Čtení: ruční" else "Čtení: automatické";1->if(custom)"Poloha: vlastní" else "Poloha: automatická";else->if(enabled)"Další texty: zapnuto" else "Další texty: vypnuto"})
             presetButton.visibility=if(selected==0 && !manual) View.VISIBLE else View.GONE
-            presetButton.text="Výchozí oblast: "+GameLingoOCRConfig.regionLabels[GameLingoOCRConfig.regionKeys.indexOf(autoRegion)]
+            presetButton.text=tr("Výchozí oblast")+": "+tr(GameLingoOCRConfig.regionLabels[GameLingoOCRConfig.regionKeys.indexOf(autoRegion)])
             contentType.visibility=if(selected==2) View.VISIBLE else View.GONE
-            contentType.text=if(textMode)"Typ: celý text" else "Typ: volby odpovědí"
+            contentType.text=tr(if(textMode)"Typ: celý text" else "Typ: volby odpovědí")
             val r=boxes[selected]
             fun pc(v:Float)=kotlin.math.round(v*100).toInt()
-            metricsLabel.text=if(selected==1) "X "+pc(r[0])+" % · Y "+pc(r[1])+" %\nŠířka "+pc(r[2])+" % · písmo "+pc(r[3])+" %"
-                else "X "+pc(r[0])+" % · Y "+pc(r[1])+" %\nŠířka "+pc(r[2]-r[0])+" % · výška "+pc(r[3]-r[1])+" %"+if(selected==3)" · písmo "+pc(r[4])+" %" else ""
-            editor.text=if(locks[selected])"Zamčeno · odemkni oblast" else when(mode){0->"OK · posouvat šipkami";1->if(selected==1)"OK · šířka a měřítko" else "OK · změnit velikost";else->"OK · velikost písma"}
-            guide.text="Vyber oblast a režim · v editoru stiskni OK, potom šipky · OK ukončí úpravy"
+            metricsLabel.text=if(selected==1) "X "+pc(r[0])+" % · Y "+pc(r[1])+ " %\n"+tr("Šířka")+" "+pc(r[2])+ " % · "+tr("písmo")+" "+pc(r[3])+" %"
+                else "X "+pc(r[0])+" % · Y "+pc(r[1])+ " %\n"+tr("Šířka")+" "+pc(r[2]-r[0])+ " % · "+tr("výška")+" "+pc(r[3]-r[1])+" %"+if(selected==3) " · "+tr("písmo")+" "+pc(r[4])+" %" else ""
+            editor.text=tr(if(locks[selected])"Zamčeno · odemkni oblast" else when(mode){0->"OK · posouvat šipkami";1->if(selected==1)"OK · šířka a měřítko" else "OK · změnit velikost";else->"OK · velikost písma"})
+            guide.text=tr("Vyber oblast a režim · v editoru stiskni OK, potom šipky · OK ukončí úpravy")
             preview.invalidate()
         }
         fun cycleMode() { mode=(mode+1)%(if(selected==1 || selected==3)3 else 2); refresh() }
@@ -287,18 +288,18 @@ object GameLingoDirectTVLayout {
             if(key==KeyEvent.KEYCODE_DPAD_CENTER || key==KeyEvent.KEYCODE_ENTER) {
                 if(event.action==KeyEvent.ACTION_UP) {
                     editing=!editing
-                    guide.text=if(editing)"Režim úprav · šipky mění rámeček · OK ukončí úpravy" else "Vyber další ovládací prvek šipkami"
+                    guide.text=if(editing)tr("Režim úprav · šipky mění rámeček · OK ukončí úpravy") else tr("Vyber další ovládací prvek šipkami")
                 }
                 true
             } else if(editing && key==KeyEvent.KEYCODE_BACK) {
-                if(event.action==KeyEvent.ACTION_UP) { editing=false; guide.text="Úpravy ukončeny · šipkami vyber další ovládací prvek" }
+                if(event.action==KeyEvent.ACTION_UP) { editing=false; guide.text=tr("Úpravy ukončeny · šipkami vyber další ovládací prvek") }
                 true
             } else if(editing && key in arrayOf(KeyEvent.KEYCODE_DPAD_LEFT,KeyEvent.KEYCODE_DPAD_RIGHT,KeyEvent.KEYCODE_DPAD_UP,KeyEvent.KEYCODE_DPAD_DOWN)) {
                 if(event.action==KeyEvent.ACTION_DOWN) {
                     val step=if(event.repeatCount>5).05f else .01f
                     change(when(key){KeyEvent.KEYCODE_DPAD_LEFT->-step;KeyEvent.KEYCODE_DPAD_RIGHT->step;else->0f},
                         when(key){KeyEvent.KEYCODE_DPAD_UP->-step;KeyEvent.KEYCODE_DPAD_DOWN->step;else->0f})
-                    guide.text="Režim úprav · OK ukončí úpravy"
+                    guide.text=tr("Režim úprav · OK ukončí úpravy")
                 }
                 true
             } else false
@@ -307,20 +308,20 @@ object GameLingoDirectTVLayout {
         lockButton=button("Zamknout oblast"){locks[selected]=!locks[selected];refresh()};side.addView(lockButton)
         option=button("Režim"){when(selected){0->manual=!manual;1->custom=!custom;else->enabled=!enabled};refresh()};side.addView(option)
         presetButton=button("Výchozí oblast") {
-            GameLingoTVUi.select(a,"Výchozí oblast",GameLingoOCRConfig.regionLabels,GameLingoOCRConfig.regionKeys.indexOf(autoRegion)) { i ->
+            GameLingoTVUi.select(a,tr("Výchozí oblast"),GameLingoOCRConfig.regionLabels.map(::tr).toTypedArray(),GameLingoOCRConfig.regionKeys.indexOf(autoRegion)) { i ->
                 autoRegion=GameLingoOCRConfig.regionKeys[i];refresh()
             }
         };side.addView(presetButton)
         contentType=button("Typ"){textMode=!textMode;refresh()};side.addView(contentType)
         side.addView(button("Obnovit oblast"){
             if(!locks[selected]) {defaults[selected].copyInto(boxes[selected]);refresh()}
-            else Toast.makeText(a,"Nejdřív odemkni oblast.",Toast.LENGTH_SHORT).show()
+            else Toast.makeText(a,tr("Nejdřív odemkni oblast."),Toast.LENGTH_SHORT).show()
         })
         val footer=row()
         addWeighted(footer,button("Náhled na TV"){showOnTV(a,boxes,selected,locks.copyOf())})
         fun save():Boolean {
             if(busy() || !validRect(boxes[0]) || !validRect(boxes[2]) || !validRect(boxes[3])) {
-                Toast.makeText(a,"Překlad běží nebo oblast není platná.",Toast.LENGTH_LONG).show();return false
+                Toast.makeText(a,tr("Překlad běží nebo oblast není platná."),Toast.LENGTH_LONG).show();return false
             }
             GameLingoOCRConfig.setRegion(a,autoRegion)
             OblastTitulku.zamceno=locks[0]; OblastTitulku.rucne=manual; OblastTitulku.oblast=boxes[0].copyOf(); OblastTitulku.uloz(a)

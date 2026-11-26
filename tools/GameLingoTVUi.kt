@@ -191,7 +191,7 @@ object GameLingoTVUi {
                 adjustViewBounds = true
                 contentDescription = if (symbol == "PS") "PlayStation" else "Xbox"
             }, LinearLayout.LayoutParams(dp(a, 34), dp(a, 34)))
-        } else if(heading in setOf("Jazyk aplikace","Jazyk hry","Jazyk překladu")) {
+        } else if(heading in setOf("Jazyk aplikace","Jazyk hry","Jazyk překladu").map { GameLingoLanguages.ui(a, it) }) {
             // Preserve the previously approved language screen.
             box.addView(title(a, symbol, 25f).apply { setTextColor(cyan) })
         } else {
