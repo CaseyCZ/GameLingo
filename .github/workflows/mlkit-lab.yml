@@ -1,4 +1,4 @@
-name: Android native OCR filter study
+name: Android native OCR gameplay video
 on:
   push:
     branches: [feature/ocr-lab]
@@ -23,7 +23,11 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -r ocr-lab/requirements.txt
-      - run: python mlkit-lab/filter_study_fixtures.py
+      - name: Install video decoder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: python mlkit-lab/video_fixtures.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

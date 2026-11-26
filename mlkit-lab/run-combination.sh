@@ -17,6 +17,6 @@ timeout 1200 adb shell am instrument -w -r -e class cz.caseycz.mlkitlab.Combinat
 status=${PIPESTATUS[0]}
 set -e
 cleanup
-python score_filter_study.py results/combination.jsonl results/filter-study-summary.json mlkit-android
+python score_video.py results/combination.jsonl results/video-summary.json mlkit-android
 test "$status" -eq 0
 grep -F 'OK (1 test)' results/combination-instrumentation.txt

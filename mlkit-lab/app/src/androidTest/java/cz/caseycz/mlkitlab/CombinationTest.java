@@ -32,7 +32,7 @@ public class CombinationTest {
             while((n=in.read(buf))!=-1)bytes.write(buf,0,n);
             samples=new JSONArray(bytes.toString("UTF-8"));
         }
-        assertEquals(24,samples.length());
+        assertEquals(30,samples.length());
         var engine=TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
         File result=new File(inst.getTargetContext().getFilesDir(),"combination.jsonl");
         try(PrintWriter out=new PrintWriter(new OutputStreamWriter(new FileOutputStream(result),StandardCharsets.UTF_8))){

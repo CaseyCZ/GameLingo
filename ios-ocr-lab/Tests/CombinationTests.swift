@@ -18,7 +18,7 @@ final class CombinationTests: XCTestCase {
         let bundle=Bundle(for:Self.self)
         let url=try XCTUnwrap(bundle.url(forResource:"combination",withExtension:"json",subdirectory:"assets"))
         let samples=try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:url)) as? [[String:Any]])
-        XCTAssertEqual(samples.count,24)
+        XCTAssertEqual(samples.count,30)
         let ml=TextRecognizer.textRecognizer(options:TextRecognizerOptions())
         for (index,sample) in samples.enumerated() {
             let id=try XCTUnwrap(sample["id"] as? String)
