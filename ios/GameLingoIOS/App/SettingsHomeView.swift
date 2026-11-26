@@ -430,7 +430,7 @@ private struct GameLingoTranslationSettingsView: View {
     }
 }
 
-private struct GameLingoAppearanceSettingsView: View {
+struct GameLingoAppearanceSettingsView: View {
     @ObservedObject var model: CaptionAppModel
 
     private var tvPreviewAllowed: Bool {
