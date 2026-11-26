@@ -28,6 +28,8 @@ struct GameLingoHome: View {
     @State private var regionsSheet = false
     @State private var profilesSheet = false
     @State private var settingsSheet = false
+    @State private var modeSheet = false
+    @State private var appearanceSheet = false
     @State private var licenseSheet = false
     @State private var showPSLoginPIN = false
     @State private var psLoginPIN = ""
@@ -135,6 +137,20 @@ struct GameLingoHome: View {
         .sheet(isPresented: $profilesSheet) {
             NavigationStack {
                 GameLingoProfilesScreen(model: model)
+            }
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $modeSheet) {
+            NavigationStack {
+                GLScreen(title: "Režim překladu") {
+                    GLTranslationModePicker(model: model)
+                }
+            }
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $appearanceSheet) {
+            NavigationStack {
+                GameLingoAppearanceSettingsView(model: model)
             }
             .preferredColorScheme(.dark)
         }
@@ -331,8 +347,8 @@ struct GameLingoHome: View {
                                 GridItem(.flexible())], spacing: 9) {
                 tile("Oblasti", icon: "rectangle.dashed") { regionsSheet = true }
                 tile("Profily her", icon: "gamecontroller") { profilesSheet = true }
-                tile("Nastavení překladu", icon: "slider.horizontal.3") { tab = .settings }
-                tile("Zařízení", icon: "display.2") { tab = .devices }
+                tile("Režim překladu", icon: "slider.horizontal.3") { modeSheet = true }
+                tile("Vzhled titulků", icon: "paintpalette") { appearanceSheet = true }
             }
             readiness
             if devices.subtitleOutput == .phone && model.automaticGameDialogue {
