@@ -446,24 +446,30 @@ object GameLingoVisualKit {
             textSize = sp(activity, 23f)
             gravity = Gravity.CENTER
             setTextColor(if (ready) Color.parseColor("#3BE781") else muted)
-        }, LinearLayout.LayoutParams(dp(activity, 39), dp(activity, 39)))
+        }, LinearLayout.LayoutParams(dp(activity, 42), dp(activity, 42)))
         row.addView(LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
             addView(TextView(activity).apply {
                 text = title
                 gravity = Gravity.CENTER
                 textSize = sp(activity, 15.5f)
                 setTextColor(if (ready) Color.parseColor("#3BE781") else Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
-            })
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT))
             addView(TextView(activity).apply {
                 text = message
                 gravity = Gravity.CENTER
                 textSize = sp(activity, 12f)
                 setTextColor(muted)
                 setPadding(0, dp(activity, 3), 0, 0)
-            })
+            }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        // Balance the left status glyph to keep labels centered in the full card.
+        row.addView(android.view.View(activity),
+            LinearLayout.LayoutParams(dp(activity, 42), dp(activity, 42)))
         return row
     }
 
