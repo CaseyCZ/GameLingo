@@ -46,11 +46,13 @@ struct GLAutomaticZonesView: View {
                             GLAutomaticZoneEditor(zone: zone) { edited in
                                 edit(zone.id) { $0 = edited }
                             }
-                        } label: { Image(systemName: "slider.horizontal.3") }
+                        } label: { Image(systemName: "slider.horizontal.3").frame(width: 44, height: 44) }
+                        .accessibilityLabel("Upravit zónu")
                         .buttonStyle(.borderless)
                         Button(role: .destructive) {
                             model.updateAutomaticZones(model.automaticZones.filter { $0.id != zone.id })
-                        } label: { Image(systemName: "trash") }
+                        } label: { Image(systemName: "trash").foregroundStyle(.red).frame(width: 44, height: 44) }
+                        .accessibilityLabel("Smazat zónu")
                         .buttonStyle(.borderless)
                     }.padding(12)
                     }
@@ -107,8 +109,18 @@ private struct GLAutomaticZoneEditor: View {
                     Rectangle().strokeBorder(Color.yellow, lineWidth: 3)
                         .frame(width: proxy.size.width * zone.rect.width, height: proxy.size.height * zone.rect.height)
                         .offset(x: proxy.size.width * zone.rect.minX, y: proxy.size.height * zone.rect.minY)
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .gesture(DragGesture(minimumDistance: 0).onChanged { value in
+                            let x = value.location.x / max(1, proxy.size.width)
+                            let y = value.location.y / max(1, proxy.size.height)
+                            zone.rect.origin.x = max(0, min(1 - zone.rect.width, x - zone.rect.width / 2))
+                            zone.rect.origin.y = max(0, min(1 - zone.rect.height, y - zone.rect.height / 2))
+                        })
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 13))
             }.aspectRatio(16.0/9.0, contentMode: .fit)
+            Text("Přetáhni vybraný rámeček.").font(.caption).foregroundStyle(GLNeon.mist)
             }
             .padding(15)
             }
