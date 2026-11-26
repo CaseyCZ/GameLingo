@@ -258,9 +258,10 @@ object GameLingoSettings {
             onLanguage()
         }
 
-        menu("slider.horizontal.3", "Režim překladu", GameLingoAutomaticConfig.label(activity)) {
-            GameLingoAutomaticConfig.mode(activity, onChanged = onRefresh)
-        }
+        // Match the inline iOS Standardní / Automatický segmented control.
+        page.addView(GameLingoAutomaticConfig.modePicker(activity, onChanged = onRefresh),
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 * d })
         section(GameLingoUIContract.settingsSections[1])
         val advanced = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
