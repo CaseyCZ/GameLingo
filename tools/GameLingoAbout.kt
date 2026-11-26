@@ -37,6 +37,8 @@ object GameLingoAbout {
             setPadding(0, pad(6), 0, pad(14))
         }
         if (showClose) page.addView(close)
+        if (!tv) page.addView(GameLingoVisualKit.neonTitle(activity,
+            "O aplikaci", "GameLingo – hraj a rozuměj svým hrám", "info.circle"))
         if (tv) page.addView(GameLingoVisualKit.wordmark(activity, compact = true),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(6) })
