@@ -1,5 +1,8 @@
 """Focused source-level localization checks; native/UI QA remains required."""
 from collections import Counter
+import json
+import subprocess
+import sys
 from pathlib import Path
 import re
 import unittest
@@ -16,9 +19,42 @@ def catalog_keys(path):
     return re.findall(r"^\s*" + STRING + r"\s*=", text(path), re.M)
 
 def android_keys():
-    return re.findall(r"^\s*" + STRING + r"\s+to Pair\(", text(TOOLS / "GameLingoLanguages.kt"), re.M)
+    # Both Android variants and iOS now build their UI tables from one source.
+    return list(json.loads(text(ROOT / "shared" / "locales" / "cs.json")).keys())
 
 class ReleaseLocalizationTests(unittest.TestCase):
+    def test_shared_locale_catalog_and_generator(self):
+        shared = ROOT / "shared" / "locales"
+        manifest = json.loads(text(shared / "manifest.json"))
+        self.assertEqual(manifest["source"], "cs")
+        self.assertEqual(manifest["fallback"], "en")
+        codes = [entry["code"] for entry in manifest["languages"]]
+        self.assertEqual(len(codes), len(set(codes)))
+        source_keys = set(json.loads(text(shared / "cs.json")))
+        self.assertGreaterEqual(len(source_keys), 1080)
+        for code in codes:
+            with self.subTest(locale=code):
+                entries = json.loads(text(shared / f"{code}.json"))
+                self.assertEqual(set(entries), source_keys)
+                self.assertTrue(all(isinstance(value, str) and value.strip()
+                                    for value in entries.values()))
+        result = subprocess.run([sys.executable, str(TOOLS / "generate_locales.py"), "--check"],
+                                cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_new_ui_languages_are_manifest_driven_on_all_platforms(self):
+        swift = text(IOS / "GameLingoAppLanguage.swift")
+        android = text(TOOLS / "GameLingoLanguages.kt")
+        self.assertIn("struct GLAppLanguage: RawRepresentable", swift)
+        self.assertIn("supportedCodes.compactMap", swift)
+        self.assertIn("BEGIN GENERATED UI LANGUAGES", swift)
+        self.assertIn("BEGIN GENERATED APP LANGUAGES", android)
+        self.assertIn("BEGIN GENERATED UI LABELS", android)
+        self.assertIn('uiLabels["en"]?.get(cs)', android)
+        project = text(IOS.parent / "project.yml")
+        self.assertIn("CFBundleLocalizations: [cs, en, sk]", project)
+
+
     def assert_unique(self, keys):
         self.assertTrue(keys)
         self.assertEqual([k for k, n in Counter(keys).items() if n > 1], [])
