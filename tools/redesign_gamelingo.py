@@ -33,7 +33,7 @@ def redesign_mobile(s: str) -> str:
                 if (nejakaKonzole)
                     startActivity(Intent(this, TelefonActivity::class.java))
                 else android.app.AlertDialog.Builder(this)
-                    .setMessage("Nejprve vyber a připoj konzoli.")
+                    .setMessage(GameLingoLanguages.ui(this, "Nejprve vyber a připoj konzoli."))
                     .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
                     .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
                     .setNegativeButton(android.R.string.cancel, null).show()
@@ -43,7 +43,7 @@ def redesign_mobile(s: str) -> str:
             obsah.addView(GameLingoVisualKit.brandHeader(this) { openSettings() },
                 odsazeni(bottom = 14))
             obsah.addView(GameLingoVisualKit.hero(this), odsazeni(bottom = 18))
-            obsah.addView(GameLingoVisualKit.section(this, "Moje zařízení"))
+            obsah.addView(GameLingoVisualKit.section(this, GameLingoLanguages.ui(this, "Moje zařízení")))
 
             val psSelected = GameLingoPlayStationConsoles.list(this)
                 .firstOrNull { it.selected }
@@ -61,13 +61,13 @@ def redesign_mobile(s: str) -> str:
             val primaryName = when (primaryFamily) {
                 "Xbox" -> "Xbox"
                 "PlayStation" -> psSelected?.name ?: "PlayStation"
-                else -> "Vybrat konzoli"
+                else -> GameLingoLanguages.ui(this, "Vybrat konzoli")
             }
             obsah.addView(GameLingoVisualKit.deviceCard(
                 this, primaryFamily, primaryName,
-                if (liveImage) "Snímání aktivní"
-                else if (nejakaKonzole) "Nastaveno · spojení ověřím při spuštění"
-                else "Přidat Xbox nebo PlayStation",
+                if (liveImage) GameLingoLanguages.ui(this, "Snímání aktivní")
+                else if (nejakaKonzole) GameLingoLanguages.ui(this, "Nastaveno · spojení ověřím při spuštění")
+                else GameLingoLanguages.ui(this, "Přidat Xbox nebo PlayStation"),
                 liveImage
             ) { openDevices() }, odsazeni(bottom = 10))
 
@@ -75,21 +75,21 @@ def redesign_mobile(s: str) -> str:
             val savedTv = tvStore.posledniId?.let { tvStore.najdi(it) }
             obsah.addView(GameLingoVisualKit.deviceCard(
                 this, "TV",
-                if (tvStore.pouzeTelefon) "Telefon"
+                if (tvStore.pouzeTelefon) GameLingoLanguages.ui(this, "Telefon")
                 else savedTv?.jmeno ?: "Google TV / Android TV",
-                if (tvStore.pouzeTelefon) "Titulky na telefonu"
-                else if (savedTv == null) "Vyber nebo spáruj televizi"
-                else "Televize uložena · spojení se ověří",
+                if (tvStore.pouzeTelefon) GameLingoLanguages.ui(this, "Titulky na telefonu")
+                else if (savedTv == null) GameLingoLanguages.ui(this, "Vyber nebo spáruj televizi")
+                else GameLingoLanguages.ui(this, "Televize uložena · spojení se ověří"),
                 tvStore.pouzeTelefon
             ) { openDevices() }, odsazeni(bottom = 18))
 
             obsah.addView(GameLingoVisualKit.cta(
                 this,
-                if (RemotePlayService.aktivni) "Zastavit překlad" else "Spustit překlad"
+                if (RemotePlayService.aktivni) GameLingoLanguages.ui(this, "Zastavit překlad") else GameLingoLanguages.ui(this, "Spustit překlad")
             ) {
                 if (nejakaKonzole) prepniPreklad()
                 else android.app.AlertDialog.Builder(this)
-                    .setTitle("Kterou konzoli používáš?")
+                    .setTitle(GameLingoLanguages.ui(this, "Kterou konzoli používáš?"))
                     .setItems(arrayOf("PlayStation 5 / 4", "Xbox Series / One")) { _, vyber ->
                         if (vyber == 0) ukazPripojeni() else ukazPripojeniXbox()
                     }.show()
@@ -97,40 +97,40 @@ def redesign_mobile(s: str) -> str:
 
             val prvni = vodorovne()
             prvni.addView(GameLingoVisualKit.navigationTile(this,
-                "▣", "Oblasti na obrazovce") { openAreas() },
+                "▣", GameLingoLanguages.ui(this, "Oblasti na obrazovce")) { openAreas() },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(10) })
             prvni.addView(GameLingoVisualKit.navigationTile(this,
-                "♧", "Profily her") {
+                "♧", GameLingoLanguages.ui(this, "Profily her")) {
                 GameLingoProfiles.show(this, nast) { ukazHlavni() }
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             obsah.addView(prvni, odsazeni(bottom = 10))
 
             val druhy = vodorovne()
             druhy.addView(GameLingoVisualKit.navigationTile(this,
-                "☷", "Nastavení překladu") { openSettings() },
+                "☷", GameLingoLanguages.ui(this, "Nastavení překladu")) { openSettings() },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(10) })
             druhy.addView(GameLingoVisualKit.navigationTile(this,
-                "▭", "Zařízení") { openDevices() },
+                "▭", GameLingoLanguages.ui(this, "Zařízení")) { openDevices() },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             obsah.addView(druhy, odsazeni(bottom = 15))
 
             // Show genuine connection state, not fabricated green indicators.
             obsah.addView(GameLingoVisualKit.status(this,
-                if (liveImage && tvStore.pouzeTelefon) "Snímání aktivní"
+                if (liveImage && tvStore.pouzeTelefon) GameLingoLanguages.ui(this, "Snímání aktivní")
                 else if (RemotePlayService.aktivni && !tvStore.pouzeTelefon)
-                    "Remote Play běží · TV spojení neověřeno"
-                else if (RemotePlayService.aktivni) "Připojuji / načítám snímky"
-                else if (!nejakaKonzole) "Nejprve připoj konzoli"
+                    GameLingoLanguages.ui(this, "Remote Play běží · TV spojení neověřeno")
+                else if (RemotePlayService.aktivni) GameLingoLanguages.ui(this, "Připojuji / načítám snímky")
+                else if (!nejakaKonzole) GameLingoLanguages.ui(this, "Nejprve připoj konzoli")
                 else if (!tvStore.pouzeTelefon && savedTv == null)
-                    "Vyber nebo spáruj televizi"
-                else "Konzole je nastavená · připojení neověřeno",
+                    GameLingoLanguages.ui(this, "Vyber nebo spáruj televizi")
+                else GameLingoLanguages.ui(this, "Konzole je nastavená · připojení neověřeno"),
                 if (liveImage && tvStore.pouzeTelefon)
-                    "Video snímky se přijímají, titulky zpracovává OCR."
+                    GameLingoLanguages.ui(this, "Video snímky se přijímají, titulky zpracovává OCR.")
                 else if (!tvStore.pouzeTelefon)
-                    "Uložený televizor nepotvrzuje živé přijetí titulků."
-                else "Uložené zařízení samo o sobě nepotvrzuje živé spojení.",
+                    GameLingoLanguages.ui(this, "Uložený televizor nepotvrzuje živé přijetí titulků.")
+                else GameLingoLanguages.ui(this, "Uložené zařízení samo o sobě nepotvrzuje živé spojení."),
                 // Green status only with an actual live video source and
                 // local phone output. The TV has no verified ACK in this lane.
                 liveImage && tvStore.pouzeTelefon
@@ -206,7 +206,7 @@ def redesign_mobile(s: str) -> str:
         }, LinearLayout.LayoutParams(dp(72), dp(72)))
         addView(svisle().apply {
             addView(text("GameLingo", 30f, Color.WHITE, tucne = true))
-            addView(text("Hraj. Rozuměj.", 15f,
+            addView(text(GameLingoLanguages.ui(this@MainActivity, "Hraj. Rozuměj."), 15f,
                 Color.parseColor("#94A3B8")))
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(13) })

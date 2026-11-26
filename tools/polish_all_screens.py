@@ -48,17 +48,17 @@ def mobile(s):
         ('sloupec.addView(k0, odsazeni(bottom = 12))',
          '// Setup prerequisites are available under the ? Help button.'),
         ('k1.addView(text(t(if (telefon) "krok1Telefon" else "krok1"), 18f, Color.WHITE))',
-         'k1.addView(text("Účet PlayStation", 19f, Color.WHITE, tucne = true))'),
+         'k1.addView(text(GameLingoLanguages.ui(this, "Účet PlayStation"), 19f, Color.WHITE, tucne = true))'),
         ('k2.addView(text(t("krok2"), 18f, Color.WHITE))',
-         'k2.addView(text("Najít PlayStation", 19f, Color.WHITE, tucne = true))'),
+         'k2.addView(text(GameLingoLanguages.ui(this, "Najít PlayStation"), 19f, Color.WHITE, tucne = true))'),
         ('k3.addView(text(t(if (telefon) "krok3Telefon" else "krok3"), 18f, Color.WHITE))',
-         'k3.addView(text("Párovací PIN", 19f, Color.WHITE, tucne = true))'),
+         'k3.addView(text(GameLingoLanguages.ui(this, "Párovací PIN"), 19f, Color.WHITE, tucne = true))'),
         ('k1.addView(text(t("xboxKrok1"), 18f, Color.WHITE))',
-         'k1.addView(text("Účet Microsoft", 19f, Color.WHITE, tucne = true))'),
+         'k1.addView(text(GameLingoLanguages.ui(this, "Účet Microsoft"), 19f, Color.WHITE, tucne = true))'),
         ('k2.addView(text(t("xboxKrok2"), 18f, Color.WHITE))',
-         'k2.addView(text("Najít Xbox", 19f, Color.WHITE, tucne = true))'),
+         'k2.addView(text(GameLingoLanguages.ui(this, "Najít Xbox"), 19f, Color.WHITE, tucne = true))'),
         ('k3.addView(text(t("xboxKrok3"), 18f, Color.WHITE))',
-         'k3.addView(text("Připojení Xbox", 19f, Color.WHITE, tucne = true))')
+         'k3.addView(text(GameLingoLanguages.ui(this, "Připojení Xbox"), 19f, Color.WHITE, tucne = true))')
     ):
         if old == 'sloupec.addView(k0, odsazeni(bottom = 12))':
             n=s.count(old)
