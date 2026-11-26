@@ -82,6 +82,20 @@ jobs:
           Sestavení: https://github.com/$REPO/actions/runs/$RUN
           Licence a upstream: https://github.com/$REPO/blob/$BUILD_SOURCE/ATTRIBUTION.md
           EOF
+          # A new public release must advance the semantic version. Retrying the same tag is safe.
+          gh release list -R "$REPO" --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft == false) | .tagName' > existing-versions.txt
+          python3 - "$GAMELINGO_VERSION" "$TAG" <<'PY'
+          import re, sys
+          from pathlib import Path
+          version, tag = sys.argv[1:]
+          current = tuple(map(int, version.split(".")))
+          for old in Path("existing-versions.txt").read_text().splitlines():
+              if old == tag:
+                  continue
+              match = re.match(r"^v(\d+)\.(\d+)\.(\d+)(?:-|$)", old)
+              if match and tuple(map(int, match.groups())) >= current:
+                  raise SystemExit("Publication blocked: increase shared/version.json before building a new release.")
+          PY
           # Resume a draft after a failed upload; never expose partial assets.
           if ! gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
             gh release create "$TAG" -R "$REPO" --target "$SOURCE" --title "GameLingo ${GAMELINGO_VERSION} TEST · ${BUILD_SOURCE:0:8}" --draft --prerelease --notes-file release-notes.md
