@@ -14,6 +14,14 @@ Pracovní větev: `feature/ocr-lab`. Master a stabilní 0.5.1 zůstávají beze 
 - [TV kontrola 45831376394](https://github.com/CaseyCZ/GameLingo/actions/runs/45831376394) na `2727094b`: úspěšná.
 - Nové změny diagnostiky/notifikací vyžadují nové CI; technické metriky a zděděná UI dále podléhají auditu.
 
+## Návazný checkpoint (2026-11-26)
+- [Úplná nativní sestava 45836614280](https://github.com/CaseyCZ/GameLingo/actions/runs/45836614280) na `8b7acf63`: všech pět jobs úspěšných, 108 integračních testů, IPA/APK/TV APK a validace balíčků. Jde o starší revizi, ne o schváleného kandidáta.
+- [Rychlá regrese 45837753310](https://github.com/CaseyCZ/GameLingo/actions/runs/45837753310) na `46197126`: všechny kroky úspěšné, včetně kontroly slovníků, syntaxe Python/Swift a nativních unit testů. [TV navigace 45837268966](https://github.com/CaseyCZ/GameLingo/actions/runs/45837268966) na `4aec2785`: úspěšná.
+- `b6ea5e1487baad7280185d2920d67697f9f82a43`: lokalizován generovaný TV dashboard, příjem telefonu, PIN/QR a výběr zdroje/konzolí, zachovány interní stavy, protokol a navigační akce. Doplněna kontrola slovníku a aktualizovány testy skutečného generovaného TV zdroje. 713 klíčů Android/TV; iOS 474 v každém z EN/SK slovníků. Počty klíčů nejsou důkazem úplné lokalizace.
+- [Google TV navigation checks 45838722440](https://github.com/CaseyCZ/GameLingo/actions/runs/45838722440) na `b6ea5e14`: in_progress.
+- [GameLingo • quick regression checks 45838722416](https://github.com/CaseyCZ/GameLingo/actions/runs/45838722416) na `b6ea5e14`: success.
+- Další technický krok: ověřit CI této revize, audit zbývajících dynamických textů a zděděných obrazovek iOS/Android/TV, zkontrolovat pravdivou dokumentaci a release metadata, teprve poté úplný build zmrazeného kandidáta. G1–G7 se zatím neuzavírají; fyzické výsledky neexistují.
+
 ## Povinné brány vydání
 | Brána | Akceptační důkaz | Stav |
 |---|---|---|
