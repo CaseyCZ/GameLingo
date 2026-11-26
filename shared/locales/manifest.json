@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "source": "cs",
+  "fallback": "en",
+  "languages": [
+    {
+      "code": "cs",
+      "name": "Čeština"
+    },
+    {
+      "code": "en",
+      "name": "English"
+    },
+    {
+      "code": "sk",
+      "name": "Slovenčina"
+    }
+  ]
+}
