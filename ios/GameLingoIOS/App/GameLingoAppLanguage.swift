@@ -62,6 +62,8 @@ enum GLInterfaceText {
     static func localized(_ key: String) -> String {
         let current = UserDefaults.standard.string(forKey: "gamelingo.appLanguage")
             ?? GLAppLanguage.systemDefault.rawValue
+        // Czech source strings are the keys; no cs.lproj file is needed.
+        if current == "cs" { return key }
         for language in [current, "en"] {
             guard let path = Bundle.main.path(forResource: language, ofType: "lproj"),
                   let bundle = Bundle(path: path) else { continue }
