@@ -19,12 +19,12 @@ internal object GameLingoQRScanner {
         try {
             IntentIntegrator(activity).setRequestCode(REQUEST)
                 .setDesiredBarcodeFormats(listOf(IntentIntegrator.QR_CODE))
-                .setPrompt("Načti QR kód z GameLingo TV")
+                .setPrompt(GameLingoLanguages.ui(activity, "Načti QR kód z GameLingo TV"))
                 .setBeepEnabled(false).setOrientationLocked(false)
                 .setBarcodeImageEnabled(false).initiateScan()
         } catch (_: Exception) {
             clear(activity)
-            AlertDialog.Builder(activity).setMessage("Fotoaparát není dostupný. Použij ruční PIN.")
+            AlertDialog.Builder(activity).setMessage(GameLingoLanguages.ui(activity, "Fotoaparát není dostupný. Použij ruční PIN."))
                 .setPositiveButton("OK", null).show()
         }
     }
@@ -37,7 +37,7 @@ internal object GameLingoQRScanner {
         val parsed = data?.takeIf { it.getStringExtra("SCAN_RESULT_FORMAT") == "QR_CODE" }
             ?.getStringExtra("SCAN_RESULT")?.let { GameLingoPairingQR.parse(it) }
         if (parsed == null) {
-            AlertDialog.Builder(activity).setMessage("Neplatný GameLingo QR kód. Použij nový kód z TV.")
+            AlertDialog.Builder(activity).setMessage(GameLingoLanguages.ui(activity, "Neplatný GameLingo QR kód. Použij nový kód z TV."))
                 .setPositiveButton("OK", null).show()
         } else deliver?.invoke(parsed)
         return true

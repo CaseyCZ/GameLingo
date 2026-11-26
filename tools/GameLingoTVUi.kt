@@ -156,7 +156,7 @@ object GameLingoTVUi {
                     setSpan(android.text.style.ForegroundColorSpan(purple),4,9,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
             })
-            addView(title(a, "Titulky a překlady her v reálném čase", 16f, muted = true))
+            addView(title(a, GameLingoLanguages.ui(a, "Titulky a překlady her v reálném čase"), 16f, muted = true))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
     }
 
@@ -267,13 +267,13 @@ object GameLingoTVUi {
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             bottomMargin = dp(a, 27)
         })
-        root.addView(title(a, "Vítej v GameLingo TV", 30f),
+        root.addView(title(a, GameLingoLanguages.ui(a, "Vítej v GameLingo TV"), 30f),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = dp(a, 10)
             })
         root.addView(title(a,
-            "Vyber jazyky. Potom můžeš překládat z telefonu nebo přímo na televizi.",
+            GameLingoLanguages.ui(a, "Vyber jazyky. Potom můžeš překládat z telefonu nebo přímo na televizi."),
             17f, muted = true), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -282,7 +282,7 @@ object GameLingoTVUi {
         fun select(name: String, choices: List<GameLingoLanguages.Language>,
                    current: () -> String, kind: GameLingoLanguages.Kind) {
             val button = action(a,
-                name + "  ·  " + GameLingoLanguages.name(choices, current())) {
+                GameLingoLanguages.ui(a, name) + "  ·  " + GameLingoLanguages.name(choices, current())) {
                 GameLingoLanguages.choose(a, kind) {
                     dialog.dismiss()
                     showWelcome(a, onFinish)
@@ -301,7 +301,7 @@ object GameLingoTVUi {
         select("Jazyk překladu", GameLingoLanguages.targetLanguages,
             { GameLingoLanguages.target(a) }, GameLingoLanguages.Kind.TARGET)
 
-        val begin = action(a, "Pokračovat na TV", primary = true) {
+        val begin = action(a, GameLingoLanguages.ui(a, "Pokračovat na TV"), primary = true) {
             dialog.dismiss()
             onFinish(GameLingoLanguages.app(a))
         }
@@ -332,10 +332,10 @@ object GameLingoTVUi {
         val header = LinearLayout(a).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            addView(title(a, "Nastavení GameLingo TV", 25f), LinearLayout.LayoutParams(
+            addView(title(a, GameLingoLanguages.ui(a, "Nastavení GameLingo TV"), 25f), LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
-        val close = action(a, "Zpět") { dialog.dismiss() }
+        val close = action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
         close.id = View.generateViewId()
         header.addView(close)
         root.addView(header)
@@ -409,17 +409,17 @@ object GameLingoTVUi {
                 }
             }
 
-        section("JAZYKY")
+        section(GameLingoLanguages.ui(a, "JAZYKY"))
         addGrid(listOf(
-            languageTile("Jazyk aplikace", GameLingoLanguages.appLanguages,
+            languageTile(GameLingoLanguages.ui(a, "Jazyk aplikace"), GameLingoLanguages.appLanguages,
                 GameLingoLanguages.Kind.APP) { GameLingoLanguages.app(a) },
-            languageTile("Jazyk hry", GameLingoLanguages.gameLanguages,
+            languageTile(GameLingoLanguages.ui(a, "Jazyk hry"), GameLingoLanguages.gameLanguages,
                 GameLingoLanguages.Kind.GAME) { GameLingoLanguages.game(a) },
-            languageTile("Jazyk překladu", GameLingoLanguages.targetLanguages,
+            languageTile(GameLingoLanguages.ui(a, "Jazyk překladu"), GameLingoLanguages.targetLanguages,
                 GameLingoLanguages.Kind.TARGET) { GameLingoLanguages.target(a) }
         ))
 
-        section("PŘEKLAD HRY")
+        section(GameLingoLanguages.ui(a, "PŘEKLAD HRY"))
         val userSettings = Nastaveni(a)
         fun toggle(title: String, detail: String,
                    get: () -> Boolean, set: (Boolean) -> Unit): LinearLayout {
@@ -434,48 +434,48 @@ object GameLingoTVUi {
             return choice
         }
         addGrid(listOf(
-            toggle("Dialogy", "Překlad mluvených dialogů",
+            toggle(GameLingoLanguages.ui(a, "Dialogy"), GameLingoLanguages.ui(a, "Překlad mluvených dialogů"),
                 { userSettings.dialogy }, { userSettings.dialogy = it }),
-            toggle("Herní texty", "Nápověda a úkoly v herním obraze",
+            toggle(GameLingoLanguages.ui(a, "Herní texty"), GameLingoLanguages.ui(a, "Nápověda a úkoly v herním obraze"),
                 { userSettings.napovedy }, { userSettings.napovedy = it }),
-            toggle("Překrýt původní titulky", "Přeložený text přímo přes originál",
+            toggle(GameLingoLanguages.ui(a, "Překrýt původní titulky"), GameLingoLanguages.ui(a, "Přeložený text přímo přes originál"),
                 { userSettings.prekryvat }, { userSettings.prekryvat = it }),
-            toggle("Příběhový režim", "Postupné čtení delších dialogů",
+            toggle(GameLingoLanguages.ui(a, "Příběhový režim"), GameLingoLanguages.ui(a, "Postupné čtení delších dialogů"),
                 { userSettings.pribehovy }, { userSettings.pribehovy = it })
         ))
         if (RemotePlayService.aktivni) {
             page.addView(title(a,
-                "Změny nastavení překladu se projeví po novém spuštění.",
+                GameLingoLanguages.ui(a, "Změny nastavení překladu se projeví po novém spuštění."),
                 14f, muted = true))
         }
 
-        section("OCR A ROZPOZNÁVÁNÍ")
+        section(GameLingoLanguages.ui(a, "OCR A ROZPOZNÁVÁNÍ"))
         GameLingoOCRConfig.load(a)
-        addGrid(listOf(settingsTile("◎", "Režim OCR", GameLingoOCRConfig.title()) {
+        addGrid(listOf(settingsTile("◎", GameLingoLanguages.ui(a, "Režim OCR"), GameLingoOCRConfig.title()) {
             if (RemotePlayService.aktivni) {
-                android.app.AlertDialog.Builder(a).setMessage("Nejprve zastav překlad.")
+                android.app.AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejprve zastav překlad."))
                     .setPositiveButton("OK", null).show()
             } else {
                 val keys = arrayOf("classic", "automatic", "street")
-                val labels = arrayOf("Původní · stabilní", "Automatický · vyvážený", "Krátké dialogy · rychlý")
-                android.app.AlertDialog.Builder(a).setTitle("Režim OCR")
+                val labels = arrayOf(GameLingoLanguages.ui(a, "Původní · stabilní"), GameLingoLanguages.ui(a, "Automatický · vyvážený"), GameLingoLanguages.ui(a, "Krátké dialogy · rychlý"))
+                android.app.AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Režim OCR"))
                     .setSingleChoiceItems(labels, keys.indexOf(GameLingoOCRConfig.mode)) { picker, index ->
                         GameLingoOCRConfig.setMode(a, keys[index])
                         picker.dismiss()
                         dialog.dismiss()
                         onUpdate()
-                    }.setNegativeButton("Zrušit", null).show()
+                    }.setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).show()
             }
         }))
-        page.addView(title(a, "Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon.",
+        page.addView(title(a, GameLingoLanguages.ui(a, "Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon."),
             14f, muted = true))
-        page.addView(title(a, "Přímý překlad i překlad z telefonu používají internet nebo dříve uložené překlady.",
+        page.addView(title(a, GameLingoLanguages.ui(a, "Přímý překlad i překlad z telefonu používají internet nebo dříve uložené překlady."),
             14f, muted = true))
 
-        section("ZOBRAZENÍ")
-        val overlay = settingsTile("▣", "Titulky přes obraz hry",
+        section(GameLingoLanguages.ui(a, "ZOBRAZENÍ"))
+        val overlay = settingsTile("▣", GameLingoLanguages.ui(a, "Titulky přes obraz hry"),
             if (Settings.canDrawOverlays(a)) "Povoleno" else
-                "Vyžaduje povolení překryvu") {
+                GameLingoLanguages.ui(a, "Vyžaduje povolení překryvu")) {
             if (!Settings.canDrawOverlays(a)) {
                 a.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:" + a.packageName)))
@@ -483,24 +483,24 @@ object GameLingoTVUi {
         }
         addGrid(listOf(overlay))
         page.addView(title(a,
-            "Pro čtení her přímo v TV potřebuje aplikace povolení překryvu.",
+            GameLingoLanguages.ui(a, "Pro čtení her přímo v TV potřebuje aplikace povolení překryvu."),
             14f, muted = true))
 
-        section("ZABEZPEČENÍ")
-        addGrid(listOf(toggle("Legacy · staré aplikace",
-            "Povolí nepodepsané titulky (jen důvěryhodná síť)",
+        section(GameLingoLanguages.ui(a, "ZABEZPEČENÍ"))
+        addGrid(listOf(toggle(GameLingoLanguages.ui(a, "Legacy · staré aplikace"),
+            GameLingoLanguages.ui(a, "Povolí nepodepsané titulky (jen důvěryhodná síť)"),
             { GameLingoTVPairing.legacyEnabled(a) },
             { GameLingoTVPairing.setLegacyEnabled(a, it) })))
 
-        section("DALŠÍ")
-        addGrid(listOf(settingsTile("文", "Herní slovník", "Vlastní výrazy pro přímé OCR") {
+        section(GameLingoLanguages.ui(a, "DALŠÍ"))
+        addGrid(listOf(settingsTile("文", GameLingoLanguages.ui(a, "Herní slovník"), GameLingoLanguages.ui(a, "Vlastní výrazy pro přímé OCR")) {
             GameLingoGlossaryUi.show(a)
-        }, settingsTile("◷", "Historie překladů", "Překlady zpracované přímo na TV") {
+        }, settingsTile("◷", GameLingoLanguages.ui(a, "Historie překladů"), GameLingoLanguages.ui(a, "Překlady zpracované přímo na TV")) {
             GameLingoHistoryUi.show(a)
-        }, settingsTile("▣", "Překladová cache", "Ukládání a vymazání místních překladů") {
+        }, settingsTile("▣", GameLingoLanguages.ui(a, "Překladová cache"), GameLingoLanguages.ui(a, "Ukládání a vymazání místních překladů")) {
             GameLingoCachePrivacyUi.show(a)
-        }, settingsTile("ⓘ", "O aplikaci / Licence",
-            "Původní autoři, zdrojový kód a GNU AGPLv3") {
+        }, settingsTile("ⓘ", GameLingoLanguages.ui(a, "O aplikaci / Licence"),
+            GameLingoLanguages.ui(a, "Původní autoři, zdrojový kód a GNU AGPLv3")) {
             GameLingoAbout.show(a)
         }))
 

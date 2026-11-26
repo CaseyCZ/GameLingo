@@ -145,48 +145,48 @@ internal object GameLingoCachePrivacyUi {
     private fun busy() = RemotePlayService.aktivni || PrijemService.bezi
     fun show(a: android.app.Activity) {
         if (busy()) {
-            android.app.AlertDialog.Builder(a).setMessage("Nejdříve zastav překlad a příjem z telefonu.")
+            android.app.AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejdříve zastav překlad a příjem z telefonu."))
                 .setPositiveButton("OK", null).show()
             return
         }
         val enabled = GameLingoTranslationCache.enabled(a)
         if (GameLingoTVUi.isTV(a)) {
             val body=android.widget.LinearLayout(a).apply { orientation=android.widget.LinearLayout.VERTICAL }
-            body.addView(GameLingoTVUi.title(a,"Místní překladová paměť · "+if(enabled)"zapnuto" else "vypnuto",22f))
-            body.addView(GameLingoTVUi.title(a,"Ukládá originály a překlady na tomto zařízení. Historie a profily jsou oddělené.",18f,true))
+            body.addView(GameLingoTVUi.title(a,GameLingoLanguages.ui(a, "Místní překladová paměť")+" · "+if(enabled)GameLingoLanguages.ui(a, "zapnuto") else GameLingoLanguages.ui(a, "vypnuto"),22f))
+            body.addView(GameLingoTVUi.title(a,GameLingoLanguages.ui(a, "Ukládá originály a překlady na tomto zařízení. Historie a profily jsou oddělené."),18f,true))
             var page: android.app.Dialog?=null
-            body.addView(GameLingoTVUi.action(a,if(enabled)"Vypnout paměť" else "Zapnout paměť") {
+            body.addView(GameLingoTVUi.action(a,if(enabled)GameLingoLanguages.ui(a, "Vypnout paměť") else GameLingoLanguages.ui(a, "Zapnout paměť")) {
                 if(!busy()){page?.dismiss();change(a,!enabled)}
             })
-            body.addView(GameLingoTVUi.action(a,"Vymazat paměť") {
-                android.app.AlertDialog.Builder(a).setMessage("Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže.")
-                    .setNegativeButton("Zrušit",null).setPositiveButton("Vymazat"){_,_->if(!busy()){page?.dismiss();change(a,null)}}.show()
+            body.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Vymazat paměť")) {
+                android.app.AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže."))
+                    .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null).setPositiveButton(GameLingoLanguages.ui(a, "Vymazat")){_,_->if(!busy()){page?.dismiss();change(a,null)}}.show()
             })
-            page=GameLingoTVUi.page(a,"Překladová paměť",body,helpTopic="cache")
+            page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Překladová paměť"),body,helpTopic="cache")
             return
         }
         android.app.AlertDialog.Builder(a)
-            .setTitle("Překladová cache")
-            .setMessage("Ukládá originály i překlady na tomto zařízení. Je oddělená od historie. Vypnutí může zvýšit počet online požadavků a omezit překlad bez internetu. Stav: " + if (enabled) "zapnuto" else "vypnuto")
-            .setNeutralButton(if (enabled) "Vypnout" else "Zapnout") { _, _ ->
+            .setTitle(GameLingoLanguages.ui(a, "Překladová cache"))
+            .setMessage(GameLingoLanguages.ui(a, "Ukládá originály i překlady na tomto zařízení. Je oddělená od historie. Vypnutí může zvýšit počet online požadavků a omezit překlad bez internetu.") + " " + GameLingoLanguages.ui(a, "Stav") + ": " + if (enabled) GameLingoLanguages.ui(a, "zapnuto") else GameLingoLanguages.ui(a, "vypnuto"))
+            .setNeutralButton(if (enabled) GameLingoLanguages.ui(a, "Vypnout") else GameLingoLanguages.ui(a, "Zapnout")) { _, _ ->
                 if (!busy()) change(a, !enabled)
             }
-            .setPositiveButton("Vymazat") { _, _ ->
+            .setPositiveButton(GameLingoLanguages.ui(a, "Vymazat")) { _, _ ->
                 android.app.AlertDialog.Builder(a)
-                    .setMessage("Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže.")
-                    .setNegativeButton("Zrušit", null)
-                    .setPositiveButton("Vymazat") { _, _ -> if (!busy()) change(a, null) }.show()
+                    .setMessage(GameLingoLanguages.ui(a, "Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže."))
+                    .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null)
+                    .setPositiveButton(GameLingoLanguages.ui(a, "Vymazat")) { _, _ -> if (!busy()) change(a, null) }.show()
             }
-            .setNegativeButton("Zavřít", null).show()
+            .setNegativeButton(GameLingoLanguages.ui(a, "Zavřít"), null).show()
     }
     private fun change(a: android.app.Activity, value: Boolean?) {
         GameLingoTranslationCache.manage(a, value) { success ->
             a.runOnUiThread {
                 if (!a.isFinishing && !a.isDestroyed) android.app.AlertDialog.Builder(a)
-                    .setMessage(if (!success) "Operace se nezdařila. Zkus ji znovu." else when (value) {
-                        true -> "Cache zapnuta."
-                        false -> "Cache vypnuta; uložené překlady lze vymazat zvlášť."
-                        null -> "Místní překladová cache vymazána."
+                    .setMessage(if (!success) GameLingoLanguages.ui(a, "Operace se nezdařila. Zkus ji znovu.") else when (value) {
+                        true -> GameLingoLanguages.ui(a, "Cache zapnuta.")
+                        false -> GameLingoLanguages.ui(a, "Cache vypnuta; uložené překlady lze vymazat zvlášť.")
+                        null -> GameLingoLanguages.ui(a, "Místní překladová cache vymazána.")
                     }).setPositiveButton("OK", null).show()
             }
         }

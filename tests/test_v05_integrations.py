@@ -18,6 +18,18 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_localized_tv_welcome_qr_and_cache(self):
+        ui = code(TOOLS/"GameLingoTVUi.kt")
+        qr = code(TOOLS/"GameLingoQRDisplay.kt")
+        scanner = code(TOOLS/"GameLingoQRScanner.kt")
+        cache = code(TOOLS/"GameLingoTranslationCache.kt")
+        self.assertIn('GameLingoLanguages.ui(a, "Vítej v GameLingo TV")', ui)
+        self.assertIn('GameLingoLanguages.ui(activity, "Párování pomocí QR")', qr)
+        self.assertIn('GameLingoLanguages.ui(activity, "Načti QR kód z GameLingo TV")', scanner)
+        self.assertIn('GameLingoLanguages.ui(a, "Vypnout paměť")', cache)
+        self.assertIn('QRCodeWriter().encode(target', qr)
+        self.assertIn('GameLingoTranslationCache.manage(a, value)', cache)
+
     def test_localized_help_and_about_preserve_license_and_phone_keys(self):
         help_ui = code(TOOLS/"GameLingoHelp.kt")
         about = code(TOOLS/"GameLingoAbout.kt")
@@ -1338,7 +1350,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("fun layout(activity: Activity",help_ui)
         self.assertIn("GameLingoTVUi.panel(activity,focused)",help_ui)
         self.assertIn("setOnFocusChangeListener",help_ui)
-        self.assertIn('GameLingoTVUi.page(activity,"Nápověda · "+title',help_ui)
+        self.assertIn('GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title',help_ui)
         for module in ("GameLingoTVSettings.kt","GameLingoOCRSettings.kt","GameLingoDirectTVLayout.kt"):
             self.assertIn("GameLingoHelp.layout",code(TOOLS/module))
         self.assertIn("Independent help glyph",code(TOOLS/"audit_tv_ui.py"))
