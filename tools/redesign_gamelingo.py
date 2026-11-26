@@ -109,11 +109,11 @@ def redesign_mobile(s: str) -> str:
 
             val druhy = vodorovne()
             druhy.addView(GameLingoVisualKit.navigationTile(this,
-                "☷", GameLingoLanguages.ui(this, "Nastavení překladu")) { openSettings() },
+                "☷", GameLingoLanguages.ui(this, "Režim překladu")) { GameLingoAutomaticConfig.mode(this) },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { rightMargin = dp(10) })
             druhy.addView(GameLingoVisualKit.navigationTile(this,
-                "▭", GameLingoLanguages.ui(this, "Zařízení")) { openDevices() },
+                "▭", GameLingoLanguages.ui(this, "Vzhled titulků")) { GameLingoSubtitleAppearance.show(this) },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             obsah.addView(druhy, odsazeni(bottom = 15))
 
