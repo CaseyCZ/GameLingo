@@ -60,24 +60,20 @@ internal object GameLingoAutomaticConfig {
     }
     fun mode(a: Activity, onChanged: () -> Unit = {}, advanced: (() -> Unit)? = null) {
         if (!editable(a)) return
-        val labels=(if (advanced == null) arrayOf("Standardní","Automatický") else arrayOf("Standardní","Automatický","Pokročilé nastavení OCR")).map { GameLingoLanguages.ui(a,it) }.toTypedArray()
-        select(a,GameLingoLanguages.ui(a,"Režim překladu"),labels,if(enabled(a)) 1 else 0) { i ->
-            if(i==2) advanced?.invoke() else {
-                prefs(a).edit().putBoolean("enabled",i==1).apply()
-                onChanged()
-                // The default dialogue zone is already ready; editing is optional.
-            }
-        }
+        val body = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        body.addView(modePicker(a, onChanged, showTitle = false))
+        if (advanced != null) body.addView(GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Pokročilé nastavení OCR")) { advanced() })
+        GameLingoTVUi.page(a, GameLingoLanguages.ui(a, "Režim překladu"), body, helpTopic = "regions")
     }
     /** Inline two-option control matching the SwiftUI GLTranslationModePicker. */
-    fun modePicker(a: Activity, onChanged: () -> Unit = {}): LinearLayout {
+    fun modePicker(a: Activity, onChanged: () -> Unit = {}, showTitle: Boolean = true): LinearLayout {
         val d = GameLingoVisualKit.dp(a, 1)
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             gravity = android.view.Gravity.CENTER
             setPadding(0, 6 * d, 0, 6 * d)
         }
-        root.addView(TextView(a).apply {
+        if (showTitle) root.addView(TextView(a).apply {
             text = GameLingoLanguages.ui(a, "Režim překladu")
             textSize = GameLingoVisualKit.sp(a, 13f)
             setTextColor(Color.parseColor(GameLingoUIContract.Palette.muted))
