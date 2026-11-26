@@ -324,18 +324,14 @@ struct GameLingoLicenseView: View {
                     Link("Licence třetích stran na GitHubu",
                          destination: URL(string: "https://github.com/CaseyCZ/GameLingo/blob/Master/THIRD_PARTY_NOTICES.md")!)
                 }
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        GLBackButton { showNotices = false }
-                    }
-                }
+
             }
             .preferredColorScheme(.dark)
         }
     }
 }
 
-private struct GameLingoOCRSettingsView: View {
+struct GameLingoOCRSettingsView: View {
     @ObservedObject var model: CaptionAppModel
     @State private var showAdvanced = false
 
@@ -691,9 +687,16 @@ private struct GameLingoGlossaryEditor: View {
                 }.disabled(model.isRunning)
                 TextEditor(text: $draft)
                     .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 220)
+                    .scrollContentBackground(.hidden)
+                    .padding(8)
+                    .frame(minHeight: 160)
+                    .background(GLStyle.surfaceAlt, in: RoundedRectangle(cornerRadius: 11))
                     .disabled(model.isRunning)
-                Text("Příklad: Arthur Morgan | Artur Morgan | Arthur Morgan")
+                Text("Originál | chybný překlad | správný překlad")
+                    .font(.caption.bold())
+                Text(verbatim: "Save game | Zachránit hru | Uložit hru")
+                    .font(.caption.monospaced()).foregroundStyle(GLStyle.muted)
+                Text("Jeden řádek = jedno pravidlo. Prostřední část je překlad, který chceš opravit.")
                     .font(.caption).foregroundStyle(GLStyle.muted)
                 Button("Uložit slovník") {
                     guard let glossary = GameGlossary.parse(draft, source: source, target: target) else {
