@@ -58,7 +58,7 @@ object GameLingoNavigation {
                 text.typeface = if (active) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
                 text.background = appearance(index, text.isFocused)
                 text.isSelected = active
-                text.setCompoundDrawablesWithIntrinsicBounds(null,GameLingoVisualKit.iconDrawable(listOf("house.fill","rectangle.dashed","gamecontroller","slider.horizontal.3","info.circle")[index],if(active)Color.WHITE else Color.parseColor(GameLingoUIContract.Palette.muted),dp(20)),null,null)
+                text.setCompoundDrawablesWithIntrinsicBounds(null,GameLingoVisualKit.iconDrawable(listOf("house.fill","rectangle.dashed","display.2","slider.horizontal.3","info.circle")[index],if(active)Color.WHITE else Color.parseColor(GameLingoUIContract.Palette.muted),dp(20)),null,null)
                 text.compoundDrawablePadding=dp(4)
             }
         }
