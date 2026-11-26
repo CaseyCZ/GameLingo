@@ -39,6 +39,12 @@ Závazný návrh a akceptační matice: [UI_UX_FUNCTIONAL_AUDIT.md](UI_UX_FUNCTI
 - G7: publikace je ruční workflow pouze na Master, navázané na přesný úspěšný build. Stávající workflow následně maže ostatní release; nespouštět bez výslovného schválení a předem ověřeného návratového postupu. Verze zůstává 0.5.1 v pracovním zdroji; finální označení určit před vytvořením schváleného kandidáta, nikoli vydávat nové binárky pod nejasným označením.
 - Sjednocen README, STATUS a návod pro testery s aktuálním rozsahem. Historické reporty ponechány jako chronologie. Žádná brána se tím automaticky neuzavírá.
 
+## Kontrolní bod nativní sestavy a průkazu balíčků (26. 11. 2026, 16:15 CET)
+- [Úplný build 45844249987](https://github.com/CaseyCZ/GameLingo/actions/runs/45844249987) na `968e4808`: všech pět jobs PASS, IPA, Android APK, TV APK, SHA256SUMS a TV UI inventář dostupné. Jde o předchozí revizi, nikoli aktuální kandidát.
+- `ef8a6e57`: [rychlá regrese 45845040114](https://github.com/CaseyCZ/GameLingo/actions/runs/45845040114) PASS a [TV navigace 45845040491](https://github.com/CaseyCZ/GameLingo/actions/runs/45845040491) PASS včetně skutečné kompilace TV APK. Dřívější HTTP 429 se v této kontrole neopakoval.
+- Nový explicitní dev build doplňuje `PACKAGE-EVIDENCE.txt`: commit/run, package ID, versionCode/versionName a otisky podpisových certifikátů finálních APK z validace. Kontroluje identitu a platnost podpisů, nikoli jejich shodu s instalovanou stabilní verzí. IPA zůstává unsigned. Produkční secrets nejsou předány; stále žádný release ani doporučení k upgrade. Nová CI změna vyžaduje úspěšný běh.
+- G1–G7 zůstávají ve stávajících stavech. Po technickém buildu porovnat podpisy/verze se stabilními balíčky, dořešit otevřená bezpečnostní rizika a provést fyzickou akceptaci. Metodika agency-roster: CI/CD pipeline, test engineer, security auditor (ověřitelné artefakty, nezávislé akceptační brány, minimální přístup k secrets).
+
 ## Povinné brány vydání
 | Brána | Akceptační důkaz | Stav |
 |---|---|---|
