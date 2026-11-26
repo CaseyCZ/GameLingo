@@ -63,38 +63,43 @@ object GameLingoDeviceCenter {
                     title.contains("televize", ignoreCase = true) -> "TV"
                 else -> null
             }
-            if (family != null) addView(GameLingoVisualKit.platformEmblem(c, family),
-                LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, if (tenFoot) 30 else 46),
-                    GameLingoVisualKit.dp(c, if (tenFoot) 30 else 46)).apply {
-                    rightMargin = GameLingoVisualKit.dp(c, 12)
-                })
+            val railSize = GameLingoVisualKit.dp(c, if (tenFoot) 38 else 54)
+            addView(android.widget.FrameLayout(c).apply {
+                if (family != null) addView(GameLingoVisualKit.platformEmblem(c, family),
+                    android.widget.FrameLayout.LayoutParams(
+                        GameLingoVisualKit.dp(c, if (tenFoot) 30 else 46),
+                        GameLingoVisualKit.dp(c, if (tenFoot) 30 else 46),
+                        Gravity.CENTER))
+            }, LinearLayout.LayoutParams(railSize, railSize))
             addView(LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
                 addView(TextView(c).apply {
                     text = title
                     gravity = Gravity.CENTER
                     textSize = GameLingoVisualKit.sp(c, 17f)
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.WHITE)
-                })
+                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT))
                 if (sub.isNotEmpty()) {
                     addView(TextView(c).apply {
                         text = sub
                         gravity = Gravity.CENTER
                         textSize = GameLingoVisualKit.sp(c, 13f)
                         setTextColor(muted)
-                        setPadding(0, if (tenFoot) GameLingoVisualKit.dp(c, 6) else 6, 0, 0)
-                    })
+                        setPadding(0, GameLingoVisualKit.dp(c, 5), 0, 0)
+                    }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT))
                 }
             }, LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            if (checked) {
-                addView(TextView(c).apply {
-                    text = "✓"
-                    textSize = GameLingoVisualKit.sp(c, 26f)
-                    setTextColor(success)
-                })
-            }
+            addView(TextView(c).apply {
+                text = if (checked) "✓" else ""
+                textSize = GameLingoVisualKit.sp(c, 26f)
+                setTextColor(success)
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(railSize, railSize))
         }
 
     private fun label(c: Activity, value: String, size: Float = 20f,
@@ -159,21 +164,61 @@ object GameLingoDeviceCenter {
                        GameLingoVisualKit.dp(c, 20),
                        GameLingoVisualKit.dp(c, 26))
         }
-        val header = LinearLayout(c).apply {
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        header.addView(GameLingoVisualKit.platformEmblem(c, "TV"),
-            LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, 48),
-                GameLingoVisualKit.dp(c, 48)).apply {
-                rightMargin = GameLingoVisualKit.dp(c, 12)
-            })
-        header.addView(label(c, GameLingoLanguages.ui(c, "Konzole a zařízení"), 25f),
-            LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        header.addView(GameLingoHelp.button(c, "console"),GameLingoHelp.layout(c))
-        if (showHeader) root.addView(header)
-
         val tenFoot = GameLingoTVUi.isTV(c)
+        if (showHeader) {
+            if (!tenFoot) {
+                root.addView(GameLingoVisualKit.neonTitle(c,
+                    "Konzole a zařízení", "Správa konzolí, TV a výstupu titulků", "display.2"))
+            } else {
+                val header = LinearLayout(c).apply { gravity = Gravity.CENTER_VERTICAL }
+                header.addView(GameLingoVisualKit.platformEmblem(c, "TV"),
+                    LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, 48),
+                        GameLingoVisualKit.dp(c, 48)))
+                header.addView(label(c, GameLingoLanguages.ui(c, "Konzole a zařízení"), 25f),
+                    LinearLayout.LayoutParams(0,
+                        ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                header.addView(GameLingoHelp.button(c, "console"), GameLingoHelp.layout(c))
+                root.addView(header)
+            }
+        }
+        if (!tenFoot) {
+            // Two native platform choices, matching the iPhone device manager.
+            val platformChoices = LinearLayout(c).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+            }
+            listOf("Xbox" to onXbox, "PlayStation" to onPlayStation)
+                .forEachIndexed { index, (family, action) ->
+                    val item = LinearLayout(c).apply {
+                        orientation = LinearLayout.VERTICAL
+                        gravity = Gravity.CENTER
+                        background = GameLingoVisualKit.card(c)
+                        setPadding(GameLingoVisualKit.dp(c, 8), GameLingoVisualKit.dp(c, 10),
+                            GameLingoVisualKit.dp(c, 8), GameLingoVisualKit.dp(c, 10))
+                        isClickable = true
+                        isFocusable = true
+                        addView(GameLingoVisualKit.platformEmblem(c, family),
+                            LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, 48),
+                                GameLingoVisualKit.dp(c, 48)))
+                        addView(TextView(c).apply {
+                            text = family
+                            gravity = Gravity.CENTER
+                            textSize = GameLingoVisualKit.sp(c, 14f)
+                            setTextColor(Color.WHITE)
+                            setTypeface(null, Typeface.BOLD)
+                        })
+                        setOnClickListener { onDismiss(); action() }
+                    }
+                    platformChoices.addView(item,
+                        LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                            .apply {
+                                if (index == 0) rightMargin = GameLingoVisualKit.dp(c, 9)
+                            })
+                }
+            root.addView(platformChoices, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { bottomMargin = GameLingoVisualKit.dp(c, 10) })
+        }
         val addDeviceButton = line(c, "＋  " + GameLingoLanguages.ui(c, "Přidat zařízení")) {
             val options = if (tenFoot) arrayOf("Xbox", "PlayStation 5 / 4", GameLingoLanguages.ui(c, "Telefon · QR / PIN"))
                 else arrayOf("Xbox", "PlayStation 5 / 4", "Google TV / Android TV")
