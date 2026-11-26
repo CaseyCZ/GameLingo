@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import {profileFor,AutomaticSession} from "./automatic-session.mjs";
+const options={game:"gta-vi",platform:"xbox-series",targetLanguage:"cs",allowExperimental:true};
+const s=new AutomaticSession(options);
+const p=profileFor("gta-vi","ps5",true);
+assert.deepEqual(p,s.profile);
+assert.equal(profileFor("gta-vi","ps5").id,"generic");
+assert.equal(profileFor("unknown","ps5",true).id,"generic");
+assert.throws(()=>profileFor("gta-vi","pc",true));
+const fingerprints={"dialogue-discovery":[0,0]};
+const line={text:"Hello",rect:[.25,.5,.75,.8]};
+s.offer(1,0,fingerprints);let j=s.next(0);
+assert.equal(s.finish(j.id,10,true,[line]),true);
+assert.deepEqual(s.requests(10),[]);
+// Fingerprint skip is not an empty read; periodic refresh confirms the block.
+s.offer(2,1010,fingerprints);j=s.next(1010);assert.ok(j);assert.equal(s.finish(j.id,1020,true,[line]),true);
+const token=s.requests(1020)[0];assert.equal(token.targetLanguage,"cs");assert.ok(s.translated(token,"Ahoj",1030));
+const snap=s.snapshot(1030);assert.equal(snap.blocks[0].text,"Ahoj");assert.deepEqual(snap.blocks[0].rect.map(x=>Math.round(x*1000)),[250,825,750,930]);
+s.offer(3,1200,{"dialogue-discovery":[100,100]});j=s.next(1200);s.offer(4,1210,{"dialogue-discovery":[200,200]});
+assert.equal(s.finish(j.id,1220,true,[]),false);assert.equal(s.snapshot(1220).blocks.length,1);
+j=s.next(1300);assert.ok(j);assert.equal(s.finish(j.id,1310,true,[]),true);assert.equal(s.snapshot(1310).blocks.length,0);
+assert.equal(s.stop(1320).blocks.length,0);assert.equal(s.next(1321),null);assert.equal(s.translated(token,"late",1322),false);
+console.log("AUTOMATIC_SESSION_TESTS passed: profile parity, fallback, coordinate mapping, confirmation, translation, superseded reads, clear and stop");

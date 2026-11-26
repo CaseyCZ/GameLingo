@@ -14,7 +14,7 @@ class BlockTracker{
   if(!Number.isFinite(clearMs)||clearMs<=0||!Number.isFinite(staleMs)||staleMs<clearMs||!Number.isInteger(confirmReads)||confirmReads<1||confirmReads>5||!Number.isInteger(maxBlocks)||maxBlocks<1||maxBlocks>64)throw Error("configuration");
   this.zones=new Map(zoneIds.map(id=>[id,{lastFrame:-1,tracks:[]}]));
   this.clearMs=clearMs;this.staleMs=staleMs;this.confirmReads=confirmReads;this.maxBlocks=maxBlocks;
-  this.now=0;this.epoch=0;this.serial=0;this.sequence=0;
+  this.now=0;this.epoch=0;this.serial=0;this.sequence=0;this.requestSerial=0;
  }
  clock(now){if(!Number.isFinite(now)||now<this.now)throw Error("nonmonotonic time");this.now=now}
  reset(now){this.clock(now);this.epoch++;for(const z of this.zones.values()){z.lastFrame=-1;z.tracks=[]}}
@@ -29,12 +29,12 @@ class BlockTracker{
   for(const b of candidates){
    let t=null,best=.3;
    for(const old of z.tracks){if(used.has(old))continue;const overlap=iou(old.rect,b.rect);if(overlap>best){best=overlap;t=old}}
-   if(!t){if(z.tracks.length>=this.maxBlocks)continue;t={id:++this.serial,version:0,rect:b.rect,text:b.text,count:0,seenAt:now,missingAt:null,translation:null,pending:false,confirmed:false};z.tracks.push(t)}
+   if(!t){if(z.tracks.length>=this.maxBlocks)continue;t={id:++this.serial,version:0,rect:b.rect,text:b.text,count:0,seenAt:now,missingAt:null,translation:null,pending:false,requestId:null,retryAt:0,confirmed:false};z.tracks.push(t)}
    used.add(t);
-   if(t.text!==b.text||t.missingAt!==null){t.version++;t.text=b.text;t.count=0;t.translation=null;t.pending=false;t.confirmed=false}
+   if(t.text!==b.text||t.missingAt!==null){t.version++;t.text=b.text;t.count=0;t.translation=null;t.pending=false;t.requestId=null;t.retryAt=0;t.confirmed=false}
    t.rect=b.rect;t.seenAt=now;t.missingAt=null;t.count++;if(t.count>=this.confirmReads)t.confirmed=true;
   }
-  for(const t of z.tracks){if(!used.has(t)&&t.missingAt===null){t.missingAt=now;t.version++;t.pending=false}}
+  for(const t of z.tracks){if(!used.has(t)&&t.missingAt===null){t.missingAt=now;t.version++;t.pending=false;t.requestId=null}}
   return true;
  }
  current(){
@@ -43,11 +43,11 @@ class BlockTracker{
   const out=[];for(const a of all)if(!out.some(b=>a.t.text===b.t.text&&iou(a.t.rect,b.t.rect)>=.5))out.push(a);
   return out.slice(0,this.maxBlocks);
  }
- requests(now){this.sweep(now);const requests=[];for(const {zone,t} of this.current()){if(t.translation===null&&!t.pending){t.pending=true;requests.push({epoch:this.epoch,zone,id:t.id,version:t.version,text:t.text})}}return requests}
+ requests(now){this.sweep(now);const requests=[];for(const {zone,t} of this.current()){if(t.translation===null&&!t.pending&&now>=t.retryAt){t.pending=true;t.requestId=++this.requestSerial;requests.push({epoch:this.epoch,zone,id:t.id,version:t.version,requestId:t.requestId,text:t.text})}}return requests}
  complete(token,translated,now){
   this.sweep(now);const t=this.zones.get(token?.zone)?.tracks.find(t=>t.id===token.id);
-  if(!t||token.epoch!==this.epoch||token.version!==t.version||token.text!==t.text||!t.pending||!t.confirmed||t.missingAt!==null)return false;
-  t.pending=false;const text=clean(translated);if(!text||text.length>2048)return false;t.translation=text;return true;
+  if(!t||token.epoch!==this.epoch||token.version!==t.version||token.text!==t.text||!t.pending||token.requestId!==t.requestId||!t.confirmed||t.missingAt!==null)return false;
+  t.pending=false;t.requestId=null;const text=clean(translated);if(!text||text.length>2048){t.retryAt=now+500;return false;}t.translation=text;return true;
  }
  snapshot(now){
   this.sweep(now);

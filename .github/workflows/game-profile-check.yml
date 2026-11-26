@@ -29,3 +29,5 @@ jobs:
         working-directory: game-profiles
       - run: node test-block-pipeline.mjs
         working-directory: game-profiles
+      - run: node test-automatic-session.mjs
+        working-directory: game-profiles
