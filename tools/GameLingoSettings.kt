@@ -51,6 +51,9 @@ object GameLingoSettings {
         a.getSharedPreferences("gamelingo_automatic",
             android.content.Context.MODE_PRIVATE).edit()
             .remove("enabled").remove("zones").apply()
+        a.getSharedPreferences("gamelingo_phone_subtitles",
+            android.content.Context.MODE_PRIVATE).edit()
+            .remove("scale").remove("color").remove("background").apply()
         a.getSharedPreferences("gamelingo_tv_local_style",
             android.content.Context.MODE_PRIVATE).edit()
             .remove("color").remove("opacity").apply()
