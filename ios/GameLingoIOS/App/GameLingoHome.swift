@@ -607,7 +607,7 @@ struct GameLingoHome: View {
                     Text("Překlad herních dialogů a textů")
                         .font(.subheadline)
                         .foregroundStyle(GLNeon.mist)
-                    Text("Verze " + GameLingoUpdateModel.currentVersion)
+                    Text(GLInterfaceText.localized("Verze:") + " " + GameLingoUpdateModel.currentVersion)
                         .font(.caption.bold())
                         .foregroundStyle(GLNeon.cyan)
                 }

@@ -215,5 +215,31 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle,", source)
         self.assertIn("model.tv.sendChoices([model.targetLanguage.sampleSubtitle],", source)
 
+    def test_audited_settings_and_pairing_labels_exist(self):
+        keys = set(android_keys())
+        expected = {
+            "Jedna",
+            "Barva textu na TV",
+            "Originál | chybný překlad | správný překlad",
+            "Jeden řádek = jedno pravidlo. Prostřední část je překlad, který chceš opravit.",
+            "Vymazat historii",
+            "Typ obsahu",
+            "PIN",
+            "Zadat IP adresu",
+            "IP adresa televize",
+            "Zrušit párování TV?",
+            "Zkušební text",
+            "OK",
+            "Licence (AGPLv3)",
+            "Vyhledat televizi",
+            "GameLingo TV ve stejné domácí síti",
+            "Zobrazí vlastní testovací text na vybraném, skutečně připojeném GameLingo přijímači.",
+            "Vyber jen oblasti, které chceš překládat.",
+            "Vyber zónu a přetáhni její rámeček. Změny se ukládají automaticky.",
+        }
+        self.assertEqual(expected - keys, set())
+        self.assertIn('GLInterfaceText.localized("Verze:")', text(IOS / "GameLingoHome.swift"))
+        self.assertIn('GLInterfaceText.localized(choice.title)', text(IOS / "SettingsHomeView.swift"))
+
 if __name__ == "__main__":
     unittest.main()

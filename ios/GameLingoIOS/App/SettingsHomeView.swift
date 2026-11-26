@@ -519,7 +519,7 @@ struct GameLingoAppearanceSettingsView: View {
                                 }
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(choice.title)
+                        .accessibilityLabel(GLInterfaceText.localized(choice.title))
                         .accessibilityAddTraits(model.phoneTextColor == choice
                                                 ? [.isSelected] : [])
                     }
@@ -556,7 +556,7 @@ struct GameLingoAppearanceSettingsView: View {
                         }
                         .frame(minWidth: 44, minHeight: 44)
                         .buttonStyle(.plain)
-                        .accessibilityLabel("TV: " + choice.title)
+                        .accessibilityLabel("TV: " + GLInterfaceText.localized(choice.title))
                         .accessibilityAddTraits(model.tvTextColor == choice
                                                 ? [.isSelected] : [])
                     }
