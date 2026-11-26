@@ -29,12 +29,16 @@ internal object GameLingoGlossaryUi {
         })
         val input = EditText(a).apply {
             setText(saved?.text.orEmpty())
-            hint = "Arthur Morgan | Artur Morgan | Arthur Morgan"
+            hint = "Save game | Zachránit hru | Uložit hru"
             minLines = 4
             maxLines = 9
             setSingleLine(false)
         }
         body.addView(input)
+        body.addView(TextView(a).apply {
+            text = "Save game | Zachránit hru | Uložit hru"
+            gravity = android.view.Gravity.CENTER
+        })
         body.addView(Button(a).apply {
             text = GameLingoLanguages.ui(a, "Nový slovník pro aktuální jazyky")
             setOnClickListener {
@@ -45,7 +49,7 @@ internal object GameLingoGlossaryUi {
         })
         val error = TextView(a)
         body.addView(error)
-        if(GameLingoTVUi.isTV(a)) {
+        run {
             var page:android.app.Dialog?=null
             GameLingoTVUi.controlFocus(a,input)
             body.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Uložit"),primary=true) {
@@ -56,20 +60,6 @@ internal object GameLingoGlossaryUi {
                 }
             })
             page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Herní slovník") + " · " + name,body,helpTopic="glossary")
-            return
-        }
-        val dialog = AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Herní slovník") + " · " + name)
-            .setView(ScrollView(a).apply { addView(body) })
-            .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Uložit"), null).create()
-        dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            if (!stopped(a)) return@setOnClickListener
-            if (!GameLingoGlossaryStore.save(a, name, source, target, input.text.toString())) {
-                error.text = GameLingoLanguages.ui(a, "Neplatný formát, duplicita originálu nebo překročený limit.")
-                return@setOnClickListener
-            }
-            dialog.dismiss()
-            onSaved()
         }
     }
     // TV does not have the mobile geometry-profile screen; choose local named
