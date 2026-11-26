@@ -834,7 +834,6 @@ object GameLingoLanguages {
                     GameLingoTVUi.dp(activity,20),GameLingoTVUi.dp(activity,20))
                 background = android.graphics.drawable.ColorDrawable(Color.parseColor("#080E1B"))
             }
-            body.addView(GameLingoTVUi.title(activity,ui(activity, "Jazyky GameLingo"),28f))
             val row = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
             for (kind in Kind.values()) {
                 val label = when (kind) {
@@ -853,11 +852,7 @@ object GameLingoLanguages {
                     .apply { rightMargin = GameLingoTVUi.dp(activity,10) })
             }
             body.addView(row)
-            body.addView(GameLingoTVUi.action(activity,ui(activity, "Hotovo")) { dialog.dismiss() })
-            dialog.setContentView(body); dialog.show()
-            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-            dialog.window?.setLayout((activity.resources.displayMetrics.widthPixels * .75f).toInt(),ViewGroup.LayoutParams.WRAP_CONTENT)
-            row.getChildAt(0).requestFocus()
+            GameLingoTVUi.mountPage(activity, dialog, ui(activity, "Jazyky GameLingo"), body, helpTopic = "languages")
             return
         }
         val container = LinearLayout(activity).apply {
@@ -865,11 +860,7 @@ object GameLingoLanguages {
             val pad = GameLingoVisualKit.dp(activity, 21)
             setPadding(pad, pad, pad, pad)
         }
-        val parent = AlertDialog.Builder(activity)
-            .setTitle(ui(activity, "Jazyky GameLingo"))
-            .setView(container)
-            .setPositiveButton(ui(activity, "Hotovo"), null)
-            .create()
+        val parent = android.app.Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
 
         fun addPicker(title: String, caption: String, languages: List<Language>,
                       selected: () -> String, onSelect: (String) -> Unit) {
@@ -937,10 +928,6 @@ object GameLingoLanguages {
             targetLanguages, { target(activity) }) { code ->
             setTranslationLanguage(activity, "target", code)
         }
-        parent.show()
-        parent.window?.setBackgroundDrawableResource(android.R.color.background_dark)
-        parent.window?.setLayout(
-            (activity.resources.displayMetrics.widthPixels * 0.94f).toInt(),
-            ViewGroup.LayoutParams.WRAP_CONTENT)
+        GameLingoTVUi.mountPage(activity, parent, ui(activity, "Jazyky GameLingo"), container, helpTopic = "languages")
     }
 }

@@ -157,10 +157,18 @@ object GameLingoTVUi {
     fun page(a: Activity, heading: String, body: View, scroll: Boolean = true,
              helpTopic: String? = null, onClose: () -> Unit = {}): Dialog {
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        return mountPage(a, dialog, heading, body, scroll, helpTopic, onClose)
+    }
+
+    /** Use an existing dialog when its actions must close or refresh the same page. */
+    fun mountPage(a: Activity, dialog: Dialog, heading: String, body: View, scroll: Boolean = true,
+                  helpTopic: String? = null, onClose: () -> Unit = {}): Dialog {
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(a)
-            setPadding(dp(a,32),dp(a,18),dp(a,32),dp(a,18))
+            val horizontal = if (isTV(a)) dp(a,32) else GameLingoVisualKit.dp(a,16)
+            val vertical = if (isTV(a)) dp(a,18) else GameLingoVisualKit.dp(a,10)
+            setPadding(horizontal,vertical,horizontal,vertical)
         }
         val back=action(a,GameLingoLanguages.ui(a,"Zpět")){dialog.dismiss()}
         val help = helpTopic?.let { GameLingoHelp.button(a,it) }
@@ -174,9 +182,11 @@ object GameLingoTVUi {
         } else body
         val contentWidth = if (scroll && isTV(a)) (a.resources.displayMetrics.widthPixels * .84f).toInt() else -1
         root.addView(content,LinearLayout.LayoutParams(contentWidth,0,1f).apply{gravity=Gravity.CENTER_HORIZONTAL})
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
         dialog.setContentView(root)
         dialog.setOnDismissListener { onClose() }
         dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(-1,-1)
         applyMenuFocus(a, root)
         body.post {

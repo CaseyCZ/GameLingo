@@ -150,7 +150,7 @@ object GameLingoDeviceCenter {
              onTV: () -> Unit,
              onUpdated: () -> Unit = {},
              onDismiss: () -> Unit = {},
-             showClose: Boolean = false): LinearLayout {
+             showClose: Boolean = false, showHeader: Boolean = true): LinearLayout {
         val root = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             background = GameLingoVisualKit.pageBackground(c)
@@ -171,7 +171,7 @@ object GameLingoDeviceCenter {
             LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(GameLingoHelp.button(c, "console"),GameLingoHelp.layout(c))
-        root.addView(header)
+        if (showHeader) root.addView(header)
 
         val tenFoot = GameLingoTVUi.isTV(c)
         val addDeviceButton = line(c, "＋  " + GameLingoLanguages.ui(c, "Přidat zařízení")) {
@@ -428,18 +428,7 @@ object GameLingoDeviceCenter {
         if (c.isFinishing) return
         val dialog = Dialog(c, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val root = content(c, onXbox, onPlayStation, onTV, onUpdated,
-            onDismiss = { dialog.dismiss() }, showClose = true)
-        val scroll = ScrollView(c).apply { isFillViewport = true }
-        scroll.addView(root)
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
-        scroll.post {
-            root.findFocus()?.requestFocus() ?: root.focusSearch(android.view.View.FOCUS_DOWN)?.requestFocus()
-        }
+            onDismiss = { dialog.dismiss() }, showClose = false, showHeader = false)
+        GameLingoTVUi.mountPage(c, dialog, GameLingoLanguages.ui(c, "Konzole a zařízení"), root, helpTopic = "console")
     }
 }

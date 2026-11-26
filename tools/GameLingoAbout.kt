@@ -124,18 +124,6 @@ object GameLingoAbout {
             GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity))
             return
         }
-        val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
-        val page = content(activity, onDismiss = { dialog.dismiss() }, showClose = true)
-        val scroll = ScrollView(activity).apply {
-            isFillViewport = true
-            addView(page)
-        }
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        GameLingoTVUi.page(activity, GameLingoLanguages.ui(activity, "O aplikaci / Licence"), content(activity), helpTopic = "about")
     }
 }

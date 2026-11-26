@@ -103,6 +103,16 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("(listOf(license) + sources).chunked(2)", about)
         self.assertIn("GameLingoTVUi.page(activity, tr(\"Licence třetích stran\"), body)", about)
 
+    def test_android_tv_and_phone_settings_mount_fixed_navigation(self):
+        for module in ("GameLingoSettings.kt", "GameLingoOCRSettings.kt",
+                       "GameLingoLanguages.kt", "GameLingoDeviceCenter.kt", "GameLingoRegions.kt"):
+            with self.subTest(module=module):
+                self.assertIn("GameLingoTVUi.mountPage(", text(TOOLS / module))
+        ui = text(TOOLS / "GameLingoTVUi.kt")
+        self.assertIn("return mountPage(a, dialog, heading, body, scroll, helpTopic, onClose)", ui)
+        self.assertIn("root.addView(top", ui)
+        self.assertIn("root.addView(content", ui)
+
     def test_preview_uses_target_language(self):
         source = text(IOS / "SubtitleSettingsView.swift")
         self.assertIn("model.tv.sendSubtitle(model.targetLanguage.sampleSubtitle,", source)

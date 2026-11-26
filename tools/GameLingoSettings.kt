@@ -68,16 +68,6 @@ object GameLingoSettings {
             setPadding(24, 24, 24, 24)
             background = if(television) GameLingoVisualKit.pageBackground(activity) else rounded(bg)
         }
-        val header = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
-        header.addView(TextView(activity).apply {
-            text = tr("Překlad"); gravity = Gravity.CENTER; textSize = GameLingoVisualKit.sp(activity, 25f)
-            setTextColor(Color.WHITE); setTypeface(null, Typeface.BOLD)
-        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        header.addView(GameLingoHelp.button(activity, "translation"),
-            GameLingoHelp.layout(activity,54,54))
-        content.addView(header, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 18 })
         fun add(r: LinearLayout) {
             content.addView(r, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
@@ -198,16 +188,7 @@ object GameLingoSettings {
         }
         button("▣  " + tr("Oblasti na obrazovce")) { onAreas() }
         button("🌐  " + tr("Jazyk překladu")) { onLanguage() }
-        button(tr("Hotovo")) {}
-
-        val scroll = ScrollView(activity).apply { isFillViewport=television; addView(content) }
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            if(television) ViewGroup.LayoutParams.MATCH_PARENT else (activity.resources.displayMetrics.widthPixels * 0.93f).toInt(),
-            if(television) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
-        )
+        GameLingoTVUi.mountPage(activity, dialog, tr("Překlad"), content, helpTopic = "translation")
     }
     /**
      * Exactly the same menu hierarchy as iOS:
@@ -219,7 +200,7 @@ object GameLingoSettings {
              onAreas: () -> Unit, onLanguage: () -> Unit,
              onDevices: () -> Unit = {},
              onDismiss: () -> Unit = {}, showClose: Boolean = false,
-             onRefresh: () -> Unit = {}): LinearLayout {
+             onRefresh: () -> Unit = {}, showHeader: Boolean = true): LinearLayout {
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         val d = GameLingoVisualKit.dp(activity, 1)
         val page = LinearLayout(activity).apply {
@@ -248,7 +229,7 @@ object GameLingoSettings {
             isFocusable = true
             setOnClickListener { onDismiss() }
         }, LinearLayout.LayoutParams(48 * d, 48 * d))
-        page.addView(heading)
+        if (showHeader) page.addView(heading)
 
         fun section(title: String) {
             page.addView(TextView(activity).apply {
@@ -334,18 +315,8 @@ object GameLingoSettings {
         if (activity.isFinishing) return
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val page = content(activity, settings, onAreas, onLanguage, onDevices,
-            onDismiss = { dialog.dismiss() }, showClose = true)
-        val scroll = ScrollView(activity).apply {
-            isFillViewport = true
-            addView(page)
-        }
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+            onDismiss = { dialog.dismiss() }, showClose = false, showHeader = false)
+        GameLingoTVUi.mountPage(activity, dialog, GameLingoLanguages.ui(activity, "Nastavení"), page, helpTopic = "settings")
     }
 
 }

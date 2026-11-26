@@ -17,7 +17,7 @@ import android.widget.TextView
  */
 object GameLingoRegions {
     fun content(activity: Activity, onEdit: () -> Unit,
-                onDismiss: () -> Unit = {}, showClose: Boolean = false): LinearLayout {
+                onDismiss: () -> Unit = {}, showClose: Boolean = false, showHeader: Boolean = true): LinearLayout {
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         val d: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         val page = LinearLayout(activity).apply {
@@ -25,7 +25,7 @@ object GameLingoRegions {
             setPadding(d(20), d(20), d(20), d(26))
             background = GameLingoVisualKit.pageBackground(activity)
         }
-        page.addView(TextView(activity).apply {
+        if (showHeader) page.addView(TextView(activity).apply {
             gravity = android.view.Gravity.CENTER
             text = tr("Oblasti obrazovky")
             textSize = GameLingoVisualKit.sp(activity, 26f)
@@ -112,17 +112,7 @@ object GameLingoRegions {
         if (activity.isFinishing) return
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val page = content(activity, onEdit,
-            onDismiss = { dialog.dismiss() }, showClose = true)
-        val scroll = ScrollView(activity).apply {
-            isFillViewport = true
-            addView(page)
-        }
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+            onDismiss = { dialog.dismiss() }, showClose = false, showHeader = false)
+        GameLingoTVUi.mountPage(activity, dialog, GameLingoLanguages.ui(activity, "Oblasti obrazovky"), page, helpTopic = "regions")
     }
 }

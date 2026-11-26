@@ -47,13 +47,6 @@ object GameLingoOCRSettings {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = d(12) })
         }
-        if(GameLingoTVUi.isTV(activity)) {
-            add(LinearLayout(activity).apply {
-                gravity=Gravity.CENTER_VERTICAL
-                addView(text("OCR a rozpoznávání",26f,true),LinearLayout.LayoutParams(0,-2,1f))
-                addView(GameLingoHelp.button(activity,"ocr"),GameLingoHelp.layout(activity))
-            })
-        } else add(text("OCR a rozpoznávání", 26f, true))
         add(text("Rychlost čtení, filtrování menu a skutečná oblast snímání. Během spuštěné relace nejprve zastav překlad.", 14f))
         fun action(title: String, detail: String, enabled: Boolean = true,
                    run: () -> Unit) {
@@ -262,17 +255,6 @@ object GameLingoOCRSettings {
             dialog.dismiss()
             showPage(activity, onAreas, advanced)
         }
-        action("Hotovo", "Zpět do Nastavení") { dialog.dismiss() }
-        val scroll = ScrollView(activity).apply {
-            isFillViewport = true
-            addView(root)
-        }
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        GameLingoTVUi.mountPage(activity, dialog, tr("OCR a rozpoznávání"), root, helpTopic = "ocr")
     }
 }
