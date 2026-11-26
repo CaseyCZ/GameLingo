@@ -25,23 +25,22 @@ object GameLingoRegions {
             setPadding(d(20), d(20), d(20), d(26))
             background = GameLingoVisualKit.pageBackground(activity)
         }
-        if (showHeader) page.addView(TextView(activity).apply {
-            gravity = android.view.Gravity.CENTER
-            text = tr("Oblasti obrazovky")
-            textSize = GameLingoVisualKit.sp(activity, 26f)
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-        })
-        page.addView(TextView(activity).apply {
-            gravity = android.view.Gravity.CENTER
-            text = tr("Čtyři nezávislé oblasti pro rozpoznávání a překlad.")
-            textSize = GameLingoVisualKit.sp(activity, 14f)
-            setTextColor(Color.parseColor("#92A4C7"))
-            setPadding(0, d(10), 0, d(20))
-        })
-        val areas = listOf(
-            Triple("Modrá", "Čtení dialogových titulků", Color.parseColor("#3557FF")),
-            Triple("Zelená", "Zobrazení přeložených titulků", Color.parseColor("#3CFF6E")),
+        if (showHeader) page.addView(GameLingoVisualKit.neonTitle(activity,
+            "Oblasti obrazovky",
+            if (GameLingoAutomaticConfig.enabled(activity))
+                "Automatické oblasti překladu"
+            else "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
+            "viewfinder"), LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = d(15) })
+        val areas = if (GameLingoAutomaticConfig.enabled(activity)) {
+            GameLingoAutomaticConfig.zones(activity).map { zone ->
+                Triple(zone.name, if (zone.enabled) "Aktivní" else "Vypnutá",
+                    Color.parseColor(if (zone.enabled) "#35E57D" else "#92A4C7"))
+            }
+        } else listOf(
+            Triple("Modrá", "Čtení dialogů", Color.parseColor("#3557FF")),
+            Triple("Zelená", "Výstup přeložených titulků", Color.parseColor("#3CFF6E")),
             Triple("Žlutá", "Čtení herních textů a voleb", Color.parseColor("#FFD54A")),
             Triple("Oranžová", "Překlad herních textů", Color.parseColor("#FF9E34"))
         )
@@ -51,8 +50,13 @@ object GameLingoRegions {
                 background = GameLingoVisualKit.card(activity)
                 setPadding(d(14), d(15), d(14), d(15))
             }
-            val symbol=when(name) {"Modrá"->"viewfinder";"Zelená"->"text.bubble";"Žlutá"->"rectangle.dashed";else->"character.book.closed.fill"}
-            line.addView(GameLingoVisualKit.icon(activity,symbol,color),LinearLayout.LayoutParams(d(38),d(38)).apply{rightMargin=d(13)})
+            // Same slim color marker as iOS region rows, not unrelated icons.
+            line.addView(android.view.View(activity).apply {
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(color)
+                    cornerRadius = d(5).toFloat()
+                }
+            }, LinearLayout.LayoutParams(d(9), d(34)).apply { rightMargin = d(11) })
             line.addView(LinearLayout(activity).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(activity).apply {
@@ -70,7 +74,7 @@ object GameLingoRegions {
                     setPadding(0, d(4), 0, 0)
                 })
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            line.addView(android.view.View(activity), LinearLayout.LayoutParams(d(51), 1))
+            line.addView(android.view.View(activity), LinearLayout.LayoutParams(d(20), 1))
             page.addView(line, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -88,7 +92,8 @@ object GameLingoRegions {
             isFocusable = true
             setOnClickListener {
                 onDismiss()
-                onEdit()
+                if (GameLingoAutomaticConfig.enabled(activity)) GameLingoAutomaticConfig.showZones(activity)
+                else onEdit()
             }
         }, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, d(58)
