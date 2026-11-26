@@ -64,27 +64,27 @@ struct GameLingoDevicesPanel: View {
                         .multilineTextAlignment(.center)
                         HStack(spacing: 3) {
                             if devices.preferredConsoleID == console.id {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(GLStyle.green)
-                        }
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(GLStyle.green)
+                            }
                             Menu {
-                            Button("Použít", systemImage: "checkmark.circle") {
-                                if !model.isRunning { devices.selectConsole(console.id) }
+                                Button("Použít", systemImage: "checkmark.circle") {
+                                    if !model.isRunning { devices.selectConsole(console.id) }
+                                }
+                                .disabled(model.isRunning)
+                                Button("Přejmenovat", systemImage: "pencil") {
+                                    newName = console.name
+                                    renaming = console
+                                }
+                                Button("Odebrat", systemImage: "trash", role: .destructive) {
+                                    if !model.isRunning { pendingRemove = console }
+                                }
+                                .disabled(model.isRunning)
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
+                                    .font(.title2)
+                                    .foregroundStyle(GLStyle.blue)
                             }
-                            .disabled(model.isRunning)
-                            Button("Přejmenovat", systemImage: "pencil") {
-                                newName = console.name
-                                renaming = console
-                            }
-                            Button("Odebrat", systemImage: "trash", role: .destructive) {
-                                if !model.isRunning { pendingRemove = console }
-                            }
-                            .disabled(model.isRunning)
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .font(.title2)
-                                .foregroundStyle(GLStyle.blue)
-                        }
                             .accessibilityLabel(GLInterfaceText.localized("Spravovat:") + " " + console.name)
                         }
                         .frame(width: 54)
@@ -122,30 +122,30 @@ struct GameLingoDevicesPanel: View {
                         .multilineTextAlignment(.center)
                         HStack(spacing: 3) {
                             if devices.preferredTelevisionID == television.id {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(GLStyle.green)
-                        }
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(GLStyle.green)
+                            }
                             Menu {
-                            Button("Použít") {
-                                guard !model.isRunning else { return }
-                                devices.selectTelevision(television.id)
-                                devices.prepareTV(model.tv)
-                            }
-                            .disabled(model.isRunning)
-                            Button("Odebrat", role: .destructive) {
-                                guard !model.isRunning else { return }
-                                if model.tv.ip == television.ipAddress {
-                                    model.tv.forgetReceiver()
-                                    model.tv.ip = ""
+                                Button("Použít") {
+                                    guard !model.isRunning else { return }
+                                    devices.selectTelevision(television.id)
+                                    devices.prepareTV(model.tv)
                                 }
-                                devices.removeTelevision(television.id)
+                                .disabled(model.isRunning)
+                                Button("Odebrat", role: .destructive) {
+                                    guard !model.isRunning else { return }
+                                    if model.tv.ip == television.ipAddress {
+                                        model.tv.forgetReceiver()
+                                        model.tv.ip = ""
+                                    }
+                                    devices.removeTelevision(television.id)
+                                }
+                                .disabled(model.isRunning)
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
+                                    .font(.title2)
+                                    .foregroundStyle(GLStyle.blue)
                             }
-                            .disabled(model.isRunning)
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .font(.title2)
-                                .foregroundStyle(GLStyle.blue)
-                        }
                         }
                         .frame(width: 54)
                     }
