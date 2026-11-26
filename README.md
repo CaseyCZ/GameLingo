@@ -57,7 +57,7 @@ Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry n
 
 GameLingo je nový projekt s vlastním vzhledem v **modrobílém stylu CaseyCZ**. Navazujeme na funkční základ, který jsme již vyzkoušeli při skutečném hraní, a postupně připravujeme nové aplikace pro telefon i televizi.
 
-**GameLingo je ve vývoji.** Tato vývojová větev připravuje nástupce dosavadního vydání 0.5.1; není schváleným veřejným vydáním. Viz [řízení vydání](docs/RELEASE_CONTROL.md) a [aktuální stav](docs/STATUS-0.5.md). Dostupné starší instalátory najdeš v Releases. Fyzické testy, bezpečnostní a licenční podmínky zůstávají otevřené.
+**GameLingo je ve vývoji.** Tato vývojová větev připravuje verzi 0.5.2, nástupce dosavadního vydání 0.5.1; není schváleným veřejným vydáním. Viz [řízení vydání](docs/RELEASE_CONTROL.md) a [aktuální stav](docs/STATUS-0.5.md). Dostupné starší instalátory najdeš v Releases. Fyzické testy, bezpečnostní a licenční podmínky zůstávají otevřené.
 
 - [Aktuální stav a podporované funkce](docs/STATUS-0.5.md)
 - [Návod pro testery (iPhone / Android / TV)](docs/USER-GUIDE-0.5.md)

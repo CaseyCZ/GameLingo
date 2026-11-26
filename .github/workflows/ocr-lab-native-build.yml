@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/ocr-lab-native-build.yml'
       - 'tests/test_v05_integrations.py'
+      - 'shared/version.json'
   workflow_dispatch:
 # Explicit checkpoint: mobile header fix and package identity/certificate evidence (2026-11-26).
 permissions:
