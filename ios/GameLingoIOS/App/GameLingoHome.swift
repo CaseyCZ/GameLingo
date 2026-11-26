@@ -20,6 +20,8 @@ struct GameLingoHome: View {
     @ObservedObject var devices: GameLingoDevices
 
     @StateObject private var updates = GameLingoUpdateModel()
+    @State private var showUpdateOffer = false
+    @State private var offeredVersion: String?
     @State private var tab: Page = .home
     @State private var xboxSheet = false
     @State private var playStationSheet = false
@@ -82,7 +84,24 @@ struct GameLingoHome: View {
             GameLingoSetupView(devices: devices, onFinished: {})
                 .environmentObject(model)
         }
-        .task { if !model.isRunning { updates.checkAtStartup() } }
+        .task { if !model.isRunning && devices.completedSetup { updates.checkAtStartup() } }
+        .onChange(of: updates.available) { _, _ in offerUpdateIfReady() }
+        .onChange(of: setupSheet) { _, open in
+            if !open && !model.isRunning { updates.checkAtStartup(); offerUpdateIfReady() }
+        }
+        .onChange(of: model.isRunning) { _, running in
+            if !running && devices.completedSetup { updates.checkAtStartup(); offerUpdateIfReady() }
+        }
+        .alert("Nová verze GameLingo", isPresented: $showUpdateOffer) {
+            Button("Stáhnout IPA") {
+                tab = .about
+                updates.download()
+            }
+            Button("Později", role: .cancel) {}
+        } message: {
+            Text(verbatim: GLInterfaceText.localized("Nová verze:") + " " + (updates.available ?? "") +
+                "\n" + GLInterfaceText.localized("Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem."))
+        }
         .onAppear {
             devices.refreshXbox(model.xbox.consoles)
             devices.refreshPlayStation(model.playStation.registered)
@@ -169,6 +188,13 @@ struct GameLingoHome: View {
             }
             .preferredColorScheme(.dark)
         }
+    }
+
+    private func offerUpdateIfReady() {
+        guard !model.isRunning, devices.completedSetup, !setupSheet,
+              let version = updates.available, offeredVersion != version else { return }
+        offeredVersion = version
+        showUpdateOffer = true
     }
 
     private var brandHeader: some View {
