@@ -1349,7 +1349,12 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                        "Volby.zapnuto", "Volby.rezimText", "prectiVolby(cropped", "ACTION_SET_VOLBY",
                        "GameLingoTVProfiles.chooseForStart(a)", "if (yellow) yellowRoi else roi"):
             self.assertIn(marker, capture)
-        self.assertIn("restore(a, items.getJSONObject(names[index-1]))", profiles)
+        chooser = profiles.split("fun chooseForStart(", 1)[1].split("fun saveCurrent(", 1)[0]
+        self.assertIn("names.getOrNull(index - 1)", chooser)
+        self.assertIn("all(a).optJSONObject(it)", chooser)
+        self.assertIn("restore(a, profile)", chooser)
+        self.assertNotIn("getJSONObject(", chooser)
+        self.assertIn("if (busy()) return@select", chooser)
         self.assertIn("fun greenBounds", layout)
         self.assertIn("wantFrame.getAndSet(0)", capture)
         self.assertIn("yellowEpoch", capture)

@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import org.json.JSONArray
 import org.json.JSONObject
@@ -212,20 +211,11 @@ object GameLingoProfiles {
         val saved = prefs(activity)
         val outer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(22, 22, 22, 22)
-            background = GameLingoVisualKit.pageBackground(activity)
+            val pad = GameLingoVisualKit.dp(activity, 8)
+            setPadding(pad, pad, pad, pad)
         }
-        val heading = LinearLayout(activity).apply { gravity = Gravity.CENTER_VERTICAL }
-        heading.addView(text(activity, GameLingoLanguages.ui(activity, "Profily her"), 24f, Color.WHITE, true),
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        heading.addView(GameLingoHelp.button(activity, "profiles"),
-            LinearLayout.LayoutParams(54, 54))
-        outer.addView(heading)
-
-        val dialog = android.app.Dialog(activity,
+         val dialog = android.app.Dialog(activity,
             android.R.style.Theme_Material_NoActionBar_Fullscreen)
-        val scroll = ScrollView(activity)
-        scroll.addView(outer)
         val input = EditText(activity).apply {
             hint=GameLingoLanguages.ui(activity, "Název hry");setSingleLine(true);setTextColor(Color.WHITE);setHintTextColor(muted)
             background=box(Color.parseColor("#172033"),radius=GameLingoVisualKit.dp(activity,11).toFloat())
@@ -282,6 +272,8 @@ object GameLingoProfiles {
                     GameLingoGlossaryStore.activate(activity, name)
                     dialog.dismiss()
                     onApplied()
+                } else {
+                    android.widget.Toast.makeText(activity, GameLingoLanguages.ui(activity, "Profil nelze načíst"), android.widget.Toast.LENGTH_LONG).show()
                 }
             },LinearLayout.LayoutParams(0,-2,1f))
             actions.addView(button(activity, GameLingoLanguages.ui(activity, "Smazat")) {
@@ -305,15 +297,6 @@ object GameLingoProfiles {
         if (names.isEmpty()) {
             outer.addView(text(activity, GameLingoLanguages.ui(activity, "Zatím nemáš uložený žádný profil."), 14f, muted))
         }
-        outer.addView(button(activity, GameLingoLanguages.ui(activity, "Zavřít")) { dialog.dismiss() },
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = 10 })
-        dialog.setContentView(scroll)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.show()
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        GameLingoTVUi.mountPage(activity, dialog, GameLingoLanguages.ui(activity, "Profily her"), outer, helpTopic = "profiles")
     }
 }

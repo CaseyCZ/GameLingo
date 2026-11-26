@@ -102,7 +102,14 @@ private struct GLAutomaticZoneEditor: View {
                 save(zone)
                 dismiss()
             }.disabled(!zone.valid)
-        }.navigationTitle("Upravit zónu")
+        }
+        .navigationTitle("Upravit zónu")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                GLHelpButton(title: "Upravit zónu", explanation: "Vyber jen oblasti, které chceš překládat. Herní profil není povinný.")
+            }
+        }
     }
     private func slider(_ label: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
         VStack(alignment: .leading) {

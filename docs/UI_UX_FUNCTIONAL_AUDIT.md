@@ -54,3 +54,9 @@ Přesné zděděné Android/TV obrazovky se inventarizují z build artefaktu, ne
 - Výchozí revize tohoto auditu: `b7776cbf6f8433d0b319c0d1902fe967fe7d788e`. [Rychlá regrese 45843616034](https://github.com/CaseyCZ/GameLingo/actions/runs/45843616034) prošla; nativní sestava 45843616071 byla při kontrole stále rozpracovaná. Předchozí revize aa3308eb/ad5876ac neprošly starými zdrojovými asercemi o umístění nápovědy a full-screen režimu; aktualizované aserce ověřují novou společnou navigaci. To nenahrazuje test skutečného obrazu.
 - Nová revize musí znovu projít CI včetně kompilace a validace balíčků. Jakákoli odlišná revize není aktuální kandidát. G1/G2/G3 neuzavírat bez průchodu matice; G4/G5/G6/G7 dle RELEASE_CONTROL.md. Veřejný release pouze se schválením.
 - Použity postupy agency-roster UX architect (společné tokeny a API komponent), UI designer (konzistence, čitelnost), accessibility auditor (fokus, obnova fokusu, ruční test), test engineer (regrese, scénáře a evidence). Webové frameworky a placené služby nejsou pro nativní aplikaci vhodné; nepoužity.
+
+## Doplňující cílená revize profilů a editoru zón (26. 11. 2026)
+- Android mobil: stránka profilů používala vlastní scroll včetně hlavičky a Zavřít dole. Nahrazena společným mountPage s fixní hlavičkou Zpět/Nápověda; nečitelný JSON profilu hlásí lokalizovanou chybu.
+- TV: výběr profilu při startu nyní kontroluje busy stav, index a aktuální JSON bezpečně, místo getJSONObject nad starým snapshotem. Poškozený nebo mezitím odebraný profil nespustí relaci.
+- iOS: editor automatické zóny má inline nadpis a kontextovou nápovědu, nativní push Back zůstává zachován. Uložení nadále explicitní.
+- Regresní aserce pokrývají tyto kontrakty, nikoli vykreslení; nové CI a fyzické ověření zůstávají nutné. Metodika agency-roster code reviewer, UX architect, test engineer.

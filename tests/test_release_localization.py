@@ -105,7 +105,8 @@ class ReleaseLocalizationTests(unittest.TestCase):
 
     def test_android_tv_and_phone_settings_mount_fixed_navigation(self):
         for module in ("GameLingoSettings.kt", "GameLingoOCRSettings.kt",
-                       "GameLingoLanguages.kt", "GameLingoDeviceCenter.kt", "GameLingoRegions.kt"):
+                       "GameLingoLanguages.kt", "GameLingoDeviceCenter.kt", "GameLingoRegions.kt",
+                       "GameLingoProfiles.kt"):
             with self.subTest(module=module):
                 self.assertIn("GameLingoTVUi.mountPage(", text(TOOLS / module))
         ui = text(TOOLS / "GameLingoTVUi.kt")
@@ -132,6 +133,18 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("back.minimumHeight = side", ui)
         self.assertIn("help.minimumHeight = side", ui)
         self.assertIn("if (isTV(a)) body.post", ui)
+
+    def test_profile_page_and_ios_zone_editor_share_navigation(self):
+        phone = text(TOOLS / "GameLingoProfiles.kt")
+        self.assertIn('GameLingoTVUi.mountPage(activity, dialog, GameLingoLanguages.ui(activity, "Profily her"), outer, helpTopic = "profiles")', phone)
+        self.assertNotIn('dialog.setContentView(scroll)', phone)
+        self.assertIn('GameLingoLanguages.ui(activity, "Profil nelze načíst")', phone)
+        editor = text(IOS / "GLAutomaticZonesView.swift").split("private struct GLAutomaticZoneEditor", 1)[1]
+        self.assertIn(".navigationBarTitleDisplayMode(.inline)", editor)
+        self.assertIn('GLHelpButton(title: "Upravit zónu"', editor)
+        self.assertIn(".topBarTrailing", editor)
+        self.assertIn("save(zone)", editor)
+        self.assertNotIn("GLBackButton", editor)  # Native push back must remain intact.
 
     def test_preview_uses_target_language(self):
         source = text(IOS / "SubtitleSettingsView.swift")

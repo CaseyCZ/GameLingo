@@ -99,12 +99,17 @@ object GameLingoTVProfiles {
         val current = store(a).getString("activeProfile", null)
         GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Vybrat profil"), (listOf(GameLingoLanguages.ui(a, "Aktuální nastavení")) + names).toTypedArray(),
             names.indexOf(current ?: "")+1) { index ->
+            if (busy()) return@select
             if (index == 0) onChosen()
-            else if (restore(a, items.getJSONObject(names[index-1]))) {
-                store(a).edit().putString("activeProfile", names[index-1]).apply()
-                activateGlossary(a,names[index-1])
-                onChosen()
-            } else android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil nelze načíst"),android.widget.Toast.LENGTH_LONG).show()
+            else {
+                val name = names.getOrNull(index - 1)
+                val profile = name?.let { all(a).optJSONObject(it) }
+                if (name != null && profile != null && restore(a, profile)) {
+                    store(a).edit().putString("activeProfile", name).apply()
+                    activateGlossary(a, name)
+                    onChosen()
+                } else android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil nelze načíst"),android.widget.Toast.LENGTH_LONG).show()
+            }
         }
     }
     fun saveCurrent(a: Activity, onSaved: () -> Unit = {}) {
