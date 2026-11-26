@@ -36,7 +36,7 @@ final class CaptionAppModel: ObservableObject {
         }
         invalidateDialogue()
     }
-    struct AutomaticOutput: Identifiable {
+    struct AutomaticOutput: Identifiable, Equatable {
         let id: UUID
         let zone: UUID
         let text: String
@@ -1015,7 +1015,8 @@ final class CaptionAppModel: ObservableObject {
                                      layout: track.block.layout, rect: track.block.rect))
             }
         }
-        automaticOutputs = Array(ordered.prefix(32))
+        let next = Array(ordered.prefix(32))
+        if next != automaticOutputs { automaticOutputs = next }
         guard devices.subtitleOutput == .googleTV else { return }
         devices.prepareTV(tv)
         guard verifiedTelevisionOutput else { return }

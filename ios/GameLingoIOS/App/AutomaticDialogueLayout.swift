@@ -69,17 +69,21 @@ struct AutomaticDialogueLayout: Equatable, Sendable {
         }
         // The default dialogue band deliberately retains its conservative
         // bottom-centre selection. Explicit custom zones may contain many blocks.
-        let ranked = groups.map { group in
-            (group, group.reduce(CGRect.null) { $0.union($1.rect) })
-        }.sorted { a, b in
-            (a.1.midY - abs(a.1.midX - 0.5)) > (b.1.midY - abs(b.1.midX - 0.5))
+        var ranked: [(lines: [Line], rect: CGRect, score: CGFloat)] = []
+        for group in groups {
+            var rect = CGRect.null
+            for line in group { rect = rect.union(line.rect) }
+            let distance = abs(rect.midX - CGFloat(0.5))
+            let score = rect.midY - distance
+            ranked.append((group, rect, score))
         }
+        ranked.sort { $0.score > $1.score }
         return ranked.prefix(centered ? 1 : 8).map { selected in
-            let r = selected.1
+            let r = selected.rect
             let width = min(1.0, max(0.15, Double(r.width) + 0.06))
             let x = min(1 - width / 2, max(width / 2, Double(r.midX)))
             let bottom = min(0.99, max(0.05, Double(r.maxY)))
-            let text = selected.0.map(\.text).joined(separator: " ")
+            let text = selected.lines.map(\.text).joined(separator: " ")
             return Block(text: text, rect: r, layout: Self(centerX: x, bottomY: bottom, width: width))
         }
     }
