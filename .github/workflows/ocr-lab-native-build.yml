@@ -5,7 +5,7 @@ on:
     paths:
       - '.github/workflows/ocr-lab-native-build.yml'
   workflow_dispatch:
-# Explicit signed QA checkpoint: no secret-bearing builds on ordinary source pushes.
+# Explicit signed QA checkpoint: strict certificate and version checks; no signing on ordinary source pushes.
 permissions:
   contents: read
 jobs:

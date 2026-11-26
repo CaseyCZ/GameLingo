@@ -436,7 +436,8 @@ jobs:
                 cert=$(printf '%s\n' "$verified" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')
                 test "$cert" = "$expected_cert"
                 code=$(printf '%s\n' "$identity" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
-                [[ "$code" =~ ^[0-9]+$ ]] && (( code > 6019901 ))
+                [[ "$code" =~ ^[0-9]+$ ]]
+                (( code > 6019901 ))
                 echo 'Published 0.5.1 signer and minimum version continuity: PASS'
               fi
             done
