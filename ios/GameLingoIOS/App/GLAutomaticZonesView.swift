@@ -89,6 +89,12 @@ struct GLAutomaticZonesView: View {
                             GLHeader(title: "Upravit zónu", help: "Vyber zónu a přetáhni její rámeček. Změny se ukládají automaticky.")
                             TextField("Název", text: Binding(get: { selected?.name ?? zone.name }, set: { name in edit(zone.id) { $0.name = name } }))
                             Toggle("Aktivní zóna", isOn: Binding(get: { selected?.enabled ?? zone.enabled }, set: { enabled in edit(zone.id) { $0.enabled = enabled } }))
+                            slider("Vodorovná pozice", value: Double(zone.rect.minX), range: 0...max(0, 1 - Double(zone.rect.width))) { value in
+                                edit(zone.id) { $0.rect.origin.x = CGFloat(value); $0.centered = false }
+                            }
+                            slider("Svislá pozice", value: Double(zone.rect.minY), range: 0...max(0, 1 - Double(zone.rect.height))) { value in
+                                edit(zone.id) { $0.rect.origin.y = CGFloat(value); $0.centered = false }
+                            }
                             slider("Šířka", value: Double(zone.rect.width), range: 0.08...1) { value in
                                 edit(zone.id) { $0.rect.size.width = CGFloat(value); $0.rect.origin.x = min($0.rect.minX, 1 - $0.rect.width); $0.centered = false }
                             }
