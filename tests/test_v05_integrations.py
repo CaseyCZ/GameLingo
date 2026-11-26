@@ -410,7 +410,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         about=code(TOOLS/"GameLingoAbout.kt")
         contract=json.loads(code(ROOT/"shared/mobile-ui.json"))
         self.assertEqual([t["title"] for t in contract["tabs"]],
-            ["Domů", "Obrazovka", "Konzole", "Nastavení", "O aplikaci"])
+            ["Domů", "Obrazovka", "Zařízení", "Nastavení", "O aplikaci"])
         self.assertIn("GameLingoUIContract.tabs",nav)
         self.assertIn("GameLingoUIContract.tabs[rawValue]",code(IOS/"GameLingoHome.swift"))
         self.assertIn("onSettings: () -> Unit",nav)
