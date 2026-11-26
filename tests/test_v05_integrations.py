@@ -106,7 +106,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('putBoolean("enabled",i==1).apply()\n                onChanged()', automatic)
         self.assertIn("onChanged = onRefresh", phone)
         self.assertIn("onRefresh = { openTab(3) }", redesign)
-        self.assertIn('tag="gamelingo-detail"', visual)
+        self.assertRegex(visual, r'tag\s*=\s*"gamelingo-detail"')
         self.assertIn('cards[1].findViewWithTag', tv)
         self.assertIn('cards[3].findViewWithTag', tv)
 
@@ -116,8 +116,11 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         onboarding = code(TOOLS/"GameLingoFirstRun.kt")
         ios = code(IOS/"GameLingoVisualSystem.swift")
         style = code(IOS/"GameLingoStyle.swift")
-        self.assertIn("text=title;gravity=Gravity.CENTER", android)
-        self.assertIn("text=detail;gravity=Gravity.CENTER", android)
+        # Check centered label bodies independently of Kotlin whitespace and formatting.
+        self.assertRegex(android,
+            r'text\s*=\s*title\s+tag\s*=\s*"gamelingo-title"\s+gravity\s*=\s*Gravity.CENTER')
+        self.assertRegex(android,
+            r'text\s*=\s*detail\s+tag\s*=\s*"gamelingo-detail"\s+gravity\s*=\s*Gravity.CENTER')
         self.assertIn("this.text = text\n        gravity = Gravity.CENTER", tv)
         self.assertIn("val heading = TextView(activity).apply {\n            gravity = Gravity.CENTER", onboarding)
         self.assertIn(".multilineTextAlignment(.center)", ios)
