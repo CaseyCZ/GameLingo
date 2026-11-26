@@ -2285,7 +2285,13 @@ object GameLingoLanguages {
         changes.incrementAndGet()
     }
     private fun systemLanguage(c: Context): String = c.resources.configuration.locales[0].language
-    fun systemApp(c: Context): String = systemLanguage(c).takeIf { code -> appLanguages.any { it.code == code } } ?: "en"
+    fun systemApp(c: Context): String {
+        val system = c.resources.configuration.locales[0]
+        val exact = system.toLanguageTag()
+        return appLanguages.firstOrNull { it.code.equals(exact, ignoreCase = true) }?.code
+            ?: appLanguages.firstOrNull { it.code == system.language }?.code
+            ?: "en"
+    }
     private fun systemTarget(c: Context): String = systemLanguage(c).takeIf { code -> targetLanguages.any { it.code == code } } ?: "en"
     fun app(c: Context) = Nastaveni(c).jazyk?.takeIf { code -> appLanguages.any { it.code == code } } ?: systemApp(c)
     fun game(c: Context): String =
