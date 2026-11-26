@@ -41,6 +41,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('visibility = android.view.View.GONE', settings)
         self.assertIn('parent = advanced', settings)
         self.assertEqual(len(re.findall(r'^        tile\(', tv, re.M)), 9)
+        tv_ui = code(TOOLS/"GameLingoTVUi.kt")
+        self.assertIn('val back=action(a,GameLingoLanguages.ui(a,"Zpět")){dialog.dismiss()}', tv_ui)
+        self.assertIn('val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }', tv)
         self.assertIn('getBoolean("enabled",false)', auto)
         self.assertNotIn('if(i==1) showZones(a)', auto)
 

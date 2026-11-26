@@ -27,9 +27,9 @@ assert "PrijemService.zastav(this)" in stop and "zpetNaVyber()" in stop
 assert 'if (!telefon && PrijemService.bezi) { ukazPrijem(); return }' not in main
 assert re.search(r'"←  Zpět do nabídky"\)\s*\{\s*zpetNaVyber\(\)', main)
 assert re.search(r'"Zastavit příjem"\)\s*\{\s*zastavPrijemANavrat\(\)', main)
-assert 'val back = GameLingoTVUi.action(a, "Zpět") { dialog.dismiss() }' in settings
+assert 'val back = GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }' in settings
 assert 'dialog.setOnDismissListener {' in settings and 'if (!openingDevices && !a.isFinishing && !a.isDestroyed) onUpdate()' in settings
 assert 'openingDevices = true; dialog.dismiss(); onDevices()' in settings
-assert 'val back=action(a,"Zpět"){dialog.dismiss()}' in ui
+assert 'val back=action(a,GameLingoLanguages.ui(a,"Zpět")){dialog.dismiss()}' in ui
 assert 'dialog.setOnDismissListener { onClose() }' in ui
 print("TV_NAVIGATION_SOURCE_CHECKS passed: startup, resume, remote back, on-screen back, explicit stop, settings dismissal, nested pages")

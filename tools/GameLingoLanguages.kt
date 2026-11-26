@@ -32,6 +32,7 @@ object GameLingoLanguages {
 
     // App-owned static UI only; never translate OCR results, identifiers or user text.
     private val uiLabels = mapOf(
+        "vybráno" to Pair("vybrané", "selected"),
         "Domů" to Pair("Domov", "Home"),
         "Obrazovka" to Pair("Obrazovka", "Screen"),
         "Konzole" to Pair("Konzoly", "Consoles"),

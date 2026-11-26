@@ -80,7 +80,7 @@ object GameLingoTVUi {
                 minimumHeight = dp(a, 50)
                 setPadding(dp(a, 14), dp(a, 7), dp(a, 14), dp(a, 7))
                 setTextColor(if (index == selected) Color.parseColor("#57EBA3") else Color.WHITE)
-                contentDescription = if (index == selected) "$label, vybráno" else label
+                contentDescription = if (index == selected) "$label, " + GameLingoLanguages.ui(a, "vybráno") else label
                 rows.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(a, 7) })
             }
@@ -89,7 +89,7 @@ object GameLingoTVUi {
         body.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
             minOf(dp(a, 430), a.resources.displayMetrics.heightPixels * 55 / 100,
                 dp(a, 63 * labels.size)).coerceAtLeast(dp(a, 54))))
-        val back = action(a, "Zpět") { dialog.dismiss() }
+        val back = action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
         back.id = View.generateViewId()
         body.addView(back, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             .apply { topMargin = dp(a, 12) })
@@ -117,7 +117,7 @@ object GameLingoTVUi {
         }
         val top = LinearLayout(a).apply { gravity=Gravity.CENTER_VERTICAL }
         top.addView(title(a,heading,29f),LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1f))
-        val back=action(a,"Zpět"){dialog.dismiss()}
+        val back=action(a,GameLingoLanguages.ui(a,"Zpět")){dialog.dismiss()}
         if(helpTopic!=null) top.addView(GameLingoHelp.button(a,helpTopic),GameLingoHelp.layout(a))
         top.addView(back)
         root.addView(top,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(a,14)})
