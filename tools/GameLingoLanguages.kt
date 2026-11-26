@@ -17,8 +17,13 @@ import android.widget.TextView
  */
 object GameLingoLanguages {
     data class Language(val code: String, val title: String)
+    // BEGIN GENERATED APP LANGUAGES
     val appLanguages = listOf(
-        Language("cs", "Čeština"), Language("sk", "Slovenština"), Language("en", "English"))
+        Language("cs", "Čeština"),
+        Language("en", "English"),
+        Language("sk", "Slovenčina"),
+    )
+    // END GENERATED APP LANGUAGES
     val gameLanguages = listOf(
         Language("en", "English"), Language("de", "Deutsch"),
         Language("fr", "Français"), Language("es", "Español"),
@@ -31,768 +36,2242 @@ object GameLingoLanguages {
         Language("pt", "Português"))
 
     // App-owned static UI only; never translate OCR results, identifiers or user text.
-    private val uiLabels = mapOf(
-        "Přizpůsobení překladu a titulků" to Pair("Prispôsobenie prekladu a titulkov", "Customize translation and subtitles"),
-        "Správa konzolí, TV a výstupu titulků" to Pair("Správa konzol, TV a výstupu titulkov", "Manage consoles, TVs and subtitle output"),
-        "GameLingo – hraj a rozuměj svým hrám" to Pair("GameLingo – hraj a rozumej svojim hrám", "GameLingo – play and understand your games"),
-        "Automatické oblasti překladu" to Pair("Automatické oblasti prekladu", "Automatic translation regions"),
-        "Čtyři nezávislé oblasti pro rozpoznávání a překlad" to Pair("Štyri nezávislé oblasti na rozpoznávanie a preklad", "Four independent regions for recognition and translation"),
-        "Přidat" to Pair("Pridať", "Add"),
-        "Aktivní" to Pair("Aktívna", "Active"),
-        "Vypnutá" to Pair("Vypnutá", "Off"),
-        "Překlad herních dialogů a textů" to Pair("Preklad herných dialógov a textov", "Game dialogue and text translation"),
-        "Čtení dialogů" to Pair("Čítanie dialógov", "Read dialogue"),
-        "Výstup přeložených titulků" to Pair("Výstup preložených titulkov", "Translated subtitle output"),
-        "Povol instalaci z GameLingo v nastavení zařízení. Po návratu bude možné pokračovat bez dalšího stahování." to Pair("Povoľ inštaláciu z GameLingo v nastaveniach zariadenia. Po návrate môžeš pokračovať bez ďalšieho sťahovania.", "Allow installation from GameLingo in device settings. After returning, continue without downloading again."),
-        "Spáruj TV pomocí QR nebo kódu" to Pair("Spáruj TV pomocou QR alebo kódu", "Pair TV using QR or code"),
-        "Načti QR v telefonu nebo opiš celý kód." to Pair("Naskenuj QR v telefóne alebo opíš celý kód.", "Scan the QR on your phone or enter the entire code."),
-        "Spárovat kódem z TV" to Pair("Spárovať kódom z TV", "Pair using the TV code"),
-        "Párovací kód z GameLingo TV" to Pair("Párovací kód z GameLingo TV", "GameLingo TV pairing code"),
-        "Zadej všech 32 znaků kódu" to Pair("Zadaj všetkých 32 znakov kódu", "Enter all 32 code characters"),
-        "Zadej celý párovací kód z TV." to Pair("Zadaj celý párovací kód z TV.", "Enter the full TV pairing code."),
-        "TV nepotvrdila bezpečné párování. Vytvoř nový kód." to Pair("TV nepotvrdila bezpečné párovanie. Vytvor nový kód.", "TV did not confirm secure pairing. Generate a new code."),
-        "Na TV otevři Překlad z telefonu. Načti QR nebo opiš 32 znaků kódu. Titulky jsou podepsané, ne šifrované." to Pair("Na TV otvor Preklad z telefónu. Naskenuj QR alebo opíš 32 znakov kódu. Titulky sú podpísané, nie šifrované.", "Open Translation from phone on the TV. Scan QR or enter the 32-character code. Subtitles are signed, not encrypted."),
-        "Offline překlad na telefonu využívá Google ML Kit. Jazykové modely se stahují přes Wi-Fi." to Pair("Offline preklad v telefóne využíva Google ML Kit. Jazykové modely sa sťahujú cez Wi-Fi.", "Offline translation on the phone uses Google ML Kit. Language models download over Wi-Fi."),
-        "Podmínky překladu Google ML Kit" to Pair("Podmienky prekladu Google ML Kit", "Google ML Kit translation terms"),
-        "Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle." to Pair("Jazyk aplikácie mení ponuky. Jazyk hry určuje pôvodný text a jazyk prekladu určuje výstup. Nastavujú sa nezávisle.", "App language changes menus. Game language determines the source text and translation language determines the output. They are set independently."),
-        "Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty." to Pair("Tu nájdeš verziu aplikácie, aktualizácie, pôvodných autorov a úplné licenčné texty.", "Find the app version, updates, original authors and complete license texts here."),
-        "Velikost rozhraní" to Pair("Veľkosť rozhrania", "Interface size"),
-        "Výchozí" to Pair("Predvolené", "Default"),
-        "Vyber způsob překladu nebo spravuj svá zařízení." to Pair("Vyber spôsob prekladu alebo spravuj svoje zariadenia.", "Choose a translation mode or manage your devices."),
-        "ZPŮSOB PŘEKLADU" to Pair("SPÔSOB PREKLADU", "TRANSLATION MODE"),
-        "Překlad z telefonu" to Pair("Preklad z telefónu", "Translation from phone"),
-        "Příjem běží · otevřít párování a stav" to Pair("Príjem beží · otvoriť párovanie a stav", "Receiving · open pairing and status"),
-        "Spustit příjem a párování telefonu." to Pair("Spustiť príjem a párovanie telefónu.", "Start receiving and pair a phone."),
-        "Přímo na TV" to Pair("Priamo na TV", "Directly on TV"),
-        "Xbox, PlayStation nebo aplikace přímo na televizoru." to Pair("Xbox, PlayStation alebo aplikácie priamo na televízore.", "Xbox, PlayStation or apps directly on the TV."),
-        "Uložená konzole" to Pair("Uložená konzola", "Saved console"),
-        "MOJE KONZOLE" to Pair("MOJE KONZOLY", "MY CONSOLES"),
-        "Zatím nemáš přidanou žádnou konzoli." to Pair("Zatiaľ nemáš pridanú žiadnu konzolu.", "No console added yet."),
-        "Remote Play běží" to Pair("Remote Play beží", "Remote Play running"),
-        "Uložená · nepřipojena" to Pair("Uložená · nepripojená", "Saved · disconnected"),
-        "Nepřidána" to Pair("Nepridaná", "Not added"),
-        "Překryv titulků" to Pair("Prekrytie titulkov", "Subtitle overlay"),
-        "Vyžaduje povolení" to Pair("Vyžaduje povolenie", "Permission required"),
-        "Ovládání: šipky pro výběr • OK potvrdit • Zpět pro návrat" to Pair("Ovládanie: šípky na výber • OK potvrdiť • Späť na návrat", "Controls: arrows to select • OK to confirm • Back to return"),
-        "Připojit Xbox" to Pair("Pripojiť Xbox", "Connect Xbox"),
-        "Získej titulky z iPhonu nebo Androidu." to Pair("Získaj titulky z iPhonu alebo Androidu.", "Receive subtitles from iPhone or Android."),
-        "Otevři GameLingo na telefonu" to Pair("Otvor GameLingo na telefóne", "Open GameLingo on your phone"),
-        "Spáruj TV šestimístným kódem" to Pair("Spáruj TV šesťmiestnym kódom", "Pair the TV using the six-digit code"),
-        "Spusť překlad a vrať se ke hře" to Pair("Spusť preklad a vráť sa k hre", "Start translation and return to the game"),
-        "Titulky se zobrazí nad hrou, bez přepínání vstupu." to Pair("Titulky sa zobrazia nad hrou, bez prepínania vstupu.", "Subtitles appear over the game without switching inputs."),
-        "Připojte svůj telefon" to Pair("Pripoj svoj telefón", "Connect your phone"),
-        "Zadejte kód do telefonu" to Pair("Zadaj kód do telefónu", "Enter the code on your phone"),
-        "Otevřete GameLingo na telefonu a zadejte tento šestimístný kód." to Pair("Otvor GameLingo na telefóne a zadaj tento šesťmiestny kód.", "Open GameLingo on your phone and enter this six-digit code."),
-        "Párovací QR kód" to Pair("Párovací QR kód", "Pairing QR code"),
-        "Zobrazit QR kód" to Pair("Zobraziť QR kód", "Show QR code"),
-        "Vygeneruj nový PIN a ověř připojení k místní síti." to Pair("Vygeneruj nový PIN a over pripojenie k miestnej sieti.", "Generate a new PIN and check the local network connection."),
-        "Nový párovací kód" to Pair("Nový párovací kód", "New pairing code"),
-        "Spárované telefony" to Pair("Spárované telefóny", "Paired phones"),
-        "Zatím žádný telefon." to Pair("Zatiaľ žiadny telefón.", "No phones yet."),
-        "Síť" to Pair("Sieť", "Network"),
-        "Zjišťuji" to Pair("Zisťujem", "Checking"),
-        "Přijímač" to Pair("Prijímač", "Receiver"),
-        "Čeká na telefon" to Pair("Čaká na telefón", "Waiting for phone"),
-        "Titulky" to Pair("Titulky", "Subtitles"),
-        "Vyzkoušet titulky" to Pair("Vyskúšať titulky", "Test subtitles"),
-        "GameLingo · Ukázka titulků" to Pair("GameLingo · Ukážka titulkov", "GameLingo · Subtitle sample"),
-        "Zpět do nabídky" to Pair("Späť do ponuky", "Back to menu"),
-        "Zastavit příjem" to Pair("Zastaviť príjem", "Stop receiving"),
-        "Podrobnosti" to Pair("Podrobnosti", "Details"),
-        "Povolit titulky přes obraz hry" to Pair("Povoliť titulky cez obraz hry", "Allow subtitles over the game"),
-        "Nepřipojeno" to Pair("Nepripojené", "Not connected"),
-        "Port UDP obsazen" to Pair("Port UDP obsadený", "UDP port in use"),
-        "Aktivní · UDP" to Pair("Aktívny · UDP", "Active · UDP"),
-        "Zastaven" to Pair("Zastavený", "Stopped"),
-        "Povol překryv" to Pair("Povoľ prekrytie", "Allow overlay"),
-        "Telefon připojen" to Pair("Telefón pripojený", "Phone connected"),
-        "Nelze přijímat: všechny UDP porty 41989–41993 jsou obsazené" to Pair("Nemožno prijímať: všetky UDP porty 41989–41993 sú obsadené", "Cannot receive: all UDP ports 41989–41993 are in use"),
-        "Kód platí ještě:" to Pair("Kód platí ešte:", "Code expires in:"),
-        "Spárováno:" to Pair("Spárované:", "Paired:"),
-        "Připojeno:" to Pair("Pripojené:", "Connected:"),
-        "Čekám na spojení" to Pair("Čakám na spojenie", "Waiting for connection"),
-        "Zvol Nový párovací kód" to Pair("Vyber Nový párovací kód", "Choose New pairing code"),
-        "IP televizoru:" to Pair("IP televízora:", "TV IP:"),
-        "Adresa se zjišťuje" to Pair("Adresa sa zisťuje", "Detecting address"),
-        "Vyber zdroj překladu" to Pair("Vyber zdroj prekladu", "Choose translation source"),
-        "Nejdříve zastav překlad z konzole nebo telefonu." to Pair("Najprv zastav preklad z konzoly alebo telefónu.", "Stop translation from the console or phone first."),
-        "Nejdříve zastav stávající překlad." to Pair("Najprv zastav aktuálny preklad.", "Stop the current translation first."),
-        "Vyber PlayStation" to Pair("Vyber PlayStation", "Select PlayStation"),
-        "Přidat PlayStation" to Pair("Pridať PlayStation", "Add PlayStation"),
-        "Konzoli se nepodařilo načíst." to Pair("Konzolu sa nepodarilo načítať.", "Could not load console."),
-        "Hledám konzole…" to Pair("Hľadám konzoly…", "Searching for consoles…"),
-        "Seznam Xboxů se nepodařilo načíst." to Pair("Zoznam Xboxov sa nepodarilo načítať.", "Could not load Xbox list."),
-        "Vyber Xbox" to Pair("Vyber Xbox", "Select Xbox"),
-        "Nejprve vyber a připoj konzoli." to Pair("Najprv vyber a pripoj konzolu.", "Select and connect a console first."),
-        "Kterou konzoli používáš?" to Pair("Ktorú konzolu používaš?", "Which console do you use?"),
-        "Moje zařízení" to Pair("Moje zariadenia", "My devices"),
-        "Vybrat konzoli" to Pair("Vybrať konzolu", "Select console"),
-        "Snímání aktivní" to Pair("Snímanie aktívne", "Capture active"),
-        "Nastaveno · spojení ověřím při spuštění" to Pair("Nastavené · spojenie overím pri spustení", "Configured · connection checked at start"),
-        "Přidat Xbox nebo PlayStation" to Pair("Pridať Xbox alebo PlayStation", "Add Xbox or PlayStation"),
-        "Titulky na telefonu" to Pair("Titulky na telefóne", "Subtitles on phone"),
-        "Vyber nebo spáruj televizi" to Pair("Vyber alebo spáruj televízor", "Select or pair a TV"),
-        "Televize uložena · spojení se ověří" to Pair("Televízor uložený · spojenie sa overí", "TV saved · connection will be checked"),
-        "Zastavit překlad" to Pair("Zastaviť preklad", "Stop translation"),
-        "Spustit překlad" to Pair("Spustiť preklad", "Start translation"),
-        "Nastavení překladu" to Pair("Nastavenia prekladu", "Translation settings"),
-        "Remote Play běží · TV spojení neověřeno" to Pair("Remote Play beží · spojenie TV neoverené", "Remote Play running · TV connection unverified"),
-        "Připojuji / načítám snímky" to Pair("Pripájam / načítavam snímky", "Connecting / loading frames"),
-        "Nejprve připoj konzoli" to Pair("Najprv pripoj konzolu", "Connect a console first"),
-        "Konzole je nastavená · připojení neověřeno" to Pair("Konzola je nastavená · pripojenie neoverené", "Console configured · connection unverified"),
-        "Video snímky se přijímají, titulky zpracovává OCR." to Pair("Videosnímky sa prijímajú, titulky spracováva OCR.", "Video frames are arriving; OCR processes subtitles."),
-        "Uložený televizor nepotvrzuje živé přijetí titulků." to Pair("Uložený televízor nepotvrdzuje živý príjem titulkov.", "A saved TV does not confirm live subtitle reception."),
-        "Uložené zařízení samo o sobě nepotvrzuje živé spojení." to Pair("Uložené zariadenie samo osebe nepotvrdzuje živé spojenie.", "A saved device alone does not confirm a live connection."),
-        "Hraj. Rozuměj." to Pair("Hraj. Rozumej.", "Play. Understand."),
-        "Účet PlayStation" to Pair("Účet PlayStation", "PlayStation account"),
-        "Najít PlayStation" to Pair("Nájsť PlayStation", "Find PlayStation"),
-        "Párovací PIN" to Pair("Párovací PIN", "Pairing PIN"),
-        "Účet Microsoft" to Pair("Účet Microsoft", "Microsoft account"),
-        "Najít Xbox" to Pair("Nájsť Xbox", "Find Xbox"),
-        "Připojení Xbox" to Pair("Pripojenie Xbox", "Xbox connection"),
-        "Verze:" to Pair("Verzia:", "Version:"),
-        "Samostatná TV:" to Pair("Samostatný TV:", "Standalone TV:"),
-        "OCR obrazovky: pouze MediaProjection" to Pair("OCR obrazovky: iba MediaProjection", "Screen OCR: MediaProjection only"),
-        "Překryv:" to Pair("Prekrytie:", "Overlay:"),
-        "Povolen" to Pair("Povolené", "Allowed"),
-        "Nepovolen" to Pair("Nepovolené", "Not allowed"),
-        "Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR." to Pair("Zatiaľ žiadny preklad vo voliteľnej histórii. Na živý náhľad použi Test OCR.", "No translations in the optional history yet. Use Test OCR for a live preview."),
-        "Povolit překryv" to Pair("Povoliť prekrytie", "Allow overlay"),
-        "Další nastavení" to Pair("Ďalšie nastavenia", "More settings"),
-        "Diagnostika a kompatibilita" to Pair("Diagnostika a kompatibilita", "Diagnostics and compatibility"),
-        "Legacy příjem:" to Pair("Legacy príjem:", "Legacy reception:"),
-        "Vymazat místní diagnostický log" to Pair("Vymazať miestny diagnostický záznam", "Clear local diagnostic log"),
-        "Test OCR" to Pair("Test OCR", "Test OCR"),
-        "Diagnostika TV" to Pair("Diagnostika TV", "TV diagnostics"),
-        "Samostatný překlad TV" to Pair("Samostatný preklad TV", "Standalone TV translation"),
-        "GameLingo · samostatná TV" to Pair("GameLingo · samostatný TV", "GameLingo · standalone TV"),
-        "Pozastaveno" to Pair("Pozastavené", "Paused"),
-        "Pozastavit" to Pair("Pozastaviť", "Pause"),
-        "Čekám na systémový souhlas" to Pair("Čakám na systémový súhlas", "Waiting for system consent"),
-        "Snímání nebylo povoleno" to Pair("Snímanie nebolo povolené", "Capture was not allowed"),
-        "Souhlas udělen" to Pair("Súhlas udelený", "Consent granted"),
-        "Čekám na první snímek" to Pair("Čakám na prvú snímku", "Waiting for first frame"),
-        "Čekám na podporovaný zdroj" to Pair("Čakám na podporovaný zdroj", "Waiting for a supported source"),
-        "Čekám na otevření videa nebo vstupu TV" to Pair("Čakám na otvorenie videa alebo vstupu TV", "Waiting for video or TV input"),
-        "Aktivuji službu snímání" to Pair("Aktivujem službu snímania", "Activating capture service"),
-        "Zahajuji MediaProjection" to Pair("Spúšťam MediaProjection", "Starting MediaProjection"),
-        "Systém ukončil snímání" to Pair("Systém ukončil snímanie", "System stopped capture"),
-        "Oblast obrazu je tmavá nebo nedostupná" to Pair("Oblasť obrazu je tmavá alebo nedostupná", "Image region is dark or unavailable"),
-        "OCR titulků" to Pair("OCR titulkov", "Subtitle OCR"),
-        "OCR herních textů" to Pair("OCR herných textov", "Game text OCR"),
-        "Zastaveno" to Pair("Zastavené", "Stopped"),
-        "Zastaveno · poslední stav:" to Pair("Zastavené · posledný stav:", "Stopped · last status:"),
-        "Dialog snímání:" to Pair("Dialóg snímania:", "Capture consent dialog:"),
-        "Start služby:" to Pair("Spustenie služby:", "Service startup:"),
-        "Aktivace foreground služby:" to Pair("Aktivácia služby v popredí:", "Foreground service activation:"),
-        "Start snímání:" to Pair("Spustenie snímania:", "Capture startup:"),
-        "Chyba OCR:" to Pair("Chyba OCR:", "OCR error:"),
-        "Stav:" to Pair("Stav:", "Status:"),
-        "Foreground služba:" to Pair("Služba v popredí:", "Foreground service:"),
-        "Souhlas / projekce:" to Pair("Súhlas / projekcia:", "Consent / projection:"),
-        "Snímání:" to Pair("Snímanie:", "Capture:"),
-        "zdroj:" to Pair("zdroj:", "source:"),
-        "Přijaté snímky:" to Pair("Prijaté snímky:", "Received frames:"),
-        "výřezy:" to Pair("výrezy:", "crops:"),
-        "Chyba snímku:" to Pair("Chyba snímky:", "Frame error:"),
-        "Hlídač:" to Pair("Strážca:", "Watchdog:"),
-        "Překladač:" to Pair("Prekladač:", "Translator:"),
-        "překlad:" to Pair("preklad:", "translation:"),
-        "Rozložení:" to Pair("Rozloženie:", "Layout:"),
-        "hlášená chyba" to Pair("hlásená chyba", "error reported"),
-        "bez hlášené chyby" to Pair("bez hlásenej chyby", "no reported error"),
-        "Překlad:" to Pair("Preklad:", "Translation:"),
-        "Samostatná TV – průměr/P95 (předání není potvrzené zobrazení):" to Pair("Samostatný TV – priemer/P95 (odovzdanie nie je potvrdené zobrazenie):", "Standalone TV – average/P95 (handoff does not confirm display):"),
-        "Aktivní · mediaProjection" to Pair("Aktívna · mediaProjection", "Active · mediaProjection"),
-        "Zahajuji" to Pair("Spúšťam", "Starting"),
-        "Povoleno" to Pair("Povolené", "Allowed"),
-        "Vytvořen" to Pair("Vytvorený", "Created"),
-        "Bez textu" to Pair("Bez textu", "No text"),
-        "Text rozpoznán" to Pair("Text rozpoznaný", "Text recognized"),
-        "Chyba OCR" to Pair("Chyba OCR", "OCR error"),
-        "Překládám" to Pair("Prekladám", "Translating"),
-        "Přeloženo" to Pair("Preložené", "Translated"),
-        "Starý výsledek zahozen" to Pair("Starý výsledok zahodený", "Stale result discarded"),
-        "Chyba překladu" to Pair("Chyba prekladu", "Translation error"),
-        "Uvolněn" to Pair("Uvoľnený", "Released"),
-        "Chyba při uvolnění" to Pair("Chyba pri uvoľnení", "Release error"),
-        "Ukončena" to Pair("Ukončená", "Stopped"),
-        "Chyba při ukončení" to Pair("Chyba pri ukončení", "Stop error"),
-        "Nezahájena" to Pair("Nezačatá", "Not started"),
-        "Nezahájeno" to Pair("Nezačaté", "Not started"),
-        "Nevytvořen" to Pair("Nevytvorený", "Not created"),
-        "Čeká" to Pair("Čaká", "Waiting"),
-        "Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?" to Pair("Povoliť nepodpísané titulky zo starších aplikácií iba v dôveryhodnej domácej sieti?", "Allow unsigned subtitles from older apps only on a trusted home network?"),
-        "Vymazat místní diagnostické logy?" to Pair("Vymazať miestne diagnostické záznamy?", "Clear local diagnostic logs?"),
-        "Zastav ostatní režimy a povol překryv." to Pair("Zastav ostatné režimy a povoľ prekrytie.", "Stop other modes and allow overlays."),
-        "Snímání nelze spustit." to Pair("Snímanie nemožno spustiť.", "Could not start capture."),
-        "Překlad se nepodařilo spustit." to Pair("Preklad sa nepodarilo spustiť.", "Could not start translation."),
-        "Samostatná TV" to Pair("Samostatný TV", "Standalone TV"),
-        "Překlad je spuštěný." to Pair("Preklad je spustený.", "Translation is running."),
-        "Zastavit" to Pair("Zastaviť", "Stop"),
-        "Pozastavit / pokračovat" to Pair("Pozastaviť / pokračovať", "Pause / resume"),
-        "Spustit překlad TV · vybrat profil" to Pair("Spustiť preklad TV · vybrať profil", "Start TV translation · choose profile"),
-        "Diagnostický výřez OCR" to Pair("Diagnostický výrez OCR", "Diagnostic OCR crop"),
-        "Vypnout test překryvu" to Pair("Vypnúť test prekrytia", "Stop overlay test"),
-        "Test překryvu" to Pair("Test prekrytia", "Test overlay"),
-        "Nejdříve zastav ostatní režimy." to Pair("Najprv zastav ostatné režimy.", "Stop other modes first."),
-        "Test překladového jádra" to Pair("Test prekladového jadra", "Test translation engine"),
-        "Test překladu" to Pair("Test prekladu", "Translation test"),
-        "Vypršel čas testu." to Pair("Vypršal čas testu.", "Test timed out."),
-        "Překlad selhal." to Pair("Preklad zlyhal.", "Translation failed."),
-        "Chyba:" to Pair("Chyba:", "Error:"),
-        "Test snímání" to Pair("Test snímania", "Test capture"),
-        "Po souhlasu otevři video do 10 sekund. Výřez a poslední rozpoznaný text zůstanou pouze v paměti do vymazání nebo nové relace. Po návratu sem se snímání zastaví." to Pair("Po udelení súhlasu otvor video do 10 sekúnd. Výrez a posledný rozpoznaný text zostanú iba v pamäti do vymazania alebo novej relácie. Po návrate sem sa snímanie zastaví.", "After granting consent, open a video within 10 seconds. The crop and last recognized text remain in memory only until cleared or a new session starts. Capture stops when you return here."),
-        "Spustit test" to Pair("Spustiť test", "Start test"),
-        "Vymazat náhled" to Pair("Vymazať náhľad", "Clear preview"),
-        "Diagnostika samostatného OCR" to Pair("Diagnostika samostatného OCR", "Standalone OCR diagnostics"),
-        "Služba snímání neodpověděla" to Pair("Služba snímania neodpovedala", "Capture service did not respond"),
-        "Chybí souhlas nebo překryv, případně běží jiný režim" to Pair("Chýba súhlas alebo prekrytie, prípadne beží iný režim", "Consent or overlay permission is missing, or another mode is running"),
-        "Aktualizace GameLingo" to Pair("Aktualizácia GameLingo", "GameLingo update"),
-        "Nová verze GameLingo · O aplikaci → Aktualizace" to Pair("Nová verzia GameLingo · O aplikácii → Aktualizácia", "New GameLingo version · About → Updates"),
-        "Nejprve zastav překlad a příjem." to Pair("Najprv zastav preklad a príjem.", "Stop translation and receiving first."),
-        "Kontrola již probíhá. Zkus to znovu." to Pair("Kontrola už prebieha. Skús to znova.", "An update check is already running. Try again."),
-        "Kontroluji vydání na GitHubu…" to Pair("Kontrolujem vydania na GitHube…", "Checking GitHub releases…"),
-        "Nelze zjistit nainstalovanou verzi." to Pair("Nemožno zistiť nainštalovanú verziu.", "Could not determine the installed version."),
-        "Zatím není dostupné vydání s ověřitelnými aktualizačními metadaty." to Pair("Zatiaľ nie je dostupné vydanie s overiteľnými aktualizačnými metadátami.", "No release with verifiable update metadata is available yet."),
-        "Novější verze není dostupná." to Pair("Novšia verzia nie je dostupná.", "No newer version is available."),
-        "Nainstalováno:" to Pair("Nainštalované:", "Installed:"),
-        "Nová APK má jiný podpis. Aktualizace je zablokovaná, aby se nesmazalo nastavení. Je nutný jednorázový přechod na trvalý podpis." to Pair("Nová APK má iný podpis. Aktualizácia je zablokovaná, aby sa nastavenia nevymazali. Je potrebný jednorazový prechod na trvalý podpis.", "The new APK has a different signature. The update is blocked to preserve settings. A one-time migration to the permanent signing key is required."),
-        "Nová verze GameLingo" to Pair("Nová verzia GameLingo", "New GameLingo version"),
-        "Nová verze:" to Pair("Nová verzia:", "New version:"),
-        "Velikost:" to Pair("Veľkosť:", "Size:"),
-        "Později" to Pair("Neskôr", "Later"),
-        "Stáhnout" to Pair("Stiahnuť", "Download"),
-        "Kontrola aktualizace se nezdařila. Zkontroluj internet a zkus to znovu." to Pair("Kontrola aktualizácie zlyhala. Skontroluj internet a skús to znova.", "Update check failed. Check your internet connection and try again."),
-        "Povolení instalace" to Pair("Povolenie inštalácie", "Installation permission"),
-        "Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace." to Pair("Povoľ inštaláciu z GameLingo v nastaveniach TV. Potom znova otvor Aktualizácie.", "Allow installation from GameLingo in TV settings. Then reopen Updates."),
-        "Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování." to Pair("Povoľ inštaláciu z GameLingo v nastaveniach TV. Po návrate môžeš pokračovať bez ďalšieho sťahovania.", "Allow installation from GameLingo in TV settings. After returning, continue without downloading again."),
-        "Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu." to Pair("Inštalácia nebola povolená. APK je stiahnutá; otvor aktualizáciu znova.", "Installation was not allowed. The APK is downloaded; reopen Updates."),
-        "Systémové nastavení instalace nelze otevřít." to Pair("Systémové nastavenia inštalácie nemožno otvoriť.", "Could not open system installation settings."),
-        "Povol instalaci z GameLingo v nastavení zařízení. Potom znovu otevři Aktualizace." to Pair("Povoľ inštaláciu z GameLingo v nastaveniach zariadenia. Potom znova otvor Aktualizácie.", "Allow installation from GameLingo in device settings. Then reopen Updates."),
-        "Otevřít nastavení" to Pair("Otvoriť nastavenia", "Open settings"),
-        "Nastavení instalace není na této TV dostupné." to Pair("Nastavenia inštalácie nie sú na tomto TV dostupné.", "Installation settings are unavailable on this TV."),
-        "Nastavení instalace není na tomto zařízení dostupné." to Pair("Nastavenia inštalácie nie sú na tomto zariadení dostupné.", "Installation settings are unavailable on this device."),
-        "Jiná aktualizace již probíhá." to Pair("Iná aktualizácia už prebieha.", "Another update is already running."),
-        "Stahování aktualizace" to Pair("Sťahovanie aktualizácie", "Downloading update"),
-        "Překlad je aktivní. Aktualizaci spusť po zastavení." to Pair("Preklad je aktívny. Aktualizáciu spusti po zastavení.", "Translation is active. Start the update after stopping it."),
-        "Systémový instalátor nelze otevřít." to Pair("Systémový inštalátor nemožno otvoriť.", "Could not open the system installer."),
-        "Aktualizace nebyla nainstalována:" to Pair("Aktualizácia nebola nainštalovaná:", "Update not installed:"),
-        "Neznámá chyba." to Pair("Neznáma chyba.", "Unknown error."),
-        "Nelze vytvořit složku aktualizací." to Pair("Nemožno vytvoriť priečinok aktualizácií.", "Could not create the update directory."),
-        "Stahování zrušeno." to Pair("Sťahovanie zrušené.", "Download canceled."),
-        "Časový limit stahování." to Pair("Časový limit sťahovania.", "Download timed out."),
-        "Neočekávaná velikost APK." to Pair("Neočakávaná veľkosť APK.", "Unexpected APK size."),
-        "Kontrolní součet APK nesouhlasí." to Pair("Kontrolný súčet APK nesúhlasí.", "APK checksum mismatch."),
-        "APK není čitelná." to Pair("APK nie je čitateľná.", "The APK could not be read."),
-        "Podpis, identita nebo verze APK nesouhlasí." to Pair("Podpis, identita alebo verzia APK nesúhlasia.", "APK signature, identity or version mismatch."),
-        "Nepovolený zdroj aktualizace." to Pair("Nepovolený zdroj aktualizácie.", "Untrusted update source."),
-        "Chybí cíl přesměrování." to Pair("Chýba cieľ presmerovania.", "Missing redirect destination."),
-        "Příliš mnoho přesměrování." to Pair("Príliš veľa presmerovaní.", "Too many redirects."),
-        "GitHub odpověděl HTTP" to Pair("GitHub odpovedal HTTP", "GitHub returned HTTP"),
-        "Zkontrolovat aktualizace" to Pair("Skontrolovať aktualizácie", "Check for updates"),
-        "Stáhnout novou verzi" to Pair("Stiahnuť novú verziu", "Download new version"),
-        "Modrá · čtení dialogů" to Pair("Modrá · čítanie dialógov", "Blue · read dialogue"),
-        "Zelená · přeložené dialogy" to Pair("Zelená · preložené dialógy", "Green · translated dialogue"),
-        "Žlutá · čtení dalších textů" to Pair("Žltá · čítanie ďalších textov", "Yellow · read other text"),
-        "Oranžová · přeložené texty" to Pair("Oranžová · preložené texty", "Orange · translated text"),
-        "zamčeno" to Pair("zamknuté", "locked"),
-        "Náhled oblastí · zmizí za 30 s" to Pair("Náhľad oblastí · zmizne za 30 s", "Region preview · disappears in 30 s"),
-        "Nejdříve povol překryv v nastavení TV." to Pair("Najprv povoľ prekrytie v nastaveniach TV.", "Allow overlays in TV settings first."),
-        "Náhled nelze zobrazit" to Pair("Náhľad nemožno zobraziť", "Could not display preview"),
-        "Nejdříve zastav překlad i příjem z telefonu." to Pair("Najprv zastav preklad aj príjem z telefónu.", "Stop translation and phone reception first."),
-        "Rozložení oblastí" to Pair("Rozloženie oblastí", "Region layout"),
-        "Posun" to Pair("Posun", "Move"),
-        "Velikost" to Pair("Veľkosť", "Size"),
-        "Písmo" to Pair("Písmo", "Font"),
-        "Odemknout oblast" to Pair("Odomknúť oblasť", "Unlock region"),
-        "Zamknout oblast" to Pair("Zamknúť oblasť", "Lock region"),
-        "Čtení: ruční" to Pair("Čítanie: ručné", "Reading: manual"),
-        "Čtení: automatické" to Pair("Čítanie: automatické", "Reading: automatic"),
-        "Poloha: vlastní" to Pair("Poloha: vlastná", "Position: custom"),
-        "Poloha: automatická" to Pair("Poloha: automatická", "Position: automatic"),
-        "Další texty: zapnuto" to Pair("Ďalšie texty: zapnuté", "Other text: on"),
-        "Další texty: vypnuto" to Pair("Ďalšie texty: vypnuté", "Other text: off"),
-        "Typ: celý text" to Pair("Typ: celý text", "Type: full text"),
-        "Typ: volby odpovědí" to Pair("Typ: voľby odpovedí", "Type: answer choices"),
-        "Šířka" to Pair("Šírka", "Width"),
-        "písmo" to Pair("písmo", "font"),
-        "výška" to Pair("výška", "height"),
-        "Zamčeno · odemkni oblast" to Pair("Zamknuté · odomkni oblasť", "Locked · unlock region"),
-        "OK · posouvat šipkami" to Pair("OK · posúvať šípkami", "OK · move with arrows"),
-        "OK · šířka a měřítko" to Pair("OK · šírka a mierka", "OK · width and scale"),
-        "OK · změnit velikost" to Pair("OK · zmeniť veľkosť", "OK · resize"),
-        "OK · velikost písma" to Pair("OK · veľkosť písma", "OK · font size"),
-        "Vyber oblast a režim · v editoru stiskni OK, potom šipky · OK ukončí úpravy" to Pair("Vyber oblasť a režim · v editore stlač OK, potom šípky · OK ukončí úpravy", "Choose region and mode · press OK in editor, then arrows · OK ends editing"),
-        "Režim úprav · šipky mění rámeček · OK ukončí úpravy" to Pair("Režim úprav · šípky menia rámček · OK ukončí úpravy", "Editing · arrows adjust frame · OK ends editing"),
-        "Vyber další ovládací prvek šipkami" to Pair("Vyber ďalší ovládací prvok šípkami", "Use arrows to choose another control"),
-        "Úpravy ukončeny · šipkami vyber další ovládací prvek" to Pair("Úpravy ukončené · šípkami vyber ďalší ovládací prvok", "Editing finished · use arrows to choose another control"),
-        "Režim úprav · OK ukončí úpravy" to Pair("Režim úprav · OK ukončí úpravy", "Editing · OK ends editing"),
-        "Režim" to Pair("Režim", "Mode"),
-        "Typ" to Pair("Typ", "Type"),
-        "Posouvat" to Pair("Posúvať", "Move"),
-        "Obnovit oblast" to Pair("Obnoviť oblasť", "Reset region"),
-        "Nejdřív odemkni oblast." to Pair("Najprv odomkni oblasť.", "Unlock the region first."),
-        "Překlad běží nebo oblast není platná." to Pair("Preklad beží alebo oblasť nie je platná.", "Translation is running or the region is invalid."),
-        "Uložit do profilu" to Pair("Uložiť do profilu", "Save to profile"),
-        "Vítej v GameLingo TV" to Pair("Vitaj v GameLingo TV", "Welcome to GameLingo TV"),
-        "Vyber jazyky. Potom můžeš překládat z telefonu nebo přímo na televizi." to Pair("Vyber jazyky. Potom môžeš prekladať z telefónu alebo priamo na televízore.", "Choose your languages, then translate from your phone or directly on the TV."),
-        "Pokračovat na TV" to Pair("Pokračovať na TV", "Continue on TV"),
-        "PŘEKLAD HRY" to Pair("PREKLAD HRY", "GAME TRANSLATION"),
-        "Překlad mluvených dialogů" to Pair("Preklad hovorených dialógov", "Translate dialogue subtitles"),
-        "Herní texty" to Pair("Herné texty", "Game text"),
-        "Nápověda a úkoly v herním obraze" to Pair("Pomoc a úlohy v hernom obraze", "Hints and objectives in the game image"),
-        "Překrýt původní titulky" to Pair("Prekryť pôvodné titulky", "Cover original subtitles"),
-        "Přeložený text přímo přes originál" to Pair("Preložený text priamo cez originál", "Translated text over the original"),
-        "Postupné čtení delších dialogů" to Pair("Postupné čítanie dlhších dialógov", "Sequential reading of longer dialogue"),
-        "Změny nastavení překladu se projeví po novém spuštění." to Pair("Zmeny nastavení prekladu sa prejavia po novom spustení.", "Translation settings take effect after restarting translation."),
-        "OCR A ROZPOZNÁVÁNÍ" to Pair("OCR A ROZPOZNÁVANIE", "OCR AND RECOGNITION"),
-        "Nejprve zastav překlad." to Pair("Najprv zastav preklad.", "Stop translation first."),
-        "Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon." to Pair("Platí pre čítanie priamo na TV. Pri príjme titulkov z telefónu rozhoduje telefón.", "Applies to reading directly on TV. When receiving subtitles, the phone controls reading."),
-        "Přímý překlad i překlad z telefonu používají internet nebo dříve uložené překlady." to Pair("Priamy preklad aj preklad z telefónu používajú internet alebo skôr uložené preklady.", "Direct translation and phone translation use internet access or previously cached translations."),
-        "ZOBRAZENÍ" to Pair("ZOBRAZENIE", "DISPLAY"),
-        "Titulky přes obraz hry" to Pair("Titulky cez obraz hry", "Subtitles over game image"),
-        "Vyžaduje povolení překryvu" to Pair("Vyžaduje povolenie prekrytia", "Requires overlay permission"),
-        "Pro čtení her přímo v TV potřebuje aplikace povolení překryvu." to Pair("Na čítanie hier priamo v TV potrebuje aplikácia povolenie prekrytia.", "Reading games directly on the TV requires overlay permission."),
-        "ZABEZPEČENÍ" to Pair("ZABEZPEČENIE", "SECURITY"),
-        "Legacy · staré aplikace" to Pair("Legacy · staršie aplikácie", "Legacy · older apps"),
-        "Povolí nepodepsané titulky (jen důvěryhodná síť)" to Pair("Povolí nepodpísané titulky (iba dôveryhodná sieť)", "Allow unsigned subtitles (trusted networks only)"),
-        "DALŠÍ" to Pair("ĎALŠIE", "MORE"),
-        "Vlastní výrazy pro přímé OCR" to Pair("Vlastné výrazy pre priame OCR", "Custom terms for direct OCR"),
-        "Překlady zpracované přímo na TV" to Pair("Preklady spracované priamo na TV", "Translations processed on TV"),
-        "Původní autoři, zdrojový kód a GNU AGPLv3" to Pair("Pôvodní autori, zdrojový kód a GNU AGPLv3", "Original authors, source code and GNU AGPLv3"),
-        "Nejdříve zastav překlad a příjem z telefonu." to Pair("Najprv zastav preklad a príjem z telefónu.", "Stop translation and phone reception first."),
-        "Místní překladová paměť" to Pair("Miestna prekladová pamäť", "Local translation cache"),
-        "Ukládá originály a překlady na tomto zařízení. Historie a profily jsou oddělené." to Pair("Ukladá originály a preklady na tomto zariadení. História a profily sú oddelené.", "Stores originals and translations on this device. History and profiles are separate."),
-        "Vypnout paměť" to Pair("Vypnúť pamäť", "Disable cache"),
-        "Zapnout paměť" to Pair("Zapnúť pamäť", "Enable cache"),
-        "Vymazat paměť" to Pair("Vymazať pamäť", "Clear cache"),
-        "Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže." to Pair("Vymazať iba miestnu prekladovú cache? Profily, účty ani históriu to nezmaže.", "Clear only the local translation cache? Profiles, accounts and history will not be deleted."),
-        "Ukládá originály i překlady na tomto zařízení. Je oddělená od historie. Vypnutí může zvýšit počet online požadavků a omezit překlad bez internetu." to Pair("Ukladá originály aj preklady na tomto zariadení. Je oddelená od histórie. Vypnutie môže zvýšiť počet online požiadaviek a obmedziť preklad bez internetu.", "Stores originals and translations on this device, separate from history. Disabling may increase online requests and limit offline translation."),
-        "zapnuto" to Pair("zapnuté", "on"),
-        "vypnuto" to Pair("vypnuté", "off"),
-        "Operace se nezdařila. Zkus ji znovu." to Pair("Operácia sa nepodarila. Skús ju znova.", "Operation failed. Try again."),
-        "Cache zapnuta." to Pair("Cache zapnutá.", "Cache enabled."),
-        "Cache vypnuta; uložené překlady lze vymazat zvlášť." to Pair("Cache vypnutá; uložené preklady možno vymazať zvlášť.", "Cache disabled; saved translations can be cleared separately."),
-        "Místní překladová cache vymazána." to Pair("Miestna prekladová cache vymazaná.", "Local translation cache cleared."),
-        "QR není dostupný. Zkontroluj místní IP a platnost PINu, nebo použij ruční párování." to Pair("QR nie je dostupný. Skontroluj miestnu IP a platnosť PINu alebo použi ručné párovanie.", "QR unavailable. Check local IP and PIN validity or use manual pairing."),
-        "QR kód není dostupný." to Pair("QR kód nie je dostupný.", "QR code unavailable."),
-        "Dočasný párovací QR kód" to Pair("Dočasný párovací QR kód", "Temporary pairing QR code"),
-        "V mobilní aplikaci otevři Zařízení a naskenuj QR kód." to Pair("V mobilnej aplikácii otvor Zariadenia a naskenuj QR kód.", "Open Devices in the mobile app and scan the QR code."),
-        "Kód již není platný. Vrať se zpět a vygeneruj nový." to Pair("Kód už nie je platný. Vráť sa späť a vygeneruj nový.", "Code expired. Go back and generate a new code."),
-        "zbývá" to Pair("zostáva", "remaining"),
-        "Párování pomocí QR" to Pair("Párovanie pomocou QR", "Pair using QR"),
-        "Vyber svůj mobilní telefon." to Pair("Vyber svoj mobilný telefón.", "Choose your phone."),
-        "IPA · instalace s podpisem" to Pair("IPA · inštalácia s podpisom", "IPA · signed installation"),
-        "APK · mobilní verze" to Pair("APK · mobilná verzia", "APK · mobile version"),
-        "Stáhnout GameLingo" to Pair("Stiahnuť GameLingo", "Download GameLingo"),
-        "Ověřuji aktuální vydání…" to Pair("Overujem aktuálne vydanie…", "Checking current release…"),
-        "QR kód ke stažení" to Pair("QR kód na stiahnutie", "Download QR code"),
-        "Naskenuj QR kód fotoaparátem iPhonu. IPA je testovací balíček; před instalací vyžaduje podpis, například přes AltStore nebo Sideloadly." to Pair("Naskenuj QR kód fotoaparátom iPhonu. IPA je testovací balík; pred inštaláciou vyžaduje podpis, napríklad cez AltStore alebo Sideloadly.", "Scan with your iPhone camera. The test IPA requires signing before installation, for example with AltStore or Sideloadly."),
-        "Naskenuj QR kód telefonem s Androidem, stáhni mobilní APK a potvrď instalaci. Systém může vyžadovat povolení instalace z tohoto zdroje." to Pair("Naskenuj QR kód telefónom s Androidom, stiahni mobilný APK a potvrď inštaláciu. Systém môže vyžadovať povolenie inštalácie z tohto zdroja.", "Scan with your Android phone, download the mobile APK and confirm installation. Android may require permission to install from this source."),
-        "Otevři QR kód v telefonu." to Pair("Otvor QR kód v telefóne.", "Open the QR code on your phone."),
-        "Znovu ověřit vydání" to Pair("Znova overiť vydanie", "Check release again"),
-        "Aktuální vydání" to Pair("Aktuálne vydanie", "Current release"),
-        "Vydání se nepodařilo ověřit · stránka všech vydání" to Pair("Vydanie sa nepodarilo overiť · stránka všetkých vydaní", "Could not verify release · all releases page"),
-        "Načti QR kód z GameLingo TV" to Pair("Načítaj QR kód z GameLingo TV", "Scan the GameLingo TV QR code"),
-        "Fotoaparát není dostupný. Použij ruční PIN." to Pair("Fotoaparát nie je dostupný. Použi ručný PIN.", "Camera unavailable. Use manual PIN entry."),
-        "Neplatný GameLingo QR kód. Použij nový kód z TV." to Pair("Neplatný GameLingo QR kód. Použi nový kód z TV.", "Invalid GameLingo QR code. Use a new code from the TV."),
-        "Nastavení TV" to Pair("Nastavenia TV", "TV settings"),
-        "Jazyky, OCR a Překlad určují, co a jak se překládá. Rozložení nastavuje čtyři oblasti. Vzhled upravuje titulky a Profily ukládají konfiguraci pro hry, filmy a aplikace." to Pair("Jazyky, OCR a Preklad určujú, čo a ako sa prekladá. Rozloženie nastavuje štyri oblasti. Vzhľad upravuje titulky a Profily ukladajú konfiguráciu pre hry, filmy a aplikácie.", "Languages, OCR and Translation determine what is translated and how. Layout sets four regions. Appearance changes subtitles and Profiles save settings for games, films and apps."),
-        "Zvol režim rozpoznávání, filtrování menu a případně rozšířené hledání. Ruční modrá oblast omezuje čtení na místo dialogů. Před změnou zastav překlad." to Pair("Zvoľ režim rozpoznávania, filtrovanie menu a prípadne rozšírené hľadanie. Ručná modrá oblasť obmedzuje čítanie na miesto dialógov. Pred zmenou zastav preklad.", "Choose recognition mode, menu filtering and optional expanded search. The manual blue region limits reading to dialogue. Stop translation before making changes."),
-        "Vyber barvu a pozadí překladu. Polohu, šířku a velikost písma upravíš v Rozložení a uložíš do profilu." to Pair("Vyber farbu a pozadie prekladu. Polohu, šírku a veľkosť písma upravíš v Rozložení a uložíš do profilu.", "Choose translation color and background. Adjust position, width and font size in Layout and save to a profile."),
-        "Test překryvu ověří zobrazení pevného titulku. Test překladového jádra ověří online překlad. Test snímání vyžaduje souhlas Androidu. Náhled lze vymazat." to Pair("Test prekrytia overí zobrazenie pevného titulku. Test prekladového jadra overí online preklad. Test snímania vyžaduje súhlas Androidu. Náhľad možno vymazať.", "The overlay test displays a fixed subtitle. The translation engine test checks online translation. Capture requires Android permission. You can clear the preview."),
-        "Stáhnout aplikaci" to Pair("Stiahnuť aplikáciu", "Download app"),
-        "Vyber iPhone nebo Android a naskenuj QR kód fotoaparátem telefonu. Odkaz vede na nejnovější dostupný mobilní balíček na GitHubu. IPA vyžaduje podpis; Android APK může vyžadovat povolení instalace z tohoto zdroje. Pokud vydání nelze ověřit, použij stránku všech vydání. Toto není párovací QR kód." to Pair("Vyber iPhone alebo Android a naskenuj QR kód fotoaparátom telefónu. Odkaz vedie na najnovší dostupný mobilný balík na GitHube. IPA vyžaduje podpis; Android APK môže vyžadovať povolenie inštalácie z tohto zdroja. Ak vydanie nemožno overiť, použi stránku všetkých vydaní. Toto nie je párovací QR kód.", "Choose iPhone or Android and scan the QR code with your phone camera. It opens the latest available mobile package on GitHub. IPA requires signing; APK may require permission to install from this source. If the release cannot be verified, use the releases page. This is not a pairing QR code."),
-        "Párování telefonu" to Pair("Párovanie telefónu", "Phone pairing"),
-        "Telefon a TV připoj ke stejné síti. V mobilu otevři Zařízení, vyber TV a naskenuj QR kód nebo zadej celý párovací kód. Po vypršení platnosti vytvoř nový kód." to Pair("Telefón a TV pripoj k rovnakej sieti. V mobile otvor Zariadenia, vyber TV a naskenuj QR kód alebo zadaj celý párovací kód. Po vypršaní platnosti vytvor nový kód.", "Connect phone and TV to the same network. Open Devices on the phone, choose TV and scan the QR code or enter the full pairing code. Generate a new code if it expires."),
-        "Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti." to Pair("História je voliteľná a uchováva posledné preklady v pamäti. Je oddelená od miestnej prekladovej pamäte.", "History is optional and keeps recent translations in memory. It is separate from the local translation cache."),
-        "Překladová paměť" to Pair("Prekladová pamäť", "Translation cache"),
-        "Místní paměť ukládá originály a překlady pro opakované použití. Můžeš ji vypnout nebo vymazat bez odstranění profilů." to Pair("Miestna pamäť ukladá originály a preklady na opakované použitie. Môžeš ju vypnúť alebo vymazať bez odstránenia profilov.", "The local cache stores originals and translations for reuse. You can disable or clear it without deleting profiles."),
-        "Slovník opravuje vlastní výrazy a jména pro zvolenou jazykovou dvojici. Před úpravou zastav překlad." to Pair("Slovník opravuje vlastné výrazy a mená pre zvolenú jazykovú dvojicu. Pred úpravou zastav preklad.", "The glossary corrects custom terms and names for the selected language pair. Stop translation before editing."),
-        "1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Načti QR nebo opiš celý kód z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Pokud používáš starý přijímač PlayCaption, zavři jej. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru." to Pair("1. Otvor GameLingo na telefóne.\n2. Zvoľ Google TV a vyber tento televízor.\n3. Naskenuj QR alebo opíš celý kód z obrazovky.\n\nTelefón a TV musia byť v rovnakej sieti. Ak používaš starý prijímač PlayCaption, zatvor ho. Prijímač môže zobraziť titulky cez HDMI obraz iba na podporovanom televízore.", "1. Open GameLingo on your phone.\n2. Choose Google TV and select this TV.\n3. Scan the QR or enter the entire code shown on screen.\n\nPhone and TV must be on the same network. Close the old PlayCaption receiver if it is running. Overlay over HDMI is available only on supported TVs."),
-        "Oblasti" to Pair("Oblasti", "Regions"),
-        "Modrá oblast čte původní titulky. Zelená určuje místo přeložených dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů." to Pair("Modrá oblasť číta pôvodné titulky. Zelená určuje miesto preložených dialógov. Žltá číta voľby a herné texty, oranžová zobrazuje ich preklad. Polohu a rozmery meň podľa hry. Oblasti sa ukladajú do profilov.", "Blue reads original subtitles. Green sets translated dialogue position. Yellow reads choices and game text; orange displays their translation. Adjust position and size for each game. Regions are saved in profiles."),
-        "OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit. Výchozí nastavení vychází z ověřeného základu PlayCaption." to Pair("OCR číta dialógy vo zvolenom zdrojovom jazyku. Samostatne možno zapnúť dialógy, herné texty a voľby. Pred zmenou rýchlosti alebo oblastí odporúčame zastaviť preklad. Predvolené nastavenia vychádzajú z overeného základu PlayCaption.", "OCR reads dialogue in the selected source language. Dialogue, game text and choices can be enabled separately. Stop translation before changing speed or regions. Defaults are based on the proven PlayCaption foundation."),
-        "Profil ukládá aktuální OCR oblasti, volby a nastavení překladu pro konkrétní hru, film nebo aplikaci. Údaje o účtech Sony a Microsoft se do profilů neukládají." to Pair("Profil ukladá aktuálne OCR oblasti, voľby a nastavenia prekladu pre konkrétnu hru, film alebo aplikáciu. Údaje účtov Sony a Microsoft sa do profilov neukladajú.", "A profile saves current OCR regions, options and translation settings for a game, film or app. Sony and Microsoft account information is not stored in profiles."),
-        "Xbox a PlayStation" to Pair("Xbox a PlayStation", "Xbox and PlayStation"),
-        "Pro Xbox se přihlašuješ svým účtem Microsoft a povolíš vzdálené funkce. Pro PS5/PS4 použij Remote Play a údaje svého účtu PlayStation. Párovací PIN z konzole se liší od hesla. Do hry ani do konzole se nic neinstaluje." to Pair("Pre Xbox sa prihlás účtom Microsoft a povoľ vzdialené funkcie. Pre PS5/PS4 použi Remote Play a údaje účtu PlayStation. Párovací PIN konzoly sa líši od hesla. Do hry ani konzoly sa nič neinštaluje.", "For Xbox, sign in with your Microsoft account and enable remote features. For PS5/PS4, use Remote Play and your PlayStation account details. The console pairing PIN differs from your password. Nothing is installed on the game or console."),
-        "Překlad na telefonu" to Pair("Preklad na telefóne", "Translation on phone"),
-        "Standardní režim funguje bez dalšího nastavování. Automatický režim používá připravenou zónu a další můžeš přidat v Oblastech obrazovky. Pokud překládáš přes TV, telefon i TV musí být ve stejné síti." to Pair("Štandardný režim funguje bez ďalšieho nastavovania. Automatický režim používa pripravenú zónu a ďalšie môžeš pridať v Oblastiach obrazovky. Ak prekladáš cez TV, telefón aj TV musia byť v rovnakej sieti.", "Standard mode works without additional setup. Automatic mode has a ready-to-use zone; add more in Screen regions. For TV output, phone and TV must be on the same network."),
-        "Vyber Xbox, PlayStation nebo samostatnou TV, připoj zařízení a spusť překlad. Kam se přeložené titulky zobrazí, nastavíš v Zařízení. Oblasti upravují místo čtení a zobrazení, Profily her ukládají vlastní konfiguraci." to Pair("Vyber Xbox, PlayStation alebo samostatnú TV, pripoj zariadenie a spusti preklad. Miesto zobrazenia preložených titulkov nastavíš v Zariadeniach. Oblasti upravujú čítanie a zobrazenie, Profily hier ukladajú konfiguráciu.", "Choose Xbox, PlayStation or standalone TV, connect your device and start translation. Set subtitle output in Devices. Regions control reading and display; Game profiles save custom configurations."),
-        "Otevřít nápovědu" to Pair("Otvoriť pomoc", "Open help"),
-        "Nápověda" to Pair("Pomoc", "Help"),
-        "testovací sestavení" to Pair("testovacie zostavenie", "test build"),
-        "Nezávislý překlad herních dialogů a textů pro Xbox, PlayStation a kompatibilní TV." to Pair("Nezávislý preklad herných dialógov a textov pre Xbox, PlayStation a kompatibilné TV.", "Independent game dialogue and text translation for Xbox, PlayStation and compatible TVs."),
-        "Licence a původní autoři" to Pair("Licencie a pôvodní autori", "Licenses and original authors"),
-        "GameLingo využívá open-source základy PlayCaption a Chiaki. Zdrojový kód a jeho úpravy jsou šířeny podle GNU AGPLv3 (AGPL-3.0). GameLingo není oficiální aplikací Sony, Microsoftu ani Google. Názvy Xbox a PlayStation jsou ochranné známky příslušných vlastníků." to Pair("GameLingo využíva open-source základy PlayCaption a Chiaki. Zdrojový kód a jeho úpravy sa šíria podľa GNU AGPLv3 (AGPL-3.0). GameLingo nie je oficiálnou aplikáciou Sony, Microsoftu ani Google. Xbox a PlayStation sú ochranné známky príslušných vlastníkov.", "GameLingo uses the open-source foundations of PlayCaption and Chiaki. Source code and modifications are distributed under GNU AGPLv3 (AGPL-3.0). GameLingo is not an official Sony, Microsoft or Google application. Xbox and PlayStation are trademarks of their respective owners."),
-        "Otevřít odkaz" to Pair("Otvoriť odkaz", "Open link"),
-        "Licenční texty v aplikaci" to Pair("Licenčné texty v aplikácii", "License texts in app"),
-        "Licence třetích stran" to Pair("Licencie tretích strán", "Third-party licenses"),
-        "Číst bez internetu" to Pair("Čítať bez internetu", "Read offline"),
-        "Licenční soubor není v tomto sestavení dostupný." to Pair("Licenčný súbor nie je v tomto zostavení dostupný.", "The license file is not available in this build."),
-        "Zdrojové kódy" to Pair("Zdrojové kódy", "Source code"),
-        "GameLingo na GitHubu" to Pair("GameLingo na GitHube", "GameLingo on GitHub"),
-        "Původní PlayCaption" to Pair("Pôvodný PlayCaption", "Original PlayCaption"),
-        "Zatím žádný spárovaný telefon." to Pair("Zatiaľ žiadny spárovaný telefón.", "No paired phones yet."),
-        "Připojen" to Pair("Pripojený", "Connected"),
-        "Spárován" to Pair("Spárovaný", "Paired"),
-        "Odpárovat" to Pair("Zrušiť párovanie", "Unpair"),
-        "Ostatní telefony zůstanou spárované." to Pair("Ostatné telefóny zostanú spárované.", "Other phones will remain paired."),
-        "Odpárování se nepodařilo uložit." to Pair("Zrušenie párovania sa nepodarilo uložiť.", "Could not save unpairing."),
-        "Přejmenovat konzoli" to Pair("Premenovať konzolu", "Rename console"),
-        "Konzole a zařízení" to Pair("Konzoly a zariadenia", "Consoles and devices"),
-        "Přidat zařízení" to Pair("Pridať zariadenie", "Add device"),
-        "Telefon · QR / PIN" to Pair("Telefón · QR / PIN", "Phone · QR / PIN"),
-        "Přidat PS5 / PS4" to Pair("Pridať PS5 / PS4", "Add PS5 / PS4"),
-        "Přejmenovat" to Pair("Premenovať", "Rename"),
-        "Odebrat" to Pair("Odobrať", "Remove"),
-        "Xbox: vyhledávám…" to Pair("Xbox: vyhľadávam…", "Xbox: searching…"),
-        "Xbox: žádná konzole" to Pair("Xbox: žiadna konzola", "Xbox: no console"),
-        "Připojit" to Pair("Pripojiť", "Connect"),
-        "Odebrat Xbox?" to Pair("Odobrať Xbox?", "Remove Xbox?"),
-        "Konzole zmizí ze seznamu GameLingo, ale zůstane na tvém Microsoft účtu. Můžeš ji později znovu zobrazit." to Pair("Konzola zmizne zo zoznamu GameLingo, ale zostane na tvojom účte Microsoft. Môžeš ju neskôr znova zobraziť.", "The console will be hidden in GameLingo but remain on your Microsoft account. You can show it again later."),
-        "Vrátit odebrané Xboxy" to Pair("Vrátiť odobraté Xboxy", "Restore hidden Xbox consoles"),
-        "Znovu zobrazit konzole" to Pair("Znova zobraziť konzoly", "Show consoles again"),
-        "Xbox: nepřihlášeno" to Pair("Xbox: neprihlásené", "Xbox: not signed in"),
-        "Přidat Xbox" to Pair("Pridať Xbox", "Add Xbox"),
-        "Přihlásit Microsoft" to Pair("Prihlásiť Microsoft", "Sign in to Microsoft"),
-        "Telefony" to Pair("Telefóny", "Phones"),
-        "Přidat telefon" to Pair("Pridať telefón", "Add phone"),
-        "Párování pomocí QR kódu nebo PINu" to Pair("Párovanie pomocou QR kódu alebo PINu", "Pair using QR code or PIN"),
-        "Televize" to Pair("Televízory", "TVs"),
-        "Přidat televizor" to Pair("Pridať televízor", "Add TV"),
-        "Načíst QR kód z TV" to Pair("Načítať QR kód z TV", "Scan TV QR code"),
-        "Párování v domácí síti" to Pair("Párovanie v domácej sieti", "Pair on home network"),
-        "TV odpověděla" to Pair("TV odpovedala", "TV responded"),
-        "Kód uložen, spojení neověřeno" to Pair("Kód uložený, spojenie neoverené", "Code saved, connection unverified"),
-        "Spárovat šest číslic z TV" to Pair("Spárovať šesť číslic z TV", "Pair with six-digit TV code"),
-        "Ověřit spojení" to Pair("Overiť spojenie", "Verify connection"),
-        "TV odpověděla na ověření. Příjem titulků ještě ověř ve hře." to Pair("TV odpovedala na overenie. Príjem titulkov ešte over v hre.", "TV responded. Verify subtitle reception in a game."),
-        "TV neodpovídá. Ověř IP, připojení a případně zadej nový kód." to Pair("TV neodpovedá. Over IP, pripojenie a prípadne zadaj nový kód.", "TV is not responding. Check IP, connection and enter a new code if needed."),
-        "z tohoto zařízení?" to Pair("z tohto zariadenia?", "from this device?"),
-        "Přístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači." to Pair("Prístup telefónu odvolaj aj na TV. Miestne odobratie neodvolá kľúč v prijímači.", "Revoke phone access on the TV too. Local removal does not revoke the receiver key."),
-        "Šestimístný kód z GameLingo TV" to Pair("Šesťmiestny kód z GameLingo TV", "Six-digit GameLingo TV code"),
-        "Párování televize" to Pair("Párovanie televízora", "Pair TV"),
-        "Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování. Používej jen důvěryhodnou domácí síť; párování a titulky nejsou šifrované." to Pair("Na TV otvor Preklad z telefónu. Zadaj nový šesťmiestny kód a potvrď párovanie. Používaj iba dôveryhodnú domácu sieť; párovanie a titulky nie sú šifrované.", "Open Translation from phone on the TV. Enter a new six-digit code and confirm pairing. Use only a trusted home network; pairing and subtitles are not encrypted."),
-        "Spárovat" to Pair("Spárovať", "Pair"),
-        "Je nutných šest číslic" to Pair("Je potrebných šesť číslic", "Six digits are required"),
-        "TV přijala kód. Ověřuji spojení…" to Pair("TV prijala kód. Overujem spojenie…", "TV accepted the code. Verifying connection…"),
-        "GameLingo TV je připojená." to Pair("GameLingo TV je pripojená.", "GameLingo TV is connected."),
-        "Kód uložen, ale TV zatím neodpovídá." to Pair("Kód uložený, ale TV zatiaľ neodpovedá.", "Code saved, but TV is not responding yet."),
-        "TV neodpověděla. Ověř IP a síť." to Pair("TV neodpovedala. Over IP a sieť.", "TV did not respond. Check IP and network."),
-        "Zadej šest číslic z TV." to Pair("Zadaj šesť číslic z TV.", "Enter six digits from the TV."),
-        "Odpověď nepřišla od vybrané TV." to Pair("Odpoveď neprišla od vybranej TV.", "Response did not come from the selected TV."),
-        "TV kód odmítla. Vytvoř nový kód." to Pair("TV kód odmietla. Vytvor nový kód.", "TV rejected the code. Generate a new one."),
-        "Televize vrátila neplatnou odpověď." to Pair("Televízor vrátil neplatnú odpoveď.", "TV returned an invalid response."),
-        "Stav místních nastavení a zahájené relace. Uložené údaje nepotvrzují živé spojení s konzolí ani TV." to Pair("Stav miestnych nastavení a začatej relácie. Uložené údaje nepotvrdzujú živé spojenie s konzolou ani TV.", "Local settings and session status. Saved data does not confirm a live console or TV connection."),
-        "Stav" to Pair("Stav", "Status"),
-        "Poslední překlad" to Pair("Posledný preklad", "Latest translation"),
-        "Zatím žádný překlad ve volitelné historii." to Pair("Zatiaľ žiadny preklad vo voliteľnej histórii.", "No translation in optional history yet."),
-        "Překladová fronta" to Pair("Prekladový rad", "Translation queue"),
-        "Xbox – skutečný obraz" to Pair("Xbox – skutočný obraz", "Xbox – live image"),
-        "Relace spuštěna – snímky se ověřují zvlášť" to Pair("Relácia spustená – snímky sa overujú zvlášť", "Session started – frames checked separately"),
-        "Relace není spuštěna" to Pair("Relácia nie je spustená", "Session not started"),
-        "Xbox – účet" to Pair("Xbox – účet", "Xbox – account"),
-        "Přihlášený" to Pair("Prihlásený", "Signed in"),
-        "Nepřihlášený" to Pair("Neprihlásený", "Not signed in"),
-        "Xbox – volba konzole" to Pair("Xbox – výber konzoly", "Xbox – console selection"),
-        "Žádná vybraná" to Pair("Žiadna vybraná", "None selected"),
-        "ID konzole uloženo" to Pair("ID konzoly uložené", "Console ID saved"),
-        "Uložené konzole" to Pair("Uložené konzoly", "Saved consoles"),
-        "jedna vybraná" to Pair("jedna vybraná", "one selected"),
-        "žádná vybraná" to Pair("žiadna vybraná", "none selected"),
-        "Výstup titulků" to Pair("Výstup titulkov", "Subtitle output"),
-        "Telefon" to Pair("Telefón", "Phone"),
-        "Televize nevybrána" to Pair("Televízor nevybraný", "No TV selected"),
-        "Párování TV" to Pair("Párovanie TV", "TV pairing"),
-        "Bez uloženého profilu" to Pair("Bez uloženého profilu", "No saved profile"),
-        "Nespárováno" to Pair("Nespárované", "Not paired"),
-        "Ověřené spojení" to Pair("Overené spojenie", "Verified connection"),
-        "Spárováno – bez čerstvého potvrzení" to Pair("Spárované – bez nového potvrdenia", "Paired – not recently verified"),
-        "Jazyk hry → překlad" to Pair("Jazyk hry → preklad", "Game language → translation"),
-        "Aktualizovat stav" to Pair("Aktualizovať stav", "Refresh status"),
-        "Ověřit spojení s TV" to Pair("Overiť spojenie s TV", "Verify TV connection"),
-        "Nejdříve vyber a spáruj TV." to Pair("Najprv vyber a spáruj TV.", "Select and pair a TV first."),
-        "Spojení ověřeno." to Pair("Spojenie overené.", "Connection verified."),
-        "TV neodpovídá. Zkontroluj domácí síť a přijímač." to Pair("TV neodpovedá. Skontroluj domácu sieť a prijímač.", "TV is not responding. Check the home network and receiver."),
-        "Vymazat místní log překladu" to Pair("Vymazať miestny log prekladu", "Clear local translation log"),
-        "Nejdříve zastav překlad a příjem." to Pair("Najprv zastav preklad a príjem.", "Stop translation and reception first."),
-        "Vymazat starý i nový místní log překladu? Ostatní diagnostické soubory zůstanou." to Pair("Vymazať starý aj nový miestny log prekladu? Ostatné diagnostické súbory zostanú.", "Clear both old and new local translation logs? Other diagnostics will remain."),
-        "Místní log překladu vymazán." to Pair("Miestny log prekladu vymazaný.", "Local translation log cleared."),
-        "Některý log se nepodařilo vymazat." to Pair("Niektorý log sa nepodarilo vymazať.", "One or more logs could not be cleared."),
-        "Profil hry změň před spuštěním překladu." to Pair("Profil hry zmeň pred spustením prekladu.", "Change the game profile before starting translation."),
-        "Rozumím" to Pair("Rozumiem", "Got it"),
-        "Název hry" to Pair("Názov hry", "Game name"),
-        "Uložit profil" to Pair("Uložiť profil", "Save profile"),
-        "Zadej název hry (max. 64 znaků)" to Pair("Zadaj názov hry (max. 64 znakov)", "Enter a game name (max. 64 characters)"),
-        "Přepsat profil" to Pair("Prepísať profil", "Overwrite profile"),
-        "Přepsat" to Pair("Prepísať", "Overwrite"),
-        "Nepoužívat herní slovník" to Pair("Nepoužívať herný slovník", "Do not use a game glossary"),
-        "Použít" to Pair("Použiť", "Apply"),
-        "Smazat" to Pair("Zmazať", "Delete"),
-        "Smazat profil" to Pair("Zmazať profil", "Delete profile"),
-        "Zatím nemáš uložený žádný profil." to Pair("Zatiaľ nemáš uložený žiadny profil.", "No saved profiles yet."),
-        "Zavřít" to Pair("Zavrieť", "Close"),
-        "Vybrat profil" to Pair("Vybrať profil", "Choose profile"),
-        "Aktuální nastavení" to Pair("Aktuálne nastavenia", "Current settings"),
-        "Profil nelze načíst" to Pair("Profil nemožno načítať", "Could not load profile"),
-        "Název hry nebo aplikace" to Pair("Názov hry alebo aplikácie", "Game or app name"),
-        "Profil uložen" to Pair("Profil uložený", "Profile saved"),
-        "Zadej název profilu." to Pair("Zadaj názov profilu.", "Enter a profile name."),
-        "Uprav aktuální nastavení. Tlačítkem Uložit změny do profilu přepíšeš uložený profil." to Pair("Uprav aktuálne nastavenia. Tlačidlom Uložiť zmeny do profilu prepíšeš uložený profil.", "Adjust current settings. Save changes to profile overwrites the saved profile."),
-        "Rozložení" to Pair("Rozloženie", "Layout"),
-        "Uložit změny do profilu" to Pair("Uložiť zmeny do profilu", "Save changes to profile"),
-        "Upravit profil" to Pair("Upraviť profil", "Edit profile"),
-        "Uložit aktuální nastavení" to Pair("Uložiť aktuálne nastavenia", "Save current settings"),
-        "Zatím žádné profily" to Pair("Zatiaľ žiadne profily", "No profiles yet"),
-        "Aktivní profil" to Pair("Aktívny profil", "Active profile"),
-        "Uložený profil" to Pair("Uložený profil", "Saved profile"),
-        "Upravit rozložení" to Pair("Upraviť rozloženie", "Edit layout"),
-        "Upravit další nastavení" to Pair("Upraviť ďalšie nastavenia", "Edit other settings"),
-        "Profil načten" to Pair("Profil načítaný", "Profile loaded"),
-        "Profily her a aplikací" to Pair("Profily hier a aplikácií", "Game and app profiles"),
-        "Nejdřív zastav probíhající překlad." to Pair("Najprv zastav prebiehajúci preklad.", "Stop the current translation first."),
-        "Jazyky slovníku" to Pair("Jazyky slovníka", "Glossary languages"),
-        "Max. 50 řádků: originál | chybný překlad | správný překlad. Prázdný prostředek opraví jen celý přesný originál. Rozlišuje velikost písmen." to Pair("Max. 50 riadkov: originál | chybný preklad | správny preklad. Prázdny stred opraví iba celý presný originál. Rozlišuje veľkosť písmen.", "Max. 50 lines: original | incorrect translation | correct translation. An empty middle field corrects only the exact full original. Case-sensitive."),
-        "Nový slovník pro aktuální jazyky" to Pair("Nový slovník pre aktuálne jazyky", "New glossary for current languages"),
-        "Neplatný formát, duplicita originálu nebo překročený limit." to Pair("Neplatný formát, duplicita originálu alebo prekročený limit.", "Invalid format, duplicate original or limit exceeded."),
-        "Bez slovníku" to Pair("Bez slovníka", "No glossary"),
-        "Nový herní slovník" to Pair("Nový herný slovník", "New game glossary"),
-        "aktivní" to Pair("aktívny", "active"),
-        "Smazat slovník" to Pair("Zmazať slovník", "Delete glossary"),
-        "Čtyři nezávislé oblasti pro rozpoznávání a překlad." to Pair("Štyri nezávislé oblasti na rozpoznávanie a preklad.", "Four independent regions for recognition and translation."),
-        "Čtení dialogových titulků" to Pair("Čítanie dialógových titulkov", "Read dialogue subtitles"),
-        "Zelená" to Pair("Zelená", "Green"),
-        "Zobrazení přeložených titulků" to Pair("Zobrazenie preložených titulkov", "Display translated subtitles"),
-        "Čtení herních textů a voleb" to Pair("Čítanie herných textov a volieb", "Read game text and choices"),
-        "Oranžová" to Pair("Oranžová", "Orange"),
-        "Překlad herních textů" to Pair("Preklad herných textov", "Translate game text"),
-        "Otevřít editor oblastí" to Pair("Otvoriť editor oblastí", "Open region editor"),
-        "Zavřít vzhled titulků" to Pair("Zavrieť vzhľad titulkov", "Close subtitle appearance"),
-        "Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. Přesná poloha rámečků zůstává v Oblastech obrazovky." to Pair("Vlastný vzhľad titulkov pre telefón a nastavenia zelenej oblasti na TV. Presná poloha rámčekov zostáva v Oblastiach obrazovky.", "Customize phone subtitles and the green TV region. Edit exact frame positions in Screen regions."),
-        "NÁHLED" to Pair("NÁHĽAD", "PREVIEW"),
-        "TITULKY NA TELEFONU" to Pair("TITULKY NA TELEFÓNE", "PHONE SUBTITLES"),
-        "Velikost písma" to Pair("Veľkosť písma", "Font size"),
-        "Barva textu" to Pair("Farba textu", "Text color"),
-        "Tyrkysová" to Pair("Tyrkysová", "Cyan"),
-        "Fialová" to Pair("Fialová", "Purple"),
-        "Bílá" to Pair("Biela", "White"),
-        "Tmavé" to Pair("Tmavé", "Dark"),
-        "Průhledné" to Pair("Priehľadné", "Translucent"),
-        "Žádné" to Pair("Žiadne", "None"),
-        "Pozadí" to Pair("Pozadie", "Background"),
-        "TITULKY NA TV" to Pair("TITULKY NA TV", "TV SUBTITLES"),
-        "Velikost písma TV" to Pair("Veľkosť písma TV", "TV font size"),
-        "Šířka titulků" to Pair("Šírka titulkov", "Subtitle width"),
-        "Zamknout polohu a vzhled" to Pair("Zamknúť polohu a vzhľad", "Lock position and appearance"),
-        "Zamknout polohu a vzhled titulků" to Pair("Zamknúť polohu a vzhľad titulkov", "Lock subtitle position and appearance"),
-        "Náhled na TV" to Pair("Náhľad na TV", "Preview on TV"),
-        "Odeslat ukázkový překlad do vybrané TV" to Pair("Odoslať ukážkový preklad do vybranej TV", "Send a sample translation to the selected TV"),
-        "Změny se ukládají pro aktuálně vybranou televizi nebo telefon. Pro přesné umístění rámečků otevři Oblasti obrazovky." to Pair("Zmeny sa ukladajú pre aktuálne vybraný televízor alebo telefón. Na presné umiestnenie rámčekov otvor Oblasti obrazovky.", "Changes are saved for the selected TV or phone. Open Screen regions to position frames precisely."),
-        "Ukázka přeložených titulků" to Pair("Ukážka preložených titulkov", "Sample translated subtitles"),
-        "Neprůhlednost pozadí" to Pair("Nepriehľadnosť pozadia", "Background opacity"),
-        "Pozadí titulků" to Pair("Pozadie titulkov", "Subtitle background"),
-        "Povol překryv v nastavení TV." to Pair("Povoľ prekrytie v nastaveniach TV.", "Allow overlays in TV settings."),
-        "Velikost a poloha titulků" to Pair("Veľkosť a poloha titulkov", "Subtitle size and position"),
-        "Překládat dialogy" to Pair("Prekladať dialógy", "Translate dialogue"),
-        "Titulky pro rozhovory ve hrách." to Pair("Titulky pre rozhovory v hrách.", "Subtitles for in-game conversations."),
-        "Zobrazit i předchozí repliku" to Pair("Zobraziť aj predchádzajúcu repliku", "Show previous line too"),
-        "V běžném režimu bez překrývání originálu; nemění příběhovou frontu." to Pair("V bežnom režime bez prekrývania originálu; nemení príbehový rad.", "In normal mode without covering the original; does not change the story queue."),
-        "Dvě předchozí repliky" to Pair("Dve predchádzajúce repliky", "Two previous lines"),
-        "Pokud je zapnutý předchozí dialog, zobrazí až dva nedávné překlady místo jednoho." to Pair("Ak je zapnutý predchádzajúci dialóg, zobrazí až dva nedávne preklady namiesto jedného.", "If previous dialogue is enabled, show up to two recent translations instead of one."),
-        "Skrýt po zmizení originálu" to Pair("Skryť po zmiznutí originálu", "Hide when source disappears"),
-        "Volitelně ukončí zobrazení běžného dialogu po potvrzeném zmizení zdrojového textu." to Pair("Voliteľne ukončí zobrazenie bežného dialógu po potvrdenom zmiznutí zdrojového textu.", "Optionally hide normal dialogue after the source text is confirmed gone."),
-        "Herní texty a volby" to Pair("Herné texty a voľby", "Game text and choices"),
-        "Samostatná žlutá oblast OCR." to Pair("Samostatná žltá oblasť OCR.", "Separate yellow OCR region."),
-        "Dopisy a zprávy" to Pair("Listy a správy", "Letters and messages"),
-        "Překládat celý text místo seznamu voleb." to Pair("Prekladať celý text namiesto zoznamu volieb.", "Translate full text instead of a list of choices."),
-        "Nápověda a úkoly" to Pair("Pomoc a úlohy", "Hints and objectives"),
-        "Překládat herní nápovědu." to Pair("Prekladať hernú pomoc.", "Translate in-game hints."),
-        "Překrývat originál" to Pair("Prekrývať originál", "Cover original"),
-        "Překlad překryje původní titulky." to Pair("Preklad prekryje pôvodné titulky.", "Translation covers the original subtitles."),
-        "Příběhový režim" to Pair("Príbehový režim", "Story mode"),
-        "Delší přeložené dialogy." to Pair("Dlhšie preložené dialógy.", "Longer translated dialogue."),
-        "Ruční OCR oblast" to Pair("Ručná OCR oblasť", "Manual OCR region"),
-        "Vlastní modrý rámeček." to Pair("Vlastný modrý rámček.", "Custom blue frame."),
-        "Doba zobrazení" to Pair("Doba zobrazenia", "Display duration"),
-        "Pevná doba titulku" to Pair("Pevná doba titulku", "Fixed subtitle duration"),
-        "Nastavení v sekundách jako na iOS; příběhová fronta zachovává vlastní časování." to Pair("Nastavenie v sekundách ako na iOS; príbehový rad zachováva vlastné časovanie.", "Set seconds as on iOS; the story queue keeps its own timing."),
-        "Doba titulku" to Pair("Doba titulku", "Subtitle duration"),
-        "Přeskočit starý překlad" to Pair("Preskočiť starý preklad", "Skip stale translation"),
-        "Zahodí výsledek, který překročil maximální stáří." to Pair("Zahodí výsledok, ktorý prekročil maximálny vek.", "Discard results older than the maximum age."),
-        "Maximální stáří" to Pair("Maximálny vek", "Maximum age"),
-        "Prodleva po zmizení" to Pair("Oneskorenie po zmiznutí", "Delay after disappearance"),
-        "Hned" to Pair("Hneď", "Immediately"),
-        "Oblasti na obrazovce" to Pair("Oblasti na obrazovke", "Screen regions"),
-        "Rychlost čtení, filtrování menu a skutečná oblast snímání. Během spuštěné relace nejprve zastav překlad." to Pair("Rýchlosť čítania, filtrovanie menu a skutočná oblasť snímania. Počas spustenej relácie najprv zastav preklad.", "Reading speed, menu filtering and capture region. Stop translation before changing an active session."),
-        "Automatický · vyvážený" to Pair("Automatický · vyvážený", "Automatic · balanced"),
-        "Krátké dialogy · rychlý" to Pair("Krátke dialógy · rýchly", "Short dialogue · fast"),
-        "Původní · stabilní" to Pair("Pôvodný · stabilný", "Original · stable"),
-        "Režim OCR" to Pair("Režim OCR", "OCR mode"),
-        "Stejný jako modrá" to Pair("Rovnaký ako modrá", "Same as blue"),
-        "Žlutá: režim OCR" to Pair("Žltá: režim OCR", "Yellow: OCR mode"),
-        "Filtrovat menu hry" to Pair("Filtrovať menu hry", "Filter game menus"),
-        "Modrá oblast: omezí velké nadpisy, tlačítka a krátké sloupce menu. Žluté oblasti se netýká." to Pair("Modrá oblasť: obmedzí veľké nadpisy, tlačidlá a krátke stĺpce menu. Žltej oblasti sa netýka.", "Blue region: reduces large headings, buttons and short menu columns. Does not affect yellow."),
-        "Skrýt pokročilé filtry" to Pair("Skryť pokročilé filtre", "Hide advanced filters"),
-        "Ignorované řádky, minimální výška a filtry obou oblastí." to Pair("Ignorované riadky, minimálna výška a filtre oboch oblastí.", "Ignored lines, minimum height and filters for both regions."),
-        "Žlutá: filtrovat pokyny ovladače" to Pair("Žltá: filtrovať pokyny ovládača", "Yellow: filter controller prompts"),
-        "Volitelně vynechá anglické pokyny jako Press A nebo Hold R2. Běžné volby ponechá." to Pair("Voliteľne vynechá anglické pokyny ako Press A alebo Hold R2. Bežné voľby ponechá.", "Optionally omit prompts like Press A or Hold R2. Keep ordinary choices."),
-        "Žlutá" to Pair("Žltá", "Yellow"),
-        "Modrá" to Pair("Modrá", "Blue"),
-        "Ignorované řádky" to Pair("Ignorované riadky", "Ignored lines"),
-        "Počet" to Pair("Počet", "Count"),
-        "Jeden přesný výraz na řádek" to Pair("Jeden presný výraz na riadok", "One exact phrase per line"),
-        "Modrá: minimální výška textu" to Pair("Modrá: minimálna výška textu", "Blue: minimum text height"),
-        "Modrá: velikost textu" to Pair("Modrá: veľkosť textu", "Blue: text size"),
-        "Žlutá: minimální výška textu" to Pair("Žltá: minimálna výška textu", "Yellow: minimum text height"),
-        "Žlutá: velikost textu" to Pair("Žltá: veľkosť textu", "Yellow: text size"),
-        "Automaticky" to Pair("Automaticky", "Automatic"),
-        "Obnovit filtry modré oblasti" to Pair("Obnoviť filtre modrej oblasti", "Reset blue region filters"),
-        "Bez změny rámečků a žluté oblasti." to Pair("Bez zmeny rámčekov a žltej oblasti.", "Keep frames and the yellow region unchanged."),
-        "Obnovit filtry žluté oblasti" to Pair("Obnoviť filtre žltej oblasti", "Reset yellow region filters"),
-        "Bez změny rámečků a modré oblasti." to Pair("Bez zmeny rámčekov a modrej oblasti.", "Keep frames and the blue region unchanged."),
-        "Rozšířit hledání" to Pair("Rozšíriť hľadanie", "Expand search"),
-        "Při automatickém režimu zahrne širší část obrazu." to Pair("Pri automatickom režime zahrnie širšiu časť obrazu.", "Include a wider part of the image in automatic mode."),
-        "Ruční oblast OCR" to Pair("Ručná oblasť OCR", "Manual OCR region"),
-        "Použít modrý rámeček místo automatického výběru." to Pair("Použiť modrý rámček namiesto automatického výberu.", "Use the blue frame instead of automatic selection."),
-        "Výchozí oblast" to Pair("Predvolená oblasť", "Default region"),
-        "Původní automatika" to Pair("Pôvodná automatika", "Original automatic detection"),
-        "Úzká – pouze titulky" to Pair("Úzka – iba titulky", "Narrow – subtitles only"),
-        "Střed – doporučeno" to Pair("Stred – odporúčané", "Center – recommended"),
-        "Široká – původní" to Pair("Široká – pôvodná", "Wide – original"),
-        "Upravit modrý, zelený, žlutý a oranžový rámeček." to Pair("Upraviť modrý, zelený, žltý a oranžový rámček.", "Edit the blue, green, yellow and orange frames."),
-        "Výchozí nastavení OCR" to Pair("Predvolené nastavenia OCR", "Default OCR settings"),
-        "Obnovit původní režim, filtrování a automatické čtení." to Pair("Obnoviť pôvodný režim, filtrovanie a automatické čítanie.", "Restore original mode, filtering and automatic reading."),
-        "Zpět do Nastavení" to Pair("Späť do Nastavení", "Back to Settings"),
-        "Pouze v paměti do ukončení aplikace · max. 200 položek. Vypnutí historii vymaže. Technický log a cache jsou oddělené." to Pair("Iba v pamäti do ukončenia aplikácie · max. 200 položiek. Vypnutie históriu vymaže. Technický log a vyrovnávacia pamäť sú oddelené.", "In memory until the app closes · max. 200 entries. Turning off clears history. Technical log and cache are separate."),
-        "Uchovávat historii" to Pair("Uchovávať históriu", "Keep history"),
-        "Zatím žádné překlady." to Pair("Zatiaľ žiadne preklady.", "No translations yet."),
-        "Historie je vypnutá." to Pair("História je vypnutá.", "History is off."),
-        "Vymazat celou historii?" to Pair("Vymazať celú históriu?", "Clear all history?"),
-        "vybráno" to Pair("vybrané", "selected"),
-        "Domů" to Pair("Domov", "Home"),
-        "Obrazovka" to Pair("Obrazovka", "Screen"),
-        "Konzole" to Pair("Konzoly", "Consoles"),
-        "O aplikaci" to Pair("O aplikácii", "About"),
-        "HRAJ. ROZUMĚJ." to Pair("HRAJ. ROZUMEJ.", "PLAY. UNDERSTAND."),
-        "Překlad přímo při hraní" to Pair("Preklad priamo pri hraní", "Translation while playing"),
-        "Titulky a překlady her v reálném čase" to Pair("Titulky a preklady hier v reálnom čase", "Real-time game subtitles and translation"),
-        "Standardní" to Pair("Štandardný", "Standard"),
-        "Automatický" to Pair("Automatický", "Automatic"),
-        "Pokročilé nastavení OCR" to Pair("Pokročilé nastavenia OCR", "Advanced OCR settings"),
-        "Režim překladu" to Pair("Režim prekladu", "Translation mode"),
-        "Nejdřív zastav překlad." to Pair("Najprv zastav preklad.", "Stop translation first."),
-        "Přidat zónu" to Pair("Pridať zónu", "Add zone"),
-        "Obnovit výchozí" to Pair("Obnoviť predvolené", "Reset to default"),
-        "Oblasti překladu" to Pair("Oblasti prekladu", "Translation regions"),
-        "Vyber oblast, potom uprav její polohu a velikost v náhledu." to Pair("Vyber oblasť, potom uprav jej polohu a veľkosť v náhľade.", "Select a region, then adjust its position and size in the preview."),
-        "Náhled obrazovky" to Pair("Náhľad obrazovky", "Screen preview"),
-        "Šipkami uprav polohu a velikost zóny." to Pair("Šípkami uprav polohu a veľkosť zóny.", "Use arrow keys to adjust the zone position and size."),
-        "Přetáhni vybraný rámeček." to Pair("Presuň vybraný rámček.", "Drag the selected region."),
-        "Aktivní zóna" to Pair("Aktívna zóna", "Active zone"),
-        "Vodorovná pozice" to Pair("Vodorovná poloha", "Horizontal position"),
-        "Svislá pozice" to Pair("Zvislá poloha", "Vertical position"),
-        "Smazat zónu" to Pair("Odstrániť zónu", "Delete zone"),
-        "Výška" to Pair("Výška", "Height"),
-        "Vypnout" to Pair("Vypnúť", "Disable"),
-        "Zapnout" to Pair("Zapnúť", "Enable"),
-        "Upravit" to Pair("Upraviť", "Edit"),
-        "Odstranit" to Pair("Odstrániť", "Remove"),
-        "Zóna" to Pair("Zóna", "Zone"),
-        "Dialogy" to Pair("Dialógy", "Dialogue"),
-        "Obnovit výchozí zóny?" to Pair("Obnoviť predvolené zóny?", "Reset zones to default?"),
-        "Obnovit" to Pair("Obnoviť", "Reset"),
-        "Název" to Pair("Názov", "Name"),
-        "Vlevo" to Pair("Vľavo", "Left"),
-        "Nahoře" to Pair("Hore", "Top"),
-        "Vpravo" to Pair("Vpravo", "Right"),
-        "Dole" to Pair("Dole", "Bottom"),
-        "Upravit zónu" to Pair("Upraviť zónu", "Edit zone"),
-        "Uložit" to Pair("Uložiť", "Save"),
-        "Časování, historie a diagnostika" to Pair("Časovanie, história a diagnostika", "Timing, history and diagnostics"),
-        "Slovník, historie a diagnostika" to Pair("Slovník, história a diagnostika", "Glossary, history and diagnostics"),
-        "Jazyk aplikace" to Pair("Jazyk aplikácie", "App language"),
-        "Jazyk hry" to Pair("Jazyk hry", "Game language"),
-        "Jazyk překladu" to Pair("Jazyk prekladu", "Translation language"),
-        "Jazyky GameLingo" to Pair("Jazyky GameLingo", "GameLingo languages"),
-        "Zrušit" to Pair("Zrušiť", "Cancel"),
-        "Hotovo" to Pair("Hotovo", "Done"),
-        "Jazyk nabídky GameLingo" to Pair("Jazyk ponuky GameLingo", "GameLingo interface language"),
-        "Původní jazyk dialogů a herního textu" to Pair("Pôvodný jazyk dialógov a herného textu", "Original language of dialogue and game text"),
-        "Do jakého jazyka překládat" to Pair("Do akého jazyka prekladať", "Language to translate into"),
-        "Vítej v GameLingo" to Pair("Vitaj v GameLingo", "Welcome to GameLingo"),
-        "Jazyky a překlad" to Pair("Jazyky a preklad", "Languages and translation"),
-        "Vyber zařízení" to Pair("Vyber zariadenie", "Choose devices"),
-        "Překládej dialogy a herní texty přímo během hraní." to Pair("Prekladaj dialógy a herné texty priamo počas hrania.", "Translate dialogue and game text while playing."),
-        "Překládat do" to Pair("Prekladať do", "Translate into"),
-        "Tyto jazyky platí pro dialogy i herní texty. Změnit je můžeš později v Nastavení." to Pair("Tieto jazyky platia pre dialógy aj herné texty. Zmeniť ich môžeš neskôr v Nastaveniach.", "These languages apply to dialogue and game text. You can change them later in Settings."),
-        "Vybraná konzole je uložená. Spojení ověříme při spuštění." to Pair("Vybraná konzola je uložená. Spojenie overíme pri spustení.", "Console saved. Connection will be checked when you start."),
-        "Po výběru můžeš konzoli připojit v posledním kroku." to Pair("Po výbere môžeš konzolu pripojiť v poslednom kroku.", "Choose a console, then connect it below."),
-        "Na telefonu" to Pair("Na telefóne", "On your phone"),
-        "Spárovat TV" to Pair("Spárovať TV", "Pair TV"),
-        "Připojit konzoli" to Pair("Pripojiť konzolu", "Connect console"),
-        "Uložené zařízení neznamená aktivní Remote Play. Živé spojení a překlad se ověří až při spuštění." to Pair("Uložené zariadenie neznamená aktívne Remote Play. Živé spojenie a preklad sa overia až pri spustení.", "A saved device does not mean Remote Play is active. Connection and translation are checked when you start."),
-        "Nastavit později" to Pair("Nastaviť neskôr", "Set up later"),
-        "Zpět" to Pair("Späť", "Back"),
-        "Pokračovat" to Pair("Pokračovať", "Continue"),
-        "Dokončit nastavení" to Pair("Dokončiť nastavenie", "Finish setup"),
-        "Vybraná televize nepodporuje šestimístné párování GameLingo TV. Pro tento výstup vyber Android TV nebo telefon." to Pair("Vybraný televízor nepodporuje šesťmiestne párovanie GameLingo TV. Pre tento výstup vyber Android TV alebo telefón.", "This TV does not support six-digit GameLingo TV pairing. Choose Android TV or your phone."),
-        "Nastavení" to Pair("Nastavenia", "Settings"),
-        "Zavřít nastavení" to Pair("Zavrieť nastavenia", "Close settings"),
-        "Obnovit výchozí nastavení" to Pair("Obnoviť predvolené nastavenia", "Restore default settings"),
-        "Obnovit výchozí nastavení?" to Pair("Obnoviť predvolené nastavenia?", "Restore default settings?"),
-        "Obnovit nastavení" to Pair("Obnoviť nastavenia", "Restore settings"),
-        "OCR, překlad, oblasti a vzhled titulků" to Pair("OCR, preklad, oblasti a vzhľad titulkov", "OCR, translation, regions and subtitle appearance"),
-        "Obnoví OCR, překlad, oblasti a vzhled titulků. Zařízení, účty a herní profily zůstanou zachované." to Pair("Obnoví OCR, preklad, oblasti a vzhľad titulkov. Zariadenia, účty a herné profily zostanú zachované.", "Restores OCR, translation, regions and subtitle appearance. Paired devices, accounts and game profiles remain saved."),
-        "JAZYKY" to Pair("JAZYKY", "LANGUAGES"),
-        "ROZPOZNÁVÁNÍ A PŘEKLAD" to Pair("ROZPOZNÁVANIE A PREKLAD", "RECOGNITION AND TRANSLATION"),
-        "ZOBRAZENÍ A PROFILY" to Pair("ZOBRAZENIE A PROFILY", "DISPLAY AND PROFILES"),
-        "OBECNÉ" to Pair("VŠEOBECNÉ", "GENERAL"),
-        "Jazyky" to Pair("Jazyky", "Languages"),
-        "OCR a rozpoznávání" to Pair("OCR a rozpoznávanie", "OCR and recognition"),
-        "Překlad" to Pair("Preklad", "Translation"),
-        "Režimy, dialogy a časování" to Pair("Režimy, dialógy a časovanie", "Modes, dialogue and timing"),
-        "Oblasti obrazovky" to Pair("Oblasti obrazovky", "Screen regions"),
-        "Automatické zóny" to Pair("Automatické zóny", "Automatic zones"),
-        "Čtyři nezávislé oblasti" to Pair("Štyri nezávislé oblasti", "Four independent regions"),
-        "Standardní oblasti" to Pair("Štandardné oblasti", "Standard regions"),
-        "Vzhled titulků" to Pair("Vzhľad titulkov", "Subtitle appearance"),
-        "Velikost, šířka a poloha titulků" to Pair("Veľkosť, šírka a poloha titulkov", "Subtitle size, width and position"),
-        "Profily her" to Pair("Profily hier", "Game profiles"),
-        "Vlastní nastavení pro každou hru" to Pair("Vlastné nastavenia pre každú hru", "Custom settings for each game"),
-        "Zařízení" to Pair("Zariadenia", "Devices"),
-        "Historie překladů" to Pair("História prekladov", "Translation history"),
-        "Poslední dialogy a herní texty · volitelné" to Pair("Posledné dialógy a herné texty · voliteľné", "Recent dialogue and game text · optional"),
-        "Překladová cache" to Pair("Prekladová vyrovnávacia pamäť", "Translation cache"),
-        "Ukládání a vymazání místních překladů" to Pair("Ukladanie a vymazanie miestnych prekladov", "Store and clear local translations"),
-        "Diagnostika" to Pair("Diagnostika", "Diagnostics"),
-        "Stav relace a uložených zařízení" to Pair("Stav relácie a uložených zariadení", "Session and saved device status"),
-        "O aplikaci / Licence" to Pair("O aplikácii / Licencie", "About / Licenses"),
-        "GameLingo, zdroje a AGPLv3" to Pair("GameLingo, zdroje a AGPLv3", "GameLingo, sources and AGPLv3"),
-        "Pokročilé nastavení" to Pair("Pokročilé nastavenia", "Advanced settings"),
-        "Citlivost, režim a časování" to Pair("Citlivosť, režim a časovanie", "Sensitivity, mode and timing"),
-        "Nastavení GameLingo TV" to Pair("Nastavenia GameLingo TV", "GameLingo TV settings"),
-        "Aplikace, hra, překlad" to Pair("Aplikácia, hra, preklad", "App, game, translation"),
-        "Dialogy, herní texty, Story" to Pair("Dialógy, herné texty, Story", "Dialogue, game text, Story"),
-        "Čtyři oblasti" to Pair("Štyri oblasti", "Four regions"),
-        "Barvy, pozadí a velikost" to Pair("Farby, pozadie a veľkosť", "Colors, background and size"),
-        "Hry, video a aplikace TV" to Pair("Hry, video a aplikácie TV", "Games, video and TV apps"),
-        "Konzole a telefony" to Pair("Konzoly a telefóny", "Consoles and phones"),
-        "Herní slovník" to Pair("Herný slovník", "Game glossary"),
-        "Vlastní výrazy" to Pair("Vlastné výrazy", "Custom terms"),
-        "Překlady na TV" to Pair("Preklady na TV", "Translations on TV"),
-        "Ukládání a vymazání" to Pair("Ukladanie a vymazanie", "Storage and clearing"),
-        "Příjem, oprávnění, verze" to Pair("Príjem, oprávnenia, verzia", "Receiver, permissions, version"),
-        "Verze a licence" to Pair("Verzia a licencie", "Version and licenses"),
-        "Nejdřív zastav překlad a příjem." to Pair("Najprv zastav preklad a príjem.", "Stop translation and receiving first."),
-        "Povolit" to Pair("Povoliť", "Allow"),
-        "Vymazat" to Pair("Vymazať", "Clear")
-    )
-    fun ui(c: Context, cs: String): String = when (app(c)) {
-        "sk" -> uiLabels[cs]?.first ?: cs
-        "en" -> uiLabels[cs]?.second ?: cs
-        else -> cs
+    // BEGIN GENERATED UI LABELS
+    private val uiLabels: Map<String, Map<String, String>> by lazy {
+        mapOf(
+            "en" to labels_en(),
+            "sk" to labels_sk(),
+        )
+    }
+
+    private fun labels_en(): Map<String, String> = mutableMapOf<String, String>().apply {
+        fill_en_0(this)
+        fill_en_1(this)
+        fill_en_2(this)
+        fill_en_3(this)
+        fill_en_4(this)
+        fill_en_5(this)
+        fill_en_6(this)
+    }
+
+    private fun fill_en_0(out: MutableMap<String, String>) {
+        out["1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat."] = "1. Open Translation from phone on the TV. 2. Scan QR or enter the 32-character code. 3. Select Pair."
+        out["1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš šestimístný kód. 3. Zvol Spárovat."] = "1. Open Translation from phone on your TV. 2. Scan the QR code or enter the six-digit code. 3. Select Pair."
+        out["1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Načti QR nebo opiš celý kód z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Pokud používáš starý přijímač PlayCaption, zavři jej. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru."] = "1. Open GameLingo on your phone.\n2. Choose Google TV and select this TV.\n3. Scan the QR or enter the entire code shown on screen.\n\nPhone and TV must be on the same network. Close the old PlayCaption receiver if it is running. Overlay over HDMI is available only on supported TVs."
+        out["6místný kód z TV"] = "Six-digit code from TV"
+        out["8místný PIN z PlayStation"] = "Eight-digit PlayStation PIN"
+        out["APK není čitelná."] = "The APK could not be read."
+        out["APK · mobilní verze"] = "APK · mobile version"
+        out["Adresa se zjišťuje"] = "Detecting address"
+        out["Aktivace foreground služby:"] = "Foreground service activation:"
+        out["Aktivní"] = "Enabled"
+        out["Aktivní profil"] = "Active profile"
+        out["Aktivní zóna"] = "Active zone"
+        out["Aktivní zóny:"] = "Active zones:"
+        out["Aktivní · UDP"] = "Active · UDP"
+        out["Aktivní · mediaProjection"] = "Active · mediaProjection"
+        out["Aktivuji službu snímání"] = "Activating capture service"
+        out["Aktualizace"] = "Updates"
+        out["Aktualizace GameLingo"] = "GameLingo update"
+        out["Aktualizace nebyla nainstalována:"] = "Update not installed:"
+        out["Aktualizovat stav"] = "Refresh status"
+        out["Aktuální nastavení"] = "Current settings"
+        out["Aktuální vydání"] = "Current release"
+        out["Angličtina"] = "English"
+        out["Aplikace, hra, překlad"] = "App, game, translation"
+        out["Automaticky"] = "Automatic"
+        out["Automatické oblasti překladu"] = "Automatic translation zones"
+        out["Automatické umístění · aktivní zóny: "] = "Automatic placement · active zones: "
+        out["Automatické zóny"] = "Automatic zones"
+        out["Automatický"] = "Automatic"
+        out["Automatický · vyvážený"] = "Automatic · balanced"
+        out["Autor"] = "Author"
+        out["Autoři, licence a zdrojový kód"] = "Authors, license and source code"
+        out["Barva textu"] = "Text color"
+        out["Barvy, pozadí a velikost"] = "Colors, background and size"
+        out["Base64 ID účtu"] = "Base64 account ID"
+        out["Bez slovníku"] = "No glossary"
+        out["Bez textu"] = "No text"
+        out["Bez uloženého profilu"] = "No saved profile"
+        out["Bez změny rámečků a modré oblasti."] = "Keep frames and the blue region unchanged."
+        out["Bez změny rámečků a žluté oblasti."] = "Keep frames and the yellow region unchanged."
+        out["Bílá"] = "White"
+        out["Během aktivního překladu nelze měnit konzoli. Nejprve překlad zastav."] = "Console cannot be changed while translating. Stop translation first."
+        out["Během běžícího překladu nelze změnit rychlost čtení."] = "OCR speed cannot be changed while translation is running."
+        out["Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu."] = "The cache stores source text and translations on this device, separately from optional history. Turning it off can increase online requests and reduce translation availability without internet."
+        out["Cache vypnuta; uložené překlady lze vymazat zvlášť."] = "Cache disabled; saved translations can be cleared separately."
+        out["Cache zapnuta."] = "Cache enabled."
+        out["Chiaki / TP Play"] = "Chiaki / TP Play"
+        out["Chyba OCR"] = "OCR error"
+        out["Chyba OCR:"] = "OCR error:"
+        out["Chyba překladu"] = "Translation error"
+        out["Chyba při ukončení"] = "Stop error"
+        out["Chyba při uvolnění"] = "Release error"
+        out["Chyba snímku:"] = "Frame error:"
+        out["Chyba:"] = "Error:"
+        out["Chybí cíl přesměrování."] = "Missing redirect destination."
+        out["Chybí souhlas nebo překryv, případně běží jiný režim"] = "Consent or overlay permission is missing, or another mode is running"
+        out["Citlivost, režim a filtrování textu"] = "Sensitivity, mode and text filtering"
+        out["Citlivost, režim a časování"] = "Sensitivity, mode and timing"
+        out["Cílový jazyk"] = "Target language"
+        out["DALŠÍ"] = "MORE"
+        out["Další nastavení"] = "More settings"
+        out["Další texty: vypnuto"] = "Other text: off"
+        out["Další texty: zapnuto"] = "Other text: on"
+        out["Delší přeložené dialogy."] = "Longer translated dialogue."
+        out["Diagnostický výřez OCR"] = "Diagnostic OCR crop"
+        out["Diagnostika"] = "Diagnostics"
+        out["Diagnostika TV"] = "TV diagnostics"
+        out["Diagnostika a kompatibilita"] = "Diagnostics and compatibility"
+        out["Diagnostika samostatného OCR"] = "Standalone OCR diagnostics"
+        out["Dialog"] = "Dialogue"
+        out["Dialog snímání:"] = "Capture consent dialog:"
+        out["Dialogy"] = "Dialogue"
+        out["Dialogy, herní texty, Story"] = "Dialogue, game text, Story"
+        out["Do jakého jazyka překládat"] = "Language to translate into"
+        out["Doba titulku"] = "Subtitle duration"
+        out["Doba zobrazení"] = "Display duration"
+        out["Doba zobrazení určuje, jak dlouho titulek zůstane na televizi. Starší překlady může GameLingo zahodit po zobrazení nového dialogu. Jazyk hry a překladu lze změnit v sekci Jazyky."] = "Subtitle duration controls how long text remains on TV. Outdated translations may be skipped when new dialogue arrives. Game and output languages can be changed under Languages."
+        out["Dokončit nastavení"] = "Finish setup"
+        out["Dole"] = "Bottom"
+        out["Domů"] = "Home"
+        out["Dopisy a zprávy"] = "Letters and messages"
+        out["Dočasný párovací QR kód"] = "Temporary pairing QR code"
+        out["Dvě"] = "Two"
+        out["Dvě předchozí repliky"] = "Two previous lines"
+        out["Fialová"] = "Purple"
+        out["Filtrovat menu hry"] = "Filter game menus"
+        out["Filtrovat pokyny ovladače"] = "Filter controller prompts"
+        out["Filtrovat položky herního menu"] = "Filter game menus"
+        out["Filtry dialogů jsou nezávislé na herních textech."] = "Dialogue filters are independent of game text."
+        out["Filtry herních textů neovlivňují dialogy."] = "Game text filters do not affect dialogue."
+        out["Foreground služba:"] = "Foreground service:"
+        out["Fotoaparát není dostupný. Použij ruční PIN."] = "Camera unavailable. Use manual PIN entry."
+        out["Francouzština"] = "French"
+        out["GameLingo"] = "GameLingo"
+        out["GameLingo TV je připojená."] = "GameLingo TV is connected."
+        out["GameLingo je nezávislá aplikace pro překlad her. Funkční základy a jejich licence jsou zachovány."] = "GameLingo is an independent game-translation app. Open-source attribution and licenses are preserved."
+        out["GameLingo je nezávislý projekt a není oficiální aplikací Sony ani Microsoftu."] = "GameLingo is an independent project, not an official Sony or Microsoft app."
+        out["GameLingo je otevřený projekt využívající části PlayCaptionu a Chiaki. Zdrojové kódy a změny jsou dostupné podle podmínek GNU AGPLv3."] = "GameLingo is an open-source project using components from PlayCaption and Chiaki. Source code and changes are made available under GNU AGPLv3."
+        out["GameLingo na GitHubu"] = "GameLingo on GitHub"
+        out["GameLingo se přihlašuje oficiální stránkou Microsoftu pomocí jednorázového kódu. Heslo do GameLingo nezadáváš. Po schválení se načtou tvoje dostupné Xboxy."] = "GameLingo signs you in through the official Microsoft website using a one-time code. You never enter your password in GameLingo. Your Xbox consoles are loaded after sign-in."
+        out["GameLingo využívá open-source základy PlayCaption a Chiaki. Zdrojový kód a jeho úpravy jsou šířeny podle GNU AGPLv3 (AGPL-3.0). GameLingo není oficiální aplikací Sony, Microsoftu ani Google. Názvy Xbox a PlayStation jsou ochranné známky příslušných vlastníků."] = "GameLingo uses the open-source foundations of PlayCaption and Chiaki. Source code and modifications are distributed under GNU AGPLv3 (AGPL-3.0). GameLingo is not an official Sony, Microsoft or Google application. Xbox and PlayStation are trademarks of their respective owners."
+        out["GameLingo · Ukázka titulků"] = "GameLingo · Subtitle sample"
+        out["GameLingo · samostatná TV"] = "GameLingo · standalone TV"
+        out["GameLingo – hraj a rozuměj svým hrám"] = "GameLingo – play and understand your games"
+        out["GameLingo – veřejný repozitář"] = "GameLingo – public repository"
+        out["GameLingo, zdroje a AGPLv3"] = "GameLingo, sources and AGPLv3"
+        out["GitHub neposkytl platný soubor."] = "GitHub did not provide a valid file."
+        out["GitHub odpověděl HTTP"] = "GitHub returned HTTP"
+        out["Google TV"] = "Google TV"
+        out["Google TV / Android TV"] = "Google TV / Android TV"
+        out["Google TV se páruje pomocí QR nebo kódu."] = "Google TV pairs using QR or a code."
+        out["HRAJ. ROZUMĚJ."] = "PLAY. UNDERSTAND."
+        out["Herní slovník"] = "Game glossary"
+        out["Herní texty"] = "Game text"
+        out["Herní texty a volby"] = "Game text and choices"
+        out["Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti."] = "History is optional and keeps recent translations in memory. It is separate from the local translation cache."
+        out["Historie je vypnutá."] = "History is disabled."
+        out["Historie překladů"] = "Translation history"
+        out["Hledat"] = "Search"
+        out["Hledám konzole…"] = "Searching for consoles…"
+        out["Hlídač:"] = "Watchdog:"
+        out["Hned"] = "Immediately"
+        out["Hotovo"] = "Done"
+        out["Hraj. Rozuměj."] = "Play. Understand."
+        out["Hry, video a aplikace TV"] = "Games, video and TV apps"
+        out["ID konzole uloženo"] = "Console ID saved"
+        out["ID účtu (Base64)"] = "Account ID (Base64)"
+        out["IP televizoru:"] = "TV IP:"
+        out["IPA ověřena. Ulož ji do Souborů nebo předej do podepisovací aplikace."] = "IPA verified. Save it to Files or share it with a signing app."
+        out["IPA · instalace s podpisem"] = "IPA · signed installation"
+        out["Ignorované řádky"] = "Ignored lines"
+        out["Ignorované řádky (jeden výraz na řádek)"] = "Ignored lines (one entry per line)"
+        out["Ignorované řádky, minimální výška a filtry obou oblastí."] = "Ignored lines, minimum height and filters for both regions."
+        out["Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu."] = "Installation was not allowed. The APK is downloaded; reopen Updates."
+        out["Italština"] = "Italian"
+        out["JAZYKY"] = "LANGUAGES"
+        out["Jazyk aplikace"] = "App language"
+        out["Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle."] = "App language changes menus. Game language determines the source text and translation language determines the output. They are set independently."
+        out["Jazyk aplikace určuje rozhraní. Jazyk hry vybírá OCR rozpoznávání. Jazyk překladu určuje výstup pro dialogy i herní texty. Zdroj a cíl přepínej před spuštěním hry."] = "App language changes the interface. Game language controls OCR. Translation language controls dialogue and game text output. Change the source and target before starting."
+        out["Jazyk hry"] = "Game language"
+        out["Jazyk hry a překladu"] = "Game and translation languages"
+        out["Jazyk hry → překlad"] = "Game language → translation"
+        out["Jazyk nabídky GameLingo"] = "GameLingo interface language"
+        out["Jazyk prostředí GameLingo. Překlad her se nastavuje samostatně."] = "GameLingo interface language. Game translation is configured separately."
+        out["Jazyk překladu"] = "Translation language"
+        out["Jazyk tlačítek a nabídky GameLingo. Nemění jazyk hry ani překladu."] = "Language for GameLingo buttons and menus. Does not change the game or translation language."
+        out["Jazyky"] = "Languages"
+        out["Jazyky GameLingo"] = "GameLingo languages"
+        out["Jazyky a překlad"] = "Languages and translation"
+        out["Jazyky slovníku"] = "Glossary languages"
+        out["Jazyky slovníku:"] = "Glossary languages:"
+        out["Jazyky, OCR a Překlad určují, co a jak se překládá. Rozložení nastavuje čtyři oblasti. Vzhled upravuje titulky a Profily ukládají konfiguraci pro hry, filmy a aplikace."] = "Languages, OCR and Translation determine what is translated and how. Layout sets four regions. Appearance changes subtitles and Profiles save settings for games, films and apps."
+        out["Je dostupná nová verze."] = "A new version is available."
+        out["Je nutných šest číslic"] = "Six digits are required"
+        out["Jeden přesný výraz na řádek"] = "One exact phrase per line"
+        out["Jiná aktualizace již probíhá."] = "Another update is already running."
+        out["Kam zobrazit titulky"] = "Where to show subtitles"
+        out["Kam zobrazit titulky?"] = "Where to show subtitles?"
+        out["Kontrola aktualizace se nezdařila. Zkontroluj internet a zkus to znovu."] = "Update check failed. Check your internet connection and try again."
+        out["Kontrola již probíhá. Zkus to znovu."] = "An update check is already running. Try again."
+        out["Kontrola nastavení"] = "Review settings"
+        out["Kontrola se nezdařila:"] = "Update check failed:"
+        out["Kontrolní součet APK nesouhlasí."] = "APK checksum mismatch."
+        out["Kontrolní součet IPA nesouhlasí."] = "IPA checksum mismatch."
+        out["Kontroluji vydání na GitHubu…"] = "Checking GitHub releases…"
+        out["Kontroluji vydání…"] = "Checking releases…"
+        out["Konzole"] = "Console"
+        out["Konzole a telefony"] = "Consoles and phones"
+        out["Konzole a zařízení"] = "Consoles and devices"
+        out["Konzole je nastavená · připojení neověřeno"] = "Console configured · connection unverified"
+        out["Konzole je spárovaná, spojení se ověří až při spuštění."] = "Console paired. Connection will be checked when starting."
+        out["Konzole se automaticky hledá v lokální síti. Pokud ji GameLingo nenajde, lze zadat její IP adresu ručně. Pro PS5 i PS4 je potřeba jednorázové párování."] = "Consoles are discovered on your local network. If no console is found, enter its IP manually. One-time pairing is required for PS4 and PS5."
+        out["Konzole zatím není spárovaná."] = "Console not yet paired."
+        out["Konzole zmizí ze seznamu GameLingo, ale zůstane na tvém Microsoft účtu. Můžeš ji později znovu zobrazit."] = "The console will be hidden in GameLingo but remain on your Microsoft account. You can show it again later."
+        out["Konzoli se nepodařilo načíst."] = "Could not load console."
+        out["Kopírovat"] = "Copy"
+        out["Krátké dialogy · rychlý"] = "Short dialogue · fast"
+        out["Kterou konzoli používáš?"] = "Which console do you use?"
+        out["Kód již není platný. Vrať se zpět a vygeneruj nový."] = "Code expired. Go back and generate a new code."
+        out["Kód platí ještě:"] = "Code expires in:"
+    }
+
+    private fun fill_en_1(out: MutableMap<String, String>) {
+        out["Kód pro Microsoft"] = "Microsoft code"
+        out["Kód uložen, ale TV zatím neodpovídá."] = "Code saved, but TV is not responding yet."
+        out["Kód uložen, spojení neověřeno"] = "Code saved, connection unverified"
+        out["Legacy příjem:"] = "Legacy reception:"
+        out["Legacy · staré aplikace"] = "Legacy · older apps"
+        out["Licence"] = "License"
+        out["Licence a původní autoři"] = "Licenses and original authors"
+        out["Licence třetích stran"] = "Third-party licenses"
+        out["Licence třetích stran · bez internetu"] = "Third-party licenses · offline"
+        out["Licenční soubor není v tomto sestavení dostupný."] = "The license file is not available in this build."
+        out["Licenční texty v aplikaci"] = "In-app license texts"
+        out["MOJE KONZOLE"] = "MY CONSOLES"
+        out["Max. 50 řádků: originál | chybný překlad | správný překlad. Prázdný prostředek opraví jen celý přesný originál. Rozlišuje velikost písmen."] = "Max. 50 lines: original | incorrect translation | correct translation. An empty middle field corrects only the exact full original. Case-sensitive."
+        out["Maximální stáří"] = "Maximum age"
+        out["Microsoft účet a vlastní konzole"] = "Microsoft account and your consoles"
+        out["Modrá"] = "Blue"
+        out["Modrá je vstup OCR. Automatika sleduje vybranou část obrazu, ručně nastavíš přesný rámeček. Funkce filtrování může zachytit i některé nápisy ve hře."] = "Blue is the OCR input region. Automatic mode reads the selected part of the frame; use manual mode for precise placement. Filtering can also affect signs and HUD text."
+        out["Modrá oblast"] = "Blue region"
+        out["Modrá oblast čte původní titulky. Zelená určuje místo přeložených dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů."] = "Blue reads original subtitles. Green sets translated dialogue position. Yellow reads choices and game text; orange displays their translation. Adjust position and size for each game. Regions are saved in profiles."
+        out["Modrá oblast: omezí velké nadpisy, tlačítka a krátké sloupce menu. Žluté oblasti se netýká."] = "Blue region: reduces large headings, buttons and short menu columns. Does not affect yellow."
+        out["Modrá · čtení dialogů"] = "Blue · read dialogue"
+        out["Modrá: minimální výška textu"] = "Blue: minimum text height"
+        out["Modrá: odkud číst dialogy. Zelená: kam zobrazit české titulky. Žlutá: odkud číst herní texty a volby. Oranžová: kam zobrazit jejich český překlad. Vyber barvu a přetáhni její oblast v náhledu. Každá oblast má vlastní velikost a polohu. Změny se ukládají automaticky."] = "Blue reads dialogue. Green positions its translation. Yellow reads choices and game text. Orange positions their translation. Choose a color and drag that region in the preview. Each region has its own size and position. Changes are saved automatically."
+        out["Modrá: režim OCR"] = "Blue: OCR mode"
+        out["Modrá: velikost textu"] = "Blue: text size"
+        out["Moje hra"] = "My game"
+        out["Moje konzole"] = "My consoles"
+        out["Moje televize"] = "My televisions"
+        out["Moje zařízení"] = "My devices"
+        out["Místní log překladu vymazán."] = "Local translation log cleared."
+        out["Místní paměť ukládá originály a překlady pro opakované použití. Můžeš ji vypnout nebo vymazat bez odstranění profilů."] = "The local cache stores originals and translations for reuse. You can disable or clear it without deleting profiles."
+        out["Místní překladová cache vymazána."] = "Local translation cache cleared."
+        out["Místní překladová paměť"] = "Local translation cache"
+        out["Místní uložené překlady"] = "Locally saved translations"
+        out["Můj Xbox"] = "My Xbox"
+        out["Můžeš přidat více Xboxů, PlayStationů i televizí. Uložené zařízení nemusí být právě online; skutečné spojení ověřujeme až při překladu."] = "You can add multiple Xbox and PlayStation consoles and TVs. Saved devices may be offline; connections are verified when translating."
+        out["Můžeš si uložit více Xboxů i PlayStationů. Při spuštění vybereš konkrétní zařízení. Uložená adresa ještě neznamená úspěšné spárování; vždy se kontroluje skutečné Remote Play spojení."] = "You can save multiple Xbox and PlayStation consoles and choose which to use. Saving an address does not confirm pairing; the Remote Play connection must be verified."
+        out["Na Google TV spusť GameLingo TV. iPhone a TV musí být ve stejné domácí síti. Pokud se TV nenajde, můžeš zadat její IP adresu ručně."] = "Start GameLingo TV on Google TV. Both devices must be on the same local network. If no TV is found, enter its IP address manually."
+        out["Na PS5 otevři Nastavení → Systém → Remote Play → Propojit zařízení. Zadaný osmimístný PIN slouží pouze k propojení. Připojení funguje jen na vlastních nebo autorizovaných konzolích."] = "On PS5 open Settings → System → Remote Play → Link Device. The eight-digit PIN is used only for pairing. Connect only to consoles you own or are authorized to use."
+        out["Na TV otevři Překlad z telefonu. Načti QR nebo opiš 32 znaků kódu. Titulky jsou podepsané, ne šifrované."] = "Open Translation from phone on the TV. Scan QR or enter the 32-character code. Subtitles are signed, not encrypted."
+        out["Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování. Používej jen důvěryhodnou domácí síť; párování a titulky nejsou šifrované."] = "Open Translation from phone on the TV. Enter a new six-digit code and confirm pairing. Use only a trusted home network; pairing and subtitles are not encrypted."
+        out["Na TV otevři obrazovku pro párování a opiš šest číslic. Po reinstalaci TV aplikace lze stejný iPhone spárovat znovu. Párovací kód není kód účtu Microsoft."] = "Open the TV pairing screen and enter the six-digit code. After reinstalling the TV app, you can pair this iPhone again. This code is not your Microsoft login code."
+        out["Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Načti QR nebo opiš celý kód. Uložená IP neznamená spárování."] = "Select Translation from phone, not Directly on TV. Scan the QR or enter the whole code. A saved IP does not mean pairing."
+        out["Na telefonu"] = "On phone"
+        out["Nahoře"] = "Top"
+        out["Nainstalováno:"] = "Installed:"
+        out["Najít PlayStation"] = "Find PlayStation"
+        out["Najít Xbox"] = "Find Xbox"
+        out["Nalezeno:"] = "Found:"
+        out["Nalezené"] = "Found"
+        out["Naskenuj QR kód fotoaparátem iPhonu. IPA je testovací balíček; před instalací vyžaduje podpis, například přes AltStore nebo Sideloadly."] = "Scan with your iPhone camera. The test IPA requires signing before installation, for example with AltStore or Sideloadly."
+        out["Naskenuj QR kód telefonem s Androidem, stáhni mobilní APK a potvrď instalaci. Systém může vyžadovat povolení instalace z tohoto zdroje."] = "Scan with your Android phone, download the mobile APK and confirm installation. Android may require permission to install from this source."
+        out["Nastaveno"] = "Configured"
+        out["Nastaveno ke spuštění"] = "Ready to launch"
+        out["Nastaveno · spojení ověřím při spuštění"] = "Configured · connection checked at start"
+        out["Nastavení"] = "Settings"
+        out["Nastavení GameLingo TV"] = "GameLingo TV settings"
+        out["Nastavení TV"] = "TV settings"
+        out["Nastavení barev a pozadí platí jen pro připojený GameLingo TV přijímač. Barvu lze měnit nezávisle na titulkách na iPhonu."] = "Color and background settings apply only to the connected GameLingo TV receiver. They can be changed independently of iPhone subtitles."
+        out["Nastavení instalace není na tomto zařízení dostupné."] = "Installation settings are unavailable on this device."
+        out["Nastavení instalace není na této TV dostupné."] = "Installation settings are unavailable on this TV."
+        out["Nastavení pro jednotlivé hry"] = "Settings for individual games"
+        out["Nastavení překladu"] = "Translation settings"
+        out["Nastavení v sekundách jako na iOS; příběhová fronta zachovává vlastní časování."] = "Set seconds as on iOS; the story queue keeps its own timing."
+        out["Nastavit později"] = "Set up later"
+        out["Načti QR kód z GameLingo TV"] = "Scan the GameLingo TV QR code"
+        out["Načti QR v telefonu nebo opiš celý kód."] = "Scan the QR on your phone or enter the entire code."
+        out["Načti všechny Xboxy přiřazené k účtu. Zvol konkrétní konzoli pro překlad, zejména pokud jich máš více. Výběr se uloží do GameLingo a zobrazí na úvodní obrazovce. Samotné zobrazení v seznamu neznamená aktivní Remote Play."] = "Load the Xbox consoles associated with your account. Choose the one to translate, especially if you own several. Selection is saved in GameLingo. A saved console is not an active Remote Play connection."
+        out["Načíst"] = "Load"
+        out["Načíst QR kód z TV"] = "Scan TV QR code"
+        out["Načíst QR z TV"] = "Scan TV QR"
+        out["Načíst konzole"] = "Refresh consoles"
+        out["Neaktivní"] = "Inactive"
+        out["Nejde o oficiální aplikaci Sony, Microsoftu ani Google. Názvy konzolí jsou ochranné známky jejich vlastníků."] = "Not an official app of Sony, Microsoft or Google. Console names are trademarks of their owners."
+        out["Nejdřív odemkni oblast."] = "Unlock the region first."
+        out["Nejdřív zastav probíhající překlad."] = "Stop the current translation first."
+        out["Nejdřív zastav překlad a příjem."] = "Stop translation and receiving first."
+        out["Nejdřív zastav překlad."] = "Stop translation first."
+        out["Nejdříve povol překryv v nastavení TV."] = "Allow overlays in TV settings first."
+        out["Nejdříve se přihlas ke svému účtu Microsoft."] = "Sign in with your Microsoft account first."
+        out["Nejdříve vyber a spáruj TV."] = "Select and pair a TV first."
+        out["Nejdříve vyber televizi nebo zadej její IP."] = "Select a TV or enter its IP address first."
+        out["Nejdříve zapni překlad herních textů ve žluté oblasti."] = "Enable game-text translation in the yellow region first."
+        out["Nejdříve zastav ostatní režimy."] = "Stop other modes first."
+        out["Nejdříve zastav překlad a příjem z telefonu."] = "Stop translation and phone reception first."
+        out["Nejdříve zastav překlad a příjem."] = "Stop translation and reception first."
+        out["Nejdříve zastav překlad i příjem z telefonu."] = "Stop translation and phone reception first."
+        out["Nejdříve zastav překlad z konzole nebo telefonu."] = "Stop translation from the console or phone first."
+        out["Nejdříve zastav překlad."] = "Stop translation first."
+        out["Nejdříve zastav stávající překlad."] = "Stop the current translation first."
+        out["Nejprve připoj konzoli"] = "Connect a console first"
+        out["Nejprve vyber a připoj konzoli."] = "Select and connect a console first."
+        out["Nejprve zastav překlad a příjem."] = "Stop translation and receiving first."
+        out["Nejprve zastav překlad."] = "Stop translation first."
+        out["Nelze přijímat: všechny UDP porty 41989–41993 jsou obsazené"] = "Cannot receive: all UDP ports 41989–41993 are in use"
+        out["Nelze vytvořit složku aktualizací."] = "Could not create the update directory."
+        out["Nelze zjistit nainstalovanou verzi."] = "Could not determine the installed version."
+        out["Neočekávaná velikost APK."] = "Unexpected APK size."
+        out["Neplatná metadata aktualizace."] = "Invalid update metadata."
+        out["Neplatné údaje IPA."] = "Invalid IPA metadata."
+        out["Neplatný GameLingo QR kód. Použij nový kód z TV."] = "Invalid GameLingo QR code. Use a new code from the TV."
+        out["Neplatný formát, duplicita originálu nebo překročený limit."] = "Invalid format, duplicate source text or limit exceeded."
+        out["Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem."] = "Unsigned IPA: sign and install it with your own tool."
+        out["Nepoužívat herní slovník"] = "Do not use game glossary"
+        out["Nepovolen"] = "Not allowed"
+        out["Nepovolený zdroj aktualizace."] = "Untrusted update source."
+        out["Neprůhlednost pozadí"] = "Background opacity"
+        out["Nepřidána"] = "Not added"
+        out["Nepřihlášený"] = "Not signed in"
+        out["Nepřipojeno"] = "Disconnected"
+        out["Nespárováno"] = "Not paired"
+        out["Nevybráno"] = "Not selected"
+        out["Nevytvořen"] = "Not created"
+        out["Nezahájena"] = "Not started"
+        out["Nezahájeno"] = "Not started"
+        out["Neznámá chyba."] = "Unknown error."
+        out["Nezávislý překlad herních dialogů a textů pro Xbox, PlayStation a kompatibilní TV."] = "Independent game dialogue and text translation for Xbox, PlayStation and compatible TVs."
+        out["Nová APK má jiný podpis. Aktualizace je zablokovaná, aby se nesmazalo nastavení. Je nutný jednorázový přechod na trvalý podpis."] = "The new APK has a different signature. The update is blocked to preserve settings. A one-time migration to the permanent signing key is required."
+        out["Nová verze GameLingo"] = "New GameLingo version"
+        out["Nová verze GameLingo · O aplikaci → Aktualizace"] = "New GameLingo version · About → Updates"
+        out["Nová verze:"] = "New version:"
+        out["Nový herní slovník"] = "New game glossary"
+        out["Nový párovací kód"] = "New pairing code"
+        out["Nový slovník pro aktuální jazyky"] = "New glossary for current languages"
+        out["Novější verze není dostupná."] = "No newer version is available."
+        out["NÁHLED"] = "PREVIEW"
+        out["Náhled na TV"] = "Preview on TV"
+        out["Náhled nelze zobrazit"] = "Could not display preview"
+        out["Náhled oblastí · zmizí za 30 s"] = "Region preview · disappears in 30 s"
+        out["Náhled obrazovky"] = "Screen preview"
+        out["Nápověda"] = "Help"
+        out["Nápověda a úkoly"] = "Hints and objectives"
+        out["Nápověda a úkoly v herním obraze"] = "Hints and objectives in the game image"
+        out["Nápověda: "] = "Help: "
+        out["Název"] = "Name"
+        out["Název hry"] = "Game name"
+        out["Název hry nebo aplikace"] = "Game or app name"
+        out["Název konzole"] = "Console name"
+        out["Některý log se nepodařilo vymazat."] = "One or more logs could not be cleared."
+        out["Němčina"] = "German"
+        out["O aplikaci"] = "About"
+        out["O aplikaci / Licence"] = "About / License"
+        out["OBECNÉ"] = "GENERAL"
+        out["OCR"] = "OCR"
+        out["OCR / Oblasti"] = "OCR / Regions"
+        out["OCR A ROZPOZNÁVÁNÍ"] = "OCR AND RECOGNITION"
+        out["OCR a rozpoznávání"] = "OCR and recognition"
+        out["OCR herních textů"] = "Game text OCR"
+        out["OCR obrazovky: pouze MediaProjection"] = "Screen OCR: MediaProjection only"
+        out["OCR titulků"] = "Subtitle OCR"
+        out["OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit. Výchozí nastavení vychází z ověřeného základu PlayCaption."] = "OCR reads dialogue in the selected source language. Dialogue, game text and choices can be enabled separately. Stop translation before changing speed or regions. Defaults are based on the proven PlayCaption foundation."
+        out["OCR, překlad, oblasti a vzhled titulků"] = "OCR, translation, regions and subtitle appearance"
+        out["OCR: automaticky"] = "OCR: automatic"
+        out["OK · posouvat šipkami"] = "OK · move with arrows"
+        out["OK · velikost písma"] = "OK · font size"
+        out["OK · změnit velikost"] = "OK · resize"
+        out["OK · šířka a měřítko"] = "OK · width and scale"
+        out["Oblast"] = "Region"
+        out["Oblast obrazu je tmavá nebo nedostupná"] = "Image region is dark or unavailable"
+        out["Oblasti"] = "Regions"
+        out["Oblasti na obrazovce"] = "Screen regions"
+        out["Oblasti obrazovky"] = "Screen regions"
+        out["Oblasti překladu"] = "Translation zones"
+        out["Obnovit"] = "Refresh"
+        out["Obnovit filtry modré oblasti"] = "Reset blue region filters"
+        out["Obnovit filtry žluté oblasti"] = "Reset yellow region filters"
+        out["Obnovit nastavení"] = "Restore settings"
+        out["Obnovit oblast"] = "Reset region"
+        out["Obnovit původní režim, filtrování a automatické čtení."] = "Restore original mode, filtering and automatic reading."
+        out["Obnovit výchozí"] = "Reset to default"
+        out["Obnovit výchozí nastavení"] = "Restore defaults"
+        out["Obnovit výchozí nastavení?"] = "Restore default settings?"
+        out["Obnovit výchozí polohu"] = "Reset position"
+        out["Obnovit výchozí zóny?"] = "Reset zones to default?"
+        out["Obnoví OCR, překlad, oblasti a vzhled titulků. Zařízení, účty a herní profily zůstanou zachované."] = "Restores OCR, translation, regions and subtitle appearance. Paired devices, accounts and game profiles remain saved."
+        out["Obnoví nastavení překladu, OCR, oblastí a titulků. Spárovaná zařízení, účty a uložené herní profily zůstanou zachované."] = "Translation, OCR, region and subtitle settings will return to defaults. Paired devices, accounts and saved game profiles will remain."
+        out["Obrazovka"] = "Screen"
+        out["Odebere zařízení z GameLingo. U PlayStationu také odstraní jeho uložené párovací klíče."] = "Removes the device from GameLingo. For PlayStation, this also deletes its saved pairing keys."
+        out["Odebrat"] = "Remove"
+        out["Odebrat Xbox?"] = "Remove Xbox?"
+    }
+
+    private fun fill_en_2(out: MutableMap<String, String>) {
+        out["Odebrat konzoli?"] = "Remove console?"
+        out["Odemknout oblast"] = "Unlock region"
+        out["Odeslat ukázkový překlad do vybrané TV"] = "Send a sample translation to the selected TV"
+        out["Odhlásit"] = "Sign out"
+        out["Odpověď nepřišla od vybrané TV."] = "Response did not come from the selected TV."
+        out["Odpárovat"] = "Unpair"
+        out["Odpárování se nepodařilo uložit."] = "Could not save unpairing."
+        out["Odstranit"] = "Remove"
+        out["Offline překlad na telefonu využívá Google ML Kit. Jazykové modely se stahují přes Wi-Fi."] = "Offline translation on the phone uses Google ML Kit. Language models download over Wi-Fi."
+        out["Operace se nezdařila. Zkus ji znovu."] = "Operation failed. Try again."
+        out["Oranžová"] = "Orange"
+        out["Oranžová je výstup překladu ze žluté oblasti. Při hraní se aktuální přeložený text při změně polohy ihned přesune. Písmo můžeš měnit nezávisle na běžných titulcích."] = "Orange is the translation output for the yellow region. Moving it relocates the last translated game text immediately. Its font size is separate from regular subtitles."
+        out["Oranžová · přeložené texty"] = "Orange · translated text"
+        out["Ostatní telefony zůstanou spárované."] = "Other phones will remain paired."
+        out["Otevřený kód a původní autoři"] = "Open source and original authors"
+        out["Otevřete GameLingo na telefonu a zadejte tento šestimístný kód."] = "Open GameLingo on your phone and enter this six-digit code."
+        out["Otevři GameLingo TV na televizi a opiš šest číslic. TV a iPhone musejí být ve stejné síti."] = "Open GameLingo TV on your television and enter its six-digit code. Your TV and iPhone must be on the same network."
+        out["Otevři GameLingo na telefonu"] = "Open GameLingo on your phone"
+        out["Otevři QR kód v telefonu."] = "Open the QR code on your phone."
+        out["Otevři přihlášení Sony, dokonči jej v Safari a zkopíruj závěrečný odkaz ze stránky zpět do GameLingo. Heslo se nezadává do GameLingo a přihlašovací údaje se neukládají."] = "Open Sony sign-in, complete it in Safari and paste the final redirect link into GameLingo. Passwords are not entered or stored in GameLingo."
+        out["Otevřít Microsoft"] = "Open Microsoft"
+        out["Otevřít a spravovat zařízení"] = "Open and manage device"
+        out["Otevřít editor oblastí"] = "Open region editor"
+        out["Otevřít nastavení"] = "Open settings"
+        out["Otevřít nápovědu"] = "Open help"
+        out["Otevřít odkaz"] = "Open link"
+        out["Ovládání: šipky pro výběr • OK potvrdit • Zpět pro návrat"] = "Controls: arrows to select • OK to confirm • Back to return"
+        out["Ověřené spojení"] = "Verified connection"
+        out["Ověřit přihlášení"] = "Check sign-in"
+        out["Ověřit spojení"] = "Verify connection"
+        out["Ověřit spojení s TV"] = "Verify TV connection"
+        out["Ověřit účet"] = "Verify account"
+        out["Ověřuji aktuální vydání…"] = "Checking current release…"
+        out["PS5: Nastavení → Systém → Remote Play → Povolit Remote Play a Propojit zařízení. PS4: Nastavení → Nastavení připojení Remote Play. Uvidíš osmimístný párovací kód. Přihlaš se svým účtem PlayStation přes oficiální stránku Sony."] = "PS5: Settings → System → Remote Play → Enable Remote Play and Link Device. PS4: Settings → Remote Play Connection Settings. Use the eight-digit pairing PIN. Sign in through Sony's official site."
+        out["Pevná doba titulku"] = "Fixed subtitle duration"
+        out["Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon."] = "Applies to reading directly on TV. When receiving subtitles, the phone controls reading."
+        out["PlayStation"] = "PlayStation"
+        out["PlayStation 4 a 5"] = "PlayStation 4 and 5"
+        out["PlayStation 5 / 4"] = "PlayStation 5 / 4"
+        out["PlayStation spárován"] = "PlayStation paired"
+        out["Po souhlasu otevři video do 10 sekund. Výřez a poslední rozpoznaný text zůstanou pouze v paměti do vymazání nebo nové relace. Po návratu sem se snímání zastaví."] = "After granting consent, open a video within 10 seconds. The crop and last recognized text remain in memory only until cleared or a new session starts. Capture stops when you return here."
+        out["Po výběru můžeš konzoli připojit v posledním kroku."] = "Choose a console, then connect it below."
+        out["Podmínky překladu Google ML Kit"] = "Google ML Kit translation terms"
+        out["Podpis, identita nebo verze APK nesouhlasí."] = "APK signature, identity or version mismatch."
+        out["Podrobnosti"] = "Details"
+        out["Pokračovat"] = "Continue"
+        out["Pokračovat na TV"] = "Continue on TV"
+        out["Pokročilé"] = "Advanced"
+        out["Pokročilé nastavení"] = "Advanced settings"
+        out["Pokročilé nastavení OCR"] = "Advanced OCR settings"
+        out["Pokud je zapnutý předchozí dialog, zobrazí až dva nedávné překlady místo jednoho."] = "If previous dialogue is enabled, show up to two recent translations instead of one."
+        out["Poloha klasických českých titulků se upravuje v zelené oblasti. Barvu a pozadí vykresluje TV přijímač. Velikost písma a šířka bloku se přenesou při dalším titulku."] = "The green region controls where translated dialogue appears on TV. The TV receiver draws its colors and background. Font size and block width are applied to the next subtitle."
+        out["Poloha: automatická"] = "Position: automatic"
+        out["Poloha: vlastní"] = "Position: custom"
+        out["Polština"] = "Polish"
+        out["Port UDP obsazen"] = "UDP port in use"
+        out["Portugalština"] = "Portuguese"
+        out["Poslední dialogy a herní texty"] = "Recent dialogue and game text"
+        out["Poslední dialogy a herní texty · volitelné"] = "Recent dialogue and game text · optional"
+        out["Poslední překlad"] = "Last translation"
+        out["Poslední rozpoznané:"] = "Last recognized:"
+        out["Posouvat"] = "Move"
+        out["Postupné čtení delších dialogů"] = "Sequential reading of longer dialogue"
+        out["Posun"] = "Move"
+        out["Potvrdit"] = "Confirm"
+        out["Pouze přesná shoda celého řádku, bez ohledu na velikost písmen."] = "Only exact full-line matches, ignoring letter case."
+        out["Pouze v paměti do ukončení aplikace · max. 200 položek · bez synchronizace"] = "In memory only until the app closes · max. 200 entries · no sync"
+        out["Pouze v paměti do ukončení aplikace · max. 200 položek. Vypnutí historii vymaže. Technický log a cache jsou oddělené."] = "In memory until the app closes · max. 200 entries. Turning off clears history. Technical log and cache are separate."
+        out["Použij uložený profil před spuštěním hry. Jeden jazykový pár na profil, až 50 pravidel. Každý řádek: originál | chybný překlad | správný překlad. Prázdný prostřední sloupec opraví jen celý přesně shodný originál. Rozlišuje velká a malá písmena."] = "Use the saved profile before launching the game. One language pair per profile, up to 50 rules. Each line: source | incorrect translation | correct translation. An empty middle column corrects only an exact full-source match. Case sensitive."
+        out["Použít"] = "Use"
+        out["Použít modrý rámeček místo automatického výběru."] = "Use the blue frame instead of automatic selection."
+        out["Použít profil"] = "Apply profile"
+        out["Použít tuto televizi"] = "Use this TV"
+        out["Používej jen důvěryhodnou domácí síť. Párování a titulky nejsou šifrované."] = "Use only a trusted home network. Pairing and subtitles are not encrypted."
+        out["Povol fotoaparát v nastavení iOS, nebo zadej IP a PIN ručně."] = "Allow camera access in iOS settings or enter the IP address and PIN manually."
+        out["Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování."] = "Allow installation from GameLingo in TV settings. After returning, continue without downloading again."
+        out["Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace."] = "Allow installation from GameLingo in TV settings. Then reopen Updates."
+        out["Povol instalaci z GameLingo v nastavení zařízení. Po návratu bude možné pokračovat bez dalšího stahování."] = "Allow installation from GameLingo in device settings. After returning, continue without downloading again."
+        out["Povol instalaci z GameLingo v nastavení zařízení. Potom znovu otevři Aktualizace."] = "Allow installation from GameLingo in device settings. Then reopen Updates."
+        out["Povol překryv"] = "Allow overlay"
+        out["Povol překryv v nastavení TV."] = "Allow overlays in TV settings."
+        out["Povolen"] = "Allowed"
+        out["Povoleno"] = "Allowed"
+        out["Povolení instalace"] = "Installation permission"
+        out["Povolit"] = "Allow"
+        out["Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?"] = "Allow unsigned subtitles from older apps only on a trusted home network?"
+        out["Povolit překryv"] = "Allow overlay"
+        out["Povolit titulky přes obraz hry"] = "Allow subtitles over the game"
+        out["Povolí nepodepsané titulky (jen důvěryhodná síť)"] = "Allow unsigned subtitles (trusted networks only)"
+        out["Pozadí"] = "Background"
+        out["Pozadí na TV"] = "TV background"
+        out["Pozadí titulků"] = "Subtitle background"
+        out["Pozastaveno"] = "Paused"
+        out["Pozastavit"] = "Pause"
+        out["Pozastavit / pokračovat"] = "Pause / resume"
+        out["Později"] = "Later"
+        out["Počet"] = "Count"
+        out["Počet předchozích replik"] = "Number of previous lines"
+        out["Pro Xbox se přihlašuješ svým účtem Microsoft a povolíš vzdálené funkce. Pro PS5/PS4 použij Remote Play a údaje svého účtu PlayStation. Párovací PIN z konzole se liší od hesla. Do hry ani do konzole se nic neinstaluje."] = "For Xbox, sign in with your Microsoft account and enable remote features. For PS5/PS4, use Remote Play and your PlayStation account details. The console pairing PIN differs from your password. Nothing is installed on the game or console."
+        out["Pro jiné jazyky změň jazyk hry a překladu, poté použij nový slovník. Změna páru nahradí předchozí slovník tohoto profilu."] = "For other languages, change the game and translation languages, then use a new glossary. Changing the language pair replaces this profile's previous glossary."
+        out["Pro každou hru vlastní oblasti, rychlost OCR a titulky"] = "Separate regions, OCR speed and subtitles per game"
+        out["Pro čtení her přímo v TV potřebuje aplikace povolení překryvu."] = "Reading games directly on the TV requires overlay permission."
+        out["Prodleva po zmizení"] = "Delay after disappearance"
+        out["Profil hry změň před spuštěním překladu."] = "Change the game profile before starting translation."
+        out["Profil načten"] = "Profile loaded"
+        out["Profil nelze načíst"] = "Could not load profile"
+        out["Profil ukládá aktuální OCR oblasti, volby a nastavení překladu pro konkrétní hru, film nebo aplikaci. Údaje o účtech Sony a Microsoft se do profilů neukládají."] = "A profile saves current OCR regions, options and translation settings for a game, film or app. Sony and Microsoft account information is not stored in profiles."
+        out["Profil uložen"] = "Profile saved"
+        out["Profily"] = "Profiles"
+        out["Profily her"] = "Game profiles"
+        out["Profily her a aplikací"] = "Game and app profiles"
+        out["První nastavení"] = "First-time setup"
+        out["První spuštění"] = "First launch"
+        out["Průhledné"] = "Translucent"
+        out["Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních."] = "The wizard will not appear again. You can add consoles and TVs in Devices."
+        out["Párovací PIN"] = "Pairing PIN"
+        out["Párovací QR kód"] = "Pairing QR code"
+        out["Párovací klíč TV je uložen, živé spojení se ověří při spuštění."] = "TV pairing key saved. The live connection will be checked when starting."
+        out["Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované."] = "The pairing key is not sent over the network. Subtitles are signed, not encrypted."
+        out["Párovací kód z GameLingo TV"] = "GameLingo TV pairing code"
+        out["Párovací kód z TV"] = "TV pairing code"
+        out["Párování"] = "Pairing"
+        out["Párování TV"] = "TV pairing"
+        out["Párování pomocí QR"] = "Pair using QR"
+        out["Párování pomocí QR kódu nebo PINu"] = "Pair using QR code or PIN"
+        out["Párování telefonu"] = "Phone pairing"
+        out["Párování televize"] = "Pair TV"
+        out["Párování v domácí síti"] = "Pair on home network"
+        out["Páruji…"] = "Pairing…"
+        out["Písmo"] = "Font"
+        out["Písmo, velikost a poloha na TV"] = "Font, size and position on TV"
+        out["PŘEKLAD HRY"] = "GAME TRANSLATION"
+        out["Přejmenovat"] = "Rename"
+        out["Přejmenovat konzoli"] = "Rename console"
+        out["Překlad"] = "Translation"
+        out["Překlad běží nebo oblast není platná."] = "Translation is running or the region is invalid."
+        out["Překlad herních dialogů a textů"] = "Game dialogue and text translation"
+        out["Překlad herních textů"] = "Game text translation"
+        out["Překlad je aktivní. Aktualizaci spusť po zastavení."] = "Translation is active. Start the update after stopping it."
+        out["Překlad je spuštěný."] = "Translation is running."
+        out["Překlad mluvených dialogů"] = "Translate dialogue subtitles"
+        out["Překlad na telefonu"] = "Translation on phone"
+        out["Překlad právě běží. Pro změnu nebo odebrání konzole ho nejprve zastav."] = "Translation is running. Stop it before changing or removing a console."
+        out["Překlad překryje původní titulky."] = "Translation covers the original subtitles."
+        out["Překlad přímo při hraní"] = "Translation while you play"
+        out["Překlad se nepodařilo spustit."] = "Could not start translation."
+        out["Překlad se spustí až po ověření konzole a výstupu."] = "Translation starts only after the console and output are verified."
+        out["Překlad selhal."] = "Translation failed."
+        out["Překlad textů"] = "Text translation"
+        out["Překlad v reálném čase"] = "Real-time translation"
+        out["Překlad z telefonu"] = "Translation from phone"
+        out["Překlad:"] = "Translation:"
+        out["Překladač:"] = "Translator:"
+        out["Překladová cache"] = "Translation cache"
+        out["Překladová fronta"] = "Translation queue"
+        out["Překladová paměť"] = "Translation cache"
+        out["Překladová relace"] = "Translation session"
+        out["Překlady na TV"] = "Translations on TV"
+        out["Překlady zpracované přímo na TV"] = "Translations processed on TV"
+        out["Překládat celý text místo seznamu voleb."] = "Translate full text instead of a list of choices."
+        out["Překládat dialogy"] = "Translate dialogue"
+        out["Překládat do"] = "Translate into"
+        out["Překládat herní nápovědu."] = "Translate in-game hints."
+        out["Překládat volby / texty"] = "Translate choices / game text"
+        out["Překládej dialogy a herní texty přímo během hraní."] = "Translate dialogue and game text while playing."
+        out["Překládá"] = "Translating"
+        out["Překládám"] = "Translating"
+        out["Překryv titulků"] = "Subtitle overlay"
+        out["Překryv:"] = "Overlay:"
+        out["Překrýt původní titulky"] = "Cover original subtitles"
+        out["Překrývat originál"] = "Cover original"
+        out["Přeloženo"] = "Translated"
+        out["Přeložené herní texty"] = "Translated game text"
+        out["Přeložené titulky"] = "Translated subtitles"
+        out["Přeložený text přímo přes originál"] = "Translated text over the original"
+        out["Přenos českých titulků přes domácí síť"] = "Subtitles sent over local network"
+        out["Přepsat"] = "Overwrite"
+        out["Přepsat profil"] = "Overwrite profile"
+        out["Přeskočit starý překlad"] = "Skip outdated translations"
+        out["Přetáhni vybraný rámeček."] = "Drag the selected region."
+    }
+
+    private fun fill_en_3(out: MutableMap<String, String>) {
+        out["Přetáhni vybraný rámeček. Ostatní oblasti zůstanou na svém místě."] = "Drag the selected rectangle. Other regions stay in place."
+        out["Při automatickém režimu zahrne širší část obrazu."] = "Include a wider part of the image in automatic mode."
+        out["Přidat"] = "Add"
+        out["Přidat PS5 / PS4"] = "Add PS5 / PS4"
+        out["Přidat PlayStation"] = "Add PlayStation"
+        out["Přidat Xbox"] = "Add Xbox"
+        out["Přidat Xbox nebo PlayStation"] = "Add Xbox or PlayStation"
+        out["Přidat telefon"] = "Add phone"
+        out["Přidat televizor"] = "Add TV"
+        out["Přidat zařízení"] = "Add device"
+        out["Přidat zónu"] = "Add zone"
+        out["Přihlašovací PIN PlayStation"] = "PlayStation login PIN"
+        out["Přihlásit Microsoft"] = "Sign in to Microsoft"
+        out["Přihlásit Sony"] = "Sign in with Sony"
+        out["Přihlásit se"] = "Sign in"
+        out["Přihlášeno"] = "Signed in"
+        out["Přihlášení"] = "Sign in"
+        out["Přihlášený"] = "Signed in"
+        out["Přijaté snímky:"] = "Received frames:"
+        out["Přijímač"] = "Receiver"
+        out["Přijímač TV je připojen."] = "TV receiver connected."
+        out["Přijímá snímky"] = "Receiving frames"
+        out["Připoj konzoli"] = "Connect a console"
+        out["Připojen"] = "Connected"
+        out["Připojeno"] = "Connected"
+        out["Připojeno:"] = "Connected:"
+        out["Připojení Xbox"] = "Xbox connection"
+        out["Připojení a párování televize"] = "TV connection and pairing"
+        out["Připojení, snímky a testování"] = "Connections, frames and testing"
+        out["Připojit"] = "Connect"
+        out["Připojit Xbox"] = "Connect Xbox"
+        out["Připojit konzoli"] = "Connect console"
+        out["Připojte svůj telefon"] = "Connect your phone"
+        out["Připojuji / načítám snímky"] = "Connecting / loading frames"
+        out["Připojuji PlayStation…"] = "Connecting to PlayStation…"
+        out["Připojuji…"] = "Connecting…"
+        out["Připraveno"] = "Ready"
+        out["Připraveno ke spuštění"] = "Ready to start"
+        out["Přizpůsobení překladu a titulků"] = "Customize translation and subtitles"
+        out["Příběhový režim"] = "Story mode"
+        out["Příjem běží · otevřít párování a stav"] = "Receiving · open pairing and status"
+        out["Příjem, oprávnění, verze"] = "Receiver, permissions, version"
+        out["Příklad: Arthur Morgan | Artur Morgan | Arthur Morgan"] = "Example: Arthur Morgan | Artur Morgan | Arthur Morgan"
+        out["Příliš mnoho přesměrování."] = "Too many redirects."
+        out["Příliš starý překlad byl přeskočen."] = "Outdated translation skipped."
+        out["Příliš velká metadata."] = "Metadata exceeds the size limit."
+        out["Přímo na TV"] = "Directly on TV"
+        out["Přímý překlad i překlad z telefonu používají internet nebo dříve uložené překlady."] = "Direct translation and phone translation use internet access or previously cached translations."
+        out["Přístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači."] = "Revoke phone access on the TV too. Local removal does not revoke the receiver key."
+        out["Původní PlayCaption"] = "Original PlayCaption"
+        out["Původní automatika"] = "Original automatic detection"
+        out["Původní autoři, zdrojový kód a GNU AGPLv3"] = "Original authors, source code and GNU AGPLv3"
+        out["Původní jazyk dialogů a herního textu"] = "Original language of dialogue and game text"
+        out["Původní · stabilní"] = "Original · stable"
+        out["QR kód ke stažení"] = "Download QR code"
+        out["QR kód není dostupný."] = "QR code unavailable."
+        out["QR není dostupný. Zkontroluj místní IP a platnost PINu, nebo použij ruční párování."] = "QR unavailable. Check local IP and PIN validity or use manual pairing."
+        out["QR skener není dostupný"] = "QR scanner unavailable"
+        out["ROZPOZNÁVÁNÍ A PŘEKLAD"] = "OCR AND TRANSLATION"
+        out["Relace není spuštěna"] = "Session not started"
+        out["Relace spuštěna – snímky se ověřují zvlášť"] = "Session started – frames checked separately"
+        out["Remote Play běží"] = "Remote Play running"
+        out["Remote Play běží · TV spojení neověřeno"] = "Remote Play running · TV connection unverified"
+        out["Režim"] = "Mode"
+        out["Režim OCR"] = "OCR mode"
+        out["Režim překladu"] = "Translation mode"
+        out["Režim úprav · OK ukončí úpravy"] = "Editing · OK ends editing"
+        out["Režim úprav · šipky mění rámeček · OK ukončí úpravy"] = "Editing · arrows adjust frame · OK ends editing"
+        out["Režimy, dialogy a časování"] = "Modes, dialogue and timing"
+        out["Rozložení"] = "Layout"
+        out["Rozložení oblastí"] = "Region layout"
+        out["Rozložení:"] = "Layout:"
+        out["Rozpoznávat jazyk"] = "Recognize language"
+        out["Rozpoznávání"] = "Recognition"
+        out["Rozpoznávání herních dialogů a nabídek."] = "Recognize in-game dialogue and menus."
+        out["Rozumím"] = "Got it"
+        out["Rozšířit hledání"] = "Expand search area"
+        out["Ruční"] = "Manual"
+        out["Ruční OCR oblast"] = "Manual OCR region"
+        out["Ruční oblast OCR"] = "Manual OCR region"
+        out["Ručně"] = "Manual"
+        out["Rychlost OCR ovlivňuje čtení herních titulků."] = "OCR speed affects reading game subtitles."
+        out["Rychlost OCR ovlivňuje čtení herních titulků. Klasický režim vychází z ověřené verze. Rozšířené hledání může zachytit také mapu, nápisy a HUD. Při ruční oblasti se rozšíření nepoužívá. Filtr menu může odstranit i některé skutečné dialogy psané velkými písmeny."] = "OCR speed affects recognition. Classic mode is the proven baseline; extended search may also read signs, maps and HUD text. Extended search is off for a manual region. Menu filtering may also remove uppercase dialogue."
+        out["Rychlost čtení, filtrování menu a skutečná oblast snímání. Během spuštěné relace nejprve zastav překlad."] = "Reading speed, menu filtering and capture region. Stop translation before changing an active session."
+        out["Rychlost, přesnost a filtrování textu"] = "Speed, accuracy and text filtering"
+        out["Samostatná TV"] = "Standalone TV"
+        out["Samostatná TV – průměr/P95 (předání není potvrzené zobrazení):"] = "Standalone TV – average/P95 (handoff does not confirm display):"
+        out["Samostatná TV:"] = "Standalone TV:"
+        out["Samostatná žlutá oblast OCR."] = "Separate yellow OCR region."
+        out["Samostatný překlad TV"] = "Standalone TV translation"
+        out["Sdílet log"] = "Share log"
+        out["Seznam Xboxů se nepodařilo načíst."] = "Could not load Xbox list."
+        out["Skrýt po zmizení originálu"] = "Hide when source disappears"
+        out["Skrýt pokročilé filtry"] = "Hide advanced filters"
+        out["Sleduj živý stav překladu"] = "Watch live translation status"
+        out["Slovenština"] = "Slovak"
+        out["Slovník opravuje vlastní výrazy a jména pro zvolenou jazykovou dvojici. Před úpravou zastav překlad."] = "The glossary corrects custom terms and names for the selected language pair. Stop translation before editing."
+        out["Slovník uložen. Použij tento profil před hraním."] = "Glossary saved. Use this profile before playing."
+        out["Slovník, historie a diagnostika"] = "Glossary, history and diagnostics"
+        out["Služba snímání neodpověděla"] = "Capture service did not respond"
+        out["Smazat"] = "Delete"
+        out["Smazat profil"] = "Delete profile"
+        out["Smazat slovník"] = "Delete glossary"
+        out["Smazat zónu"] = "Delete zone"
+        out["Snímky"] = "Frames"
+        out["Snímání aktivní"] = "Capturing video"
+        out["Snímání nebylo povoleno"] = "Capture was not allowed"
+        out["Snímání nelze spustit."] = "Could not start capture."
+        out["Snímání:"] = "Capture:"
+        out["Souhlas / projekce:"] = "Consent / projection:"
+        out["Souhlas udělen"] = "Consent granted"
+        out["Soukromí a licence"] = "Privacy and license"
+        out["Spojení ověřeno."] = "Connection verified."
+        out["Spravovat "] = "Manage "
+        out["Spravovat profily her"] = "Manage game profiles"
+        out["Spravovat:"] = "Manage:"
+        out["Správa konzolí, TV a výstupu titulků"] = "Manage consoles, TV and subtitle output"
+        out["Spustit překlad"] = "Start translating"
+        out["Spustit překlad TV · vybrat profil"] = "Start TV translation · choose profile"
+        out["Spustit překlad z vybrané konzole"] = "Start translating from the selected console"
+        out["Spustit příjem a párování telefonu."] = "Start receiving and pair a phone."
+        out["Spustit test"] = "Start test"
+        out["Spusť překlad a vrať se ke hře"] = "Start translation and return to the game"
+        out["Spárované telefony"] = "Paired phones"
+        out["Spárovat"] = "Pair"
+        out["Spárovat Google TV"] = "Pair Google TV"
+        out["Spárovat TV"] = "Pair TV"
+        out["Spárovat konzoli"] = "Pair console"
+        out["Spárovat kódem z TV"] = "Pair using the TV code"
+        out["Spárovat znovu"] = "Pair again"
+        out["Spárovat šest číslic z TV"] = "Pair with six-digit TV code"
+        out["Spárován"] = "Paired"
+        out["Spárováno"] = "Paired"
+        out["Spárováno · bez spojení"] = "Paired · disconnected"
+        out["Spárováno – bez čerstvého potvrzení"] = "Paired – not recently verified"
+        out["Spárováno:"] = "Paired:"
+        out["Spáruj TV pomocí QR nebo kódu"] = "Pair TV using QR or code"
+        out["Spáruj TV šestimístným kódem"] = "Pair the TV using the six-digit code"
+        out["Spáruj televizi"] = "Pair your TV"
+        out["Stahování aktualizace"] = "Downloading update"
+        out["Stahování zrušeno."] = "Download canceled."
+        out["Stahuji IPA…"] = "Downloading IPA…"
+        out["Standardní"] = "Standard"
+        out["Standardní oblasti"] = "Standard regions"
+        out["Standardní režim funguje bez dalšího nastavování. Automatický režim používá připravenou zónu a další můžeš přidat v Oblastech obrazovky. Pokud překládáš přes TV, telefon i TV musí být ve stejné síti."] = "Standard mode works without additional setup. Automatic mode has a ready-to-use zone; add more in Screen regions. For TV output, phone and TV must be on the same network."
+        out["Start služby:"] = "Service startup:"
+        out["Start snímání:"] = "Capture startup:"
+        out["Starý výsledek zahozen"] = "Stale result discarded"
+        out["Stav"] = "Status"
+        out["Stav konzole není známý"] = "Console state unknown"
+        out["Stav místních nastavení a zahájené relace. Uložené údaje nepotvrzují živé spojení s konzolí ani TV."] = "Local settings and session status. Saved data does not confirm a live console or TV connection."
+        out["Stav překladu"] = "Translation status"
+        out["Stav připojení a historie překladu"] = "Connection status and translation history"
+        out["Stav připojení a technický log"] = "Connection status and technical log"
+        out["Stav relace a uložených zařízení"] = "Session and saved device status"
+        out["Stav:"] = "Status:"
+        out["Stažení se nezdařilo:"] = "Download failed:"
+        out["Stejný jako modrá"] = "Same as blue"
+        out["Stáhnout"] = "Download"
+        out["Stáhnout GameLingo"] = "Download GameLingo"
+        out["Stáhnout IPA"] = "Download IPA"
+        out["Stáhnout aplikaci"] = "Download app"
+        out["Stáhnout novou verzi"] = "Download new version"
+        out["Střed – doporučeno"] = "Center – recommended"
+        out["Svislá pozice"] = "Vertical position"
+        out["Systém ukončil snímání"] = "System stopped capture"
+        out["Systémové nastavení instalace nelze otevřít."] = "Could not open system installation settings."
+        out["Systémový instalátor nelze otevřít."] = "Could not open the system installer."
+        out["Síť"] = "Network"
+        out["TITULKY NA TELEFONU"] = "PHONE SUBTITLES"
+        out["TITULKY NA TV"] = "TV SUBTITLES"
+        out["TV je spárovaná. Čekám na odpověď přijímače."] = "TV paired. Waiting for receiver response."
+        out["TV kód odmítla. Vytvoř nový kód."] = "TV rejected the code. Generate a new one."
+        out["TV není spárovaná. Použij šest číslic z televize."] = "TV not paired. Use the six-digit code shown on your TV."
+        out["TV neodpovídá. Ověř IP, připojení a případně zadej nový kód."] = "TV is not responding. Check IP, connection and enter a new code if needed."
+        out["TV neodpovídá. Zkontroluj domácí síť a přijímač."] = "TV is not responding. Check the home network and receiver."
+        out["TV neodpověděla. Ověř IP a síť."] = "TV did not respond. Check IP and network."
+        out["TV nepotvrdila bezpečné párování. Vytvoř nový kód."] = "TV did not confirm secure pairing. Generate a new code."
+        out["TV odpověděla"] = "TV responded"
+        out["TV odpověděla na ověření. Příjem titulků ještě ověř ve hře."] = "TV responded. Verify subtitle reception in a game."
+    }
+
+    private fun fill_en_4(out: MutableMap<String, String>) {
+        out["TV přijala kód. Ověřuji spojení…"] = "TV accepted the code. Verifying connection…"
+        out["TV připojena"] = "TV connected"
+        out["TV uložena – čekám na spojení"] = "TV saved – waiting to connect"
+        out["Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Log může obsahovat texty ze hry, IP adresu TV a názvy konzolí — před sdílením jej zkontroluj."] = "See translation status, processed video frames and recently recognized dialogue. Test subtitles check the TV connection. Logs may contain game text, your TV IP and console names—review before sharing."
+        out["Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Technický log uchovává omezené kategorie událostí a metriky. Živý náhled níže obsahuje skutečné texty; není součástí sdíleného logu. Před sdílením log zkontroluj."] = "View translation status, processed frame count and the last recognized subtitles. A test subtitle verifies the TV connection. The technical log retains limited event categories and metrics. The live preview below contains actual text and is not included in the shared log. Review the log before sharing."
+        out["Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty."] = "Find the app version, updates, original authors and complete license texts here."
+        out["Technický log"] = "Technical log"
+        out["Telefon"] = "Phone"
+        out["Telefon a TV připoj ke stejné síti. V mobilu otevři Zařízení, vyber TV a naskenuj QR kód nebo zadej celý párovací kód. Po vypršení platnosti vytvoř nový kód."] = "Connect phone and TV to the same network. Open Devices on the phone, choose TV and scan the QR code or enter the full pairing code. Generate a new code if it expires."
+        out["Telefon připojen"] = "Phone connected"
+        out["Telefon · QR / PIN"] = "Phone · QR / PIN"
+        out["Telefony"] = "Phones"
+        out["Televize"] = "Televisions"
+        out["Televize nevybrána"] = "No TV selected"
+        out["Televize spárována; Microsoft účet přihlas zvlášť."] = "TV paired; sign in with Microsoft separately."
+        out["Televize uložena · spojení se ověří"] = "TV saved · connection will be checked"
+        out["Televize vrátila neplatnou odpověď."] = "TV returned an invalid response."
+        out["Televizi je potřeba vybrat a spárovat."] = "Select and pair a TV first."
+        out["Televizi pak bude nutné znovu spárovat."] = "You will need to pair the TV again."
+        out["Test OCR"] = "Test OCR"
+        out["Test překladového jádra"] = "Test translation engine"
+        out["Test překladu"] = "Translation test"
+        out["Test překryvu"] = "Test overlay"
+        out["Test překryvu ověří zobrazení pevného titulku. Test překladového jádra ověří online překlad. Test snímání vyžaduje souhlas Androidu. Náhled lze vymazat."] = "The overlay test displays a fixed subtitle. The translation engine test checks online translation. Capture requires Android permission. You can clear the preview."
+        out["Test snímání"] = "Test capture"
+        out["Text (dopisy, SMS)"] = "Text (letters, messages)"
+        out["Text rozpoznán"] = "Text recognized"
+        out["Titulky"] = "Subtitles"
+        out["Titulky a překlady her v reálném čase"] = "Live game subtitles and translations"
+        out["Titulky na TV"] = "Subtitles on TV"
+        out["Titulky na iPhonu"] = "Subtitles on iPhone"
+        out["Titulky na telefonu"] = "Subtitles on phone"
+        out["Titulky pro rozhovory ve hrách."] = "Subtitles for in-game conversations."
+        out["Titulky přes obraz hry"] = "Subtitles over game image"
+        out["Titulky se zobrazí nad hrou, bez přepínání vstupu."] = "Subtitles appear over the game without switching inputs."
+        out["Titulky – vzhled"] = "Subtitle appearance"
+        out["Tmavé"] = "Dark"
+        out["Typ"] = "Type"
+        out["Typ: celý text"] = "Type: full text"
+        out["Typ: volby odpovědí"] = "Type: answer choices"
+        out["Tyrkysová"] = "Cyan"
+        out["Tyto jazyky platí pro dialogy i herní texty. Změnit je můžeš později v Nastavení."] = "These languages apply to dialogue and game text. You can change them later in Settings."
+        out["Tyto jazyky se použijí pro běžné dialogy i herní texty. Výběr můžeš později změnit v Nastavení."] = "These languages are used for dialogue and game text. You can change them later in Settings."
+        out["Uchovávat historii"] = "Keep history"
+        out["Ukládat překladovou cache"] = "Cache translations"
+        out["Ukládá originály a překlady na tomto zařízení. Historie a profily jsou oddělené."] = "Stores originals and translations on this device. History and profiles are separate."
+        out["Ukládá originály i překlady na tomto zařízení. Je oddělená od historie. Vypnutí může zvýšit počet online požadavků a omezit překlad bez internetu."] = "Stores originals and translations on this device, separate from history. Disabling may increase online requests and limit offline translation."
+        out["Ukládání a vymazání"] = "Storage and clearing"
+        out["Ukládání a vymazání místních překladů"] = "Store and clear local translations"
+        out["Ukončena"] = "Stopped"
+        out["Ukončit aktuální Remote Play a překlad"] = "Stop the current Remote Play and translation"
+        out["Ukázka přeložených titulků"] = "Sample translated subtitles"
+        out["Ukázka českého překladu"] = "Translation preview"
+        out["Ukázka českých titulků"] = "Subtitle preview"
+        out["Ulož si pro každou hru vlastní OCR režim, všechny čtyři oblasti, filtry a nastavení titulků. Profil jde uložit i během hraní; načtení a mazání jsou dostupné po zastavení překladu. Neobsahuje hesla ani přihlašovací údaje."] = "Save a custom OCR mode, all four regions, filters and subtitle settings for each game. Profiles can be saved during gameplay; loading and deleting are available after stopping translation. They contain no passwords or credentials."
+        out["Ulož si pro každou hru vlastní OCR režim, všechny čtyři oblasti, filtry a nastavení titulků. Stejný název profil aktualizuje. Neobsahuje hesla ani přihlašovací údaje. Profil měň před spuštěním překladu."] = "Save an OCR mode, four regions, filters and subtitle settings per game. Saving the same name updates the profile. Passwords and credentials are not saved. Switch profiles before playing."
+        out["Uloženo:"] = "Saved:"
+        out["Uložená konzole"] = "Saved console"
+        out["Uložená konzole není automaticky připojená. Snímání aktivní se objeví až po přijetí video snímků; Google TV odpovídá na kontrolu spojení."] = "A saved console is not necessarily connected. Video capture starts after actual frames arrive; Google TV must respond to connection checks."
+        out["Uložená televize"] = "Saved TV"
+        out["Uložená · nepřipojena"] = "Saved · disconnected"
+        out["Uložené konzole"] = "Saved consoles"
+        out["Uložené nastavení jednotlivých her"] = "Saved settings for each game"
+        out["Uložené zařízení neznamená aktivní Remote Play. Živé spojení a překlad se ověří až při spuštění."] = "A saved device does not mean Remote Play is active. Connection and translation are checked when you start."
+        out["Uložené zařízení samo o sobě nepotvrzuje živé spojení."] = "A saved device alone does not confirm a live connection."
+        out["Uložení televizoru neznamená úspěšné spárování. Překlad na TV se spustí až po ověření aktivního přijímače."] = "Saving a TV does not confirm pairing. Subtitles are sent after its receiver is verified."
+        out["Uložený profil"] = "Saved profile"
+        out["Uložený televizor nepotvrzuje živé přijetí titulků."] = "A saved TV does not confirm live subtitle reception."
+        out["Uložit"] = "Save"
+        out["Uložit aktuální nastavení"] = "Save current settings"
+        out["Uložit do profilu"] = "Save to profile"
+        out["Uložit nebo sdílet IPA"] = "Save or share IPA"
+        out["Uložit profil"] = "Save profile"
+        out["Uložit slovník"] = "Save glossary"
+        out["Uložit změny do profilu"] = "Save changes to profile"
+        out["Uprav aktuální nastavení. Tlačítkem Uložit změny do profilu přepíšeš uložený profil."] = "Adjust current settings. Save changes to profile overwrites the saved profile."
+        out["Upravit"] = "Edit"
+        out["Upravit další nastavení"] = "Edit other settings"
+        out["Upravit modrý, zelený, žlutý a oranžový rámeček."] = "Edit the blue, green, yellow and orange frames."
+        out["Upravit profil"] = "Edit profile"
+        out["Upravit rozložení"] = "Edit layout"
+        out["Upravit zónu"] = "Edit zone"
+        out["Uvolněn"] = "Released"
+        out["V běžném režimu bez překrývání originálu; nemění příběhovou frontu."] = "In normal mode without covering the original; does not change the story queue."
+        out["V mobilní aplikaci otevři Zařízení a naskenuj QR kód."] = "Open Devices in the mobile app and scan the QR code."
+        out["Velikost"] = "Size"
+        out["Velikost IPA nesouhlasí."] = "IPA size mismatch."
+        out["Velikost a poloha titulků"] = "Subtitle size and position"
+        out["Velikost písma"] = "Font size"
+        out["Velikost písma TV"] = "TV font size"
+        out["Velikost písma:"] = "Font size:"
+        out["Velikost rozhraní"] = "Interface size"
+        out["Velikost, šířka a poloha titulků"] = "Subtitle font size, width and position"
+        out["Velikost:"] = "Size:"
+        out["Verze 0.5 Beta"] = "Version 0.5 Beta"
+        out["Verze a licence"] = "Version and licenses"
+        out["Verze, autoři a otevřený zdrojový kód"] = "Version, credits and open source"
+        out["Verze:"] = "Version:"
+        out["Video snímky se přijímají, titulky zpracovává OCR."] = "Video frames are arriving; OCR processes subtitles."
+        out["Vlastní modrý rámeček."] = "Custom blue frame."
+        out["Vlastní nastavení pro iPhone a TV"] = "Custom settings for iPhone and TV"
+        out["Vlastní nastavení pro každou hru"] = "Custom settings for each game"
+        out["Vlastní text"] = "Custom text"
+        out["Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. Přesná poloha rámečků zůstává v Oblastech obrazovky."] = "Customize phone subtitles and the green TV region. Edit exact frame positions in Screen regions."
+        out["Vlastní výrazy"] = "Custom terms"
+        out["Vlastní výrazy pro přímé OCR"] = "Custom terms for direct OCR"
+        out["Vlevo"] = "Left"
+        out["Vložit odkaz po přihlášení"] = "Paste sign-in redirect link"
+        out["Vodorovná pozice"] = "Horizontal position"
+        out["Volby"] = "Choices"
+        out["Volby jsou vypnuté, takže OCR dál čte pouze oblast dialogových titulků."] = "Game-text recognition is off, so OCR only reads dialogue."
+        out["Volby odpovědí"] = "Dialogue choices"
+        out["Volitelná historie posledních 200 úspěšných překladů na tomto zařízení. Ukládá se pouze v paměti aplikace do jejího ukončení. Vypnutí historii vymaže; překladová cache a technický log jsou oddělené."] = "Optional history of the last 200 successful translations on this device. Stored only in app memory until it exits. Turning history off clears it; the translation cache and technical log are separate."
+        out["Volitelně ukončí zobrazení běžného dialogu po potvrzeném zmizení zdrojového textu."] = "Optionally hide normal dialogue after the source text is confirmed gone."
+        out["Volitelně vynechá anglické pokyny jako Press A nebo Hold R2. Běžné volby ponechá."] = "Optionally omit prompts like Press A or Hold R2. Keep ordinary choices."
+        out["Vpravo"] = "Right"
+        out["Vrať se na úvodní obrazovku a spusť překlad. Zde nemusíš spouštět další samostatnou relaci."] = "Return to the home screen and start translation. No separate session is needed here."
+        out["Vrátit odebrané Xboxy"] = "Restore hidden Xbox consoles"
+        out["Vyber PlayStation"] = "Select PlayStation"
+        out["Vyber Xbox"] = "Select Xbox"
+        out["Vyber Xbox nebo PlayStation, nastav výstup titulků na telefon či Google TV, uprav čtyři oblasti OCR a spusť překlad."] = "Choose Xbox or PlayStation, select subtitles on your phone or Google TV, adjust the four OCR regions and start translating."
+        out["Vyber Xbox, PlayStation nebo samostatnou TV, připoj zařízení a spusť překlad. Kam se přeložené titulky zobrazí, nastavíš v Zařízení. Oblasti upravují místo čtení a zobrazení, Profily her ukládají vlastní konfiguraci."] = "Choose Xbox, PlayStation or standalone TV, connect your device and start translation. Set subtitle output in Devices. Regions control reading and display; Game profiles save custom configurations."
+        out["Vyber barvu a pozadí překladu. Polohu, šířku a velikost písma upravíš v Rozložení a uložíš do profilu."] = "Choose translation color and background. Adjust position, width and font size in Layout and save to a profile."
+        out["Vyber cílový jazyk pro dialogy i herní texty."] = "Choose the target for dialogue and game text."
+        out["Vyber další ovládací prvek šipkami"] = "Use arrows to choose another control"
+        out["Vyber iPhone nebo Android a naskenuj QR kód fotoaparátem telefonu. Odkaz vede na nejnovější dostupný mobilní balíček na GitHubu. IPA vyžaduje podpis; Android APK může vyžadovat povolení instalace z tohoto zdroje. Pokud vydání nelze ověřit, použij stránku všech vydání. Toto není párovací QR kód."] = "Choose iPhone or Android and scan the QR code with your phone camera. It opens the latest available mobile package on GitHub. IPA requires signing; APK may require permission to install from this source. If the release cannot be verified, use the releases page. This is not a pairing QR code."
+        out["Vyber jazyk, ve kterém hra zobrazuje původní dialogy."] = "Choose the language displayed by the game."
+        out["Vyber jazyky. Potom můžeš překládat z telefonu nebo přímo na televizi."] = "Choose your languages, then translate from your phone or directly on the TV."
+        out["Vyber jen oblasti, které chceš překládat. Herní profil není povinný."] = "Choose only the regions you want to translate. A game profile is optional."
+        out["Vyber konzoli"] = "Choose a console"
+        out["Vyber konzoli nebo přidej novou"] = "Choose or add a console"
+        out["Vyber konzoli, jazyk hry a cílový jazyk překladu, potom výstup titulků. Google TV se páruje šestimístným kódem. Vše můžeš později změnit v Nastavení a Zařízeních."] = "Choose the console, source game language, translation language and subtitle output. Google TV uses a six-digit pairing code. You can change these later in Settings and Devices."
+        out["Vyber nebo přidej TV"] = "Choose or add a TV"
+        out["Vyber nebo spáruj televizi"] = "Select or pair a TV"
+        out["Vyber oblast a režim · v editoru stiskni OK, potom šipky · OK ukončí úpravy"] = "Choose region and mode · press OK in editor, then arrows · OK ends editing"
+        out["Vyber oblast, potom uprav její polohu a velikost v náhledu."] = "Select a region, then adjust its position and size in the preview."
+        out["Vyber si konzoli a připoj Remote Play."] = "Choose your console and connect Remote Play."
+        out["Vyber svůj mobilní telefon."] = "Choose your phone."
+        out["Vyber uloženou televizi. Pokud se změnila její IP adresa, přidej ji znovu. Samotné uložení TV není potvrzením spojení – připojení se ověřuje párováním a odpovědí přijímače."] = "Choose a saved TV. If its IP changed, add it again. Saving is not confirmation of pairing; the receiver must answer the connection check."
+        out["Vyber zařízení"] = "Choose devices"
+        out["Vyber zdroj překladu"] = "Choose translation source"
+        out["Vyber způsob překladu nebo spravuj svá zařízení."] = "Choose a translation mode or manage your devices."
+        out["Vyberte konzoli"] = "Choose your console"
+        out["Vybraná konzole"] = "Selected console"
+        out["Vybraná konzole je uložená. Spojení ověříme při spuštění."] = "Console saved. Connection will be checked when you start."
+        out["Vybraná televize nepodporuje šestimístné párování GameLingo TV. Pro tento výstup vyber Android TV nebo telefon."] = "This TV does not support six-digit GameLingo TV pairing. Choose Android TV or your phone."
+        out["Vybraný Xbox je uložený"] = "Selected Xbox saved"
+        out["Vybrat konzoli"] = "Select console"
+        out["Vybrat konzoli "] = "Select console "
+        out["Vybrat konzoli:"] = "Select console:"
+        out["Vybrat profil"] = "Choose profile"
+        out["Vydání se nepodařilo ověřit · stránka všech vydání"] = "Could not verify release · all releases page"
+        out["Vygeneruj nový PIN a ověř připojení k místní síti."] = "Generate a new PIN and check the local network connection."
+        out["Vyhledat"] = "Search"
+        out["Vymazat"] = "Clear"
+        out["Vymazat celou historii překladů?"] = "Clear all translation history?"
+        out["Vymazat celou historii?"] = "Clear all history?"
+        out["Vymazat log"] = "Clear log"
+        out["Vymazat místní diagnostické logy?"] = "Clear local diagnostic logs?"
+        out["Vymazat místní diagnostický log"] = "Clear local diagnostic log"
+        out["Vymazat místní log překladu"] = "Clear local translation log"
+        out["Vymazat místní překladovou cache?"] = "Clear local translation cache?"
+        out["Vymazat náhled"] = "Clear preview"
+        out["Vymazat paměť"] = "Clear cache"
+        out["Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže."] = "Clear only the local translation cache? Profiles, accounts and history will not be deleted."
+        out["Vymazat starý i nový místní log překladu? Ostatní diagnostické soubory zůstanou."] = "Clear both old and new local translation logs? Other diagnostics will remain."
+        out["Vymazat uložené překlady"] = "Clear saved translations"
+        out["Vypnout"] = "Disable"
+        out["Vypnout paměť"] = "Disable cache"
+        out["Vypnout test překryvu"] = "Stop overlay test"
+        out["Vypnuto"] = "Off"
+        out["Vypnutá"] = "Disabled"
+        out["Vypršel čas testu."] = "Test timed out."
+        out["Vytvořen"] = "Created"
+        out["Vyzkoušet titulky"] = "Test subtitles"
+        out["Vyžaduje povolení"] = "Permission required"
+        out["Vyžaduje povolení překryvu"] = "Requires overlay permission"
+        out["Vzhled titulků"] = "Subtitle appearance"
+        out["Vítej v GameLingo"] = "Welcome to GameLingo"
+        out["Vítej v GameLingo TV"] = "Welcome to GameLingo TV"
+    }
+
+    private fun fill_en_5(out: MutableMap<String, String>) {
+        out["Výchozí"] = "Default"
+        out["Výchozí nastavení OCR"] = "Reset OCR settings"
+        out["Výchozí oblast"] = "Default region"
+        out["Výstup GameLingo"] = "GameLingo output"
+        out["Výstup přeložených titulků"] = "Translated subtitle output"
+        out["Výstup titulků"] = "Subtitle output"
+        out["Výstup českých titulků"] = "Translated dialogue output"
+        out["Výška"] = "Height"
+        out["Výška:"] = "Height:"
+        out["Xbox"] = "Xbox"
+        out["Xbox Remote Play"] = "Xbox Remote Play"
+        out["Xbox a PlayStation"] = "Xbox and PlayStation"
+        out["Xbox přihlášení převzato z TV."] = "Xbox sign-in transferred from TV."
+        out["Xbox – skutečný obraz"] = "Xbox – live image"
+        out["Xbox – volba konzole"] = "Xbox – console selection"
+        out["Xbox – účet"] = "Xbox – account"
+        out["Xbox, PlayStation a Google TV"] = "Xbox, PlayStation and Google TV"
+        out["Xbox, PlayStation nebo aplikace přímo na televizoru."] = "Xbox, PlayStation or apps directly on the TV."
+        out["Xbox: nepřihlášeno"] = "Xbox: not signed in"
+        out["Xbox: vyhledávám…"] = "Xbox: searching…"
+        out["Xbox: žádná konzole"] = "Xbox: no console"
+        out["ZABEZPEČENÍ"] = "SECURITY"
+        out["ZOBRAZENÍ"] = "DISPLAY"
+        out["ZOBRAZENÍ A DALŠÍ VOLBY"] = "DISPLAY AND OPTIONS"
+        out["ZOBRAZENÍ A PROFILY"] = "DISPLAY AND PROFILES"
+        out["ZPŮSOB PŘEKLADU"] = "TRANSLATION MODE"
+        out["Zadej PIN uživatele konzole, ne osmimístný párovací kód."] = "Enter the console user PIN, not the eight-digit pairing code."
+        out["Zadej celý párovací kód z TV."] = "Enter the full TV pairing code."
+        out["Zadej název hry (max. 64 znaků)"] = "Enter a game name (max. 64 characters)"
+        out["Zadej název profilu."] = "Enter a profile name."
+        out["Zadej všech 32 znaků kódu"] = "Enter all 32 code characters"
+        out["Zadej šest číslic z TV."] = "Enter six digits from the TV."
+        out["Zadejte kód do telefonu"] = "Enter the code on your phone"
+        out["Zahajuji"] = "Starting"
+        out["Zahajuji MediaProjection"] = "Starting MediaProjection"
+        out["Zahodí výsledek, který překročil maximální stáří."] = "Discard results older than the maximum age."
+        out["Zamknout oblast"] = "Lock region"
+        out["Zamknout oblast čtení"] = "Lock reading region"
+        out["Zamknout oranžový rámeček"] = "Lock orange region"
+        out["Zamknout polohu"] = "Lock position"
+        out["Zamknout polohu a vzhled"] = "Lock position and appearance"
+        out["Zamknout polohu a vzhled titulků"] = "Lock subtitle position and appearance"
+        out["Zamknout polohu českých titulků"] = "Lock translated subtitles position"
+        out["Zamknout žlutý rámeček"] = "Lock yellow region"
+        out["Zamčeno · odemkni oblast"] = "Locked · unlock region"
+        out["Zapnout"] = "Enable"
+        out["Zapnout paměť"] = "Enable cache"
+        out["Zastav ostatní režimy a povol překryv."] = "Stop other modes and allow overlays."
+        out["Zastaven"] = "Stopped"
+        out["Zastaveno"] = "Stopped"
+        out["Zastaveno · poslední stav:"] = "Stopped · last status:"
+        out["Zastavit"] = "Stop"
+        out["Zastavit překlad"] = "Stop translating"
+        out["Zastavit příjem"] = "Stop receiving"
+        out["Zatím nebyla nalezena žádná televize."] = "No TV has been found yet."
+        out["Zatím nemáš přidanou žádnou konzoli."] = "No console added yet."
+        out["Zatím nemáš uložený žádný profil."] = "No saved profiles yet."
+        out["Zatím nemáš žádný uložený profil."] = "You have no saved profiles yet."
+        out["Zatím není dostupné vydání s ověřitelnými aktualizačními metadaty."] = "No release with verifiable update metadata is available yet."
+        out["Zatím žádná"] = "None yet"
+        out["Zatím žádná TV"] = "No TV yet"
+        out["Zatím žádné profily"] = "No profiles yet"
+        out["Zatím žádné překlady."] = "No translations yet."
+        out["Zatím žádný překlad ve volitelné historii."] = "No translation in optional history yet."
+        out["Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR."] = "No translations in the optional history yet. Use Test OCR for a live preview."
+        out["Zatím žádný spárovaný telefon."] = "No paired phones yet."
+        out["Zatím žádný telefon."] = "No phones yet."
+        out["Zavřít"] = "Close"
+        out["Zavřít nastavení"] = "Close settings"
+        out["Zavřít vzhled titulků"] = "Close subtitle appearance"
+        out["Zařízení"] = "Devices"
+        out["Zdrojové kódy"] = "Source code"
+        out["Zdrojový kód (GitHub)"] = "Source code (GitHub)"
+        out["Zelená"] = "Green"
+        out["Zelená určuje místo zobrazení českých dialogů na TV. Velikost písma je nezávislá na oranžovém překladu herních textů."] = "Green is the translated dialogue display region on TV. Its font size is independent of the orange game-text output."
+        out["Zelená · přeložené dialogy"] = "Green · translated dialogue"
+        out["Zelený výstup titulků na Google TV. Barva a pozadí se mění přímo v televizním přijímači."] = "Green subtitle output on Google TV. Colours and background are controlled on the TV."
+        out["Zjišťuji"] = "Checking"
+        out["Zkontrolovat aktualizace"] = "Check for updates"
+        out["Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování."] = "Check that both devices are on the same home network, the TV receiver is running and pairing is complete."
+        out["Zkusit titulek na TV"] = "Test subtitles on TV"
+        out["Zkušební titulek"] = "Test subtitle"
+        out["Zkušební titulek GameLingo"] = "GameLingo test subtitle"
+        out["Zkušební titulek se zobrazí přímo na Google TV, pokud je přijímač spuštěný a telefon má s TV platné spojení."] = "A test subtitle appears on Google TV if its receiver is running and the phone is properly connected."
+        out["Změny nastavení překladu se projeví po novém spuštění."] = "Translation settings take effect after restarting translation."
+        out["Změny se ukládají pro aktuálně vybranou televizi nebo telefon. Pro přesné umístění rámečků otevři Oblasti obrazovky."] = "Changes are saved for the selected TV or phone. Open Screen regions to position frames precisely."
+        out["Změny se uloží až tlačítkem Uložit slovník."] = "Changes are saved only when you tap Save glossary."
+        out["Znovu ověřit vydání"] = "Check release again"
+        out["Znovu zobrazit konzole"] = "Show consoles again"
+        out["Zobraz překlad na telefonu nebo na televizoru."] = "Display translations on your phone or TV."
+        out["Zobrazení"] = "Display"
+        out["Zobrazení přeložených titulků"] = "Display translated subtitles"
+        out["Zobrazit QR kód"] = "Show QR code"
+        out["Zobrazit i předchozí repliku"] = "Show previous line too"
+        out["Zobrazit na"] = "Display on"
+        out["Zobrazit na TV"] = "Show on TV"
+        out["Zpět"] = "Back"
+        out["Zpět do Nastavení"] = "Back to Settings"
+        out["Zpět do nabídky"] = "Back to menu"
+        out["Způsob čtení"] = "Recognition method"
+        out["Zrušit"] = "Cancel"
+        out["Zrušit párování"] = "Unpair"
+        out["Zvol Nový párovací kód"] = "Choose New pairing code"
+        out["Zvol režim rozpoznávání, filtrování menu a případně rozšířené hledání. Ruční modrá oblast omezuje čtení na místo dialogů. Před změnou zastav překlad."] = "Choose recognition mode, menu filtering and optional expanded search. The manual blue region limits reading to dialogue. Stop translation before making changes."
+        out["Získej titulky z iPhonu nebo Androidu."] = "Receive subtitles from iPhone or Android."
+        out["Zóna"] = "Zone"
+        out["aktivní"] = "active"
+        out["bez hlášené chyby"] = "no reported error"
+        out["hlášená chyba"] = "error reported"
+        out["iPhone a TV mají nezávislé barvy, pozadí i velikost titulků. TV přijímá změny barev přes ověřené spárování; ukázku zobrazíš tlačítkem Náhled na TV."] = "iPhone and TV have independent subtitle colors, backgrounds and sizes. The TV receives color changes through verified pairing; use Preview on TV to view a sample."
+        out["jedna vybraná"] = "one selected"
+        out["písmo"] = "font"
+        out["překlad:"] = "translation:"
+        out["testovací sestavení"] = "test build"
+        out["vybráno"] = "selected"
+        out["vypnuto"] = "off"
+        out["výřezy:"] = "crops:"
+        out["výška"] = "height"
+        out["z tohoto zařízení?"] = "from this device?"
+        out["zamčeno"] = "locked"
+        out["zapnuto"] = "on"
+        out["zbývá"] = "remaining"
+        out["zdroj:"] = "source:"
+        out["Úpravy ukončeny · šipkami vyber další ovládací prvek"] = "Editing finished · use arrows to choose another control"
+        out["Úzká – pouze titulky"] = "Narrow – subtitles only"
+        out["Účet Microsoft"] = "Microsoft account"
+        out["Účet PlayStation"] = "PlayStation account"
+        out["Účet ověřen"] = "Account verified"
+        out["Účet, konzole a výběr pro překlad"] = "Account, consoles and translation selection"
+        out["Časování a aktuálnost titulků"] = "Subtitle timing and freshness"
+        out["Časování, historie a diagnostika"] = "Timing, history and diagnostics"
+        out["Časový limit stahování."] = "Download timed out."
+        out["Čeká"] = "Waiting"
+        out["Čeká na snímky"] = "Waiting for frames"
+        out["Čeká na telefon"] = "Waiting for phone"
+        out["Čekám na otevření videa nebo vstupu TV"] = "Waiting for video or TV input"
+        out["Čekám na podporovaný zdroj"] = "Waiting for a supported source"
+        out["Čekám na první snímek"] = "Waiting for first frame"
+        out["Čekám na spojení"] = "Waiting for connection"
+        out["Čekám na systémový souhlas"] = "Waiting for system consent"
+        out["České titulky"] = "Translated subtitles"
+        out["České titulky a překlady pro hry"] = "Subtitles and translations for games"
+        out["Český překlad"] = "Translated dialogue"
+        out["Čeština"] = "Czech"
+        out["Čtení"] = "Reading"
+        out["Čtení dialogových titulků"] = "Read dialogue subtitles"
+        out["Čtení dialogů"] = "Read dialogue"
+        out["Čtení herních textů a voleb"] = "Read game text and choices"
+        out["Čtení titulků"] = "Read dialogue"
+        out["Čtení: automatické"] = "Reading: automatic"
+        out["Čtení: ruční"] = "Reading: manual"
+        out["Čtyři nezávislé oblasti"] = "Four independent regions"
+        out["Čtyři nezávislé oblasti pro každou hru"] = "Four independent regions for each game"
+        out["Čtyři nezávislé oblasti pro rozpoznávání a překlad"] = "Four independent regions for OCR and translation"
+        out["Čtyři nezávislé oblasti pro rozpoznávání a překlad."] = "Four independent regions for recognition and translation."
+        out["Čtyři nezávislé rámečky"] = "Four independent regions"
+        out["Čtyři oblasti"] = "Four regions"
+        out["Číst bez internetu"] = "Read offline"
+        out["Šestimístný kód z GameLingo TV"] = "Six-digit GameLingo TV code"
+        out["Šipkami uprav polohu a velikost zóny."] = "Use arrow keys to adjust the zone position and size."
+        out["Široká – původní"] = "Wide – original"
+        out["Španělština"] = "Spanish"
+        out["Šířka"] = "Width"
+        out["Šířka titulků"] = "Subtitle width"
+        out["Šířka titulků:"] = "Subtitle width:"
+        out["Šířka:"] = "Width:"
+        out["Žlutá"] = "Yellow"
+        out["Žlutá oblast"] = "Yellow region"
+        out["Žlutá oblast čte originální anglické herní texty, nabídky nebo možnosti odpovědí. Jejich překlad se zobrazuje samostatně v oranžové oblasti."] = "Yellow reads original game text, menus and dialogue choices in the selected game language. Their translation is shown in the separate orange region."
+        out["Žlutá · čtení dalších textů"] = "Yellow · read other text"
+        out["Žlutá: filtrovat pokyny ovladače"] = "Yellow: filter controller prompts"
+        out["Žlutá: minimální výška textu"] = "Yellow: minimum text height"
+        out["Žlutá: režim OCR"] = "Yellow: OCR mode"
+        out["Žlutá: velikost textu"] = "Yellow: text size"
+        out["Žádná konzole"] = "No console yet"
+        out["Žádná televize"] = "No TV yet"
+        out["Žádná vybraná"] = "None selected"
+        out["Žádné"] = "None"
+        out["Žádný Xbox zatím nebyl nalezen. Zkontroluj vzdálené funkce konzole a zkus Obnovit."] = "No Xbox found yet. Check Remote Features on your console and try Refresh."
+        out["žádná vybraná"] = "none selected"
+    }
+
+    private fun fill_en_6(out: MutableMap<String, String>) {
+        out["✓ Profil uložen:"] = "✓ Profile saved:"
+    }
+
+    private fun labels_sk(): Map<String, String> = mutableMapOf<String, String>().apply {
+        fill_sk_0(this)
+        fill_sk_1(this)
+        fill_sk_2(this)
+        fill_sk_3(this)
+        fill_sk_4(this)
+        fill_sk_5(this)
+        fill_sk_6(this)
+    }
+
+    private fun fill_sk_0(out: MutableMap<String, String>) {
+        out["1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat."] = "1. Na TV otvor Preklad z telefónu. 2. Naskenuj QR alebo opíš 32 znakov kódu. 3. Vyber Spárovať."
+        out["1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš šestimístný kód. 3. Zvol Spárovat."] = "1. Na TV otvor Preklad z telefónu. 2. Naskenuj QR alebo opíš šesťmiestny kód. 3. Vyber Spárovať."
+        out["1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Načti QR nebo opiš celý kód z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Pokud používáš starý přijímač PlayCaption, zavři jej. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru."] = "1. Otvor GameLingo na telefóne.\n2. Zvoľ Google TV a vyber tento televízor.\n3. Naskenuj QR alebo opíš celý kód z obrazovky.\n\nTelefón a TV musia byť v rovnakej sieti. Ak používaš starý prijímač PlayCaption, zatvor ho. Prijímač môže zobraziť titulky cez HDMI obraz iba na podporovanom televízore."
+        out["6místný kód z TV"] = "Šesťmiestny kód z TV"
+        out["8místný PIN z PlayStation"] = "Osemmiestny PIN z PlayStation"
+        out["APK není čitelná."] = "APK nie je čitateľná."
+        out["APK · mobilní verze"] = "APK · mobilná verzia"
+        out["Adresa se zjišťuje"] = "Adresa sa zisťuje"
+        out["Aktivace foreground služby:"] = "Aktivácia služby v popredí:"
+        out["Aktivní"] = "Aktívna"
+        out["Aktivní profil"] = "Aktívny profil"
+        out["Aktivní zóna"] = "Aktívna zóna"
+        out["Aktivní zóny:"] = "Aktívne zóny:"
+        out["Aktivní · UDP"] = "Aktívny · UDP"
+        out["Aktivní · mediaProjection"] = "Aktívna · mediaProjection"
+        out["Aktivuji službu snímání"] = "Aktivujem službu snímania"
+        out["Aktualizace"] = "Aktualizácie"
+        out["Aktualizace GameLingo"] = "Aktualizácia GameLingo"
+        out["Aktualizace nebyla nainstalována:"] = "Aktualizácia nebola nainštalovaná:"
+        out["Aktualizovat stav"] = "Aktualizovať stav"
+        out["Aktuální nastavení"] = "Aktuálne nastavenia"
+        out["Aktuální vydání"] = "Aktuálne vydanie"
+        out["Angličtina"] = "Angličtina"
+        out["Aplikace, hra, překlad"] = "Aplikácia, hra, preklad"
+        out["Automaticky"] = "Automaticky"
+        out["Automatické oblasti překladu"] = "Automatické oblasti prekladu"
+        out["Automatické umístění · aktivní zóny: "] = "Automatické umiestnenie · aktívne zóny: "
+        out["Automatické zóny"] = "Automatické zóny"
+        out["Automatický"] = "Automatický"
+        out["Automatický · vyvážený"] = "Automatický · vyvážený"
+        out["Autor"] = "Autor"
+        out["Autoři, licence a zdrojový kód"] = "Autori, licencia a zdrojový kód"
+        out["Barva textu"] = "Farba textu"
+        out["Barvy, pozadí a velikost"] = "Farby, pozadie a veľkosť"
+        out["Base64 ID účtu"] = "Base64 ID účtu"
+        out["Bez slovníku"] = "Bez slovníka"
+        out["Bez textu"] = "Bez textu"
+        out["Bez uloženého profilu"] = "Bez uloženého profilu"
+        out["Bez změny rámečků a modré oblasti."] = "Bez zmeny rámčekov a modrej oblasti."
+        out["Bez změny rámečků a žluté oblasti."] = "Bez zmeny rámčekov a žltej oblasti."
+        out["Bílá"] = "Biela"
+        out["Během aktivního překladu nelze měnit konzoli. Nejprve překlad zastav."] = "Počas aktívneho prekladu nemožno meniť konzolu. Najprv zastav preklad."
+        out["Během běžícího překladu nelze změnit rychlost čtení."] = "Rýchlosť OCR nie je možné meniť počas prekladu."
+        out["Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu."] = "Vyrovnávacia pamäť ukladá originály aj preklady na tomto zariadení. Je oddelená od voliteľnej histórie. Vypnutie môže zvýšiť počet online požiadaviek a obmedziť preklady bez internetu."
+        out["Cache vypnuta; uložené překlady lze vymazat zvlášť."] = "Cache vypnutá; uložené preklady možno vymazať zvlášť."
+        out["Cache zapnuta."] = "Cache zapnutá."
+        out["Chiaki / TP Play"] = "Chiaki / TP Play"
+        out["Chyba OCR"] = "Chyba OCR"
+        out["Chyba OCR:"] = "Chyba OCR:"
+        out["Chyba překladu"] = "Chyba prekladu"
+        out["Chyba při ukončení"] = "Chyba pri ukončení"
+        out["Chyba při uvolnění"] = "Chyba pri uvoľnení"
+        out["Chyba snímku:"] = "Chyba snímky:"
+        out["Chyba:"] = "Chyba:"
+        out["Chybí cíl přesměrování."] = "Chýba cieľ presmerovania."
+        out["Chybí souhlas nebo překryv, případně běží jiný režim"] = "Chýba súhlas alebo prekrytie, prípadne beží iný režim"
+        out["Citlivost, režim a filtrování textu"] = "Citlivosť, režim a filtrovanie textu"
+        out["Citlivost, režim a časování"] = "Citlivosť, režim a časovanie"
+        out["Cílový jazyk"] = "Cieľový jazyk"
+        out["DALŠÍ"] = "ĎALŠIE"
+        out["Další nastavení"] = "Ďalšie nastavenia"
+        out["Další texty: vypnuto"] = "Ďalšie texty: vypnuté"
+        out["Další texty: zapnuto"] = "Ďalšie texty: zapnuté"
+        out["Delší přeložené dialogy."] = "Dlhšie preložené dialógy."
+        out["Diagnostický výřez OCR"] = "Diagnostický výrez OCR"
+        out["Diagnostika"] = "Diagnostika"
+        out["Diagnostika TV"] = "Diagnostika TV"
+        out["Diagnostika a kompatibilita"] = "Diagnostika a kompatibilita"
+        out["Diagnostika samostatného OCR"] = "Diagnostika samostatného OCR"
+        out["Dialog"] = "Dialóg"
+        out["Dialog snímání:"] = "Dialóg snímania:"
+        out["Dialogy"] = "Dialógy"
+        out["Dialogy, herní texty, Story"] = "Dialógy, herné texty, Story"
+        out["Do jakého jazyka překládat"] = "Do akého jazyka prekladať"
+        out["Doba titulku"] = "Trvanie titulku"
+        out["Doba zobrazení"] = "Doba zobrazenia"
+        out["Doba zobrazení určuje, jak dlouho titulek zůstane na televizi. Starší překlady může GameLingo zahodit po zobrazení nového dialogu. Jazyk hry a překladu lze změnit v sekci Jazyky."] = "Trvanie titulku určuje, ako dlho zostane na TV. Staré preklady sa môžu preskočiť, keď sa objaví nový dialóg. Jazyk hry a prekladu zmeníš v časti Jazyky."
+        out["Dokončit nastavení"] = "Dokončiť nastavenie"
+        out["Dole"] = "Dole"
+        out["Domů"] = "Domov"
+        out["Dopisy a zprávy"] = "Listy a správy"
+        out["Dočasný párovací QR kód"] = "Dočasný párovací QR kód"
+        out["Dvě"] = "Dve"
+        out["Dvě předchozí repliky"] = "Dve predchádzajúce repliky"
+        out["Fialová"] = "Fialová"
+        out["Filtrovat menu hry"] = "Filtrovať herné ponuky"
+        out["Filtrovat pokyny ovladače"] = "Filtrovať pokyny ovládača"
+        out["Filtrovat položky herního menu"] = "Filtrovať položky herného menu"
+        out["Filtry dialogů jsou nezávislé na herních textech."] = "Filtre dialógov sú nezávislé od herných textov."
+        out["Filtry herních textů neovlivňují dialogy."] = "Filtre herných textov neovplyvňujú dialógy."
+        out["Foreground služba:"] = "Služba v popredí:"
+        out["Fotoaparát není dostupný. Použij ruční PIN."] = "Fotoaparát nie je dostupný. Použi ručný PIN."
+        out["Francouzština"] = "Francúzština"
+        out["GameLingo"] = "GameLingo"
+        out["GameLingo TV je připojená."] = "GameLingo TV je pripojená."
+        out["GameLingo je nezávislá aplikace pro překlad her. Funkční základy a jejich licence jsou zachovány."] = "GameLingo je nezávislá aplikácia na preklad hier. Pôvodné autorstvo a licencie zostávajú zachované."
+        out["GameLingo je nezávislý projekt a není oficiální aplikací Sony ani Microsoftu."] = "GameLingo je nezávislý projekt, nie oficiálna aplikácia Sony ani Microsoftu."
+        out["GameLingo je otevřený projekt využívající části PlayCaptionu a Chiaki. Zdrojové kódy a změny jsou dostupné podle podmínek GNU AGPLv3."] = "GameLingo je projekt s otvoreným kódom využívajúci časti PlayCaptionu a Chiaki. Zdrojový kód a zmeny sú dostupné podľa GNU AGPLv3."
+        out["GameLingo na GitHubu"] = "GameLingo na GitHube"
+        out["GameLingo se přihlašuje oficiální stránkou Microsoftu pomocí jednorázového kódu. Heslo do GameLingo nezadáváš. Po schválení se načtou tvoje dostupné Xboxy."] = "GameLingo používa oficiálnu stránku Microsoftu a jednorazový kód. Heslo do GameLingo nezadávaš. Po prihlásení sa načítajú tvoje konzoly Xbox."
+        out["GameLingo využívá open-source základy PlayCaption a Chiaki. Zdrojový kód a jeho úpravy jsou šířeny podle GNU AGPLv3 (AGPL-3.0). GameLingo není oficiální aplikací Sony, Microsoftu ani Google. Názvy Xbox a PlayStation jsou ochranné známky příslušných vlastníků."] = "GameLingo využíva open-source základy PlayCaption a Chiaki. Zdrojový kód a jeho úpravy sa šíria podľa GNU AGPLv3 (AGPL-3.0). GameLingo nie je oficiálnou aplikáciou Sony, Microsoftu ani Google. Xbox a PlayStation sú ochranné známky príslušných vlastníkov."
+        out["GameLingo · Ukázka titulků"] = "GameLingo · Ukážka titulkov"
+        out["GameLingo · samostatná TV"] = "GameLingo · samostatný TV"
+        out["GameLingo – hraj a rozuměj svým hrám"] = "GameLingo – hraj a rozumej svojim hrám"
+        out["GameLingo – veřejný repozitář"] = "GameLingo – verejný repozitár"
+        out["GameLingo, zdroje a AGPLv3"] = "GameLingo, zdroje a AGPLv3"
+        out["GitHub neposkytl platný soubor."] = "GitHub neposkytol platný súbor."
+        out["GitHub odpověděl HTTP"] = "GitHub odpovedal HTTP"
+        out["Google TV"] = "Google TV"
+        out["Google TV / Android TV"] = "Google TV / Android TV"
+        out["Google TV se páruje pomocí QR nebo kódu."] = "Google TV sa páruje pomocou QR alebo kódu."
+        out["HRAJ. ROZUMĚJ."] = "HRAJ. ROZUMEJ."
+        out["Herní slovník"] = "Herný slovník"
+        out["Herní texty"] = "Herné texty"
+        out["Herní texty a volby"] = "Herné texty a voľby"
+        out["Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti."] = "História je voliteľná a uchováva posledné preklady v pamäti. Je oddelená od miestnej prekladovej pamäte."
+        out["Historie je vypnutá."] = "História je vypnutá."
+        out["Historie překladů"] = "História prekladov"
+        out["Hledat"] = "Hľadať"
+        out["Hledám konzole…"] = "Hľadám konzoly…"
+        out["Hlídač:"] = "Strážca:"
+        out["Hned"] = "Hneď"
+        out["Hotovo"] = "Hotovo"
+        out["Hraj. Rozuměj."] = "Hraj. Rozumej."
+        out["Hry, video a aplikace TV"] = "Hry, video a aplikácie TV"
+        out["ID konzole uloženo"] = "ID konzoly uložené"
+        out["ID účtu (Base64)"] = "ID účtu (Base64)"
+        out["IP televizoru:"] = "IP televízora:"
+        out["IPA ověřena. Ulož ji do Souborů nebo předej do podepisovací aplikace."] = "IPA overená. Ulož ju do Súborov alebo ju odovzdaj podpisovacej aplikácii."
+        out["IPA · instalace s podpisem"] = "IPA · inštalácia s podpisom"
+        out["Ignorované řádky"] = "Ignorované riadky"
+        out["Ignorované řádky (jeden výraz na řádek)"] = "Ignorované riadky (jeden výraz na riadok)"
+        out["Ignorované řádky, minimální výška a filtry obou oblastí."] = "Ignorované riadky, minimálna výška a filtre oboch oblastí."
+        out["Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu."] = "Inštalácia nebola povolená. APK je stiahnutá; otvor aktualizáciu znova."
+        out["Italština"] = "Taliančina"
+        out["JAZYKY"] = "JAZYKY"
+        out["Jazyk aplikace"] = "Jazyk aplikácie"
+        out["Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle."] = "Jazyk aplikácie mení ponuky. Jazyk hry určuje pôvodný text a jazyk prekladu určuje výstup. Nastavujú sa nezávisle."
+        out["Jazyk aplikace určuje rozhraní. Jazyk hry vybírá OCR rozpoznávání. Jazyk překladu určuje výstup pro dialogy i herní texty. Zdroj a cíl přepínej před spuštěním hry."] = "Jazyk aplikácie mení rozhranie. Jazyk hry určuje OCR. Jazyk prekladu určuje výstup dialógov a herného textu. Zdroj a cieľ nastav pred spustením."
+        out["Jazyk hry"] = "Jazyk hry"
+        out["Jazyk hry a překladu"] = "Jazyk hry a prekladu"
+        out["Jazyk hry → překlad"] = "Jazyk hry → preklad"
+        out["Jazyk nabídky GameLingo"] = "Jazyk ponuky GameLingo"
+        out["Jazyk prostředí GameLingo. Překlad her se nastavuje samostatně."] = "Jazyk prostredia GameLingo. Preklad hier sa nastavuje samostatne."
+        out["Jazyk překladu"] = "Jazyk prekladu"
+        out["Jazyk tlačítek a nabídky GameLingo. Nemění jazyk hry ani překladu."] = "Jazyk tlačidiel a ponúk GameLingo. Nemení jazyk hry ani prekladu."
+        out["Jazyky"] = "Jazyky"
+        out["Jazyky GameLingo"] = "Jazyky GameLingo"
+        out["Jazyky a překlad"] = "Jazyky a preklad"
+        out["Jazyky slovníku"] = "Jazyky slovníka"
+        out["Jazyky slovníku:"] = "Jazyky slovníka:"
+        out["Jazyky, OCR a Překlad určují, co a jak se překládá. Rozložení nastavuje čtyři oblasti. Vzhled upravuje titulky a Profily ukládají konfiguraci pro hry, filmy a aplikace."] = "Jazyky, OCR a Preklad určujú, čo a ako sa prekladá. Rozloženie nastavuje štyri oblasti. Vzhľad upravuje titulky a Profily ukladajú konfiguráciu pre hry, filmy a aplikácie."
+        out["Je dostupná nová verze."] = "Je dostupná nová verzia."
+        out["Je nutných šest číslic"] = "Je potrebných šesť číslic"
+        out["Jeden přesný výraz na řádek"] = "Jeden presný výraz na riadok"
+        out["Jiná aktualizace již probíhá."] = "Iná aktualizácia už prebieha."
+        out["Kam zobrazit titulky"] = "Kde zobraziť titulky"
+        out["Kam zobrazit titulky?"] = "Kde zobraziť titulky?"
+        out["Kontrola aktualizace se nezdařila. Zkontroluj internet a zkus to znovu."] = "Kontrola aktualizácie zlyhala. Skontroluj internet a skús to znova."
+        out["Kontrola již probíhá. Zkus to znovu."] = "Kontrola už prebieha. Skús to znova."
+        out["Kontrola nastavení"] = "Kontrola nastavení"
+        out["Kontrola se nezdařila:"] = "Kontrola zlyhala:"
+        out["Kontrolní součet APK nesouhlasí."] = "Kontrolný súčet APK nesúhlasí."
+        out["Kontrolní součet IPA nesouhlasí."] = "Kontrolný súčet IPA nesúhlasí."
+        out["Kontroluji vydání na GitHubu…"] = "Kontrolujem vydania na GitHube…"
+        out["Kontroluji vydání…"] = "Kontrolujem vydania…"
+        out["Konzole"] = "Konzola"
+        out["Konzole a telefony"] = "Konzoly a telefóny"
+        out["Konzole a zařízení"] = "Konzoly a zariadenia"
+        out["Konzole je nastavená · připojení neověřeno"] = "Konzola je nastavená · pripojenie neoverené"
+        out["Konzole je spárovaná, spojení se ověří až při spuštění."] = "Konzola je spárovaná. Pripojenie sa overí pri spustení."
+        out["Konzole se automaticky hledá v lokální síti. Pokud ji GameLingo nenajde, lze zadat její IP adresu ručně. Pro PS5 i PS4 je potřeba jednorázové párování."] = "Konzoly sa vyhľadávajú v lokálnej sieti. Ak sa nenájdu, môžeš zadať IP ručne. PS4 aj PS5 vyžadujú jednorazové párovanie."
+        out["Konzole zatím není spárovaná."] = "Konzola ešte nie je spárovaná."
+        out["Konzole zmizí ze seznamu GameLingo, ale zůstane na tvém Microsoft účtu. Můžeš ji později znovu zobrazit."] = "Konzola zmizne zo zoznamu GameLingo, ale zostane na tvojom účte Microsoft. Môžeš ju neskôr znova zobraziť."
+        out["Konzoli se nepodařilo načíst."] = "Konzolu sa nepodarilo načítať."
+        out["Kopírovat"] = "Kopírovať"
+        out["Krátké dialogy · rychlý"] = "Krátke dialógy · rýchly"
+        out["Kterou konzoli používáš?"] = "Ktorú konzolu používaš?"
+        out["Kód již není platný. Vrať se zpět a vygeneruj nový."] = "Kód už nie je platný. Vráť sa späť a vygeneruj nový."
+        out["Kód platí ještě:"] = "Kód platí ešte:"
+    }
+
+    private fun fill_sk_1(out: MutableMap<String, String>) {
+        out["Kód pro Microsoft"] = "Kód pre Microsoft"
+        out["Kód uložen, ale TV zatím neodpovídá."] = "Kód uložený, ale TV zatiaľ neodpovedá."
+        out["Kód uložen, spojení neověřeno"] = "Kód uložený, spojenie neoverené"
+        out["Legacy příjem:"] = "Legacy príjem:"
+        out["Legacy · staré aplikace"] = "Legacy · staršie aplikácie"
+        out["Licence"] = "Licencia"
+        out["Licence a původní autoři"] = "Licencie a pôvodní autori"
+        out["Licence třetích stran"] = "Licencie tretích strán"
+        out["Licence třetích stran · bez internetu"] = "Licencie tretích strán · bez internetu"
+        out["Licenční soubor není v tomto sestavení dostupný."] = "Licenčný súbor nie je v tomto zostavení dostupný."
+        out["Licenční texty v aplikaci"] = "Licenčné texty v aplikácii"
+        out["MOJE KONZOLE"] = "MOJE KONZOLY"
+        out["Max. 50 řádků: originál | chybný překlad | správný překlad. Prázdný prostředek opraví jen celý přesný originál. Rozlišuje velikost písmen."] = "Max. 50 riadkov: originál | chybný preklad | správny preklad. Prázdny stred opraví iba celý presný originál. Rozlišuje veľkosť písmen."
+        out["Maximální stáří"] = "Maximálny vek"
+        out["Microsoft účet a vlastní konzole"] = "Účet Microsoft a vlastné konzoly"
+        out["Modrá"] = "Modrá"
+        out["Modrá je vstup OCR. Automatika sleduje vybranou část obrazu, ručně nastavíš přesný rámeček. Funkce filtrování může zachytit i některé nápisy ve hře."] = "Modrá je vstupná oblasť OCR. Automatika číta vybranú časť obrazu; ručne nastavíš presný rámček. Filtrovanie môže ovplyvniť aj nápisy v hre."
+        out["Modrá oblast"] = "Modrá oblasť"
+        out["Modrá oblast čte původní titulky. Zelená určuje místo přeložených dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů."] = "Modrá oblasť číta pôvodné titulky. Zelená určuje miesto preložených dialógov. Žltá číta voľby a herné texty, oranžová zobrazuje ich preklad. Polohu a rozmery meň podľa hry. Oblasti sa ukladajú do profilov."
+        out["Modrá oblast: omezí velké nadpisy, tlačítka a krátké sloupce menu. Žluté oblasti se netýká."] = "Modrá oblasť: obmedzí veľké nadpisy, tlačidlá a krátke stĺpce menu. Žltej oblasti sa netýka."
+        out["Modrá · čtení dialogů"] = "Modrá · čítanie dialógov"
+        out["Modrá: minimální výška textu"] = "Modrá: minimálna výška textu"
+        out["Modrá: odkud číst dialogy. Zelená: kam zobrazit české titulky. Žlutá: odkud číst herní texty a volby. Oranžová: kam zobrazit jejich český překlad. Vyber barvu a přetáhni její oblast v náhledu. Každá oblast má vlastní velikost a polohu. Změny se ukládají automaticky."] = "Modrá číta dialógy. Zelená určuje polohu ich prekladu. Žltá číta herné texty a možnosti. Oranžová určuje polohu ich prekladu. Vyber farbu a presuň oblasť v náhľade. Každá oblasť má vlastnú polohu a veľkosť. Zmeny sa ukladajú automaticky."
+        out["Modrá: režim OCR"] = "Modrá: režim OCR"
+        out["Modrá: velikost textu"] = "Modrá: veľkosť textu"
+        out["Moje hra"] = "Moja hra"
+        out["Moje konzole"] = "Moje konzoly"
+        out["Moje televize"] = "Moje televízory"
+        out["Moje zařízení"] = "Moje zariadenia"
+        out["Místní log překladu vymazán."] = "Miestny log prekladu vymazaný."
+        out["Místní paměť ukládá originály a překlady pro opakované použití. Můžeš ji vypnout nebo vymazat bez odstranění profilů."] = "Miestna pamäť ukladá originály a preklady na opakované použitie. Môžeš ju vypnúť alebo vymazať bez odstránenia profilov."
+        out["Místní překladová cache vymazána."] = "Miestna prekladová cache vymazaná."
+        out["Místní překladová paměť"] = "Miestna prekladová pamäť"
+        out["Místní uložené překlady"] = "Miestne uložené preklady"
+        out["Můj Xbox"] = "Môj Xbox"
+        out["Můžeš přidat více Xboxů, PlayStationů i televizí. Uložené zařízení nemusí být právě online; skutečné spojení ověřujeme až při překladu."] = "Môžeš pridať viacero konzol Xbox, PlayStation aj televízorov. Uložené zariadenia môžu byť offline; spojenie sa overuje pri preklade."
+        out["Můžeš si uložit více Xboxů i PlayStationů. Při spuštění vybereš konkrétní zařízení. Uložená adresa ještě neznamená úspěšné spárování; vždy se kontroluje skutečné Remote Play spojení."] = "Môžeš si uložiť viacero konzol Xbox a PlayStation a vybrať, ktorú použiješ. Uloženie adresy nepotvrdzuje spárovanie; pripojenie Remote Play sa musí overiť."
+        out["Na Google TV spusť GameLingo TV. iPhone a TV musí být ve stejné domácí síti. Pokud se TV nenajde, můžeš zadat její IP adresu ručně."] = "Spusti GameLingo TV na Google TV. Obe zariadenia musia byť v rovnakej sieti. Ak sa TV nenájde, zadaj IP ručne."
+        out["Na PS5 otevři Nastavení → Systém → Remote Play → Propojit zařízení. Zadaný osmimístný PIN slouží pouze k propojení. Připojení funguje jen na vlastních nebo autorizovaných konzolích."] = "Na PS5 otvor Nastavenia → Systém → Remote Play → Prepojiť zariadenie. Osemmiestny PIN slúži len na párovanie. Pripájaj sa iba k vlastným alebo autorizovaným konzolám."
+        out["Na TV otevři Překlad z telefonu. Načti QR nebo opiš 32 znaků kódu. Titulky jsou podepsané, ne šifrované."] = "Na TV otvor Preklad z telefónu. Naskenuj QR alebo opíš 32 znakov kódu. Titulky sú podpísané, nie šifrované."
+        out["Na TV otevři Překlad z telefonu. Zadej nový šestimístný kód a potvrď párování. Používej jen důvěryhodnou domácí síť; párování a titulky nejsou šifrované."] = "Na TV otvor Preklad z telefónu. Zadaj nový šesťmiestny kód a potvrď párovanie. Používaj iba dôveryhodnú domácu sieť; párovanie a titulky nie sú šifrované."
+        out["Na TV otevři obrazovku pro párování a opiš šest číslic. Po reinstalaci TV aplikace lze stejný iPhone spárovat znovu. Párovací kód není kód účtu Microsoft."] = "Otvor párovanie na TV a zadaj šesťmiestny kód. Po preinštalovaní TV aplikácie môžeš iPhone spárovať znova. Nie je to prihlasovací kód Microsoft."
+        out["Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Načti QR nebo opiš celý kód. Uložená IP neznamená spárování."] = "Na TV vyber Preklad z telefónu, nie Priamo na TV. Naskenuj QR alebo opíš celý kód. Uložená IP neznamená spárovanie."
+        out["Na telefonu"] = "V telefóne"
+        out["Nahoře"] = "Hore"
+        out["Nainstalováno:"] = "Nainštalované:"
+        out["Najít PlayStation"] = "Nájsť PlayStation"
+        out["Najít Xbox"] = "Nájsť Xbox"
+        out["Nalezeno:"] = "Nájdené:"
+        out["Nalezené"] = "Nájdené"
+        out["Naskenuj QR kód fotoaparátem iPhonu. IPA je testovací balíček; před instalací vyžaduje podpis, například přes AltStore nebo Sideloadly."] = "Naskenuj QR kód fotoaparátom iPhonu. IPA je testovací balík; pred inštaláciou vyžaduje podpis, napríklad cez AltStore alebo Sideloadly."
+        out["Naskenuj QR kód telefonem s Androidem, stáhni mobilní APK a potvrď instalaci. Systém může vyžadovat povolení instalace z tohoto zdroje."] = "Naskenuj QR kód telefónom s Androidom, stiahni mobilný APK a potvrď inštaláciu. Systém môže vyžadovať povolenie inštalácie z tohto zdroja."
+        out["Nastaveno"] = "Nastavené"
+        out["Nastaveno ke spuštění"] = "Pripravené na spustenie"
+        out["Nastaveno · spojení ověřím při spuštění"] = "Nastavené · spojenie overím pri spustení"
+        out["Nastavení"] = "Nastavenia"
+        out["Nastavení GameLingo TV"] = "Nastavenia GameLingo TV"
+        out["Nastavení TV"] = "Nastavenia TV"
+        out["Nastavení barev a pozadí platí jen pro připojený GameLingo TV přijímač. Barvu lze měnit nezávisle na titulkách na iPhonu."] = "Nastavenia farieb a pozadia platia iba pre pripojený prijímač GameLingo TV. Farbu možno meniť nezávisle od titulkov na iPhone."
+        out["Nastavení instalace není na tomto zařízení dostupné."] = "Nastavenia inštalácie nie sú na tomto zariadení dostupné."
+        out["Nastavení instalace není na této TV dostupné."] = "Nastavenia inštalácie nie sú na tomto TV dostupné."
+        out["Nastavení pro jednotlivé hry"] = "Nastavenia pre jednotlivé hry"
+        out["Nastavení překladu"] = "Nastavenia prekladu"
+        out["Nastavení v sekundách jako na iOS; příběhová fronta zachovává vlastní časování."] = "Nastavenie v sekundách ako na iOS; príbehový rad zachováva vlastné časovanie."
+        out["Nastavit později"] = "Nastaviť neskôr"
+        out["Načti QR kód z GameLingo TV"] = "Načítaj QR kód z GameLingo TV"
+        out["Načti QR v telefonu nebo opiš celý kód."] = "Naskenuj QR v telefóne alebo opíš celý kód."
+        out["Načti všechny Xboxy přiřazené k účtu. Zvol konkrétní konzoli pro překlad, zejména pokud jich máš více. Výběr se uloží do GameLingo a zobrazí na úvodní obrazovce. Samotné zobrazení v seznamu neznamená aktivní Remote Play."] = "Načítaj konzoly Xbox priradené k účtu. Vyber tú, z ktorej sa má prekladať, najmä ak ich máš viac. Výber sa uloží do GameLingo. Uložená konzola neznamená aktívne pripojenie Remote Play."
+        out["Načíst"] = "Načítať"
+        out["Načíst QR kód z TV"] = "Naskenovať QR kód z TV"
+        out["Načíst QR z TV"] = "Naskenovať QR z TV"
+        out["Načíst konzole"] = "Načítať konzoly"
+        out["Neaktivní"] = "Neaktívne"
+        out["Nejde o oficiální aplikaci Sony, Microsoftu ani Google. Názvy konzolí jsou ochranné známky jejich vlastníků."] = "Nie je oficiálnou aplikáciou Sony, Microsoftu ani Google. Názvy konzol sú ochrannými známkami ich vlastníkov."
+        out["Nejdřív odemkni oblast."] = "Najprv odomkni oblasť."
+        out["Nejdřív zastav probíhající překlad."] = "Najprv zastav prebiehajúci preklad."
+        out["Nejdřív zastav překlad a příjem."] = "Najprv zastav preklad a príjem."
+        out["Nejdřív zastav překlad."] = "Najprv zastav preklad."
+        out["Nejdříve povol překryv v nastavení TV."] = "Najprv povoľ prekrytie v nastaveniach TV."
+        out["Nejdříve se přihlas ke svému účtu Microsoft."] = "Najprv sa prihlás do svojho účtu Microsoft."
+        out["Nejdříve vyber a spáruj TV."] = "Najprv vyber a spáruj TV."
+        out["Nejdříve vyber televizi nebo zadej její IP."] = "Najskôr vyber televízor alebo zadaj jeho IP adresu."
+        out["Nejdříve zapni překlad herních textů ve žluté oblasti."] = "Najprv zapni preklad herných textov v žltej oblasti."
+        out["Nejdříve zastav ostatní režimy."] = "Najprv zastav ostatné režimy."
+        out["Nejdříve zastav překlad a příjem z telefonu."] = "Najprv zastav preklad a príjem z telefónu."
+        out["Nejdříve zastav překlad a příjem."] = "Najprv zastav preklad a príjem."
+        out["Nejdříve zastav překlad i příjem z telefonu."] = "Najprv zastav preklad aj príjem z telefónu."
+        out["Nejdříve zastav překlad z konzole nebo telefonu."] = "Najprv zastav preklad z konzoly alebo telefónu."
+        out["Nejdříve zastav překlad."] = "Najprv zastav preklad."
+        out["Nejdříve zastav stávající překlad."] = "Najprv zastav aktuálny preklad."
+        out["Nejprve připoj konzoli"] = "Najprv pripoj konzolu"
+        out["Nejprve vyber a připoj konzoli."] = "Najprv vyber a pripoj konzolu."
+        out["Nejprve zastav překlad a příjem."] = "Najprv zastav preklad a príjem."
+        out["Nejprve zastav překlad."] = "Najprv zastav preklad."
+        out["Nelze přijímat: všechny UDP porty 41989–41993 jsou obsazené"] = "Nemožno prijímať: všetky UDP porty 41989–41993 sú obsadené"
+        out["Nelze vytvořit složku aktualizací."] = "Nemožno vytvoriť priečinok aktualizácií."
+        out["Nelze zjistit nainstalovanou verzi."] = "Nemožno zistiť nainštalovanú verziu."
+        out["Neočekávaná velikost APK."] = "Neočakávaná veľkosť APK."
+        out["Neplatná metadata aktualizace."] = "Neplatné metadáta aktualizácie."
+        out["Neplatné údaje IPA."] = "Neplatné údaje IPA."
+        out["Neplatný GameLingo QR kód. Použij nový kód z TV."] = "Neplatný GameLingo QR kód. Použi nový kód z TV."
+        out["Neplatný formát, duplicita originálu nebo překročený limit."] = "Neplatný formát, duplicitný originál alebo prekročený limit."
+        out["Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem."] = "Nepodpísaná IPA: inštaláciu a podpis vykonávaš vlastným nástrojom."
+        out["Nepoužívat herní slovník"] = "Nepoužívať herný slovník"
+        out["Nepovolen"] = "Nepovolené"
+        out["Nepovolený zdroj aktualizace."] = "Nepovolený zdroj aktualizácie."
+        out["Neprůhlednost pozadí"] = "Nepriehľadnosť pozadia"
+        out["Nepřidána"] = "Nepridaná"
+        out["Nepřihlášený"] = "Neprihlásený"
+        out["Nepřipojeno"] = "Nepripojené"
+        out["Nespárováno"] = "Nespárované"
+        out["Nevybráno"] = "Nevybrané"
+        out["Nevytvořen"] = "Nevytvorený"
+        out["Nezahájena"] = "Nezačatá"
+        out["Nezahájeno"] = "Nezačaté"
+        out["Neznámá chyba."] = "Neznáma chyba."
+        out["Nezávislý překlad herních dialogů a textů pro Xbox, PlayStation a kompatibilní TV."] = "Nezávislý preklad herných dialógov a textov pre Xbox, PlayStation a kompatibilné TV."
+        out["Nová APK má jiný podpis. Aktualizace je zablokovaná, aby se nesmazalo nastavení. Je nutný jednorázový přechod na trvalý podpis."] = "Nová APK má iný podpis. Aktualizácia je zablokovaná, aby sa nastavenia nevymazali. Je potrebný jednorazový prechod na trvalý podpis."
+        out["Nová verze GameLingo"] = "Nová verzia GameLingo"
+        out["Nová verze GameLingo · O aplikaci → Aktualizace"] = "Nová verzia GameLingo · O aplikácii → Aktualizácia"
+        out["Nová verze:"] = "Nová verzia:"
+        out["Nový herní slovník"] = "Nový herný slovník"
+        out["Nový párovací kód"] = "Nový párovací kód"
+        out["Nový slovník pro aktuální jazyky"] = "Nový slovník pre aktuálne jazyky"
+        out["Novější verze není dostupná."] = "Novšia verzia nie je dostupná."
+        out["NÁHLED"] = "NÁHĽAD"
+        out["Náhled na TV"] = "Náhľad na TV"
+        out["Náhled nelze zobrazit"] = "Náhľad nemožno zobraziť"
+        out["Náhled oblastí · zmizí za 30 s"] = "Náhľad oblastí · zmizne za 30 s"
+        out["Náhled obrazovky"] = "Náhľad obrazovky"
+        out["Nápověda"] = "Pomoc"
+        out["Nápověda a úkoly"] = "Pomoc a úlohy"
+        out["Nápověda a úkoly v herním obraze"] = "Pomoc a úlohy v hernom obraze"
+        out["Nápověda: "] = "Pomoc: "
+        out["Název"] = "Názov"
+        out["Název hry"] = "Názov hry"
+        out["Název hry nebo aplikace"] = "Názov hry alebo aplikácie"
+        out["Název konzole"] = "Názov konzoly"
+        out["Některý log se nepodařilo vymazat."] = "Niektorý log sa nepodarilo vymazať."
+        out["Němčina"] = "Nemčina"
+        out["O aplikaci"] = "O aplikácii"
+        out["O aplikaci / Licence"] = "O aplikácii / Licencia"
+        out["OBECNÉ"] = "VŠEOBECNÉ"
+        out["OCR"] = "OCR"
+        out["OCR / Oblasti"] = "OCR / Oblasti"
+        out["OCR A ROZPOZNÁVÁNÍ"] = "OCR A ROZPOZNÁVANIE"
+        out["OCR a rozpoznávání"] = "OCR a rozpoznávanie"
+        out["OCR herních textů"] = "OCR herných textov"
+        out["OCR obrazovky: pouze MediaProjection"] = "OCR obrazovky: iba MediaProjection"
+        out["OCR titulků"] = "OCR titulkov"
+        out["OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit. Výchozí nastavení vychází z ověřeného základu PlayCaption."] = "OCR číta dialógy vo zvolenom zdrojovom jazyku. Samostatne možno zapnúť dialógy, herné texty a voľby. Pred zmenou rýchlosti alebo oblastí odporúčame zastaviť preklad. Predvolené nastavenia vychádzajú z overeného základu PlayCaption."
+        out["OCR, překlad, oblasti a vzhled titulků"] = "OCR, preklad, oblasti a vzhľad titulkov"
+        out["OCR: automaticky"] = "OCR: automaticky"
+        out["OK · posouvat šipkami"] = "OK · posúvať šípkami"
+        out["OK · velikost písma"] = "OK · veľkosť písma"
+        out["OK · změnit velikost"] = "OK · zmeniť veľkosť"
+        out["OK · šířka a měřítko"] = "OK · šírka a mierka"
+        out["Oblast"] = "Oblasť"
+        out["Oblast obrazu je tmavá nebo nedostupná"] = "Oblasť obrazu je tmavá alebo nedostupná"
+        out["Oblasti"] = "Oblasti"
+        out["Oblasti na obrazovce"] = "Oblasti na obrazovke"
+        out["Oblasti obrazovky"] = "Oblasti obrazovky"
+        out["Oblasti překladu"] = "Oblasti prekladu"
+        out["Obnovit"] = "Obnoviť"
+        out["Obnovit filtry modré oblasti"] = "Obnoviť filtre modrej oblasti"
+        out["Obnovit filtry žluté oblasti"] = "Obnoviť filtre žltej oblasti"
+        out["Obnovit nastavení"] = "Obnoviť nastavenia"
+        out["Obnovit oblast"] = "Obnoviť oblasť"
+        out["Obnovit původní režim, filtrování a automatické čtení."] = "Obnoviť pôvodný režim, filtrovanie a automatické čítanie."
+        out["Obnovit výchozí"] = "Obnoviť predvolené"
+        out["Obnovit výchozí nastavení"] = "Obnoviť predvolené nastavenia"
+        out["Obnovit výchozí nastavení?"] = "Obnoviť predvolené nastavenia?"
+        out["Obnovit výchozí polohu"] = "Obnoviť východiskovú polohu"
+        out["Obnovit výchozí zóny?"] = "Obnoviť predvolené zóny?"
+        out["Obnoví OCR, překlad, oblasti a vzhled titulků. Zařízení, účty a herní profily zůstanou zachované."] = "Obnoví OCR, preklad, oblasti a vzhľad titulkov. Zariadenia, účty a herné profily zostanú zachované."
+        out["Obnoví nastavení překladu, OCR, oblastí a titulků. Spárovaná zařízení, účty a uložené herní profily zůstanou zachované."] = "Nastavenia prekladu, OCR, oblastí a titulkov sa obnovia. Spárované zariadenia, účty a uložené herné profily zostanú zachované."
+        out["Obrazovka"] = "Obrazovka"
+        out["Odebere zařízení z GameLingo. U PlayStationu také odstraní jeho uložené párovací klíče."] = "Odstráni zariadenie z GameLingo. Pri PlayStation sa odstránia aj uložené párovacie kľúče."
+        out["Odebrat"] = "Odobrať"
+        out["Odebrat Xbox?"] = "Odobrať Xbox?"
+    }
+
+    private fun fill_sk_2(out: MutableMap<String, String>) {
+        out["Odebrat konzoli?"] = "Odobrať konzolu?"
+        out["Odemknout oblast"] = "Odomknúť oblasť"
+        out["Odeslat ukázkový překlad do vybrané TV"] = "Odoslať ukážkový preklad do vybranej TV"
+        out["Odhlásit"] = "Odhlásiť"
+        out["Odpověď nepřišla od vybrané TV."] = "Odpoveď neprišla od vybranej TV."
+        out["Odpárovat"] = "Zrušiť párovanie"
+        out["Odpárování se nepodařilo uložit."] = "Zrušenie párovania sa nepodarilo uložiť."
+        out["Odstranit"] = "Odstrániť"
+        out["Offline překlad na telefonu využívá Google ML Kit. Jazykové modely se stahují přes Wi-Fi."] = "Offline preklad v telefóne využíva Google ML Kit. Jazykové modely sa sťahujú cez Wi-Fi."
+        out["Operace se nezdařila. Zkus ji znovu."] = "Operácia sa nepodarila. Skús ju znova."
+        out["Oranžová"] = "Oranžová"
+        out["Oranžová je výstup překladu ze žluté oblasti. Při hraní se aktuální přeložený text při změně polohy ihned přesune. Písmo můžeš měnit nezávisle na běžných titulcích."] = "Oranžová je výstup prekladu zo žltej oblasti. Pri presune sa posledný preložený text hneď premiestni. Veľkosť písma je nezávislá od bežných titulkov."
+        out["Oranžová · přeložené texty"] = "Oranžová · preložené texty"
+        out["Ostatní telefony zůstanou spárované."] = "Ostatné telefóny zostanú spárované."
+        out["Otevřený kód a původní autoři"] = "Otvorený zdrojový kód a pôvodní autori"
+        out["Otevřete GameLingo na telefonu a zadejte tento šestimístný kód."] = "Otvor GameLingo na telefóne a zadaj tento šesťmiestny kód."
+        out["Otevři GameLingo TV na televizi a opiš šest číslic. TV a iPhone musejí být ve stejné síti."] = "Otvor GameLingo TV na televízore a zadaj šesťmiestny kód. TV a iPhone musia byť v rovnakej sieti."
+        out["Otevři GameLingo na telefonu"] = "Otvor GameLingo na telefóne"
+        out["Otevři QR kód v telefonu."] = "Otvor QR kód v telefóne."
+        out["Otevři přihlášení Sony, dokonči jej v Safari a zkopíruj závěrečný odkaz ze stránky zpět do GameLingo. Heslo se nezadává do GameLingo a přihlašovací údaje se neukládají."] = "Otvor prihlásenie Sony, dokonči ho v Safari a vlož výsledný odkaz späť do GameLingo. Heslá sa do GameLingo nezadávajú ani neukladajú."
+        out["Otevřít Microsoft"] = "Otvoriť Microsoft"
+        out["Otevřít a spravovat zařízení"] = "Otvoriť a spravovať zariadenie"
+        out["Otevřít editor oblastí"] = "Otvoriť editor oblastí"
+        out["Otevřít nastavení"] = "Otvoriť nastavenia"
+        out["Otevřít nápovědu"] = "Otvoriť pomoc"
+        out["Otevřít odkaz"] = "Otvoriť odkaz"
+        out["Ovládání: šipky pro výběr • OK potvrdit • Zpět pro návrat"] = "Ovládanie: šípky na výber • OK potvrdiť • Späť na návrat"
+        out["Ověřené spojení"] = "Overené spojenie"
+        out["Ověřit přihlášení"] = "Overiť prihlásenie"
+        out["Ověřit spojení"] = "Overiť spojenie"
+        out["Ověřit spojení s TV"] = "Overiť spojenie s TV"
+        out["Ověřit účet"] = "Overiť účet"
+        out["Ověřuji aktuální vydání…"] = "Overujem aktuálne vydanie…"
+        out["PS5: Nastavení → Systém → Remote Play → Povolit Remote Play a Propojit zařízení. PS4: Nastavení → Nastavení připojení Remote Play. Uvidíš osmimístný párovací kód. Přihlaš se svým účtem PlayStation přes oficiální stránku Sony."] = "PS5: Nastavenia → Systém → Remote Play → Povoliť Remote Play a Prepojiť zariadenie. PS4: Nastavenia → Nastavenia pripojenia Remote Play. Použi osemmiestny PIN. Prihlás sa cez oficiálny web Sony."
+        out["Pevná doba titulku"] = "Pevná doba titulku"
+        out["Platí pro čtení přímo na TV. Při příjmu titulků z telefonu rozhoduje telefon."] = "Platí pre čítanie priamo na TV. Pri príjme titulkov z telefónu rozhoduje telefón."
+        out["PlayStation"] = "PlayStation"
+        out["PlayStation 4 a 5"] = "PlayStation 4 a 5"
+        out["PlayStation 5 / 4"] = "PlayStation 5 / 4"
+        out["PlayStation spárován"] = "PlayStation spárovaný"
+        out["Po souhlasu otevři video do 10 sekund. Výřez a poslední rozpoznaný text zůstanou pouze v paměti do vymazání nebo nové relace. Po návratu sem se snímání zastaví."] = "Po udelení súhlasu otvor video do 10 sekúnd. Výrez a posledný rozpoznaný text zostanú iba v pamäti do vymazania alebo novej relácie. Po návrate sem sa snímanie zastaví."
+        out["Po výběru můžeš konzoli připojit v posledním kroku."] = "Po výbere môžeš konzolu pripojiť v poslednom kroku."
+        out["Podmínky překladu Google ML Kit"] = "Podmienky prekladu Google ML Kit"
+        out["Podpis, identita nebo verze APK nesouhlasí."] = "Podpis, identita alebo verzia APK nesúhlasia."
+        out["Podrobnosti"] = "Podrobnosti"
+        out["Pokračovat"] = "Pokračovať"
+        out["Pokračovat na TV"] = "Pokračovať na TV"
+        out["Pokročilé"] = "Pokročilé"
+        out["Pokročilé nastavení"] = "Pokročilé nastavenia"
+        out["Pokročilé nastavení OCR"] = "Pokročilé nastavenia OCR"
+        out["Pokud je zapnutý předchozí dialog, zobrazí až dva nedávné překlady místo jednoho."] = "Ak je zapnutý predchádzajúci dialóg, zobrazí až dva nedávne preklady namiesto jedného."
+        out["Poloha klasických českých titulků se upravuje v zelené oblasti. Barvu a pozadí vykresluje TV přijímač. Velikost písma a šířka bloku se přenesou při dalším titulku."] = "Zelená oblasť určuje polohu preloženého dialógu na TV. Farby a pozadie vykresľuje prijímač TV. Veľkosť písma a šírka bloku sa použijú pri ďalšom titulku."
+        out["Poloha: automatická"] = "Poloha: automatická"
+        out["Poloha: vlastní"] = "Poloha: vlastná"
+        out["Polština"] = "Poľština"
+        out["Port UDP obsazen"] = "Port UDP obsadený"
+        out["Portugalština"] = "Portugalčina"
+        out["Poslední dialogy a herní texty"] = "Posledné dialógy a herné texty"
+        out["Poslední dialogy a herní texty · volitelné"] = "Posledné dialógy a herné texty · voliteľné"
+        out["Poslední překlad"] = "Posledný preklad"
+        out["Poslední rozpoznané:"] = "Posledné rozpoznané:"
+        out["Posouvat"] = "Posúvať"
+        out["Postupné čtení delších dialogů"] = "Postupné čítanie dlhších dialógov"
+        out["Posun"] = "Posun"
+        out["Potvrdit"] = "Potvrdiť"
+        out["Pouze přesná shoda celého řádku, bez ohledu na velikost písmen."] = "Iba presná zhoda celého riadka bez ohľadu na veľkosť písmen."
+        out["Pouze v paměti do ukončení aplikace · max. 200 položek · bez synchronizace"] = "Iba v pamäti do ukončenia aplikácie · max. 200 položiek · bez synchronizácie"
+        out["Pouze v paměti do ukončení aplikace · max. 200 položek. Vypnutí historii vymaže. Technický log a cache jsou oddělené."] = "Iba v pamäti do ukončenia aplikácie · max. 200 položiek. Vypnutie históriu vymaže. Technický log a vyrovnávacia pamäť sú oddelené."
+        out["Použij uložený profil před spuštěním hry. Jeden jazykový pár na profil, až 50 pravidel. Každý řádek: originál | chybný překlad | správný překlad. Prázdný prostřední sloupec opraví jen celý přesně shodný originál. Rozlišuje velká a malá písmena."] = "Použi uložený profil pred spustením hry. Jeden jazykový pár na profil, až 50 pravidiel. Každý riadok: originál | chybný preklad | správny preklad. Prázdny prostredný stĺpec opraví iba celý presne zhodný originál. Rozlišuje veľké a malé písmená."
+        out["Použít"] = "Použiť"
+        out["Použít modrý rámeček místo automatického výběru."] = "Použiť modrý rámček namiesto automatického výberu."
+        out["Použít profil"] = "Použiť profil"
+        out["Použít tuto televizi"] = "Použiť tento televízor"
+        out["Používej jen důvěryhodnou domácí síť. Párování a titulky nejsou šifrované."] = "Používaj iba dôveryhodnú domácu sieť. Párovanie a titulky nie sú šifrované."
+        out["Povol fotoaparát v nastavení iOS, nebo zadej IP a PIN ručně."] = "Povoľ fotoaparát v nastaveniach iOS alebo zadaj IP a PIN ručne."
+        out["Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování."] = "Povoľ inštaláciu z GameLingo v nastaveniach TV. Po návrate môžeš pokračovať bez ďalšieho sťahovania."
+        out["Povol instalaci z GameLingo v nastavení TV. Potom znovu otevři Aktualizace."] = "Povoľ inštaláciu z GameLingo v nastaveniach TV. Potom znova otvor Aktualizácie."
+        out["Povol instalaci z GameLingo v nastavení zařízení. Po návratu bude možné pokračovat bez dalšího stahování."] = "Povoľ inštaláciu z GameLingo v nastaveniach zariadenia. Po návrate môžeš pokračovať bez ďalšieho sťahovania."
+        out["Povol instalaci z GameLingo v nastavení zařízení. Potom znovu otevři Aktualizace."] = "Povoľ inštaláciu z GameLingo v nastaveniach zariadenia. Potom znova otvor Aktualizácie."
+        out["Povol překryv"] = "Povoľ prekrytie"
+        out["Povol překryv v nastavení TV."] = "Povoľ prekrytie v nastaveniach TV."
+        out["Povolen"] = "Povolené"
+        out["Povoleno"] = "Povolené"
+        out["Povolení instalace"] = "Povolenie inštalácie"
+        out["Povolit"] = "Povoliť"
+        out["Povolit nepodepsané titulky ze starších aplikací pouze v důvěryhodné domácí síti?"] = "Povoliť nepodpísané titulky zo starších aplikácií iba v dôveryhodnej domácej sieti?"
+        out["Povolit překryv"] = "Povoliť prekrytie"
+        out["Povolit titulky přes obraz hry"] = "Povoliť titulky cez obraz hry"
+        out["Povolí nepodepsané titulky (jen důvěryhodná síť)"] = "Povolí nepodpísané titulky (iba dôveryhodná sieť)"
+        out["Pozadí"] = "Pozadie"
+        out["Pozadí na TV"] = "Pozadie na TV"
+        out["Pozadí titulků"] = "Pozadie titulkov"
+        out["Pozastaveno"] = "Pozastavené"
+        out["Pozastavit"] = "Pozastaviť"
+        out["Pozastavit / pokračovat"] = "Pozastaviť / pokračovať"
+        out["Později"] = "Neskôr"
+        out["Počet"] = "Počet"
+        out["Počet předchozích replik"] = "Počet predchádzajúcich replík"
+        out["Pro Xbox se přihlašuješ svým účtem Microsoft a povolíš vzdálené funkce. Pro PS5/PS4 použij Remote Play a údaje svého účtu PlayStation. Párovací PIN z konzole se liší od hesla. Do hry ani do konzole se nic neinstaluje."] = "Pre Xbox sa prihlás účtom Microsoft a povoľ vzdialené funkcie. Pre PS5/PS4 použi Remote Play a údaje účtu PlayStation. Párovací PIN konzoly sa líši od hesla. Do hry ani konzoly sa nič neinštaluje."
+        out["Pro jiné jazyky změň jazyk hry a překladu, poté použij nový slovník. Změna páru nahradí předchozí slovník tohoto profilu."] = "Pre iné jazyky zmeň jazyk hry a prekladu a potom použi nový slovník. Zmena dvojice nahradí predchádzajúci slovník tohto profilu."
+        out["Pro každou hru vlastní oblasti, rychlost OCR a titulky"] = "Samostatné oblasti, rýchlosť OCR a titulky pre každú hru"
+        out["Pro čtení her přímo v TV potřebuje aplikace povolení překryvu."] = "Na čítanie hier priamo v TV potrebuje aplikácia povolenie prekrytia."
+        out["Prodleva po zmizení"] = "Oneskorenie po zmiznutí"
+        out["Profil hry změň před spuštěním překladu."] = "Profil hry zmeň pred spustením prekladu."
+        out["Profil načten"] = "Profil načítaný"
+        out["Profil nelze načíst"] = "Profil nemožno načítať"
+        out["Profil ukládá aktuální OCR oblasti, volby a nastavení překladu pro konkrétní hru, film nebo aplikaci. Údaje o účtech Sony a Microsoft se do profilů neukládají."] = "Profil ukladá aktuálne OCR oblasti, voľby a nastavenia prekladu pre konkrétnu hru, film alebo aplikáciu. Údaje účtov Sony a Microsoft sa do profilov neukladajú."
+        out["Profil uložen"] = "Profil uložený"
+        out["Profily"] = "Profily"
+        out["Profily her"] = "Profily hier"
+        out["Profily her a aplikací"] = "Profily hier a aplikácií"
+        out["První nastavení"] = "Prvé nastavenie"
+        out["První spuštění"] = "Prvé spustenie"
+        out["Průhledné"] = "Priehľadné"
+        out["Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních."] = "Sprievodca sa už nezobrazí. Konzoly a TV môžeš pridať v Zariadeniach."
+        out["Párovací PIN"] = "Párovací PIN"
+        out["Párovací QR kód"] = "Párovací QR kód"
+        out["Párovací klíč TV je uložen, živé spojení se ověří při spuštění."] = "Párovací kľúč TV je uložený. Aktívne pripojenie sa overí pri spustení."
+        out["Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované."] = "Párovací kľúč sa neprenáša po sieti. Titulky sú podpísané, nie šifrované."
+        out["Párovací kód z GameLingo TV"] = "Párovací kód z GameLingo TV"
+        out["Párovací kód z TV"] = "Párovací kód z TV"
+        out["Párování"] = "Párovanie"
+        out["Párování TV"] = "Párovanie TV"
+        out["Párování pomocí QR"] = "Párovanie pomocou QR"
+        out["Párování pomocí QR kódu nebo PINu"] = "Párovanie pomocou QR kódu alebo PINu"
+        out["Párování telefonu"] = "Párovanie telefónu"
+        out["Párování televize"] = "Párovanie televízora"
+        out["Párování v domácí síti"] = "Párovanie v domácej sieti"
+        out["Páruji…"] = "Párujem…"
+        out["Písmo"] = "Písmo"
+        out["Písmo, velikost a poloha na TV"] = "Písmo, veľkosť a poloha na TV"
+        out["PŘEKLAD HRY"] = "PREKLAD HRY"
+        out["Přejmenovat"] = "Premenovať"
+        out["Přejmenovat konzoli"] = "Premenovať konzolu"
+        out["Překlad"] = "Preklad"
+        out["Překlad běží nebo oblast není platná."] = "Preklad beží alebo oblasť nie je platná."
+        out["Překlad herních dialogů a textů"] = "Preklad herných dialógov a textov"
+        out["Překlad herních textů"] = "Preklad herných textov"
+        out["Překlad je aktivní. Aktualizaci spusť po zastavení."] = "Preklad je aktívny. Aktualizáciu spusti po zastavení."
+        out["Překlad je spuštěný."] = "Preklad je spustený."
+        out["Překlad mluvených dialogů"] = "Preklad hovorených dialógov"
+        out["Překlad na telefonu"] = "Preklad na telefóne"
+        out["Překlad právě běží. Pro změnu nebo odebrání konzole ho nejprve zastav."] = "Preklad práve beží. Pred zmenou alebo odobratím konzoly ho zastav."
+        out["Překlad překryje původní titulky."] = "Preklad prekryje pôvodné titulky."
+        out["Překlad přímo při hraní"] = "Preklad počas hrania"
+        out["Překlad se nepodařilo spustit."] = "Preklad sa nepodarilo spustiť."
+        out["Překlad se spustí až po ověření konzole a výstupu."] = "Preklad sa spustí až po overení konzoly a výstupu."
+        out["Překlad selhal."] = "Preklad zlyhal."
+        out["Překlad textů"] = "Preklad textov"
+        out["Překlad v reálném čase"] = "Preklad v reálnom čase"
+        out["Překlad z telefonu"] = "Preklad z telefónu"
+        out["Překlad:"] = "Preklad:"
+        out["Překladač:"] = "Prekladač:"
+        out["Překladová cache"] = "Prekladová vyrovnávacia pamäť"
+        out["Překladová fronta"] = "Prekladový rad"
+        out["Překladová paměť"] = "Prekladová pamäť"
+        out["Překladová relace"] = "Prekladová relácia"
+        out["Překlady na TV"] = "Preklady na TV"
+        out["Překlady zpracované přímo na TV"] = "Preklady spracované priamo na TV"
+        out["Překládat celý text místo seznamu voleb."] = "Prekladať celý text namiesto zoznamu volieb."
+        out["Překládat dialogy"] = "Prekladať dialógy"
+        out["Překládat do"] = "Prekladať do"
+        out["Překládat herní nápovědu."] = "Prekladať hernú pomoc."
+        out["Překládat volby / texty"] = "Prekladať možnosti / texty"
+        out["Překládej dialogy a herní texty přímo během hraní."] = "Prekladaj dialógy a herné texty priamo počas hrania."
+        out["Překládá"] = "Prekladá"
+        out["Překládám"] = "Prekladám"
+        out["Překryv titulků"] = "Prekrytie titulkov"
+        out["Překryv:"] = "Prekrytie:"
+        out["Překrýt původní titulky"] = "Prekryť pôvodné titulky"
+        out["Překrývat originál"] = "Prekrývať originál"
+        out["Přeloženo"] = "Preložené"
+        out["Přeložené herní texty"] = "Preložené herné texty"
+        out["Přeložené titulky"] = "Preložené titulky"
+        out["Přeložený text přímo přes originál"] = "Preložený text priamo cez originál"
+        out["Přenos českých titulků přes domácí síť"] = "Prenos titulkov cez domácu sieť"
+        out["Přepsat"] = "Prepísať"
+        out["Přepsat profil"] = "Prepísať profil"
+        out["Přeskočit starý překlad"] = "Preskočiť staré preklady"
+        out["Přetáhni vybraný rámeček."] = "Presuň vybraný rámček."
+    }
+
+    private fun fill_sk_3(out: MutableMap<String, String>) {
+        out["Přetáhni vybraný rámeček. Ostatní oblasti zůstanou na svém místě."] = "Presuň vybraný rámček. Ostatné oblasti zostanú na mieste."
+        out["Při automatickém režimu zahrne širší část obrazu."] = "Pri automatickom režime zahrnie širšiu časť obrazu."
+        out["Přidat"] = "Pridať"
+        out["Přidat PS5 / PS4"] = "Pridať PS5 / PS4"
+        out["Přidat PlayStation"] = "Pridať PlayStation"
+        out["Přidat Xbox"] = "Pridať Xbox"
+        out["Přidat Xbox nebo PlayStation"] = "Pridať Xbox alebo PlayStation"
+        out["Přidat telefon"] = "Pridať telefón"
+        out["Přidat televizor"] = "Pridať televízor"
+        out["Přidat zařízení"] = "Pridať zariadenie"
+        out["Přidat zónu"] = "Pridať zónu"
+        out["Přihlašovací PIN PlayStation"] = "Prihlasovací PIN PlayStation"
+        out["Přihlásit Microsoft"] = "Prihlásiť Microsoft"
+        out["Přihlásit Sony"] = "Prihlásiť sa cez Sony"
+        out["Přihlásit se"] = "Prihlásiť sa"
+        out["Přihlášeno"] = "Prihlásené"
+        out["Přihlášení"] = "Prihlásenie"
+        out["Přihlášený"] = "Prihlásený"
+        out["Přijaté snímky:"] = "Prijaté snímky:"
+        out["Přijímač"] = "Prijímač"
+        out["Přijímač TV je připojen."] = "Prijímač TV je pripojený."
+        out["Přijímá snímky"] = "Prijíma snímky"
+        out["Připoj konzoli"] = "Pripoj konzolu"
+        out["Připojen"] = "Pripojený"
+        out["Připojeno"] = "Pripojené"
+        out["Připojeno:"] = "Pripojené:"
+        out["Připojení Xbox"] = "Pripojenie Xbox"
+        out["Připojení a párování televize"] = "Pripojenie a párovanie televízora"
+        out["Připojení, snímky a testování"] = "Pripojenia, snímky a testovanie"
+        out["Připojit"] = "Pripojiť"
+        out["Připojit Xbox"] = "Pripojiť Xbox"
+        out["Připojit konzoli"] = "Pripojiť konzolu"
+        out["Připojte svůj telefon"] = "Pripoj svoj telefón"
+        out["Připojuji / načítám snímky"] = "Pripájam / načítavam snímky"
+        out["Připojuji PlayStation…"] = "Pripájam PlayStation…"
+        out["Připojuji…"] = "Pripájam…"
+        out["Připraveno"] = "Pripravené"
+        out["Připraveno ke spuštění"] = "Pripravené na spustenie"
+        out["Přizpůsobení překladu a titulků"] = "Prispôsobenie prekladu a titulkov"
+        out["Příběhový režim"] = "Príbehový režim"
+        out["Příjem běží · otevřít párování a stav"] = "Príjem beží · otvoriť párovanie a stav"
+        out["Příjem, oprávnění, verze"] = "Príjem, oprávnenia, verzia"
+        out["Příklad: Arthur Morgan | Artur Morgan | Arthur Morgan"] = "Príklad: Arthur Morgan | Artur Morgan | Arthur Morgan"
+        out["Příliš mnoho přesměrování."] = "Príliš veľa presmerovaní."
+        out["Příliš starý překlad byl přeskočen."] = "Starý preklad bol preskočený."
+        out["Příliš velká metadata."] = "Príliš veľké metadáta."
+        out["Přímo na TV"] = "Priamo na TV"
+        out["Přímý překlad i překlad z telefonu používají internet nebo dříve uložené překlady."] = "Priamy preklad aj preklad z telefónu používajú internet alebo skôr uložené preklady."
+        out["Přístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači."] = "Prístup telefónu odvolaj aj na TV. Miestne odobratie neodvolá kľúč v prijímači."
+        out["Původní PlayCaption"] = "Pôvodný PlayCaption"
+        out["Původní automatika"] = "Pôvodná automatika"
+        out["Původní autoři, zdrojový kód a GNU AGPLv3"] = "Pôvodní autori, zdrojový kód a GNU AGPLv3"
+        out["Původní jazyk dialogů a herního textu"] = "Pôvodný jazyk dialógov a herného textu"
+        out["Původní · stabilní"] = "Pôvodný · stabilný"
+        out["QR kód ke stažení"] = "QR kód na stiahnutie"
+        out["QR kód není dostupný."] = "QR kód nie je dostupný."
+        out["QR není dostupný. Zkontroluj místní IP a platnost PINu, nebo použij ruční párování."] = "QR nie je dostupný. Skontroluj miestnu IP a platnosť PINu alebo použi ručné párovanie."
+        out["QR skener není dostupný"] = "QR skener nie je dostupný"
+        out["ROZPOZNÁVÁNÍ A PŘEKLAD"] = "ROZPOZNÁVANIE A PREKLAD"
+        out["Relace není spuštěna"] = "Relácia nie je spustená"
+        out["Relace spuštěna – snímky se ověřují zvlášť"] = "Relácia spustená – snímky sa overujú zvlášť"
+        out["Remote Play běží"] = "Remote Play beží"
+        out["Remote Play běží · TV spojení neověřeno"] = "Remote Play beží · spojenie TV neoverené"
+        out["Režim"] = "Režim"
+        out["Režim OCR"] = "Režim OCR"
+        out["Režim překladu"] = "Režim prekladu"
+        out["Režim úprav · OK ukončí úpravy"] = "Režim úprav · OK ukončí úpravy"
+        out["Režim úprav · šipky mění rámeček · OK ukončí úpravy"] = "Režim úprav · šípky menia rámček · OK ukončí úpravy"
+        out["Režimy, dialogy a časování"] = "Režimy, dialógy a časovanie"
+        out["Rozložení"] = "Rozloženie"
+        out["Rozložení oblastí"] = "Rozloženie oblastí"
+        out["Rozložení:"] = "Rozloženie:"
+        out["Rozpoznávat jazyk"] = "Rozpoznávať jazyk"
+        out["Rozpoznávání"] = "Rozpoznávanie"
+        out["Rozpoznávání herních dialogů a nabídek."] = "Rozpoznávanie herných dialógov a ponúk."
+        out["Rozumím"] = "Rozumiem"
+        out["Rozšířit hledání"] = "Rozšíriť hľadanie"
+        out["Ruční"] = "Ručná"
+        out["Ruční OCR oblast"] = "Ručná OCR oblasť"
+        out["Ruční oblast OCR"] = "Ručná oblasť OCR"
+        out["Ručně"] = "Ručne"
+        out["Rychlost OCR ovlivňuje čtení herních titulků."] = "Rýchlosť OCR ovplyvňuje čítanie herných titulkov."
+        out["Rychlost OCR ovlivňuje čtení herních titulků. Klasický režim vychází z ověřené verze. Rozšířené hledání může zachytit také mapu, nápisy a HUD. Při ruční oblasti se rozšíření nepoužívá. Filtr menu může odstranit i některé skutečné dialogy psané velkými písmeny."] = "Rýchlosť OCR ovplyvňuje rozpoznávanie. Klasický režim je overený základ; rozšírené hľadanie môže zachytiť nápisy, mapu aj HUD. Pri ručnej oblasti sa nepoužíva. Filtrovanie menu môže odstrániť aj niektoré dialógy veľkými písmenami."
+        out["Rychlost čtení, filtrování menu a skutečná oblast snímání. Během spuštěné relace nejprve zastav překlad."] = "Rýchlosť čítania, filtrovanie menu a skutočná oblasť snímania. Počas spustenej relácie najprv zastav preklad."
+        out["Rychlost, přesnost a filtrování textu"] = "Rýchlosť, presnosť a filtrovanie textu"
+        out["Samostatná TV"] = "Samostatný TV"
+        out["Samostatná TV – průměr/P95 (předání není potvrzené zobrazení):"] = "Samostatný TV – priemer/P95 (odovzdanie nie je potvrdené zobrazenie):"
+        out["Samostatná TV:"] = "Samostatný TV:"
+        out["Samostatná žlutá oblast OCR."] = "Samostatná žltá oblasť OCR."
+        out["Samostatný překlad TV"] = "Samostatný preklad TV"
+        out["Sdílet log"] = "Zdieľať záznam"
+        out["Seznam Xboxů se nepodařilo načíst."] = "Zoznam Xboxov sa nepodarilo načítať."
+        out["Skrýt po zmizení originálu"] = "Skryť po zmiznutí originálu"
+        out["Skrýt pokročilé filtry"] = "Skryť pokročilé filtre"
+        out["Sleduj živý stav překladu"] = "Sleduj živý stav prekladu"
+        out["Slovenština"] = "Slovenčina"
+        out["Slovník opravuje vlastní výrazy a jména pro zvolenou jazykovou dvojici. Před úpravou zastav překlad."] = "Slovník opravuje vlastné výrazy a mená pre zvolenú jazykovú dvojicu. Pred úpravou zastav preklad."
+        out["Slovník uložen. Použij tento profil před hraním."] = "Slovník uložený. Použi tento profil pred hraním."
+        out["Slovník, historie a diagnostika"] = "Slovník, história a diagnostika"
+        out["Služba snímání neodpověděla"] = "Služba snímania neodpovedala"
+        out["Smazat"] = "Odstrániť"
+        out["Smazat profil"] = "Odstrániť profil"
+        out["Smazat slovník"] = "Zmazať slovník"
+        out["Smazat zónu"] = "Odstrániť zónu"
+        out["Snímky"] = "Snímky"
+        out["Snímání aktivní"] = "Snímanie aktívne"
+        out["Snímání nebylo povoleno"] = "Snímanie nebolo povolené"
+        out["Snímání nelze spustit."] = "Snímanie nemožno spustiť."
+        out["Snímání:"] = "Snímanie:"
+        out["Souhlas / projekce:"] = "Súhlas / projekcia:"
+        out["Souhlas udělen"] = "Súhlas udelený"
+        out["Soukromí a licence"] = "Súkromie a licencia"
+        out["Spojení ověřeno."] = "Spojenie overené."
+        out["Spravovat "] = "Spravovať "
+        out["Spravovat profily her"] = "Spravovať profily hier"
+        out["Spravovat:"] = "Spravovať:"
+        out["Správa konzolí, TV a výstupu titulků"] = "Správa konzol, TV a výstupu titulkov"
+        out["Spustit překlad"] = "Spustiť preklad"
+        out["Spustit překlad TV · vybrat profil"] = "Spustiť preklad TV · vybrať profil"
+        out["Spustit překlad z vybrané konzole"] = "Spustiť preklad z vybranej konzoly"
+        out["Spustit příjem a párování telefonu."] = "Spustiť príjem a párovanie telefónu."
+        out["Spustit test"] = "Spustiť test"
+        out["Spusť překlad a vrať se ke hře"] = "Spusť preklad a vráť sa k hre"
+        out["Spárované telefony"] = "Spárované telefóny"
+        out["Spárovat"] = "Spárovať"
+        out["Spárovat Google TV"] = "Spárovať Google TV"
+        out["Spárovat TV"] = "Spárovať TV"
+        out["Spárovat konzoli"] = "Spárovať konzolu"
+        out["Spárovat kódem z TV"] = "Spárovať kódom z TV"
+        out["Spárovat znovu"] = "Spárovať znova"
+        out["Spárovat šest číslic z TV"] = "Spárovať šesť číslic z TV"
+        out["Spárován"] = "Spárovaný"
+        out["Spárováno"] = "Spárované"
+        out["Spárováno · bez spojení"] = "Spárované · bez spojenia"
+        out["Spárováno – bez čerstvého potvrzení"] = "Spárované – bez nového potvrdenia"
+        out["Spárováno:"] = "Spárované:"
+        out["Spáruj TV pomocí QR nebo kódu"] = "Spáruj TV pomocou QR alebo kódu"
+        out["Spáruj TV šestimístným kódem"] = "Spáruj TV šesťmiestnym kódom"
+        out["Spáruj televizi"] = "Spáruj televízor"
+        out["Stahování aktualizace"] = "Sťahovanie aktualizácie"
+        out["Stahování zrušeno."] = "Sťahovanie zrušené."
+        out["Stahuji IPA…"] = "Sťahujem IPA…"
+        out["Standardní"] = "Štandardný"
+        out["Standardní oblasti"] = "Štandardné oblasti"
+        out["Standardní režim funguje bez dalšího nastavování. Automatický režim používá připravenou zónu a další můžeš přidat v Oblastech obrazovky. Pokud překládáš přes TV, telefon i TV musí být ve stejné síti."] = "Štandardný režim funguje bez ďalšieho nastavovania. Automatický režim používa pripravenú zónu a ďalšie môžeš pridať v Oblastiach obrazovky. Ak prekladáš cez TV, telefón aj TV musia byť v rovnakej sieti."
+        out["Start služby:"] = "Spustenie služby:"
+        out["Start snímání:"] = "Spustenie snímania:"
+        out["Starý výsledek zahozen"] = "Starý výsledok zahodený"
+        out["Stav"] = "Stav"
+        out["Stav konzole není známý"] = "Stav konzoly nie je známy"
+        out["Stav místních nastavení a zahájené relace. Uložené údaje nepotvrzují živé spojení s konzolí ani TV."] = "Stav miestnych nastavení a začatej relácie. Uložené údaje nepotvrdzujú živé spojenie s konzolou ani TV."
+        out["Stav překladu"] = "Stav prekladu"
+        out["Stav připojení a historie překladu"] = "Stav pripojenia a história prekladu"
+        out["Stav připojení a technický log"] = "Stav pripojenia a technický záznam"
+        out["Stav relace a uložených zařízení"] = "Stav relácie a uložených zariadení"
+        out["Stav:"] = "Stav:"
+        out["Stažení se nezdařilo:"] = "Stiahnutie zlyhalo:"
+        out["Stejný jako modrá"] = "Rovnaký ako modrá"
+        out["Stáhnout"] = "Stiahnuť"
+        out["Stáhnout GameLingo"] = "Stiahnuť GameLingo"
+        out["Stáhnout IPA"] = "Stiahnuť IPA"
+        out["Stáhnout aplikaci"] = "Stiahnuť aplikáciu"
+        out["Stáhnout novou verzi"] = "Stiahnuť novú verziu"
+        out["Střed – doporučeno"] = "Stred – odporúčané"
+        out["Svislá pozice"] = "Zvislá poloha"
+        out["Systém ukončil snímání"] = "Systém ukončil snímanie"
+        out["Systémové nastavení instalace nelze otevřít."] = "Systémové nastavenia inštalácie nemožno otvoriť."
+        out["Systémový instalátor nelze otevřít."] = "Systémový inštalátor nemožno otvoriť."
+        out["Síť"] = "Sieť"
+        out["TITULKY NA TELEFONU"] = "TITULKY NA TELEFÓNE"
+        out["TITULKY NA TV"] = "TITULKY NA TV"
+        out["TV je spárovaná. Čekám na odpověď přijímače."] = "TV je spárovaná. Čakám na odpoveď prijímača."
+        out["TV kód odmítla. Vytvoř nový kód."] = "TV kód odmietla. Vytvor nový kód."
+        out["TV není spárovaná. Použij šest číslic z televize."] = "TV nie je spárovaná. Použi šesťmiestny kód z televízora."
+        out["TV neodpovídá. Ověř IP, připojení a případně zadej nový kód."] = "TV neodpovedá. Over IP, pripojenie a prípadne zadaj nový kód."
+        out["TV neodpovídá. Zkontroluj domácí síť a přijímač."] = "TV neodpovedá. Skontroluj domácu sieť a prijímač."
+        out["TV neodpověděla. Ověř IP a síť."] = "TV neodpovedala. Over IP a sieť."
+        out["TV nepotvrdila bezpečné párování. Vytvoř nový kód."] = "TV nepotvrdila bezpečné párovanie. Vytvor nový kód."
+        out["TV odpověděla"] = "TV odpovedala"
+        out["TV odpověděla na ověření. Příjem titulků ještě ověř ve hře."] = "TV odpovedala na overenie. Príjem titulkov ešte over v hre."
+    }
+
+    private fun fill_sk_4(out: MutableMap<String, String>) {
+        out["TV přijala kód. Ověřuji spojení…"] = "TV prijala kód. Overujem spojenie…"
+        out["TV připojena"] = "TV pripojená"
+        out["TV uložena – čekám na spojení"] = "TV uložená – čaká na pripojenie"
+        out["Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Log může obsahovat texty ze hry, IP adresu TV a názvy konzolí — před sdílením jej zkontroluj."] = "Tu nájdeš stav prekladu, počet spracovaných snímok a posledné titulky. Testovací titulok overí spojenie s TV. Záznam môže obsahovať text z hry, IP televízora a názvy konzol – pred zdieľaním ho skontroluj."
+        out["Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Technický log uchovává omezené kategorie událostí a metriky. Živý náhled níže obsahuje skutečné texty; není součástí sdíleného logu. Před sdílením log zkontroluj."] = "Tu nájdeš stav prekladu, počet spracovaných snímok a posledné rozpoznané titulky. Skúšobný titulok overí prepojenie s TV. Technický záznam uchováva obmedzené kategórie udalostí a metriky. Živý náhľad nižšie obsahuje skutočné texty; nie je súčasťou zdieľaného záznamu. Pred zdieľaním záznam skontroluj."
+        out["Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty."] = "Tu nájdeš verziu aplikácie, aktualizácie, pôvodných autorov a úplné licenčné texty."
+        out["Technický log"] = "Technický záznam"
+        out["Telefon"] = "Telefón"
+        out["Telefon a TV připoj ke stejné síti. V mobilu otevři Zařízení, vyber TV a naskenuj QR kód nebo zadej celý párovací kód. Po vypršení platnosti vytvoř nový kód."] = "Telefón a TV pripoj k rovnakej sieti. V mobile otvor Zariadenia, vyber TV a naskenuj QR kód alebo zadaj celý párovací kód. Po vypršaní platnosti vytvor nový kód."
+        out["Telefon připojen"] = "Telefón pripojený"
+        out["Telefon · QR / PIN"] = "Telefón · QR / PIN"
+        out["Telefony"] = "Telefóny"
+        out["Televize"] = "Televízory"
+        out["Televize nevybrána"] = "Televízor nevybraný"
+        out["Televize spárována; Microsoft účet přihlas zvlášť."] = "TV spárovaná; do účtu Microsoft sa prihlás samostatne."
+        out["Televize uložena · spojení se ověří"] = "Televízor uložený · spojenie sa overí"
+        out["Televize vrátila neplatnou odpověď."] = "Televízor vrátil neplatnú odpoveď."
+        out["Televizi je potřeba vybrat a spárovat."] = "Najskôr vyber a spáruj televízor."
+        out["Televizi pak bude nutné znovu spárovat."] = "Televízor potom bude potrebné znova spárovať."
+        out["Test OCR"] = "Test OCR"
+        out["Test překladového jádra"] = "Test prekladového jadra"
+        out["Test překladu"] = "Test prekladu"
+        out["Test překryvu"] = "Test prekrytia"
+        out["Test překryvu ověří zobrazení pevného titulku. Test překladového jádra ověří online překlad. Test snímání vyžaduje souhlas Androidu. Náhled lze vymazat."] = "Test prekrytia overí zobrazenie pevného titulku. Test prekladového jadra overí online preklad. Test snímania vyžaduje súhlas Androidu. Náhľad možno vymazať."
+        out["Test snímání"] = "Test snímania"
+        out["Text (dopisy, SMS)"] = "Text (listy, SMS)"
+        out["Text rozpoznán"] = "Text rozpoznaný"
+        out["Titulky"] = "Titulky"
+        out["Titulky a překlady her v reálném čase"] = "Titulky a preklady hier v reálnom čase"
+        out["Titulky na TV"] = "Titulky na TV"
+        out["Titulky na iPhonu"] = "Titulky na iPhone"
+        out["Titulky na telefonu"] = "Titulky na telefóne"
+        out["Titulky pro rozhovory ve hrách."] = "Titulky pre rozhovory v hrách."
+        out["Titulky přes obraz hry"] = "Titulky cez obraz hry"
+        out["Titulky se zobrazí nad hrou, bez přepínání vstupu."] = "Titulky sa zobrazia nad hrou, bez prepínania vstupu."
+        out["Titulky – vzhled"] = "Titulky – vzhľad"
+        out["Tmavé"] = "Tmavé"
+        out["Typ"] = "Typ"
+        out["Typ: celý text"] = "Typ: celý text"
+        out["Typ: volby odpovědí"] = "Typ: voľby odpovedí"
+        out["Tyrkysová"] = "Tyrkysová"
+        out["Tyto jazyky platí pro dialogy i herní texty. Změnit je můžeš později v Nastavení."] = "Tieto jazyky platia pre dialógy aj herné texty. Zmeniť ich môžeš neskôr v Nastaveniach."
+        out["Tyto jazyky se použijí pro běžné dialogy i herní texty. Výběr můžeš později změnit v Nastavení."] = "Tieto jazyky sa použijú pre dialógy aj herné texty. Neskôr ich môžeš zmeniť v Nastaveniach."
+        out["Uchovávat historii"] = "Uchovávať históriu"
+        out["Ukládat překladovou cache"] = "Ukladať prekladovú vyrovnávaciu pamäť"
+        out["Ukládá originály a překlady na tomto zařízení. Historie a profily jsou oddělené."] = "Ukladá originály a preklady na tomto zariadení. História a profily sú oddelené."
+        out["Ukládá originály i překlady na tomto zařízení. Je oddělená od historie. Vypnutí může zvýšit počet online požadavků a omezit překlad bez internetu."] = "Ukladá originály aj preklady na tomto zariadení. Je oddelená od histórie. Vypnutie môže zvýšiť počet online požiadaviek a obmedziť preklad bez internetu."
+        out["Ukládání a vymazání"] = "Ukladanie a vymazanie"
+        out["Ukládání a vymazání místních překladů"] = "Ukladanie a vymazanie miestnych prekladov"
+        out["Ukončena"] = "Ukončená"
+        out["Ukončit aktuální Remote Play a překlad"] = "Zastaviť aktuálne Remote Play a preklad"
+        out["Ukázka přeložených titulků"] = "Ukážka preložených titulkov"
+        out["Ukázka českého překladu"] = "Ukážka prekladu"
+        out["Ukázka českých titulků"] = "Ukážka titulkov"
+        out["Ulož si pro každou hru vlastní OCR režim, všechny čtyři oblasti, filtry a nastavení titulků. Profil jde uložit i během hraní; načtení a mazání jsou dostupné po zastavení překladu. Neobsahuje hesla ani přihlašovací údaje."] = "Ulož si pre každú hru vlastný režim OCR, všetky štyri oblasti, filtre a nastavenia titulkov. Profil možno uložiť aj počas hrania; načítanie a mazanie sú dostupné po zastavení prekladu. Neobsahuje heslá ani prihlasovacie údaje."
+        out["Ulož si pro každou hru vlastní OCR režim, všechny čtyři oblasti, filtry a nastavení titulků. Stejný název profil aktualizuje. Neobsahuje hesla ani přihlašovací údaje. Profil měň před spuštěním překladu."] = "Ulož si OCR režim, štyri oblasti, filtre a nastavenia titulkov pre každú hru. Rovnaký názov aktualizuje profil. Heslá a prihlasovacie údaje sa neukladajú. Profil meň pred hraním."
+        out["Uloženo:"] = "Uložené:"
+        out["Uložená konzole"] = "Uložená konzola"
+        out["Uložená konzole není automaticky připojená. Snímání aktivní se objeví až po přijetí video snímků; Google TV odpovídá na kontrolu spojení."] = "Uložená konzola nemusí byť pripojená. Snímanie sa spustí až po prijatí obrazu; Google TV musí odpovedať na kontrolu pripojenia."
+        out["Uložená televize"] = "Uložená televízia"
+        out["Uložená · nepřipojena"] = "Uložená · nepripojená"
+        out["Uložené konzole"] = "Uložené konzoly"
+        out["Uložené nastavení jednotlivých her"] = "Uložené nastavenia jednotlivých hier"
+        out["Uložené zařízení neznamená aktivní Remote Play. Živé spojení a překlad se ověří až při spuštění."] = "Uložené zariadenie neznamená aktívne Remote Play. Živé spojenie a preklad sa overia až pri spustení."
+        out["Uložené zařízení samo o sobě nepotvrzuje živé spojení."] = "Uložené zariadenie samo osebe nepotvrdzuje živé spojenie."
+        out["Uložení televizoru neznamená úspěšné spárování. Překlad na TV se spustí až po ověření aktivního přijímače."] = "Uloženie televízora neznamená úspešné spárovanie. Titulky sa odošlú až po overení prijímača."
+        out["Uložený profil"] = "Uložený profil"
+        out["Uložený televizor nepotvrzuje živé přijetí titulků."] = "Uložený televízor nepotvrdzuje živý príjem titulkov."
+        out["Uložit"] = "Uložiť"
+        out["Uložit aktuální nastavení"] = "Uložiť aktuálne nastavenia"
+        out["Uložit do profilu"] = "Uložiť do profilu"
+        out["Uložit nebo sdílet IPA"] = "Uložiť alebo zdieľať IPA"
+        out["Uložit profil"] = "Uložiť profil"
+        out["Uložit slovník"] = "Uložiť slovník"
+        out["Uložit změny do profilu"] = "Uložiť zmeny do profilu"
+        out["Uprav aktuální nastavení. Tlačítkem Uložit změny do profilu přepíšeš uložený profil."] = "Uprav aktuálne nastavenia. Tlačidlom Uložiť zmeny do profilu prepíšeš uložený profil."
+        out["Upravit"] = "Upraviť"
+        out["Upravit další nastavení"] = "Upraviť ďalšie nastavenia"
+        out["Upravit modrý, zelený, žlutý a oranžový rámeček."] = "Upraviť modrý, zelený, žltý a oranžový rámček."
+        out["Upravit profil"] = "Upraviť profil"
+        out["Upravit rozložení"] = "Upraviť rozloženie"
+        out["Upravit zónu"] = "Upraviť zónu"
+        out["Uvolněn"] = "Uvoľnený"
+        out["V běžném režimu bez překrývání originálu; nemění příběhovou frontu."] = "V bežnom režime bez prekrývania originálu; nemení príbehový rad."
+        out["V mobilní aplikaci otevři Zařízení a naskenuj QR kód."] = "V mobilnej aplikácii otvor Zariadenia a naskenuj QR kód."
+        out["Velikost"] = "Veľkosť"
+        out["Velikost IPA nesouhlasí."] = "Veľkosť IPA nesúhlasí."
+        out["Velikost a poloha titulků"] = "Veľkosť a poloha titulkov"
+        out["Velikost písma"] = "Veľkosť písma"
+        out["Velikost písma TV"] = "Veľkosť písma TV"
+        out["Velikost písma:"] = "Veľkosť písma:"
+        out["Velikost rozhraní"] = "Veľkosť rozhrania"
+        out["Velikost, šířka a poloha titulků"] = "Veľkosť, šírka a poloha titulkov"
+        out["Velikost:"] = "Veľkosť:"
+        out["Verze 0.5 Beta"] = "Verzia 0.5 Beta"
+        out["Verze a licence"] = "Verzia a licencie"
+        out["Verze, autoři a otevřený zdrojový kód"] = "Verzia, autori a otvorený zdrojový kód"
+        out["Verze:"] = "Verzia:"
+        out["Video snímky se přijímají, titulky zpracovává OCR."] = "Videosnímky sa prijímajú, titulky spracováva OCR."
+        out["Vlastní modrý rámeček."] = "Vlastný modrý rámček."
+        out["Vlastní nastavení pro iPhone a TV"] = "Vlastné nastavenia pre iPhone a TV"
+        out["Vlastní nastavení pro každou hru"] = "Vlastné nastavenia pre každú hru"
+        out["Vlastní text"] = "Vlastný text"
+        out["Vlastní vzhled titulků pro telefon a nastavení zelené oblasti na TV. Přesná poloha rámečků zůstává v Oblastech obrazovky."] = "Vlastný vzhľad titulkov pre telefón a nastavenia zelenej oblasti na TV. Presná poloha rámčekov zostáva v Oblastiach obrazovky."
+        out["Vlastní výrazy"] = "Vlastné výrazy"
+        out["Vlastní výrazy pro přímé OCR"] = "Vlastné výrazy pre priame OCR"
+        out["Vlevo"] = "Vľavo"
+        out["Vložit odkaz po přihlášení"] = "Vložiť odkaz po prihlásení"
+        out["Vodorovná pozice"] = "Vodorovná poloha"
+        out["Volby"] = "Voľby"
+        out["Volby jsou vypnuté, takže OCR dál čte pouze oblast dialogových titulků."] = "Rozpoznávanie herných textov je vypnuté, OCR číta iba dialógy."
+        out["Volby odpovědí"] = "Možnosti odpovedí"
+        out["Volitelná historie posledních 200 úspěšných překladů na tomto zařízení. Ukládá se pouze v paměti aplikace do jejího ukončení. Vypnutí historii vymaže; překladová cache a technický log jsou oddělené."] = "Voliteľná história posledných 200 úspešných prekladov na tomto zariadení. Ukladá sa iba v pamäti aplikácie do jej ukončenia. Vypnutie históriu vymaže; prekladová vyrovnávacia pamäť a technický záznam sú oddelené."
+        out["Volitelně ukončí zobrazení běžného dialogu po potvrzeném zmizení zdrojového textu."] = "Voliteľne ukončí zobrazenie bežného dialógu po potvrdenom zmiznutí zdrojového textu."
+        out["Volitelně vynechá anglické pokyny jako Press A nebo Hold R2. Běžné volby ponechá."] = "Voliteľne vynechá anglické pokyny ako Press A alebo Hold R2. Bežné voľby ponechá."
+        out["Vpravo"] = "Vpravo"
+        out["Vrať se na úvodní obrazovku a spusť překlad. Zde nemusíš spouštět další samostatnou relaci."] = "Vráť sa na úvodnú obrazovku a spusti preklad. Tu nemusíš spúšťať ďalšiu reláciu."
+        out["Vrátit odebrané Xboxy"] = "Vrátiť odobraté Xboxy"
+        out["Vyber PlayStation"] = "Vyber PlayStation"
+        out["Vyber Xbox"] = "Vyber Xbox"
+        out["Vyber Xbox nebo PlayStation, nastav výstup titulků na telefon či Google TV, uprav čtyři oblasti OCR a spusť překlad."] = "Vyber Xbox alebo PlayStation, nastav titulky na telefóne alebo Google TV, uprav štyri oblasti OCR a spusti preklad."
+        out["Vyber Xbox, PlayStation nebo samostatnou TV, připoj zařízení a spusť překlad. Kam se přeložené titulky zobrazí, nastavíš v Zařízení. Oblasti upravují místo čtení a zobrazení, Profily her ukládají vlastní konfiguraci."] = "Vyber Xbox, PlayStation alebo samostatnú TV, pripoj zariadenie a spusti preklad. Miesto zobrazenia preložených titulkov nastavíš v Zariadeniach. Oblasti upravujú čítanie a zobrazenie, Profily hier ukladajú konfiguráciu."
+        out["Vyber barvu a pozadí překladu. Polohu, šířku a velikost písma upravíš v Rozložení a uložíš do profilu."] = "Vyber farbu a pozadie prekladu. Polohu, šírku a veľkosť písma upravíš v Rozložení a uložíš do profilu."
+        out["Vyber cílový jazyk pro dialogy i herní texty."] = "Vyber cieľový jazyk pre dialógy a herné texty."
+        out["Vyber další ovládací prvek šipkami"] = "Vyber ďalší ovládací prvok šípkami"
+        out["Vyber iPhone nebo Android a naskenuj QR kód fotoaparátem telefonu. Odkaz vede na nejnovější dostupný mobilní balíček na GitHubu. IPA vyžaduje podpis; Android APK může vyžadovat povolení instalace z tohoto zdroje. Pokud vydání nelze ověřit, použij stránku všech vydání. Toto není párovací QR kód."] = "Vyber iPhone alebo Android a naskenuj QR kód fotoaparátom telefónu. Odkaz vedie na najnovší dostupný mobilný balík na GitHube. IPA vyžaduje podpis; Android APK môže vyžadovať povolenie inštalácie z tohto zdroja. Ak vydanie nemožno overiť, použi stránku všetkých vydaní. Toto nie je párovací QR kód."
+        out["Vyber jazyk, ve kterém hra zobrazuje původní dialogy."] = "Vyber jazyk, v ktorom hra zobrazuje pôvodné dialógy."
+        out["Vyber jazyky. Potom můžeš překládat z telefonu nebo přímo na televizi."] = "Vyber jazyky. Potom môžeš prekladať z telefónu alebo priamo na televízore."
+        out["Vyber jen oblasti, které chceš překládat. Herní profil není povinný."] = "Vyber iba oblasti, ktoré chceš prekladať. Herný profil nie je povinný."
+        out["Vyber konzoli"] = "Vyber konzolu"
+        out["Vyber konzoli nebo přidej novou"] = "Vyber alebo pridaj konzolu"
+        out["Vyber konzoli, jazyk hry a cílový jazyk překladu, potom výstup titulků. Google TV se páruje šestimístným kódem. Vše můžeš později změnit v Nastavení a Zařízeních."] = "Vyber konzolu, zdrojový jazyk hry, jazyk prekladu a výstup titulkov. Google TV používa šesťmiestny párovací kód. Neskôr ich môžeš zmeniť v Nastaveniach a Zariadeniach."
+        out["Vyber nebo přidej TV"] = "Vyber alebo pridaj TV"
+        out["Vyber nebo spáruj televizi"] = "Vyber alebo spáruj televízor"
+        out["Vyber oblast a režim · v editoru stiskni OK, potom šipky · OK ukončí úpravy"] = "Vyber oblasť a režim · v editore stlač OK, potom šípky · OK ukončí úpravy"
+        out["Vyber oblast, potom uprav její polohu a velikost v náhledu."] = "Vyber oblasť a potom uprav jej polohu a veľkosť v náhľade."
+        out["Vyber si konzoli a připoj Remote Play."] = "Vyber si konzolu a pripoj Remote Play."
+        out["Vyber svůj mobilní telefon."] = "Vyber svoj mobilný telefón."
+        out["Vyber uloženou televizi. Pokud se změnila její IP adresa, přidej ji znovu. Samotné uložení TV není potvrzením spojení – připojení se ověřuje párováním a odpovědí přijímače."] = "Vyber uložený televízor. Ak sa jeho IP zmenila, pridaj ho znova. Uloženie nepotvrdzuje párovanie; prijímač musí odpovedať na kontrolu spojenia."
+        out["Vyber zařízení"] = "Vyber zariadenia"
+        out["Vyber zdroj překladu"] = "Vyber zdroj prekladu"
+        out["Vyber způsob překladu nebo spravuj svá zařízení."] = "Vyber spôsob prekladu alebo spravuj svoje zariadenia."
+        out["Vyberte konzoli"] = "Vyberte konzolu"
+        out["Vybraná konzole"] = "Vybraná konzola"
+        out["Vybraná konzole je uložená. Spojení ověříme při spuštění."] = "Vybraná konzola je uložená. Spojenie overíme pri spustení."
+        out["Vybraná televize nepodporuje šestimístné párování GameLingo TV. Pro tento výstup vyber Android TV nebo telefon."] = "Vybraný televízor nepodporuje šesťmiestne párovanie GameLingo TV. Pre tento výstup vyber Android TV alebo telefón."
+        out["Vybraný Xbox je uložený"] = "Vybraný Xbox je uložený"
+        out["Vybrat konzoli"] = "Vybrať konzolu"
+        out["Vybrat konzoli "] = "Vybrať konzolu "
+        out["Vybrat konzoli:"] = "Vybrať konzolu:"
+        out["Vybrat profil"] = "Vybrať profil"
+        out["Vydání se nepodařilo ověřit · stránka všech vydání"] = "Vydanie sa nepodarilo overiť · stránka všetkých vydaní"
+        out["Vygeneruj nový PIN a ověř připojení k místní síti."] = "Vygeneruj nový PIN a over pripojenie k miestnej sieti."
+        out["Vyhledat"] = "Vyhľadať"
+        out["Vymazat"] = "Vymazať"
+        out["Vymazat celou historii překladů?"] = "Vymazať celú históriu prekladov?"
+        out["Vymazat celou historii?"] = "Vymazať celú históriu?"
+        out["Vymazat log"] = "Vymazať záznam"
+        out["Vymazat místní diagnostické logy?"] = "Vymazať miestne diagnostické záznamy?"
+        out["Vymazat místní diagnostický log"] = "Vymazať miestny diagnostický záznam"
+        out["Vymazat místní log překladu"] = "Vymazať miestny log prekladu"
+        out["Vymazat místní překladovou cache?"] = "Vymazať miestnu prekladovú vyrovnávaciu pamäť?"
+        out["Vymazat náhled"] = "Vymazať náhľad"
+        out["Vymazat paměť"] = "Vymazať pamäť"
+        out["Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže."] = "Vymazať iba miestnu prekladovú cache? Profily, účty ani históriu to nezmaže."
+        out["Vymazat starý i nový místní log překladu? Ostatní diagnostické soubory zůstanou."] = "Vymazať starý aj nový miestny log prekladu? Ostatné diagnostické súbory zostanú."
+        out["Vymazat uložené překlady"] = "Vymazať uložené preklady"
+        out["Vypnout"] = "Vypnúť"
+        out["Vypnout paměť"] = "Vypnúť pamäť"
+        out["Vypnout test překryvu"] = "Vypnúť test prekrytia"
+        out["Vypnuto"] = "Vypnuté"
+        out["Vypnutá"] = "Vypnutá"
+        out["Vypršel čas testu."] = "Vypršal čas testu."
+        out["Vytvořen"] = "Vytvorený"
+        out["Vyzkoušet titulky"] = "Vyskúšať titulky"
+        out["Vyžaduje povolení"] = "Vyžaduje povolenie"
+        out["Vyžaduje povolení překryvu"] = "Vyžaduje povolenie prekrytia"
+        out["Vzhled titulků"] = "Vzhľad titulkov"
+        out["Vítej v GameLingo"] = "Vitaj v GameLingo"
+        out["Vítej v GameLingo TV"] = "Vitaj v GameLingo TV"
+    }
+
+    private fun fill_sk_5(out: MutableMap<String, String>) {
+        out["Výchozí"] = "Predvolené"
+        out["Výchozí nastavení OCR"] = "Obnoviť nastavenia OCR"
+        out["Výchozí oblast"] = "Predvolená oblasť"
+        out["Výstup GameLingo"] = "Výstup GameLingo"
+        out["Výstup přeložených titulků"] = "Výstup preložených titulkov"
+        out["Výstup titulků"] = "Výstup titulkov"
+        out["Výstup českých titulků"] = "Výstup preložených titulkov"
+        out["Výška"] = "Výška"
+        out["Výška:"] = "Výška:"
+        out["Xbox"] = "Xbox"
+        out["Xbox Remote Play"] = "Xbox Remote Play"
+        out["Xbox a PlayStation"] = "Xbox a PlayStation"
+        out["Xbox přihlášení převzato z TV."] = "Prihlásenie Xbox prevzaté z TV."
+        out["Xbox – skutečný obraz"] = "Xbox – skutočný obraz"
+        out["Xbox – volba konzole"] = "Xbox – výber konzoly"
+        out["Xbox – účet"] = "Xbox – účet"
+        out["Xbox, PlayStation a Google TV"] = "Xbox, PlayStation a Google TV"
+        out["Xbox, PlayStation nebo aplikace přímo na televizoru."] = "Xbox, PlayStation alebo aplikácie priamo na televízore."
+        out["Xbox: nepřihlášeno"] = "Xbox: neprihlásené"
+        out["Xbox: vyhledávám…"] = "Xbox: vyhľadávam…"
+        out["Xbox: žádná konzole"] = "Xbox: žiadna konzola"
+        out["ZABEZPEČENÍ"] = "ZABEZPEČENIE"
+        out["ZOBRAZENÍ"] = "ZOBRAZENIE"
+        out["ZOBRAZENÍ A DALŠÍ VOLBY"] = "ZOBRAZENIE A ĎALŠIE VOĽBY"
+        out["ZOBRAZENÍ A PROFILY"] = "ZOBRAZENIE A PROFILY"
+        out["ZPŮSOB PŘEKLADU"] = "SPÔSOB PREKLADU"
+        out["Zadej PIN uživatele konzole, ne osmimístný párovací kód."] = "Zadaj PIN používateľa konzoly, nie osemmiestny párovací kód."
+        out["Zadej celý párovací kód z TV."] = "Zadaj celý párovací kód z TV."
+        out["Zadej název hry (max. 64 znaků)"] = "Zadaj názov hry (max. 64 znakov)"
+        out["Zadej název profilu."] = "Zadaj názov profilu."
+        out["Zadej všech 32 znaků kódu"] = "Zadaj všetkých 32 znakov kódu"
+        out["Zadej šest číslic z TV."] = "Zadaj šesť číslic z TV."
+        out["Zadejte kód do telefonu"] = "Zadaj kód do telefónu"
+        out["Zahajuji"] = "Spúšťam"
+        out["Zahajuji MediaProjection"] = "Spúšťam MediaProjection"
+        out["Zahodí výsledek, který překročil maximální stáří."] = "Zahodí výsledok, ktorý prekročil maximálny vek."
+        out["Zamknout oblast"] = "Zamknúť oblasť"
+        out["Zamknout oblast čtení"] = "Zamknúť oblasť čítania"
+        out["Zamknout oranžový rámeček"] = "Zamknúť oranžový rámček"
+        out["Zamknout polohu"] = "Zamknúť polohu"
+        out["Zamknout polohu a vzhled"] = "Zamknúť polohu a vzhľad"
+        out["Zamknout polohu a vzhled titulků"] = "Zamknúť polohu a vzhľad titulkov"
+        out["Zamknout polohu českých titulků"] = "Zamknúť polohu preložených titulkov"
+        out["Zamknout žlutý rámeček"] = "Zamknúť žltý rámček"
+        out["Zamčeno · odemkni oblast"] = "Zamknuté · odomkni oblasť"
+        out["Zapnout"] = "Zapnúť"
+        out["Zapnout paměť"] = "Zapnúť pamäť"
+        out["Zastav ostatní režimy a povol překryv."] = "Zastav ostatné režimy a povoľ prekrytie."
+        out["Zastaven"] = "Zastavený"
+        out["Zastaveno"] = "Zastavené"
+        out["Zastaveno · poslední stav:"] = "Zastavené · posledný stav:"
+        out["Zastavit"] = "Zastaviť"
+        out["Zastavit překlad"] = "Zastaviť preklad"
+        out["Zastavit příjem"] = "Zastaviť príjem"
+        out["Zatím nebyla nalezena žádná televize."] = "Zatiaľ nebol nájdený žiadny televízor."
+        out["Zatím nemáš přidanou žádnou konzoli."] = "Zatiaľ nemáš pridanú žiadnu konzolu."
+        out["Zatím nemáš uložený žádný profil."] = "Zatiaľ nemáš uložený žiadny profil."
+        out["Zatím nemáš žádný uložený profil."] = "Zatiaľ nemáš uložený žiadny profil."
+        out["Zatím není dostupné vydání s ověřitelnými aktualizačními metadaty."] = "Zatiaľ nie je dostupné vydanie s overiteľnými aktualizačnými metadátami."
+        out["Zatím žádná"] = "Zatiaľ žiadna"
+        out["Zatím žádná TV"] = "Zatiaľ žiadna TV"
+        out["Zatím žádné profily"] = "Zatiaľ žiadne profily"
+        out["Zatím žádné překlady."] = "Zatiaľ žiadne preklady."
+        out["Zatím žádný překlad ve volitelné historii."] = "Zatiaľ žiadny preklad vo voliteľnej histórii."
+        out["Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR."] = "Zatiaľ žiadny preklad vo voliteľnej histórii. Na živý náhľad použi Test OCR."
+        out["Zatím žádný spárovaný telefon."] = "Zatiaľ žiadny spárovaný telefón."
+        out["Zatím žádný telefon."] = "Zatiaľ žiadny telefón."
+        out["Zavřít"] = "Zavrieť"
+        out["Zavřít nastavení"] = "Zavrieť nastavenia"
+        out["Zavřít vzhled titulků"] = "Zavrieť vzhľad titulkov"
+        out["Zařízení"] = "Zariadenia"
+        out["Zdrojové kódy"] = "Zdrojové kódy"
+        out["Zdrojový kód (GitHub)"] = "Zdrojový kód (GitHub)"
+        out["Zelená"] = "Zelená"
+        out["Zelená určuje místo zobrazení českých dialogů na TV. Velikost písma je nezávislá na oranžovém překladu herních textů."] = "Zelená určuje miesto preložených dialógov na TV. Veľkosť písma je nezávislá od oranžového prekladu herných textov."
+        out["Zelená · přeložené dialogy"] = "Zelená · preložené dialógy"
+        out["Zelený výstup titulků na Google TV. Barva a pozadí se mění přímo v televizním přijímači."] = "Zelený výstup titulkov na Google TV. Farba a pozadie sa nastavujú priamo na televízore."
+        out["Zjišťuji"] = "Zisťujem"
+        out["Zkontrolovat aktualizace"] = "Skontrolovať aktualizácie"
+        out["Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování."] = "Skontroluj rovnakú domácu sieť, spustený prijímač na TV a párovanie."
+        out["Zkusit titulek na TV"] = "Vyskúšať titulok na TV"
+        out["Zkušební titulek"] = "Testovací titulok"
+        out["Zkušební titulek GameLingo"] = "Testovací titulok GameLingo"
+        out["Zkušební titulek se zobrazí přímo na Google TV, pokud je přijímač spuštěný a telefon má s TV platné spojení."] = "Testovací titulok sa zobrazí na Google TV, ak prijímač beží a telefón je pripojený."
+        out["Změny nastavení překladu se projeví po novém spuštění."] = "Zmeny nastavení prekladu sa prejavia po novom spustení."
+        out["Změny se ukládají pro aktuálně vybranou televizi nebo telefon. Pro přesné umístění rámečků otevři Oblasti obrazovky."] = "Zmeny sa ukladajú pre aktuálne vybraný televízor alebo telefón. Na presné umiestnenie rámčekov otvor Oblasti obrazovky."
+        out["Změny se uloží až tlačítkem Uložit slovník."] = "Zmeny sa uložia až tlačidlom Uložiť slovník."
+        out["Znovu ověřit vydání"] = "Znova overiť vydanie"
+        out["Znovu zobrazit konzole"] = "Znova zobraziť konzoly"
+        out["Zobraz překlad na telefonu nebo na televizoru."] = "Zobraz preklad na telefóne alebo televízore."
+        out["Zobrazení"] = "Zobrazenie"
+        out["Zobrazení přeložených titulků"] = "Zobrazenie preložených titulkov"
+        out["Zobrazit QR kód"] = "Zobraziť QR kód"
+        out["Zobrazit i předchozí repliku"] = "Zobraziť aj predchádzajúcu repliku"
+        out["Zobrazit na"] = "Zobraziť na"
+        out["Zobrazit na TV"] = "Zobraziť na TV"
+        out["Zpět"] = "Späť"
+        out["Zpět do Nastavení"] = "Späť do Nastavení"
+        out["Zpět do nabídky"] = "Späť do ponuky"
+        out["Způsob čtení"] = "Spôsob čítania"
+        out["Zrušit"] = "Zrušiť"
+        out["Zrušit párování"] = "Zrušiť párovanie"
+        out["Zvol Nový párovací kód"] = "Vyber Nový párovací kód"
+        out["Zvol režim rozpoznávání, filtrování menu a případně rozšířené hledání. Ruční modrá oblast omezuje čtení na místo dialogů. Před změnou zastav překlad."] = "Zvoľ režim rozpoznávania, filtrovanie menu a prípadne rozšírené hľadanie. Ručná modrá oblasť obmedzuje čítanie na miesto dialógov. Pred zmenou zastav preklad."
+        out["Získej titulky z iPhonu nebo Androidu."] = "Získaj titulky z iPhonu alebo Androidu."
+        out["Zóna"] = "Zóna"
+        out["aktivní"] = "aktívny"
+        out["bez hlášené chyby"] = "bez hlásenej chyby"
+        out["hlášená chyba"] = "hlásená chyba"
+        out["iPhone a TV mají nezávislé barvy, pozadí i velikost titulků. TV přijímá změny barev přes ověřené spárování; ukázku zobrazíš tlačítkem Náhled na TV."] = "iPhone a TV majú nezávislé farby, pozadie aj veľkosť titulkov. TV prijíma zmeny farieb cez overené spárovanie; ukážku zobrazíš tlačidlom Náhľad na TV."
+        out["jedna vybraná"] = "jedna vybraná"
+        out["písmo"] = "písmo"
+        out["překlad:"] = "preklad:"
+        out["testovací sestavení"] = "testovacie zostavenie"
+        out["vybráno"] = "vybrané"
+        out["vypnuto"] = "vypnuté"
+        out["výřezy:"] = "výrezy:"
+        out["výška"] = "výška"
+        out["z tohoto zařízení?"] = "z tohto zariadenia?"
+        out["zamčeno"] = "zamknuté"
+        out["zapnuto"] = "zapnuté"
+        out["zbývá"] = "zostáva"
+        out["zdroj:"] = "zdroj:"
+        out["Úpravy ukončeny · šipkami vyber další ovládací prvek"] = "Úpravy ukončené · šípkami vyber ďalší ovládací prvok"
+        out["Úzká – pouze titulky"] = "Úzka – iba titulky"
+        out["Účet Microsoft"] = "Účet Microsoft"
+        out["Účet PlayStation"] = "Účet PlayStation"
+        out["Účet ověřen"] = "Účet overený"
+        out["Účet, konzole a výběr pro překlad"] = "Účet, konzoly a výber pre preklad"
+        out["Časování a aktuálnost titulků"] = "Časovanie a aktuálnosť titulkov"
+        out["Časování, historie a diagnostika"] = "Časovanie, história a diagnostika"
+        out["Časový limit stahování."] = "Časový limit sťahovania."
+        out["Čeká"] = "Čaká"
+        out["Čeká na snímky"] = "Čaká na snímky"
+        out["Čeká na telefon"] = "Čaká na telefón"
+        out["Čekám na otevření videa nebo vstupu TV"] = "Čakám na otvorenie videa alebo vstupu TV"
+        out["Čekám na podporovaný zdroj"] = "Čakám na podporovaný zdroj"
+        out["Čekám na první snímek"] = "Čakám na prvú snímku"
+        out["Čekám na spojení"] = "Čakám na spojenie"
+        out["Čekám na systémový souhlas"] = "Čakám na systémový súhlas"
+        out["České titulky"] = "Preložené titulky"
+        out["České titulky a překlady pro hry"] = "Titulky a preklady pre hry"
+        out["Český překlad"] = "Preložený dialóg"
+        out["Čeština"] = "Čeština"
+        out["Čtení"] = "Čítanie"
+        out["Čtení dialogových titulků"] = "Čítanie dialógových titulkov"
+        out["Čtení dialogů"] = "Čítanie dialógov"
+        out["Čtení herních textů a voleb"] = "Čítanie herných textov a možností"
+        out["Čtení titulků"] = "Čítanie titulkov"
+        out["Čtení: automatické"] = "Čítanie: automatické"
+        out["Čtení: ruční"] = "Čítanie: ručné"
+        out["Čtyři nezávislé oblasti"] = "Štyri nezávislé oblasti"
+        out["Čtyři nezávislé oblasti pro každou hru"] = "Štyri nezávislé oblasti pre každú hru"
+        out["Čtyři nezávislé oblasti pro rozpoznávání a překlad"] = "Štyri nezávislé oblasti pre rozpoznávanie a preklad"
+        out["Čtyři nezávislé oblasti pro rozpoznávání a překlad."] = "Štyri nezávislé oblasti na rozpoznávanie a preklad."
+        out["Čtyři nezávislé rámečky"] = "Štyri nezávislé rámčeky"
+        out["Čtyři oblasti"] = "Štyri oblasti"
+        out["Číst bez internetu"] = "Čítať bez internetu"
+        out["Šestimístný kód z GameLingo TV"] = "Šesťmiestny kód z GameLingo TV"
+        out["Šipkami uprav polohu a velikost zóny."] = "Šípkami uprav polohu a veľkosť zóny."
+        out["Široká – původní"] = "Široká – pôvodná"
+        out["Španělština"] = "Španielčina"
+        out["Šířka"] = "Šírka"
+        out["Šířka titulků"] = "Šírka titulkov"
+        out["Šířka titulků:"] = "Šírka titulkov:"
+        out["Šířka:"] = "Šírka:"
+        out["Žlutá"] = "Žltá"
+        out["Žlutá oblast"] = "Žltá oblasť"
+        out["Žlutá oblast čte originální anglické herní texty, nabídky nebo možnosti odpovědí. Jejich překlad se zobrazuje samostatně v oranžové oblasti."] = "Žltá číta herné texty, ponuky a možnosti odpovedí v zvolenom jazyku hry. Ich preklad sa zobrazuje oddelene v oranžovej oblasti."
+        out["Žlutá · čtení dalších textů"] = "Žltá · čítanie ďalších textov"
+        out["Žlutá: filtrovat pokyny ovladače"] = "Žltá: filtrovať pokyny ovládača"
+        out["Žlutá: minimální výška textu"] = "Žltá: minimálna výška textu"
+        out["Žlutá: režim OCR"] = "Žltá: režim OCR"
+        out["Žlutá: velikost textu"] = "Žltá: veľkosť textu"
+        out["Žádná konzole"] = "Zatiaľ žiadna konzola"
+        out["Žádná televize"] = "Zatiaľ žiadny televízor"
+        out["Žádná vybraná"] = "Žiadna vybraná"
+        out["Žádné"] = "Žiadne"
+        out["Žádný Xbox zatím nebyl nalezen. Zkontroluj vzdálené funkce konzole a zkus Obnovit."] = "Zatiaľ sa nenašiel žiadny Xbox. Skontroluj vzdialené funkcie konzoly a skús Obnoviť."
+        out["žádná vybraná"] = "žiadna vybraná"
+    }
+
+    private fun fill_sk_6(out: MutableMap<String, String>) {
+        out["✓ Profil uložen:"] = "✓ Profil uložený:"
+    }
+    // END GENERATED UI LABELS
+    fun ui(c: Context, cs: String): String {
+        val language = app(c)
+        if (language == "cs") return cs
+        return uiLabels[language]?.get(cs) ?: uiLabels["en"]?.get(cs) ?: cs
     }
 
     private const val PREFS = "gamelingo_languages"
