@@ -18,6 +18,17 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_localized_help_and_about_preserve_license_and_phone_keys(self):
+        help_ui = code(TOOLS/"GameLingoHelp.kt")
+        about = code(TOOLS/"GameLingoAbout.kt")
+        patch = code(TOOLS/"direct_tv_mode.py")
+        self.assertIn('GameLingoLanguages.ui(activity, descriptionKey)', help_ui)
+        self.assertIn('text = tr(value)', about)
+        self.assertIn('AGPL-3.0', about)
+        self.assertIn('notices ?: tr(', about)
+        self.assertIn('GameLingoLanguages.ui(c, "Odpárovat")', patch)
+        self.assertIn('IPhoneTVPairing.unpair(c, phone.id)', patch)
+
     def test_localized_device_pairing_and_diagnostics(self):
         device = code(TOOLS/"GameLingoDeviceCenter.kt")
         pairing = code(TOOLS/"GameLingoTVPairing.kt")

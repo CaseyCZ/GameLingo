@@ -334,23 +334,23 @@ def patch_direct_tv(folder):
         raise RuntimeError("TV phone list anchor changed")
     device_source = device_source.replace(marker, """            val phones = IPhoneTVPairing.phones(c)
             if (phones.isEmpty()) {
-                tvPanel.addView(label(c, "Zatím žádný spárovaný telefon.", 14f, muted))
+                tvPanel.addView(label(c, GameLingoLanguages.ui(c, "Zatím žádný spárovaný telefon."), 14f, muted))
             }
             for (phone in phones) {
                 add(tvPanel, line(c, phone.label,
-                    if (phone.connected) "Připojen" else "Spárován",
+                    if (phone.connected) GameLingoLanguages.ui(c, "Připojen") else GameLingoLanguages.ui(c, "Spárován"),
                     phone.connected) {
-                    chooseDevice(c, phone.label, arrayOf("Odpárovat")) {
+                    chooseDevice(c, phone.label, arrayOf(GameLingoLanguages.ui(c, "Odpárovat"))) {
                         AlertDialog.Builder(c)
-                            .setTitle("Odpárovat " + phone.label + "?")
-                            .setMessage("Ostatní telefony zůstanou spárované.")
-                            .setNegativeButton("Zrušit", null)
-                            .setPositiveButton("Odpárovat") { _, _ ->
+                            .setTitle(GameLingoLanguages.ui(c, "Odpárovat") + " " + phone.label + "?")
+                            .setMessage(GameLingoLanguages.ui(c, "Ostatní telefony zůstanou spárované."))
+                            .setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"), null)
+                            .setPositiveButton(GameLingoLanguages.ui(c, "Odpárovat")) { _, _ ->
                                 if (IPhoneTVPairing.unpair(c, phone.id)) {
                                     onDismiss()
                                     onUpdated()
                                 } else AlertDialog.Builder(c)
-                                    .setMessage("Odpárování se nepodařilo uložit.")
+                                    .setMessage(GameLingoLanguages.ui(c, "Odpárování se nepodařilo uložit."))
                                     .setPositiveButton("OK", null).show()
                             }.show()
                     }

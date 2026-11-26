@@ -38,7 +38,7 @@ object GameLingoHelp {
         "tv" -> "GameLingo TV" to
             "1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Zadej šest číslic z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Pokud používáš starý přijímač PlayCaption, zavři jej. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru."
         "regions" -> "Oblasti" to
-            "Modrá oblast čte původní titulky. Zelená určuje místo českých dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů."
+            "Modrá oblast čte původní titulky. Zelená určuje místo přeložených dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů."
         "translation" -> "Překlad" to
             "OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit. Výchozí nastavení vychází z ověřeného základu PlayCaption."
         "profiles" -> "Profily her" to
@@ -46,9 +46,9 @@ object GameLingoHelp {
         "console" -> "Xbox a PlayStation" to
             "Pro Xbox se přihlašuješ svým účtem Microsoft a povolíš vzdálené funkce. Pro PS5/PS4 použij Remote Play a údaje svého účtu PlayStation. Párovací PIN z konzole se liší od hesla. Do hry ani do konzole se nic neinstaluje."
         "phone" -> "Překlad na telefonu" to
-            "Zvol Standardní pro dialogy nebo Příběhový pro delší titulky. Pokud překládáš přes TV, telefon i TV musí být ve stejné síti. Změny zobrazení jsou k dispozici v Oblastech a Nastavení."
+            "Standardní režim funguje bez dalšího nastavování. Automatický režim používá připravenou zónu a další můžeš přidat v Oblastech obrazovky. Pokud překládáš přes TV, telefon i TV musí být ve stejné síti."
         else -> "GameLingo" to
-            "Vyber Xbox, PlayStation nebo samostatnou TV, připoj zařízení a spusť překlad. Kam se české titulky zobrazí, nastavíš v Zařízení. Oblasti upravují místo čtení a zobrazení, Profily her ukládají vlastní konfiguraci."
+            "Vyber Xbox, PlayStation nebo samostatnou TV, připoj zařízení a spusť překlad. Kam se přeložené titulky zobrazí, nastavíš v Zařízení. Oblasti upravují místo čtení a zobrazení, Profily her ukládají vlastní konfiguraci."
     }
 
     /** Fixed TV geometry; mobile callers retain their existing dimensions. */
@@ -76,7 +76,7 @@ object GameLingoHelp {
         }
         isClickable = true
         isFocusable = true
-        contentDescription = "Otevřít nápovědu"
+        contentDescription = GameLingoLanguages.ui(activity, "Otevřít nápovědu")
         setOnClickListener { show(activity, topic) }
         if (!GameLingoTVUi.isTV(activity)) {
             text = ""
@@ -110,7 +110,9 @@ object GameLingoHelp {
     }
 
     fun show(activity: Activity, topic: String) {
-        val (title, description) = info(topic)
+        val (titleKey, descriptionKey) = info(topic)
+        val title = GameLingoLanguages.ui(activity, titleKey)
+        val description = GameLingoLanguages.ui(activity, descriptionKey)
         if (GameLingoTVUi.isTV(activity)) {
             val body=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL }
             body.addView(TextView(activity).apply {
@@ -120,7 +122,7 @@ object GameLingoHelp {
                 val padding=GameLingoTVUi.dp(activity,24)
                 setPadding(padding,padding,padding,padding)
             },LinearLayout.LayoutParams(-1,-2))
-            GameLingoTVUi.page(activity,"Nápověda · "+title,body)
+            GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title,body)
             return
         }
         val container = LinearLayout(activity).apply {
@@ -149,7 +151,7 @@ object GameLingoHelp {
         scroll.addView(container)
         AlertDialog.Builder(activity)
             .setView(scroll)
-            .setPositiveButton("Hotovo", null)
+            .setPositiveButton(GameLingoLanguages.ui(activity, "Hotovo"), null)
             .show()
     }
 }
