@@ -11,6 +11,7 @@ from tv_translation_policy import tv_variant, strip_offline_translator, tv_trans
 from direct_tv_mode import patch_direct_tv
 from wire_mobile_update import patch_mobile_update
 from translation_backpressure import bound_translator, bound_choices
+from automatic_android import install_automatic
 from translation_privacy import protect_cache_writes, restrict_service_log, restrict_provider_transport
 
 SRC = Path("app/src/main/java/cz/titulky/tv")
@@ -701,6 +702,7 @@ def main():
         install_tv_theme(root)
     else:
         patch_mobile_update(folder)
+    install_automatic(folder, tv_variant(root))
     finalize_tv(root, folder)
     print("GameLingo source and target languages connected to real Android translation")
 

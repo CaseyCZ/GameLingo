@@ -18,6 +18,7 @@ object GameLingoTVProfiles {
         val n = Nastaveni(a)
         val style = a.getSharedPreferences("gamelingo_tv_local_style", Context.MODE_PRIVATE)
         return JSONObject().apply {
+            put("automatic",GameLingoAutomaticConfig.profile(a))
             put("source", GameLingoLanguages.game(a)); put("target", GameLingoLanguages.target(a))
             put("ocr", GameLingoOCRConfig.mode); put("filter", GameLingoOCRConfig.filterMenuText); put("expand", GameLingoOCRConfig.expandSearch)
             put("filterChoiceControls", GameLingoOCRConfig.filterChoiceControls)
@@ -58,6 +59,7 @@ object GameLingoTVProfiles {
         val greenEnabled = p.optBoolean("greenEnabled")
         val green = read("green", 4)?.takeIf { it[0] in 0f..1f && it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0.6f..2f }
         if (greenEnabled && green == null) return false
+        GameLingoAutomaticConfig.restore(a,p.optJSONObject("automatic"))
         GameLingoLanguages.restoreProfile(a, p.optString("source"), p.optString("target"))
         val mode = p.optString("ocr")
         if (mode in setOf("classic", "automatic", "street")) GameLingoOCRConfig.setMode(a, mode)

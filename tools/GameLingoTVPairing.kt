@@ -153,6 +153,8 @@ object GameLingoTVPairing {
     }
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var lastVerifiedIp = ""
+    @Volatile private var zoneCapableIp = ""
+    fun supportsZones(ip: String) = connected(ip) && zoneCapableIp == ip
     @Volatile private var lastVerifiedAt = 0L
 
     private fun prefs(c: Context) =
@@ -260,7 +262,7 @@ object GameLingoTVPairing {
                     Propojeni.Vysilac.outputGeneration() != generation) return@Thread
                 val clientId = pairingId(context)
                 val result = runCatching {
-                    val nonce = UUID.randomUUID().toString()
+                    val nonce = "Z1-" + UUID.randomUUID().toString()
                     val message = freshBody("PING\t$clientId\t$nonce")
                     val data = ("PCPAIR1\t$message\t" + sign(secret, message)).toByteArray(Charsets.UTF_8)
                     val address = InetAddress.getByName(ip)
@@ -271,15 +273,18 @@ object GameLingoTVPairing {
                         val reply = DatagramPacket(ByteArray(2048), 2048)
                         socket.receive(reply)
                         val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
-                        reply.address == address && reply.port == port && MessageDigest.isEqual(
-                            expected.toByteArray(Charsets.UTF_8),
-                            reply.data.copyOfRange(reply.offset, reply.offset + reply.length))
+                        val extended = expected + "\tPCZ1\t" + sign(secret,"PONG\t$clientId\t$nonce|PCZ1")
+                        val bytes=reply.data.copyOfRange(reply.offset,reply.offset+reply.length)
+                        val correctPeer=reply.address==address&&reply.port==port
+                        val capable=correctPeer&&MessageDigest.isEqual(extended.toByteArray(Charsets.UTF_8),bytes)
+                        (capable || correctPeer&&MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8),bytes)) to capable
                     }
-                }.getOrDefault(false)
+                }.getOrDefault(false to false)
                 main.post {
                     if (!RemotePlayService.aktivni || Propojeni.Vysilac.cilIp != ip ||
                         Propojeni.Vysilac.outputGeneration() != generation || token(context, ip) != secret) return@post
-                    if (result) {
+                    if (result.first) {
+                        zoneCapableIp = if(result.second)ip else ""
                         lastVerifiedIp = ip
                         lastVerifiedAt = SystemClock.elapsedRealtime()
                     } else {

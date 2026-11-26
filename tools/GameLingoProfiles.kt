@@ -84,6 +84,7 @@ object GameLingoProfiles {
         FloatArray(4) { i -> p.getFloat(prefix + listOf("L", "T", "R", "B")[i], fallback[i]) }
 
     private fun snapshot(c: Context, settings: Nastaveni) = JSONObject().apply {
+        put("automatic",GameLingoAutomaticConfig.profile(c))
         put("dialogy", settings.dialogy)
         put("showPreviousDialogue", GameLingoOCRConfig.showPreviousDialogue(c))
         put("previousDialogueCount", GameLingoOCRConfig.previousDialogueCount(c))
@@ -127,6 +128,7 @@ object GameLingoProfiles {
     }
 
     private fun restore(c: Context, settings: Nastaveni, data: JSONObject) {
+        GameLingoAutomaticConfig.restore(c,data.optJSONObject("automatic"))
         settings.dialogy = data.optBoolean("dialogy", settings.dialogy)
         GameLingoOCRConfig.setShowPreviousDialogue(c, data.optBoolean("showPreviousDialogue", false))
         GameLingoOCRConfig.setPreviousDialogueCount(c, data.optInt("previousDialogueCount", 1))

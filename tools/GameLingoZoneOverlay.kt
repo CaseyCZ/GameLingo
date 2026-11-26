@@ -25,9 +25,10 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
         root?.let { runCatching { wm.removeViewImmediate(it) } }
         root = null
     }
-    fun show(packet: GameLingoZonePacket) {
+    fun show(packet: GameLingoZonePacket, local: Boolean = false) {
         check(Looper.myLooper() == Looper.getMainLooper())
-        if (packet.blocks.isEmpty() || !PrijemService.bezi || !Settings.canDrawOverlays(context)) {
+        val allowed = if(local) !PrijemService.bezi && RemotePlayService.aktivni else PrijemService.bezi
+        if (packet.blocks.isEmpty() || !allowed || !Settings.canDrawOverlays(context)) {
             clear()
             return
         }

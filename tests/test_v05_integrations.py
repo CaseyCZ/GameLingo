@@ -495,6 +495,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(receiver.index("IPhoneTVPairing.verifyFresh(c, id,"), receiver.index("ACTION_SET_ZONES"))
         self.assertIn("GameLingoZonePacket.parse(inner)", receiver)
 
+    def test_android_automatic_is_native_and_session_bounded(self):
+        wiring = code(TOOLS/"automatic_android.py")
+        engine = code(TOOLS/"GameLingoAutomaticOCR.kt")
+        self.assertIn("automaticXbox(f)", wiring)
+        self.assertIn("automaticFrame(gl.sirka,gl.vyska)", wiring)
+        self.assertIn("GameLingoAutomaticConfig.enabled(this)", wiring)
+        self.assertIn("TextRecognition.getClient", engine)
+        self.assertIn("busy.compareAndSet(false,true)", engine)
+        self.assertIn("tracker.observe(zone.id,blocks", engine)
+        self.assertIn("translating=true", engine)
+        self.assertIn("GameLingoTVPairing.supportsZones(ip)", wiring)
+        self.assertIn("GameLingoAutomaticConfig.profile(c)", code(TOOLS/"GameLingoProfiles.kt"))
+
     def test_p1_3_persistent_translation_cache_uses_engine_and_language_keys(self):
         swift = code(IOS/"TranslationCache.swift")
         pipeline = code(IOS/"CaptionPipeline.swift")

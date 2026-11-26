@@ -576,11 +576,11 @@ def patch_direct_tv(folder):
         '''    private lateinit var wm: WindowManager
     private val automaticZoneOverlay by lazy { GameLingoZoneOverlay(this, wm) }''')
     overlay_one('        if (intent?.action == ACTION_ZRUS_PRIBEH) { zrusPribeh(); showText(""); return START_STICKY }',
-        '''        if (intent?.action == ACTION_SET_ZONES) {
+        '''        if (intent?.action == ACTION_SET_ZONES || intent?.action == ACTION_SET_LOCAL_ZONES) {
             val packet = GameLingoZonePacket.parse(intent.getStringExtra(EXTRA_ZONE_PACKET).orEmpty().split('\\t'))
             if (packet != null) {
                 if (packet.blocks.isNotEmpty()) { zrusPribeh(); showText("") }
-                automaticZoneOverlay.show(packet)
+                automaticZoneOverlay.show(packet, local = intent.action == ACTION_SET_LOCAL_ZONES)
             }
             return START_STICKY
         }
@@ -591,6 +591,7 @@ def patch_direct_tv(folder):
         '    override fun onDestroy() {\n        automaticZoneOverlay.clear()\n        zrusPribeh()')
     overlay_one('        const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"',
         '''        const val ACTION_SET_ZONES = "gamelingo.overlay.ZONES"
+        const val ACTION_SET_LOCAL_ZONES = "gamelingo.overlay.LOCAL_ZONES"
         const val EXTRA_ZONE_PACKET = "zone_packet"
         const val ACTION_SET_TEXT = "cz.titulky.tv.SET_TEXT"''')
     overlay.write_text(overlay_text, encoding="utf8")

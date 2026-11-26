@@ -5,6 +5,24 @@ import android.util.Base64
 /** Full bounded snapshot; only dispatched after HMAC and replay validation. */
 internal data class GameLingoZoneBlock(val text: String, val x: Float, val bottom: Float, val width: Float)
 internal data class GameLingoZonePacket(val aspect: Float, val font: Float, val blocks: List<GameLingoZoneBlock>) {
+    fun encode(): String {
+        val selected=blocks.take(32)
+        val limit=minOf(512,4608/maxOf(1,selected.size))
+        val fields=selected.flatMap { b ->
+            var text=b.text
+            while(text.toByteArray(Charsets.UTF_8).size>limit)text=text.substring(0,text.offsetByCodePoints(text.length,-1))
+            if(text.isBlank())emptyList() else listOf(
+                Base64.encodeToString(text.toByteArray(Charsets.UTF_8),Base64.NO_WRAP),
+                "%.5f".format(java.util.Locale.US,b.x),"%.5f".format(java.util.Locale.US,b.bottom),"%.5f".format(java.util.Locale.US,b.width))
+        }
+        return (listOf("PCZ1",aspect.toString(),font.toString(),(fields.size/4).toString())+fields).joinToString("\t")
+    }
+    fun legacy(sequence: Long): ByteArray {
+        val b=blocks.firstOrNull()
+        val text=b?.text.orEmpty().replace("\\","\\\\").replace("\t"," ").replace("\n","\\n")
+        return listOf("PCT1",sequence.toString(),if(b==null)"0" else "1800",text,"",
+            (b?.x?:.5f).toString(),(b?.bottom?:.93f).toString(),(b?.width?:.62f).toString(),font.toString(),"0").joinToString("\t").toByteArray(Charsets.UTF_8)
+    }
     companion object {
         fun parse(fields: List<String>, decode: (String) -> ByteArray = { Base64.decode(it, Base64.NO_WRAP) }): GameLingoZonePacket? = runCatching {
             require(fields.firstOrNull() == "PCZ1" && fields.size >= 4)

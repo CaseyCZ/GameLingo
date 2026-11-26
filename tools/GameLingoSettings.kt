@@ -275,15 +275,16 @@ object GameLingoSettings {
         }
 
         section(GameLingoUIContract.settingsSections[1])
-        menu("▣", "OCR a rozpoznávání",
-             "Režim, filtrování, rozšíření a ruční oblast") {
-            GameLingoOCRSettings.show(activity, onAreas)
+        menu("▣", "OCR a rozpoznávání", GameLingoAutomaticConfig.label(activity)) {
+            GameLingoAutomaticConfig.mode(activity) { GameLingoOCRSettings.show(activity, onAreas) }
         }
         menu("文", "Překlad", "Režimy, dialogy a časování") {
             showTranslation(activity, settings, onAreas, onLanguage)
         }
         menu("⌗", "Oblasti obrazovky",
-             "Čtyři nezávislé oblasti") { onAreas() }
+             if(GameLingoAutomaticConfig.enabled(activity)) "Automatické zóny" else "Čtyři nezávislé oblasti") {
+            if(GameLingoAutomaticConfig.enabled(activity))GameLingoAutomaticConfig.showZones(activity) else onAreas()
+        }
 
         section(GameLingoUIContract.settingsSections[2])
         menu("Aa", "Vzhled titulků",
