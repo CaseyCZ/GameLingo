@@ -288,21 +288,27 @@ struct GameLingoLicenseView: View {
         }
         .sheet(isPresented: $showNotices) {
             NavigationStack {
-                ScrollView {
-                    Text(Bundle.main.url(forResource: "GameLingoNotices", withExtension: "txt")
-                        .flatMap { try? String(contentsOf: $0, encoding: .utf8) }
-                        ?? GLInterfaceText.localized("Licenční soubor není v tomto sestavení dostupný."))
+                GLScreen(title: "Licence třetích stran") {
+                    GLCard {
+                        Text(verbatim: {
+                            guard let url = Bundle.main.url(forResource: "GameLingoNotices", withExtension: "txt"),
+                                  let contents = try? String(contentsOf: url, encoding: .utf8),
+                                  !contents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                                return GLInterfaceText.localized("Licenční soubor není v tomto sestavení dostupný.")
+                            }
+                            return contents
+                        }())
                         .font(.caption.monospaced())
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .textSelection(.enabled)
-                        .padding()
-                }
-                .navigationTitle("Licence třetích stran")
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        GLBackButton { showNotices = false }
                     }
+                    Link("Licence třetích stran na GitHubu",
+                         destination: URL(string: "https://github.com/CaseyCZ/GameLingo/blob/Master/THIRD_PARTY_NOTICES.md")!)
                 }
             }
+            .preferredColorScheme(.dark)
         }
     }
 }
