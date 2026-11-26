@@ -320,6 +320,11 @@ struct GameLingoHome: View {
                 )
             }
             .buttonStyle(.plain)
+            Toggle("GTA VI · automatické dialogy (test)", isOn: Binding(
+                get: { model.automaticGameDialogue },
+                set: { model.setAutomaticGameDialogue($0) }))
+                .disabled(model.isRunning)
+                .padding(.horizontal, 8)
             actionButton
             LazyVGrid(columns: [GridItem(.flexible()),
                                 GridItem(.flexible())], spacing: 9) {

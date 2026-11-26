@@ -25,6 +25,14 @@ struct GameLingoIOSApp: App {
 
 @MainActor
 final class CaptionAppModel: ObservableObject {
+    // Explicit opt-in; legacy profile and OCR preferences remain unchanged.
+    @Published private(set) var automaticGameDialogue = false
+    func setAutomaticGameDialogue(_ enabled: Bool) {
+        guard !isRunning else { return }
+        automaticGameDialogue = enabled
+        invalidateDialogue()
+        invalidateOptions()
+    }
     @Published var status = "Připraveno"
     @Published var lastEnglish = ""
     @Published var lastCzech = ""
@@ -235,7 +243,7 @@ final class CaptionAppModel: ObservableObject {
     @Published var choicesEnabled = UserDefaults.standard.bool(forKey: "choicesEnabled") {
         didSet {
             UserDefaults.standard.set(choicesEnabled, forKey: "choicesEnabled")
-            optionsFrames?.setEnabled(choicesEnabled)
+            optionsFrames?.setEnabled(choicesEnabled && !automaticGameDialogue)
             if oldValue != choicesEnabled { invalidateOptions() }
         }
     }
@@ -478,6 +486,7 @@ final class CaptionAppModel: ObservableObject {
 
     func applyGameProfile(_ profile: GameSubtitleProfile) {
         guard !isRunning else { return }
+        setAutomaticGameDialogue(false)
         selectGlossaryProfile(profile.id)
         subtitleRegion = SubtitleRegion(rawValue: profile.region) ?? .center
         manualOCR = profile.manualOCR
@@ -695,7 +704,7 @@ final class CaptionAppModel: ObservableObject {
         dialogueFrames?.close()
         optionsFrames?.close()
         let dialogue = LatestFrameMailbox<TimedFrame>()
-        let options = LatestFrameMailbox<TimedFrame>(enabled: choicesEnabled)
+        let options = LatestFrameMailbox<TimedFrame>(enabled: choicesEnabled && !automaticGameDialogue)
         dialogueFrames = dialogue
         optionsFrames = options
         let reset = Task {
@@ -780,7 +789,7 @@ final class CaptionAppModel: ObservableObject {
     }
 
     private func processChoicesFrame(_ buffer: CVPixelBuffer, currentSession: Int, frameReceivedAt: TimeInterval) async {
-        guard isRunning, sessionRevision == currentSession, choicesEnabled,
+        guard isRunning, sessionRevision == currentSession, choicesEnabled, !automaticGameDialogue,
               !processingChoices else { return }
         processingChoices = true
         choicesStartedAt = ProcessInfo.processInfo.systemUptime
@@ -940,6 +949,7 @@ final class CaptionAppModel: ObservableObject {
         let activeGameLanguage = self.gameLanguage
         let activeTargetLanguage = self.targetLanguage
         let contextRevision = dialogueRevision.value
+        let automatic = automaticGameDialogue
 
         // Keep recognition independent of network translation: a slow
         // request must not block OCR of the next short street dialogue.
@@ -954,10 +964,11 @@ final class CaptionAppModel: ObservableObject {
             let reading = await self.pipeline.recognize(
                 buffer, region: self.subtitleRegion,
                 manualArea: self.manualOCR ? self.manualOCRBox : nil,
-                filterMenus: self.filterMenuText, ignoredLines: self.ignoredBlueLines, minimumHeight: self.minBlueHeight,
-                mode: self.ocrMode,
+                filterMenus: automatic || self.filterMenuText, ignoredLines: automatic ? "" : self.ignoredBlueLines, minimumHeight: automatic ? 0 : self.minBlueHeight,
+                mode: automatic ? .automatic : self.ocrMode,
                 expandOnEmpty: self.expandOnEmpty,
-                gameLanguage: activeGameLanguage
+                gameLanguage: activeGameLanguage,
+                automaticPlacement: automatic
             )
             if self.sessionRevision == currentSession {
                 self.processingOCR = false
@@ -972,11 +983,13 @@ final class CaptionAppModel: ObservableObject {
                 self.lastEnglish = reading.english
                 if reading.english.isEmpty {
                     // The revision/cancellation above rejects pending stale work.
-                    self.hideAfterSourceGone(currentSession: currentSession)
+                    if automatic { self.clearDialogueOutput() }
+                    else { self.hideAfterSourceGone(currentSession: currentSession) }
                     // By default, already visible dialogue retains its existing expiry;
                     // stop, source changes and explicit clears remain immediate.
                     return
                 }
+                if automatic { self.clearDialogueOutput() }
                 self.write("OCR: \(reading.english)")
                 dialogueTranslation = Task { @MainActor [weak self] in
                     guard let self, !Task.isCancelled,
@@ -1020,7 +1033,7 @@ final class CaptionAppModel: ObservableObject {
                     let displaySeconds = min(10.0, max(3.0, requested))
                     self.lastCzech = czech
                     let displayText = self.dialogueWindow.render(source: reading.english, translation: czech,
-                        enabled: self.showPreviousDialogue, now: ProcessInfo.processInfo.systemUptime, previousCount: self.previousDialogueCount)
+                        enabled: !automatic && self.showPreviousDialogue, now: ProcessInfo.processInfo.systemUptime, previousCount: self.previousDialogueCount)
                     self.translationHistory.append(kind: "Dialog",
                         source: activeGameLanguage.rawValue, target: activeTargetLanguage.rawValue,
                         original: reading.english, translated: czech)
@@ -1031,7 +1044,8 @@ final class CaptionAppModel: ObservableObject {
                         self.devices.prepareTV(self.tv)
                         if self.verifiedTelevisionOutput {
                             self.tv.sendSubtitle(displayText,
-                                                 duration: Int(displaySeconds * 1000))
+                                                 duration: Int(displaySeconds * 1000),
+                                                 automaticLayout: reading.automaticLayout)
                         }
                     }
                     if self.devices.subtitleOutput == .phone || self.verifiedTelevisionOutput {

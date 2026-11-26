@@ -1,5 +1,6 @@
 import Foundation
 import CoreVideo
+import CoreImage
 import Vision
 
 /// Vision coordinates start at bottom-left. Constrain OCR to subtitle bands
@@ -66,6 +67,7 @@ struct RecognizedCaption {
     let capturedAt: Date
     let ocrStartedAt: TimeInterval
     let ocrMilliseconds: Double
+    var automaticLayout: AutomaticDialogueLayout? = nil
 }
 
 /// OCR of a configurable bottom-center band. Only changed subtitle text is sent.
@@ -144,11 +146,12 @@ actor CaptionPipeline {
                    filterMenus: Bool, ignoredLines: String = "", minimumHeight: Int = 0,
                    mode: OCRMode = .classic,
                    expandOnEmpty: Bool = false,
-                   gameLanguage: GLGameLanguage = .english) -> RecognizedCaption? {
-        let baseROI = manualArea.map { CGRect(
+                   gameLanguage: GLGameLanguage = .english,
+                   automaticPlacement: Bool = false) -> RecognizedCaption? {
+        let baseROI = automaticPlacement ? CGRect(x: 0, y: 0, width: 1, height: 0.35) : (manualArea.map { CGRect(
             x: $0.minX, y: 1 - $0.maxY, width: $0.width, height: $0.height
-        ) } ?? region.rect
-        let settings = "\(baseROI)|\(filterMenus)|\(mode.rawValue)|\(expandOnEmpty)|\(gameLanguage.rawValue)|\(ignoredLines)|\(minimumHeight)"
+        ) } ?? region.rect)
+        let settings = "\(baseROI)|\(filterMenus)|\(mode.rawValue)|\(expandOnEmpty)|\(gameLanguage.rawValue)|\(ignoredLines)|\(minimumHeight)|\(automaticPlacement)"
         if settings != lastSettings {
             lastSettings = settings
             lastText = ""
@@ -166,7 +169,7 @@ actor CaptionPipeline {
         lastRead = now
 
         // Optional low-frequency fallback. It NEVER overrides manually selected OCR.
-        let searchWide = expandOnEmpty && manualArea == nil &&
+        let searchWide = !automaticPlacement && expandOnEmpty && manualArea == nil &&
             mode != .classic && emptyReads >= 3 && emptyReads % 3 == 0
         let roi = searchWide ? SubtitleRegion.wide.rect : baseROI
         let imageTime = ProcessInfo.processInfo.systemUptime
@@ -176,14 +179,24 @@ actor CaptionPipeline {
         request.recognitionLevel = .accurate
         request.recognitionLanguages = [gameLanguage.visionIdentifier]
         request.usesLanguageCorrection = true
-        request.regionOfInterest = roi
+        request.regionOfInterest = automaticPlacement ? CGRect(x: 0, y: 0, width: 1, height: 1) : roi
         if minimumHeight > 0 { request.minimumTextHeight = Float(min(5, minimumHeight)) / 100 }
 
         do {
-            try VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])
+            if automaticPlacement {
+                // Explicit crop makes Vision's normalized result coordinate space unambiguous.
+                let image = CIImage(cvPixelBuffer: buffer)
+                let e = image.extent
+                let crop = CGRect(x: e.minX, y: e.minY, width: e.width, height: e.height * 0.35)
+                let local = image.cropped(to: crop).transformed(by: CGAffineTransform(translationX: -crop.minX, y: -crop.minY))
+                try VNImageRequestHandler(ciImage: local, options: [:]).perform([request])
+            } else {
+                try VNImageRequestHandler(cvPixelBuffer: buffer, options: [:]).perform([request])
+            }
             dialogueImageGate.recordSuccessfulRead(fingerprint, now: imageTime)
             let ignored = OCRIgnoredLines.entries(ignoredLines)
             let minLetters = mode == .street ? 2 : 3
+            var positioned = [AutomaticDialogueLayout.Line]()
             let lines = (request.results ?? []).compactMap { item -> String? in
                 guard let candidate = item.topCandidates(1).first else { return nil }
                 let line = candidate.string.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -191,9 +204,13 @@ actor CaptionPipeline {
                 if filterMenus && looksLikeMenu(line, conservative: mode != .classic) {
                     return nil
                 }
+                if automaticPlacement, let rect = AutomaticDialogueLayout.fullFrameRect(croppedVision: item.boundingBox, crop: AutomaticDialogueLayout.searchArea) {
+                    positioned.append(.init(text: line, rect: rect))
+                }
                 return line
             }
-            let text = lines.joined(separator: " ")
+            let automatic = automaticPlacement ? AutomaticDialogueLayout.select(positioned) : nil
+            let text = (automaticPlacement ? (automatic?.text ?? "") : lines.joined(separator: " "))
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             let readable = text.count >= (mode == .street ? 2 : 4) &&
                 text.filter({ $0.isLetter }).count >= minLetters
@@ -213,7 +230,8 @@ actor CaptionPipeline {
                 lastText = stable
                 revision += 1
                 return RecognizedCaption(english: stable, revision: revision, capturedAt: now,
-                    ocrStartedAt: imageTime, ocrMilliseconds: (ProcessInfo.processInfo.systemUptime - imageTime) * 1000)
+                    ocrStartedAt: imageTime, ocrMilliseconds: (ProcessInfo.processInfo.systemUptime - imageTime) * 1000,
+                    automaticLayout: automatic?.layout)
             }
         } catch {
             return nil

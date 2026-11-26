@@ -614,7 +614,8 @@ final class PlayCaptionTV: ObservableObject {
     /// Sends one packet and repeats it once a second while the caption is valid,
     /// matching Android's heartbeat. Preview uses the Android layout/edit flag so
     /// Google TV shows it even when HDMI is not the selected input.
-    func sendSubtitle(_ subtitle: String, duration: Int, preview: Bool = false) {
+    func sendSubtitle(_ subtitle: String, duration: Int, preview: Bool = false,
+                      automaticLayout: AutomaticDialogueLayout? = nil) {
         repeatTask?.cancel()
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !target.isEmpty else {
@@ -629,9 +630,9 @@ final class PlayCaptionTV: ObservableObject {
         // Same 5 layout fields as Android: center X, bottom Y, width,
         // font size, and 1 while previewing the position.
         let prefs = UserDefaults.standard
-        let x = (prefs.object(forKey: "outputX") as? Double) ?? 0.5
-        let y = (prefs.object(forKey: "outputBottom") as? Double) ?? 0.93
-        let width = (prefs.object(forKey: "outputWidth") as? Double) ?? 0.62
+        let x = automaticLayout?.centerX ?? (prefs.object(forKey: "outputX") as? Double) ?? 0.5
+        let y = automaticLayout?.bottomY ?? (prefs.object(forKey: "outputBottom") as? Double) ?? 0.93
+        let width = automaticLayout?.width ?? (prefs.object(forKey: "outputWidth") as? Double) ?? 0.62
         let font = (prefs.object(forKey: "outputFont") as? Double) ?? 1.0
         // Original PlayCaption 0.22 protocol: field 4 is an empty hint.
         // Without it the TV misreads X/Y/width and draws a huge black strip.
