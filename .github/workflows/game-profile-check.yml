@@ -27,3 +27,5 @@ jobs:
         working-directory: game-profiles
       - run: node test-zone-scheduler.mjs
         working-directory: game-profiles
+      - run: node test-block-pipeline.mjs
+        working-directory: game-profiles
