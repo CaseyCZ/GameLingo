@@ -62,11 +62,16 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertEqual([k for k, n in Counter(keys).items() if n > 1], [])
 
     def test_ios_catalog_parity_and_uniqueness(self):
-        en = catalog_keys(IOS / "en.lproj" / "Localizable.strings")
-        sk = catalog_keys(IOS / "sk.lproj" / "Localizable.strings")
-        self.assert_unique(en)
-        self.assert_unique(sk)
-        self.assertEqual(set(en), set(sk))
+        manifest = json.loads(text(ROOT / "shared" / "locales" / "manifest.json"))
+        source = set(json.loads(text(ROOT / "shared" / "locales" / "cs.json")))
+        for item in manifest["languages"]:
+            code = item["code"]
+            if code == manifest["source"]:
+                continue
+            with self.subTest(locale=code):
+                actual = catalog_keys(IOS / (code + ".lproj") / "Localizable.strings")
+                self.assert_unique(actual)
+                self.assertEqual(set(actual), source)
 
     def test_ios_explicit_dynamic_localization_keys_exist(self):
         keys = set(catalog_keys(IOS / "en.lproj" / "Localizable.strings"))
