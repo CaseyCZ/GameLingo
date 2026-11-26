@@ -41,6 +41,7 @@ struct GameLingoSettingsOverview: View {
     @State private var showXbox = false
     @State private var showPlayStation = false
     @State private var showTV = false
+    @State private var showResetConfirmation = false
 
     var body: some View {
         VStack(alignment: .center, spacing: 13) {
@@ -149,6 +150,21 @@ struct GameLingoSettingsOverview: View {
                             detail: "Autoři, licence a zdrojový kód")
             }
             .buttonStyle(.plain)
+            Button { showResetConfirmation = true } label: {
+                GLDetailRow(icon: "arrow.counterclockwise",
+                            title: "Obnovit výchozí nastavení",
+                            detail: "OCR, překlad, oblasti a vzhled titulků")
+            }
+            .buttonStyle(.plain)
+            .disabled(model.isRunning)
+        }
+        .confirmationDialog("Obnovit výchozí nastavení?",
+                            isPresented: $showResetConfirmation, titleVisibility: .visible) {
+            Button("Obnovit nastavení", role: .destructive) {
+                model.restoreDefaultSettings()
+            }
+        } message: {
+            Text("Obnoví nastavení překladu, OCR, oblastí a titulků. Spárovaná zařízení, účty a uložené herní profily zůstanou zachované.")
         }
         .sheet(isPresented: $showRegions) {
             if model.automaticGameDialogue {
