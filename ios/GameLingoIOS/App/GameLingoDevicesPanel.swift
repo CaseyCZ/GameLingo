@@ -15,7 +15,7 @@ struct GameLingoDevicesPanel: View {
     @State private var pendingRemove: GLConsoleRecord?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .center, spacing: 15) {
             HStack {
                 GLNeonTitle(title: "Konzole a zařízení",
                             subtitle: "Správa konzolí, TV a výstupu titulků",
@@ -51,7 +51,7 @@ struct GameLingoDevicesPanel: View {
                 GLNeonPanel(emphasized: devices.preferredConsoleID == console.id) {
                     HStack(spacing: 12) {
                         GLPlatformBadge(family: console.family, size: 54)
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .center, spacing: 4) {
                             Text(console.name).font(.headline)
                             Text(devices.preferredConsoleID == console.id
                                  ? "Vybraná konzole" : console.family.rawValue)
@@ -102,7 +102,7 @@ struct GameLingoDevicesPanel: View {
                 GLNeonPanel(emphasized: devices.preferredTelevisionID == television.id) {
                     HStack(spacing: 12) {
                         GLPlatformBadge(family: nil, isTelevision: true, size: 54)
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .center, spacing: 4) {
                             Text(television.name).font(.headline)
                             Text(devices.preferredTelevisionID == television.id
                                  ? (model.tv.receiverConnected ? "TV připojena" :

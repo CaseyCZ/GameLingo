@@ -19,14 +19,14 @@ struct GameLingoXboxScreen: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 17) {
+                VStack(alignment: .center, spacing: 17) {
                     GLNeonTitle(title: "Můj Xbox",
                                 subtitle: "Účet, konzole a výběr pro překlad",
                                 icon: "gamecontroller.fill")
                     GLNeonPanel(emphasized: true) {
                         HStack(spacing: 13) {
                             GLPlatformBadge(family: .xbox, size: 62)
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .center, spacing: 4) {
                                 Text("Xbox Remote Play")
                                     .font(.headline)
                                 Text("Microsoft účet a vlastní konzole")
@@ -71,7 +71,7 @@ struct GameLingoXboxScreen: View {
                                 } label: {
                                     HStack(spacing: 13) {
                                         GLPlatformBadge(family: .xbox, size: 44)
-                                        VStack(alignment: .leading, spacing: 3) {
+                                        VStack(alignment: .center, spacing: 3) {
                                             Text(console.name)
                                                 .font(.headline)
                                                 .foregroundStyle(.white)

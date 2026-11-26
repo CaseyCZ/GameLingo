@@ -18,6 +18,20 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_centered_shared_menu_components(self):
+        android = code(TOOLS/"GameLingoVisualKit.kt")
+        tv = code(TOOLS/"GameLingoTVUi.kt")
+        onboarding = code(TOOLS/"GameLingoFirstRun.kt")
+        ios = code(IOS/"GameLingoVisualSystem.swift")
+        style = code(IOS/"GameLingoStyle.swift")
+        self.assertIn("text=title;gravity=Gravity.CENTER", android)
+        self.assertIn("text=detail;gravity=Gravity.CENTER", android)
+        self.assertIn("this.text = text\n        gravity = Gravity.CENTER", tv)
+        self.assertIn("val heading = TextView(activity).apply {\n            gravity = Gravity.CENTER", onboarding)
+        self.assertIn(".multilineTextAlignment(.center)", ios)
+        self.assertIn(".frame(width: 42, alignment: .trailing)", ios)
+        self.assertIn(".multilineTextAlignment(.center)", style)
+
     def test_android_entry_localization_and_first_run_simplification(self):
         import re
         languages = code(TOOLS/"GameLingoLanguages.kt")

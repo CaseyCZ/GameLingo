@@ -44,7 +44,7 @@ struct GameLingoTVSetupScreen: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 11) {
+                VStack(alignment: .center, spacing: 11) {
                     GLNeonTitle(title: "Google TV",
                                 subtitle: "Připojení a párování televize",
                                 icon: "tv.fill")
@@ -61,7 +61,7 @@ struct GameLingoTVSetupScreen: View {
                                     HStack(spacing: 12) {
                                         GLPlatformBadge(family: nil,
                                                         isTelevision: true, size: 46)
-                                        VStack(alignment: .leading, spacing: 3) {
+                                        VStack(alignment: .center, spacing: 3) {
                                             Text(record.name).font(.headline)
                                             Text(record.ipAddress)
                                                 .font(.caption.monospaced())
@@ -150,9 +150,9 @@ private struct GameLingoTVPairingPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .center, spacing: 15) {
             GLNeonPanel(emphasized: true) {
-                VStack(alignment: .leading, spacing: 13) {
+                VStack(alignment: .center, spacing: 13) {
                     GLNeonTitle(title: "Vyhledat televizi",
                                 subtitle: "GameLingo TV ve stejné domácí síti",
                                 icon: "magnifyingglass")
@@ -190,7 +190,7 @@ private struct GameLingoTVPairingPanel: View {
                                 HStack(spacing: 12) {
                                     GLPlatformBadge(family: nil,
                                                     isTelevision: true, size: 47)
-                                    VStack(alignment: .leading, spacing: 3) {
+                                    VStack(alignment: .center, spacing: 3) {
                                         Text(device.name)
                                             .font(.subheadline.bold())
                                             .foregroundStyle(.white)
@@ -242,7 +242,7 @@ private struct GameLingoTVPairingPanel: View {
                         .font(.system(size: 26))
                         .foregroundStyle(tv.receiverConnected
                                          ? GLStyle.green : GLNeon.cyan)
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .center, spacing: 3) {
                         Text(tv.receiverConnected ? "Přijímač připojen" :
                              tv.receiverPaired ? "Spárováno, čekám na TV" :
                              "Zatím nespárováno")

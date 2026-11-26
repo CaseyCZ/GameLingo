@@ -3,7 +3,7 @@ import SwiftUI
 struct GLTranslationModePicker: View {
     @ObservedObject var model: CaptionAppModel
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .center, spacing: 5) {
             Text("Režim překladu").font(.caption)
             Picker("Režim překladu", selection: Binding(
                 get: { model.automaticGameDialogue },

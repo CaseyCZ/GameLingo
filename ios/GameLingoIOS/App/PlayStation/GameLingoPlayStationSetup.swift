@@ -52,14 +52,14 @@ private struct GameLingoPSConnectionView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 15) {
+                VStack(alignment: .center, spacing: 15) {
                     GLNeonTitle(title: "PlayStation",
                                 subtitle: "PlayStation 4 / 5 Remote Play",
                                 icon: "gamecontroller.fill")
                     GLNeonPanel(emphasized: true) {
                         HStack(spacing: 14) {
                             GLPlatformBadge(family: .playStation, size: 65)
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .center, spacing: 4) {
                                 Text("Moje konzole").font(.headline)
                                 Text("Vyber konzoli nebo přidej novou")
                                     .font(.caption)
