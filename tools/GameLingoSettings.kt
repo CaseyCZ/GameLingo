@@ -205,7 +205,7 @@ object GameLingoSettings {
         val d = GameLingoVisualKit.dp(activity, 1)
         val page = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20 * d, 15 * d, 20 * d, 24 * d)
+            setPadding(16 * d, 12 * d, 16 * d, 16 * d)
             background = GameLingoVisualKit.pageBackground(activity)
         }
 
@@ -239,7 +239,7 @@ object GameLingoSettings {
                 letterSpacing = 0.10f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(Color.parseColor("#02D6FF"))
-                setPadding(3 * d, 23 * d, 0, 12 * d)
+                setPadding(0, 14 * d, 0, 8 * d)
             })
         }
         fun menu(symbol: String, title: String, sub: String, parent: LinearLayout = page, open: () -> Unit) {
