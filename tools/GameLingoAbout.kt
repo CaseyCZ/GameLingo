@@ -72,7 +72,7 @@ object GameLingoAbout {
             }
             brandCard.addView(GameLingoVisualKit.wordmark(activity))
             brandCard.addView(label("Překlad herních dialogů a textů", 14f))
-            brandCard.addView(label("Verze $version", 13f, true).apply {
+            brandCard.addView(label(tr("Verze:") + " " + version, 13f, true).apply {
                 setTextColor(Color.parseColor(GameLingoUIContract.Palette.cyan))
             })
             page.addView(brandCard, LinearLayout.LayoutParams(
