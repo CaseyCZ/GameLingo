@@ -362,7 +362,7 @@ object GameLingoDeviceCenter {
             }
         })
         tvs.forEach { tv ->
-            // The six-digit GameLingo PIN protocol belongs to Android TV,
+            // The authenticated GameLingo pairing protocol belongs to Android TV,
             // not legacy LG webOS or Samsung display-only receivers.
             val pinSupported = mobile && !tv.platforma.jenZobrazovac
             val savedPairing = pinSupported && GameLingoTVPairing.paired(c, tv.ip)
@@ -374,7 +374,7 @@ object GameLingoDeviceCenter {
             add(tvPanel, line(c, tv.jmeno, descriptor,
                           tvStore.posledniId == tv.id) {
                 chooseDevice(c, tv.jmeno, if (pinSupported)
-                        arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Spárovat šest číslic z TV"),
+                        arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Spárovat kódem z TV"),
                             GameLingoLanguages.ui(c, "Ověřit spojení"), GameLingoLanguages.ui(c, "Odebrat"))
                         else arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Odebrat"))) { option ->
                         if (RemotePlayService.aktivni) {

@@ -482,3 +482,11 @@
 "Volitelná historie posledních 200 úspěšných překladů na tomto zařízení. Ukládá se pouze v paměti aplikace do jejího ukončení. Vypnutí historii vymaže; překladová cache a technický log jsou oddělené." = "Optional history of the last 200 successful translations on this device. Stored only in app memory until it exits. Turning history off clears it; the translation cache and technical log are separate.";
 "Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu." = "The cache stores source text and translations on this device, separately from optional history. Turning it off can increase online requests and reduce translation availability without internet.";
 "Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Technický log uchovává omezené kategorie událostí a metriky. Živý náhled níže obsahuje skutečné texty; není součástí sdíleného logu. Před sdílením log zkontroluj." = "View translation status, processed frame count and the last recognized subtitles. A test subtitle verifies the TV connection. The technical log retains limited event categories and metrics. The live preview below contains actual text and is not included in the shared log. Review the log before sharing.";
+
+"Google TV se páruje pomocí QR nebo kódu." = "Google TV pairs using QR or a code.";
+"Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Načti QR nebo opiš celý kód. Uložená IP neznamená spárování." = "Select Translation from phone, not Directly on TV. Scan the QR or enter the whole code. A saved IP does not mean pairing.";
+"1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat." = "1. Open Translation from phone on the TV. 2. Scan QR or enter the 32-character code. 3. Select Pair.";
+"Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované." = "The pairing key is not sent over the network. Subtitles are signed, not encrypted.";
+"Párovací kód z TV" = "TV pairing code";
+"Zadej celý párovací kód z TV." = "Enter the full TV pairing code.";
+"TV nepotvrdila bezpečné párování. Vytvoř nový kód." = "TV did not confirm secure pairing. Generate a new code.";

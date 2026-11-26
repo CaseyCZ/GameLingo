@@ -49,7 +49,7 @@ internal object GameLingoQRDisplay {
         }
         val label = TextView(activity).apply {
             gravity = Gravity.CENTER
-            textSize = GameLingoVisualKit.sp(activity, if(television) 22f else 18f)
+            textSize = GameLingoVisualKit.sp(activity, if(television) 16f else 14f)
             setTextColor(Color.WHITE)
             setPadding(12,12,12,12)
         }
@@ -79,7 +79,7 @@ internal object GameLingoQRDisplay {
                     label.text=GameLingoLanguages.ui(activity, "Kód již není platný. Vrať se zpět a vygeneruj nový.")
                     return
                 }
-                label.text="PIN: "+pin+"  ·  "+GameLingoLanguages.ui(activity, "zbývá")+" "+IPhoneTVPairing.remainingSeconds()+" s"
+                label.text=pin.chunked(8).joinToString(" ")+"  ·  "+GameLingoLanguages.ui(activity, "zbývá")+" "+IPhoneTVPairing.remainingSeconds()+" s"
                 handler.postDelayed(this,500L)
             }
         }

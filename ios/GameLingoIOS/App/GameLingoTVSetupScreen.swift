@@ -129,7 +129,7 @@ struct GameLingoTVSetupScreen: View {
                     GLBackButton { onFinished(); dismiss() }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    GLHelpButton(title: "Google TV", explanation: "Google TV se páruje šestimístným kódem.")
+                    GLHelpButton(title: "Google TV", explanation: "Google TV se páruje pomocí QR nebo kódu.")
                 }
             }
         }
@@ -233,11 +233,11 @@ private struct GameLingoTVPairingPanel: View {
 
             GLCard {
                 GLHeader(title: "Párování televize",
-                         help: "Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Opiš nový šestimístný kód. Uložená IP neznamená spárování.")
-                Text("1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš šestimístný kód. 3. Zvol Spárovat.")
+                         help: "Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Načti QR nebo opiš celý kód. Uložená IP neznamená spárování.")
+                Text("1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat.")
                     .font(.caption)
                     .foregroundStyle(GLNeon.mist)
-                Text("Používej jen důvěryhodnou domácí síť. Párování a titulky nejsou šifrované.")
+                Text("Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované.")
                     .font(.caption).foregroundStyle(GLStyle.muted)
                 HStack(spacing: 10) {
                     Image(systemName: tv.receiverConnected
@@ -270,19 +270,21 @@ private struct GameLingoTVPairingPanel: View {
                         showQRScanner = true
                     }
                 }
-                TextField("Šestimístný kód z TV", text: $tv.receiverCode)
-                    .keyboardType(.numberPad)
-                    .textContentType(.oneTimeCode)
+                TextField("Párovací kód z TV", text: $tv.receiverCode)
+                    .keyboardType(.asciiCapable)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .font(.system(.caption, design: .monospaced))
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: tv.receiverCode) { _, newCode in
-                        tv.receiverCode = String(newCode.filter(\.isNumber).prefix(6))
+                        tv.receiverCode = String(newCode.prefix(48))
                     }
                     .disabled(isRunning)
                 GLPrimaryButton(title: tv.receiverPaired
                                 ? "Spárovat znovu" : "Spárovat",
                                 systemImage: "link",
                                 disabled: selectedIP.isEmpty ||
-                                    tv.receiverCode.count != 6 || isRunning) {
+                                    tv.receiverCode.filter { !$0.isWhitespace && $0 != "-" }.count != 32 || isRunning) {
                     tv.pairReceiver()
                 }
                 if tv.receiverPaired {

@@ -482,3 +482,11 @@
 "Volitelná historie posledních 200 úspěšných překladů na tomto zařízení. Ukládá se pouze v paměti aplikace do jejího ukončení. Vypnutí historii vymaže; překladová cache a technický log jsou oddělené." = "Voliteľná história posledných 200 úspešných prekladov na tomto zariadení. Ukladá sa iba v pamäti aplikácie do jej ukončenia. Vypnutie históriu vymaže; prekladová vyrovnávacia pamäť a technický záznam sú oddelené.";
 "Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu." = "Vyrovnávacia pamäť ukladá originály aj preklady na tomto zariadení. Je oddelená od voliteľnej histórie. Vypnutie môže zvýšiť počet online požiadaviek a obmedziť preklady bez internetu.";
 "Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Technický log uchovává omezené kategorie událostí a metriky. Živý náhled níže obsahuje skutečné texty; není součástí sdíleného logu. Před sdílením log zkontroluj." = "Tu nájdeš stav prekladu, počet spracovaných snímok a posledné rozpoznané titulky. Skúšobný titulok overí prepojenie s TV. Technický záznam uchováva obmedzené kategórie udalostí a metriky. Živý náhľad nižšie obsahuje skutočné texty; nie je súčasťou zdieľaného záznamu. Pred zdieľaním záznam skontroluj.";
+
+"Google TV se páruje pomocí QR nebo kódu." = "Google TV sa páruje pomocou QR alebo kódu.";
+"Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Načti QR nebo opiš celý kód. Uložená IP neznamená spárování." = "Na TV vyber Preklad z telefónu, nie Priamo na TV. Naskenuj QR alebo opíš celý kód. Uložená IP neznamená spárovanie.";
+"1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat." = "1. Na TV otvor Preklad z telefónu. 2. Naskenuj QR alebo opíš 32 znakov kódu. 3. Vyber Spárovať.";
+"Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované." = "Párovací kľúč sa neprenáša po sieti. Titulky sú podpísané, nie šifrované.";
+"Párovací kód z TV" = "Párovací kód z TV";
+"Zadej celý párovací kód z TV." = "Zadaj celý párovací kód z TV.";
+"TV nepotvrdila bezpečné párování. Vytvoř nový kód." = "TV nepotvrdila bezpečné párovanie. Vytvor nový kód.";

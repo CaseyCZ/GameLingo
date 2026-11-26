@@ -301,7 +301,7 @@ def redesign_tv(s: str) -> str:
             odsazeni(bottom = 5))
         listOf(
             "1" to GameLingoLanguages.ui(this@MainActivity, "Otevři GameLingo na telefonu"),
-            "2" to GameLingoLanguages.ui(this@MainActivity, "Spáruj TV šestimístným kódem"),
+            "2" to GameLingoLanguages.ui(this@MainActivity, "Spáruj TV pomocí QR nebo kódu"),
             "3" to GameLingoLanguages.ui(this@MainActivity, "Spusť překlad a vrať se ke hře")
         ).forEach { (index, title) ->
             val krok = vodorovne().apply {
@@ -328,24 +328,20 @@ def redesign_tv(s: str) -> str:
         pravá.addView(text(GameLingoLanguages.ui(this@MainActivity, "Připojte svůj telefon"), 25f,
             Color.WHITE, tucne = true))
         pravá.addView(text(
-            GameLingoLanguages.ui(this@MainActivity, "Otevřete GameLingo na telefonu a zadejte tento šestimístný kód."),
+            GameLingoLanguages.ui(this@MainActivity, "Načti QR v telefonu nebo opiš celý kód."),
             19f, Color.parseColor("#CBD5E1")), odsazeni(top = 4, bottom = 5))
 
-        // Always show a fresh six-digit code when opening the receiver.
+        // Always show a fresh one-time code when opening the receiver.
         // Existing phones remain paired when another phone confirms a new code.
         var shownCode: String? = IPhoneTVPairing.startCode()
         val kodRadek = vodorovne().apply { gravity = Gravity.CENTER_VERTICAL }
-        val policka = (0 until 6).map {
-            text("•", 30f, Color.WHITE, tucne = true).apply {
-                gravity = Gravity.CENTER
-                background = zaobleni(Color.parseColor("#151B39"), 14f, fialova)
-                setPadding(dp(3), dp(5), dp(3), dp(5))
-                minWidth = dp(28)
-                kodRadek.addView(this,
-                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                        .apply { rightMargin = dp(if (it == 5) 0 else 4) })
-            }
+        val kodText = text("••••••••", 19f, Color.WHITE, tucne = true).apply {
+            gravity = Gravity.CENTER
+            typeface = android.graphics.Typeface.MONOSPACE
+            background = zaobleni(Color.parseColor("#151B39"), 14f, fialova)
+            setPadding(dp(8), dp(5), dp(8), dp(5))
         }
+        kodRadek.addView(kodText, LinearLayout.LayoutParams(-1, -2))
         val qrImage = ImageView(this).apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
             contentDescription = GameLingoLanguages.ui(this@MainActivity, "Párovací QR kód")
@@ -516,9 +512,7 @@ def redesign_tv(s: str) -> str:
                     displayedQR = qrKey
                     qrImage.setImageBitmap(code?.let { GameLingoQRDisplay.bitmap(ipTv, it) })
                 }
-                policka.forEachIndexed { index, policko ->
-                    policko.text = code?.getOrNull(index)?.toString() ?: "•"
-                }
+                kodText.text = code?.chunked(8)?.joinToString("\n") ?: "••••••••"
                 val phones = IPhoneTVPairing.phones(this@MainActivity)
                 val connectedCount = phones.count { it.connected }
                 val spojeno = connectedCount > 0

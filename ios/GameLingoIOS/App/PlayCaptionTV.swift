@@ -62,6 +62,12 @@ final class PlayCaptionTV: ObservableObject {
                 // A new IP must never leave old dialogue or game-text overlays
                 // behind. Send an explicit clear to the former receiver first.
                 clearOverlays(at: oldValue)
+                pairingGeneration &+= 1
+                pairingRequest?.cancel()
+                pairingRequest = nil
+                pairingTimeoutTask?.cancel()
+                pairingRetryTask?.cancel()
+                receiverCode = ""
                 receiverRetrySeconds = 3
                 startReceiverHeartbeat()
             }
@@ -80,6 +86,7 @@ final class PlayCaptionTV: ObservableObject {
         defaults.set(value, forKey: "receiverPhoneID")
         return value
     }()
+    private var pairingGeneration = 0
     private var pairingRequest: NWConnection?
     private var pairingTimeoutTask: Task<Void, Never>?
     private var pairingRetryTask: Task<Void, Never>?
@@ -218,17 +225,20 @@ final class PlayCaptionTV: ObservableObject {
     // The PIN is displayed only on our independent TV receiver app.
     func pairReceiver() {
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
-        let code = receiverCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !target.isEmpty, code.count == 6, code.allSatisfy(\.isNumber) else {
-            receiverStatus = "Zadej šest číslic z obrazovky TV."
+        let code = receiverCode.filter { !$0.isWhitespace && $0 != "-" }.lowercased()
+        guard !target.isEmpty, code.utf8.count == 32,
+              code.utf8.allSatisfy({ (48...57).contains($0) || (97...102).contains($0) }) else {
+            receiverStatus = "Zadej celý párovací kód z TV."
             return
         }
         pairingRequest?.cancel()
         pairingTimeoutTask?.cancel()
         pairingRetryTask?.cancel()
+        pairingGeneration &+= 1
+        let generation = pairingGeneration
         receiverStatus = "Hledám dostupný přijímací port televize…"
         discoverReceiverPort(target) { [weak self] port in
-            guard let self, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target
+            guard let self, self.pairingGeneration == generation, self.ip.trimmingCharacters(in: .whitespacesAndNewlines) == target
             else { return }
             self.beginReceiverPairing(target: target, code: code, port: port)
         }
@@ -240,6 +250,13 @@ final class PlayCaptionTV: ObservableObject {
         pairingRetryTask?.cancel()
         receiverStatus = "Ověřuji kód na TV (UDP \(port))…"
         let pairingClientID = receiverID
+        let nonce = UUID().uuidString
+        let context = "\(pairingClientID)\tiPhone\t\(nonce)"
+        guard let proof = signature("PAIR2\t\(context)", tokenHex: code),
+              let token = signature("KEY2\t\(context)", tokenHex: code),
+              let reply = signature("OK2\t\(context)", tokenHex: token) else { return }
+        let request = Data("PCPAIR1\tPAIR2\t\(context)\t\(proof)".utf8)
+        let expectedReply = "PCPAIR1\tOK2\t\(pairingClientID)\t\(nonce)\t\(reply)"
         let conn = NWConnection(host: .init(target),
                                 port: NWEndpoint.Port(rawValue: UInt16(port))!,
                                 using: .udp)
@@ -250,7 +267,7 @@ final class PlayCaptionTV: ObservableObject {
             try? await Task.sleep(for: .seconds(10))
             guard !Task.isCancelled, let self, let conn,
                   self.pairingRequest === conn else { return }
-            self.receiverStatus = "TV neodpověděla ani po opakovaném odeslání. Na TV zvol Překlad z telefonu a zkontroluj, že je vidět platný šestimístný kód."
+            self.receiverStatus = "TV neodpověděla ani po opakovaném odeslání. Na TV zvol Překlad z telefonu a zkontroluj, že je vidět platný párovací kód."
             self.pairingRetryTask?.cancel()
             self.pairingRetryTask = nil
             self.pairingRequest = nil
@@ -272,24 +289,16 @@ final class PlayCaptionTV: ObservableObject {
                             conn.cancel()
                             return
                         }
-                        let fields = text.components(separatedBy: "\t")
-                        if fields.count == 4, fields[0] == "PCPAIR1",
-                           fields[1] == "OK", fields[2] == pairingClientID,
-                           fields[3].count == 64,
-                           fields[3].allSatisfy({ $0.isHexDigit }),
-                           ReceiverSecretStore.save(fields[3], ip: target) {
+                        if text == expectedReply, ReceiverSecretStore.save(token, ip: target) {
                             self.receiverCode = ""
                             self.receiverStatus = "iPhone úspěšně spárován. Ověřuji spojení…"
                             self.startReceiverHeartbeat()
-                        } else if fields.first == "PCPAIR1", fields.dropFirst().first == "ERROR" {
-                            self.receiverStatus = "TV odmítla kód. Vytvoř na TV nový šestimístný kód a zadej ho znovu."
                         } else {
-                            self.receiverStatus = "TV vrátila neplatnou odpověď."
+                            self.receiverStatus = "TV nepotvrdila bezpečné párování. Vytvoř nový kód."
                         }
                         conn.cancel()
                     }
                 }
-                let request = Data("PCPAIR1\tPAIR\t\(code)\t\(pairingClientID)\tiPhone".utf8)
                 conn.send(content: request,
                           completion: .contentProcessed { [weak self] error in
                     if let error {
@@ -300,8 +309,7 @@ final class PlayCaptionTV: ObservableObject {
                 })
                 // UDP does not guarantee delivery. Retry on the SAME socket
                 // (and therefore the same reply port) while awaiting TV OK.
-                // The receiver now resends an identical secret for a repeated
-                // successful PIN, instead of considering the PIN expired.
+                // The receiver resends only the same authenticated proof for an exact retry.
                 Task { @MainActor [weak self, weak conn] in
                     guard let self, let conn, self.pairingRequest === conn else { return }
                     self.pairingRetryTask?.cancel()
@@ -333,6 +341,7 @@ final class PlayCaptionTV: ObservableObject {
     }
 
     func forgetReceiver() {
+        pairingGeneration &+= 1
         pairingTimeoutTask?.cancel()
         pairingRetryTask?.cancel()
         pairingRetryTask = nil
@@ -345,7 +354,7 @@ final class PlayCaptionTV: ObservableObject {
     }
 
     private func signature(_ payload: String, tokenHex: String) -> String? {
-        guard tokenHex.count == 64 else { return nil }
+        guard tokenHex.count == 64 || tokenHex.count == 32 else { return nil }
         var keyBytes = [UInt8]()
         for offset in stride(from: 0, to: tokenHex.count, by: 2) {
             let a = tokenHex.index(tokenHex.startIndex, offsetBy: offset)

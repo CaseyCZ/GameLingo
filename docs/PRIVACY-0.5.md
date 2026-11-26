@@ -6,7 +6,7 @@
 | Remote Play video | Dekódování a OCR na zařízení (Vision / ML Kit); kompletní absence dalších přenosů není ještě síťově ověřena |
 | Rozpoznaný text a jazyky | Online překlad: na všech platformách Google GTX, Microsoft Edge, MyMemory jako poslední záloha. Fallback může poslat text více poskytovatelům; poskytovatel zpracovává síťové údaje a text podle svých podmínek. |
 | Přihlašovací údaje konzolí | Autentizace Sony/Microsoft. iOS tokeny v Keychain; Android credential persistence ještě vyžaduje úplné ověření. Starý PCS1 přenos konzolových účtů byl ze zdrojové implementace odstraněn; konzole se přihlašují samostatně. Nové sestavení čeká. |
-| Párování TV | IP, identita telefonu, PIN/klíč, HMAC a replay ochrana; Keychain/Keystore na ověřených cestách. UDP není šifrované; bootstrap PIN/secret nešifrovaný. |
+| Párování TV | IP, identita telefonu, PIN/klíč, HMAC a replay ochrana; Keychain/Keystore na ověřených cestách. UDP není šifrované; 0.5.2 předává jednorázový 128bitový kód opticky/ručně mimo síť a ověřuje HMAC; žádný párovací klíč v síťové zprávě. |
 | Cache | Trvalá SQLite s originály, výsledky, jazyky, engine a LRU; limit cca 20 000, ne časová expirace. iOS vyloučena ze zálohy; Android generated manifest ověřit. Přidaná správa cache umožňuje vypnout ukládání a samostatně odstranit místní databázi a sidecars po zastavení překladu. Kompilace a purge test čekají. |
 | Historie | Oddělená volitelná RAM-only historie; vypnutí/vymazání historie nevymaže SQLite cache. |
 | Profily/slovníky | Lokální uživatelská konfigurace; úplný audit persistence a mazání čeká. |
@@ -23,3 +23,5 @@ Překladový HTTP klient ve zdroji přijímá pouze určené HTTPS endpointy a o
 
 ### Změna přenosu účtů pro 0.5
 Nešifrovaný čtyřmístný PCS1 přenos účtu již není nabízen. Android/TV receiver odmítá PCS1 i při legacy kompatibilitě titulků a nečte pro něj konzolové údaje; iOS odstranil klienta a import tokenu. Běžný PCPAIR1 šestiznakový PIN/QR, lokální párování titulků a samostatné konzolové přihlášení zůstávají. Oprava ještě neprošla sestavením a negativním síťovým ověřením. Nejde o šifrování PCPAIR1 bootstrapu.
+
+0.5.2: historická poznámka o nešifrovaném PCPAIR1 bootstrapu platila pro starý PAIR. Nový PAIR2 je autentizovaný a původní plaintext požadavek odmítá. Klíče z již existujících párování zůstávají; při podezření na odposlech je nutné nové párování. Samotné titulky se nešifrují.

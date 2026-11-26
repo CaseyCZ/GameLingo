@@ -26,11 +26,21 @@ class IPhoneTVPairingKeystoreTest {
     @After fun cleanup() { IPhoneTVPairing.clear(ctx) }
 
     private fun mac(token: String, body: String): String {
-        val key = ByteArray(32) { token.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
+        val key = ByteArray(token.length / 2) { token.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
         return Mac.getInstance("HmacSHA256").run {
             init(SecretKeySpec(key, "HmacSHA256"))
             doFinal(body.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
         }
+    }
+
+    private fun pair(pin: String, phone: String, label: String = "iPhone"): String? {
+        val nonce = java.util.UUID.randomUUID().toString()
+        val context = "$phone\t$label\t$nonce"
+        val key = mac(pin, "KEY2\t$context")
+        val proof = mac(pin, "PAIR2\t$context")
+        val reply = IPhoneTVPairing.confirmProof(ctx, phone, label, nonce, proof, "192.168.1.2")
+        if (reply != mac(key, "OK2\t$context")) return null
+        return key
     }
 
     @Test fun legacyMigrationPreservesIdentityAndReplay() {
@@ -66,9 +76,9 @@ class IPhoneTVPairingKeystoreTest {
     @Test fun twoPhonesKeepIndependentKeysReplayAndRevocation() {
         val second = "audit-test-android"
         val firstPin = IPhoneTVPairing.startCode()
-        val firstKey = requireNotNull(IPhoneTVPairing.confirm(ctx, firstPin, id, "iPhone"))
+        val firstKey = requireNotNull(pair(firstPin, id, "iPhone"))
         val secondPin = IPhoneTVPairing.startCode()
-        val secondKey = requireNotNull(IPhoneTVPairing.confirm(ctx, secondPin, second, "Android"))
+        val secondKey = requireNotNull(pair(secondPin, second, "Android"))
         assertNotEquals(firstKey, secondKey)
         assertEquals(setOf(id, second), IPhoneTVPairing.phones(ctx).map { it.id }.toSet())
         val now = System.currentTimeMillis().toString()
@@ -100,8 +110,8 @@ class IPhoneTVPairingKeystoreTest {
 
     @Test fun emptyPacketsAndReadinessDoNotClaimSource() {
         val second = "audit-test-android"
-        val firstKey = requireNotNull(IPhoneTVPairing.confirm(ctx, IPhoneTVPairing.startCode(), id))
-        val secondKey = requireNotNull(IPhoneTVPairing.confirm(ctx, IPhoneTVPairing.startCode(), second))
+        val firstKey = requireNotNull(pair(IPhoneTVPairing.startCode(), id))
+        val secondKey = requireNotNull(pair(IPhoneTVPairing.startCode(), second))
         val now = System.currentTimeMillis().toString()
         fun authenticate(phone: String, key: String) {
             val body = "TEXT\t$phone\tpayload"
@@ -137,15 +147,25 @@ class IPhoneTVPairingKeystoreTest {
 
     @Test fun pairRetryAndClearUseEncryptedStorage() {
         val pin = IPhoneTVPairing.startCode()
-        val token = requireNotNull(IPhoneTVPairing.confirm(ctx, pin, id))
-        assertEquals(64, token.length)
+        assertEquals(32, pin.length)
+        val nonce = java.util.UUID.randomUUID().toString()
+        val context = "$id\tiPhone\t$nonce"
+        val token = mac(pin, "KEY2\t$context")
+        val proof = mac(pin, "PAIR2\t$context")
+        val expected = mac(token, "OK2\t$context")
+        assertNull(IPhoneTVPairing.confirmProof(ctx, id, "iPhone", nonce, "00".repeat(32), "192.168.1.2"))
+        assertEquals(expected, IPhoneTVPairing.confirmProof(ctx, id, "iPhone", nonce, proof, "192.168.1.2"))
         assertFalse(prefs.contains("token"))
         assertNotEquals(token, prefs.getString(tokenSlot(id), null))
-        assertEquals(token, IPhoneTVPairing.confirm(ctx, pin, id))
+        assertEquals(expected, IPhoneTVPairing.confirmProof(ctx, id, "iPhone", nonce, proof, "192.168.1.2"))
+        assertNull(IPhoneTVPairing.confirmProof(ctx, id, "Android", nonce, proof, "192.168.1.2"))
+        assertNull(IPhoneTVPairing.confirmProof(ctx, id, "iPhone", nonce, proof, "192.168.1.3"))
+        assertNull(IPhoneTVPairing.activeCode())
         IPhoneTVPairing.clear(ctx)
         assertFalse(IPhoneTVPairing.paired(ctx))
         assertFalse(prefs.contains(tokenSlot(id)))
         assertNull(IPhoneTVPairing.pongSignature(ctx, id, "test-nonce"))
-        assertNull(IPhoneTVPairing.confirm(ctx, pin, id))
+        assertNull(IPhoneTVPairing.confirmProof(ctx, id, "iPhone", nonce, proof, "192.168.1.2"))
     }
+
 }

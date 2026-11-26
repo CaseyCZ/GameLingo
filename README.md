@@ -63,7 +63,7 @@ GameLingo je nový projekt s vlastním vzhledem v **modrobílém stylu CaseyCZ**
 - [Návod pro testery (iPhone / Android / TV)](docs/USER-GUIDE-0.5.md)
 - [Informace o soukromí – pracovní návrh](docs/PRIVACY-0.5.md)
 
-Pro překlad z telefonu na TV je potřeba kompatibilní překryv a párování v důvěryhodné domácí síti. Přenos je podepsaný, nikoli šifrovaný. TV nemá samostatný offline překladač; OCR a online překlad zůstávají. Chráněné přehrávání (např. Netflix) může být pro OCR nepřístupné; podporu nelze slíbit. Samostatné TV OCR potřebuje systémový souhlas se snímáním. GameLingo nepřekládá zvuk ani mikrofon.
+Pro překlad z telefonu na TV je potřeba kompatibilní překryv a párování v důvěryhodné domácí síti. Nové QR i ruční párování 0.5.2 používá jednorázový 128bitový kód (32 znaků), který se neposílá po síti. Přenos titulků je podepsaný, nikoli šifrovaný. Pro nové párování aktualizuj obě zařízení. TV nemá samostatný offline překladač; OCR a online překlad zůstávají. Chráněné přehrávání (např. Netflix) může být pro OCR nepřístupné; podporu nelze slíbit. Samostatné TV OCR potřebuje systémový souhlas se snímáním. GameLingo nepřekládá zvuk ani mikrofon.
 
 <p align="center">
   <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>⬇️ ZOBRAZIT VYDÁNÍ GAMELINGO</strong></a>

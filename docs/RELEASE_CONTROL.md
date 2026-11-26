@@ -64,6 +64,11 @@ Závazný návrh a akceptační matice: [UI_UX_FUNCTIONAL_AUDIT.md](UI_UX_FUNCTI
 - TV: Gradle guard a negativní DEX kontrola; mobilní APK musí obsahovat Translation SDK a projít kontrolou zdrojů. Syntetické DEX testy pokrývají obě varianty. About a dokumentace aktualizovány. Zvláštní podmínky Google vyžadují relevantní atribuci výsledků, úplná kontrola zůstává G4. Fyzický test: stáhnout modely, odpojit internet (nikoli LAN), přeložit nový necacheovaný dialog, změnit jazyky, zastavit relaci.
 - Změna je ve zdroji, nové nativní CI a fyzické testy zatím nepotvrzeny. Otevřené bezpečnostní/provider podmínky zůstávají; žádný merge ani release. Metodika agency-roster code reviewer a test engineer.
 
+## Autentizované QR a ruční párování 0.5.2 (26. 11. 2026)
+- Předchozí mobilní offline checkpoint `e774e01c`: [podepsané CI 45858452103](https://github.com/CaseyCZ/GameLingo/actions/runs/45858452103), rychlá regrese a TV navigace PASS. Změna protokolu vyžaduje vlastní CI.
+- TV generuje jednorázový 128bitový kód (32 hex znaků, tři minuty). QR předává kód opticky, ruční zadání přijímá skupiny znaků. HMAC-SHA256 s oddělenými kontexty PAIR2/KEY2/OK2 pro autentizaci, derivaci a potvrzení. Kód ani odvozený klíč se neodesílají po síti; staré PAIR odmítnuto, žádný downgrade. Uložené klíče se nemažou, běžné PING/TEXT zůstávají. Nejde o TLS ani šifrování titulků. Ochrana závisí na utajení kódu; staré odposlechnuté klíče lze nahradit novým párováním. Nový handshake vyžaduje 0.5.2 na obou stranách.
+- Nové zdrojové a instrumentační testy: chybné MAC, exact retry, vazba na zařízení/nonce/adresu, odvolání, negativní QR. Instrumentační testy je nutné fyzicky spustit; CI kompilace není nezávislý audit protokolu. SEC-03 autentizace ostatních ACK a SEC-05 poskytovatelé zůstávají otevřené. Žádný merge/release.
+
 ## Povinné brány vydání
 | Brána | Akceptační důkaz | Stav |
 |---|---|---|
