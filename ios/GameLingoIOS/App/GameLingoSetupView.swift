@@ -195,13 +195,10 @@ struct GameLingoSetupView: View {
                 }
                 .buttonStyle(.plain)
             }
-            GLCard {
-                GLHeader(title: "Moje konzole", help:
-                    "Můžeš si uložit více Xboxů i PlayStationů. Při spuštění vybereš konkrétní zařízení. Uložená adresa ještě neznamená úspěšné spárování; vždy se kontroluje skutečné Remote Play spojení.")
-                if devices.consoles.isEmpty {
-                    Text("Zatím žádná")
-                        .foregroundStyle(GLStyle.muted)
-                } else {
+            if !devices.consoles.isEmpty {
+                GLCard {
+                    GLHeader(title: "Moje konzole", help:
+                        "Můžeš si uložit více Xboxů i PlayStationů. Při spuštění vybereš konkrétní zařízení. Uložená adresa ještě neznamená úspěšné spárování; vždy se kontroluje skutečné Remote Play spojení.")
                     ForEach(devices.consoles) { record in
                         Button { devices.selectConsole(record.id) } label: {
                             HStack {
@@ -284,16 +281,23 @@ struct GameLingoSetupView: View {
                 .buttonStyle(.plain)
             }
             if devices.subtitleOutput == .googleTV {
-                GLCard {
-                    GLHeader(title: "Google TV",
-                             help: "Otevři GameLingo TV na televizi a opiš šest číslic. TV a iPhone musejí být ve stejné síti.")
-                    Text(verbatim: devices.chosenTelevision?.name ?? GLInterfaceText.localized("Vyber nebo přidej TV"))
-                        .foregroundStyle(GLStyle.muted)
-                    GLPrimaryButton(title: "Spárovat TV", systemImage: "link") {
-                        showTV = true
+                if let television = devices.chosenTelevision {
+                    GLCard {
+                        GLHeader(title: "Google TV")
+                        Text(verbatim: television.name)
+                            .foregroundStyle(GLStyle.muted)
+                        pairTVButton
                     }
+                } else {
+                    pairTVButton
                 }
             }
+        }
+    }
+
+    private var pairTVButton: some View {
+        GLPrimaryButton(title: "Spárovat TV", systemImage: "link") {
+            showTV = true
         }
     }
 

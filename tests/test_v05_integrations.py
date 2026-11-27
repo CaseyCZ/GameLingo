@@ -259,6 +259,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                       'preferredTelevisionID'):
             self.assertIn(label,devices+panel)
 
+    def test_first_run_hides_empty_saved_device_cards(self):
+        setup = code(IOS/"GameLingoSetupView.swift")
+        consoles = setup.split("private var consoleStep:", 1)[1].split("private var languageStep:", 1)[0]
+        self.assertIn("if !devices.consoles.isEmpty {", consoles)
+        self.assertLess(consoles.index("if !devices.consoles.isEmpty"), consoles.index('GLHeader(title: "Moje konzole"'))
+        self.assertNotIn('Text("Zatím žádná")', consoles)
+        output = setup.split("private var outputStep:", 1)[1].split("private var readyStep:", 1)[0]
+        self.assertIn("if let television = devices.chosenTelevision", output)
+        self.assertIn("Text(verbatim: television.name)", output)
+        self.assertNotIn('GLInterfaceText.localized("Vyber nebo přidej TV")', output)
+        self.assertIn("} else {\n                    pairTVButton", output)
+        self.assertIn('GLPrimaryButton(title: "Spárovat TV"', output)
+        self.assertIn("showTV = true", output)
+
     def test_single_xbox_picker_and_no_legacy_ios_dashboard(self):
         home=code(IOS/"GameLingoHome.swift")
         setup=code(IOS/"GameLingoSetupView.swift")
