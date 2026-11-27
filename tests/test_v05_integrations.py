@@ -84,6 +84,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Propojeni.Vysilac.cameraCaption", android)
         self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
 
+    def test_camera_torch_state_and_lifecycle(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        self.assertIn("try device.setTorchModeOn(level: AVCaptureDevice.maxAvailableTorchLevel)", ios)
+        self.assertIn("self.session.isRunning, let device = self.device, device.hasTorch", ios)
+        self.assertIn("self.torchRequest == request", ios)
+        self.assertIn("state.previewSession == nil || state.torchPending", ios)
+        self.assertIn("capture?.stop(); resetTorch()", ios)
+        self.assertIn("c.cameraInfo.torchState.observe(this)", android)
+        self.assertIn("c.cameraInfo.torchState.value != TorchState.ON", android)
+        self.assertIn("camera?.cameraInfo?.torchState?.removeObservers(this)", android)
+        self.assertIn("torchPending = false; torchFailed = false", android)
+
     def test_camera_translation_layout_does_not_reflow(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")
