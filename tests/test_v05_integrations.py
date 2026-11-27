@@ -1061,7 +1061,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoTVPairing.initialize(this)", wire)
         self.assertIn("!authenticatedGameData && !GameLingoTVPairing.legacyEnabled(c)", receiver)
         self.assertIn('p.setData(decoded.toByteArray(Charsets.UTF_8))', receiver)
-        self.assertIn('listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")', receiver)
+        self.assertIn('listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1", "PCZ1", "PCZ2")', receiver)
         self.assertIn('casti.firstOrNull() == "PCS1" && casti.getOrNull(1) in listOf("ZADOST", "KOD")', receiver)
         self.assertIn("GameLingoTVPairing.setLegacyEnabled(a, it)", tv)
 
