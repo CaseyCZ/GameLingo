@@ -121,6 +121,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(automatic.index("val lines = b.lines.filter"), automatic.index('val text=lines.joinToString'))
         self.assertIn("GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)", automatic)
 
+    def test_translation_dependent_options_and_automatic_stale_guard(self):
+        settings = code(TOOLS/"GameLingoSettings.kt")
+        for marker in ('visible(previousCount, it)', 'visible(goneDelay, it)',
+                       'visible(durationPanel,it)', 'visible(agePanel,it)',
+                       'GameLingoOCRConfig.setPreviousDialogueCount(activity, index + 1)',
+                       'GameLingoLanguages.translationSettingsBusy()'):
+            self.assertIn(marker, settings)
+        self.assertIn("GameLingoOCRConfig.expired(context, at-now)", code(TOOLS/"GameLingoAutomaticOCR.kt"))
+        self.assertIn("!self.skipOldTranslations || finished - now <= self.maxTranslationAge", code(IOS/"PlayCaptionIOSApp.swift"))
+
     def test_advanced_ocr_height_and_geometry_parity(self):
         ui = code(TOOLS/"GameLingoOCRSettings.kt")
         automatic = code(TOOLS/"GameLingoAutomaticOCR.kt")

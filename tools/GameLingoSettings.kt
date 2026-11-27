@@ -112,18 +112,34 @@ object GameLingoSettings {
             })
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val television=GameLingoTVUi.isTV(c)
+        val editable = !GameLingoLanguages.translationSettingsBusy()
+        var committed = state
+        var restoring = false
         val toggle=Switch(c).apply {
             isChecked = state
-            isFocusable = !television
+            isEnabled = editable
+            isFocusable = editable && !television
             thumbTintList = android.content.res.ColorStateList.valueOf(accent)
-            setOnCheckedChangeListener { _, checked -> update(checked) }
+            setOnCheckedChangeListener { _, checked ->
+                if (!restoring) {
+                    if (GameLingoLanguages.translationSettingsBusy()) {
+                        restoring = true
+                        isChecked = committed
+                        restoring = false
+                    } else {
+                        committed = checked
+                        update(checked)
+                    }
+                }
+            }
         }
+        alpha = if (editable) 1f else .5f
         addView(toggle)
         if(television) {
-            isFocusable=true; isClickable=true
+            isFocusable=editable; isClickable=editable
             descendantFocusability=ViewGroup.FOCUS_BLOCK_DESCENDANTS
             GameLingoTVUi.controlFocus(c,this)
-            setOnClickListener { toggle.isChecked=!toggle.isChecked }
+            setOnClickListener { if (editable && !GameLingoLanguages.translationSettingsBusy()) toggle.isChecked=!toggle.isChecked }
         }
     }
 
@@ -146,12 +162,51 @@ object GameLingoSettings {
         }
         add(row(activity, "Překládat dialogy", "Titulky pro rozhovory ve hrách.",
             settings.dialogy) { settings.dialogy = it })
+        fun visible(view: android.view.View, shown: Boolean) {
+            view.visibility = if (shown) android.view.View.VISIBLE else android.view.View.GONE
+        }
+        fun dependentChoice(title: String, labels: Array<String>, current: () -> Int,
+                            shown: Boolean, save: (Int) -> Unit): LinearLayout {
+            lateinit var choice: LinearLayout
+            val detail = GameLingoVisualKit.detailRow(activity, "slider.horizontal.3", tr(title), labels[current()]) {
+                if (!GameLingoLanguages.translationSettingsBusy()) {
+                    GameLingoTVUi.select(activity, tr(title), labels, current()) { index ->
+                        if (!GameLingoLanguages.translationSettingsBusy()) {
+                            save(index)
+                            choice.findViewWithTag<TextView>("gamelingo-detail")?.text = labels[current()]
+                        }
+                    }
+                }
+            }
+            choice = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(detail, LinearLayout.LayoutParams(-1, -2))
+                alpha = if (GameLingoLanguages.translationSettingsBusy()) .5f else 1f
+            }
+            visible(choice, shown)
+            return choice
+        }
+        val previousCount = dependentChoice("Počet předchozích replik", arrayOf(tr("Jedna"), tr("Dvě")),
+            { GameLingoOCRConfig.previousDialogueCount(activity) - 1 },
+            GameLingoOCRConfig.showPreviousDialogue(activity)) { index ->
+            GameLingoOCRConfig.setPreviousDialogueCount(activity, index + 1)
+        }
         add(row(activity, "Zobrazit i předchozí repliku", "V běžném režimu bez překrývání originálu; nemění příběhovou frontu.",
-            GameLingoOCRConfig.showPreviousDialogue(activity)) { GameLingoOCRConfig.setShowPreviousDialogue(activity, it) })
-        add(row(activity, "Dvě předchozí repliky", "Pokud je zapnutý předchozí dialog, zobrazí až dva nedávné překlady místo jednoho.",
-            GameLingoOCRConfig.previousDialogueCount(activity) == 2) { GameLingoOCRConfig.setPreviousDialogueCount(activity, if (it) 2 else 1) })
+            GameLingoOCRConfig.showPreviousDialogue(activity)) {
+            GameLingoOCRConfig.setShowPreviousDialogue(activity, it)
+            visible(previousCount, it)
+        })
+        add(previousCount)
+        val goneDelay = dependentChoice("Prodleva po zmizení", arrayOf(tr("Hned"), "1 s", "2 s"),
+            { GameLingoOCRConfig.sourceGoneDelay(activity) }, GameLingoOCRConfig.hideOnSourceGone(activity)) {
+            GameLingoOCRConfig.setSourceGoneDelay(activity, it)
+        }
         add(row(activity, "Skrýt po zmizení originálu", "Volitelně ukončí zobrazení běžného dialogu po potvrzeném zmizení zdrojového textu.",
-            GameLingoOCRConfig.hideOnSourceGone(activity)) { GameLingoOCRConfig.setHideOnSourceGone(activity, it) })
+            GameLingoOCRConfig.hideOnSourceGone(activity)) {
+            GameLingoOCRConfig.setHideOnSourceGone(activity, it)
+            visible(goneDelay, it)
+        })
+        add(goneDelay)
         add(row(activity, "Herní texty a volby", "Samostatná žlutá oblast OCR.",
             Volby.zapnuto) { Volby.zapnuto = it; Volby.uloz(activity) })
         add(row(activity, "Dopisy a zprávy", "Překládat celý text místo seznamu voleb.",
@@ -185,12 +240,13 @@ object GameLingoSettings {
         sliderCard.addView(SeekBar(activity).apply {
             max = CasovaniPribehu.MAX_PROCENT - CasovaniPribehu.MIN_PROCENT
             progress = settings.casPribehuProcenta - CasovaniPribehu.MIN_PROCENT
-            isFocusable = true; keyProgressIncrement = 5
+            isEnabled = !GameLingoLanguages.translationSettingsBusy()
+            isFocusable = isEnabled; keyProgressIncrement = 5
             if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
             progressTintList = android.content.res.ColorStateList.valueOf(accent)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
-                    if (fromUser) {
+                    if (fromUser && !GameLingoLanguages.translationSettingsBusy()) {
                         settings.casPribehuProcenta = CasovaniPribehu.MIN_PROCENT + value
                         refresh()
                     }
@@ -202,30 +258,42 @@ object GameLingoSettings {
         add(sliderCard)
         // Timing is shared by both console clients; TV focus remains device-specific.
         run {
-            add(row(activity,"Pevná doba titulku","Nastavení v sekundách jako na iOS; příběhová fronta zachovává vlastní časování.",
-                GameLingoOCRConfig.fixedTiming(activity)) { GameLingoOCRConfig.saveTiming(activity,fixed=it) })
-            fun timingSlider(title:String,min:Int,max:Int,value:Int,save:(Int)->Unit) {
+            fun timingSlider(title:String,min:Int,max:Int,value:Int,save:(Int)->Unit): LinearLayout {
                 val panel=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL; background=rounded(card);setPadding(17,14,17,16) }
                 val caption=TextView(activity).apply { gravity=Gravity.CENTER;textSize = GameLingoVisualKit.sp(activity, 16f);setTextColor(Color.WHITE);text="${tr(title)}: $value s" }
                 panel.addView(caption)
                 panel.addView(SeekBar(activity).apply {
-                    this.max=max-min;progress=value-min;keyProgressIncrement=1;isFocusable=true
+                    this.max=max-min;progress=value-min;keyProgressIncrement=1
+                    isEnabled = !GameLingoLanguages.translationSettingsBusy()
+                    isFocusable = isEnabled
                     if (television) GameLingoTVUi.controlFocus(activity,this)
                     setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener {
                         override fun onProgressChanged(bar:SeekBar, v:Int, fromUser:Boolean) {
                             caption.text="${tr(title)}: "+(v+min)+" s"
-                            if(fromUser) save(v+min)
+                            if(fromUser && !GameLingoLanguages.translationSettingsBusy()) save(v+min)
                         }
                         override fun onStartTrackingTouch(bar:SeekBar){}
                         override fun onStopTrackingTouch(bar:SeekBar){}
                     })
                 })
-                add(panel)
+                return panel
             }
-            timingSlider("Doba titulku",3,10,GameLingoOCRConfig.seconds(activity)){GameLingoOCRConfig.saveTiming(activity,duration=it)}
+            val durationPanel = timingSlider("Doba titulku",3,10,GameLingoOCRConfig.seconds(activity)){GameLingoOCRConfig.saveTiming(activity,duration=it)}
+            visible(durationPanel, GameLingoOCRConfig.fixedTiming(activity))
+            add(row(activity,"Pevná doba titulku","Nastavení v sekundách jako na iOS; příběhová fronta zachovává vlastní časování.",
+                GameLingoOCRConfig.fixedTiming(activity)) {
+                GameLingoOCRConfig.saveTiming(activity,fixed=it)
+                visible(durationPanel,it)
+            })
+            add(durationPanel)
+            val agePanel = timingSlider("Maximální stáří",2,8,GameLingoOCRConfig.maxAge(activity)){GameLingoOCRConfig.saveTiming(activity,age=it)}
+            visible(agePanel,GameLingoOCRConfig.skipOld(activity))
             add(row(activity,"Přeskočit starý překlad","Zahodí výsledek, který překročil maximální stáří.",
-                GameLingoOCRConfig.skipOld(activity)){GameLingoOCRConfig.saveTiming(activity,skip=it)})
-            timingSlider("Maximální stáří",2,8,GameLingoOCRConfig.maxAge(activity)){GameLingoOCRConfig.saveTiming(activity,age=it)}
+                GameLingoOCRConfig.skipOld(activity)){
+                GameLingoOCRConfig.saveTiming(activity,skip=it)
+                visible(agePanel,it)
+            })
+            add(agePanel)
         }
 
         fun button(title: String, action: () -> Unit) {
@@ -246,17 +314,6 @@ object GameLingoSettings {
                 setOnClickListener { dialog.dismiss(); action() }
             }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 })
-        }
-        button(tr("Prodleva po zmizení") + ": " + GameLingoOCRConfig.sourceGoneDelay(activity) + " s") {
-            val labels = arrayOf(tr("Hned"), "1 s", "2 s")
-            fun save(index: Int) {
-                GameLingoOCRConfig.setSourceGoneDelay(activity, index)
-                showTranslation(activity, settings, onAreas, onLanguage)
-            }
-            if (television) GameLingoTVUi.select(activity, tr("Prodleva po zmizení"), labels, GameLingoOCRConfig.sourceGoneDelay(activity), ::save)
-            else android.app.AlertDialog.Builder(activity).setTitle(tr("Prodleva po zmizení"))
-                .setSingleChoiceItems(labels, GameLingoOCRConfig.sourceGoneDelay(activity)) { chooser, index -> chooser.dismiss(); save(index) }
-                .setNegativeButton(tr("Zrušit"), null).show()
         }
         button("▣  " + tr("Oblasti na obrazovce")) { onAreas() }
         button("🌐  " + tr("Jazyk překladu")) { onLanguage() }

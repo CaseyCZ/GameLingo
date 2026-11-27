@@ -1130,6 +1130,7 @@ final class CaptionAppModel: ObservableObject {
                 self.automaticTasks.removeValue(forKey: id)
                 let finished = ProcessInfo.processInfo.systemUptime
                 if finished - current.lastSeen <= AutomaticBlockTracker.staleAfter,
+                   (!self.skipOldTranslations || finished - now <= self.maxTranslationAge),
                    case .success(let raw) = outcome, !raw.isEmpty {
                     self.automaticTranslations[id] = self.glossaryTranslation(original: original, translated: raw,
                         source: source.rawValue, target: target.rawValue)

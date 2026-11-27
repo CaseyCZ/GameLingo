@@ -153,7 +153,8 @@ internal class GameLingoAutomaticOCR(
                 if(!alive())return@post
                 val at=SystemClock.elapsedRealtime()
                 if(tracker.tracks.any{it.id==t.id&&at-it.seen<=5000L}){
-                    if(!value.isNullOrBlank()) translations[t.id]=GameLingoGlossaryStore.apply(context,t.block.text,value,source,target)
+                    if(!value.isNullOrBlank() && !GameLingoOCRConfig.expired(context, at-now))
+                        translations[t.id]=GameLingoGlossaryStore.apply(context,t.block.text,value,source,target)
                     else retries[t.id]=at+2000L
                 }
                 publish(at)
