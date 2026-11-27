@@ -709,7 +709,6 @@ struct GameLingoHome: View {
             devices: devices,
             addXbox: { xboxSheet = true },
             addPlayStation: { playStationSheet = true },
-            addTV: { tvSheet = true },
             onAddDevice: { addDevicePicker = true }
         )
     }

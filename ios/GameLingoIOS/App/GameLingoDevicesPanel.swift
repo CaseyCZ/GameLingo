@@ -8,7 +8,6 @@ struct GameLingoDevicesPanel: View {
 
     let addXbox: () -> Void
     let addPlayStation: () -> Void
-    let addTV: () -> Void
 
     let onAddDevice: () -> Void
     @State private var renaming: GLConsoleRecord?
@@ -171,14 +170,6 @@ struct GameLingoDevicesPanel: View {
                         .buttonStyle(.plain)
                         .accessibilityAddTraits(devices.subtitleOutput == option ? .isSelected : [])
                     }
-                }
-                if devices.subtitleOutput == .googleTV {
-                    Button {
-                        addTV()
-                    } label: {
-                        GLSettingsLink(icon: "link", title: "Spárovat Google TV")
-                    }
-                    .buttonStyle(.plain)
                 }
             }
         }
