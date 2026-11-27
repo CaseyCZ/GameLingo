@@ -1108,6 +1108,7 @@ struct GameLingoCameraScreen: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { GLBackButton { state.stop(); dismiss() } }
                 ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 4) {
                     Button { state.toggleTorch() } label: {
                         Image(systemName: state.torchFailed ? "exclamationmark.triangle.fill" : (state.torchOn ? "flashlight.on.fill" : "flashlight.off.fill"))
                             .foregroundStyle(state.torchFailed ? Color.orange : (state.torchOn ? Color.yellow : Color.white))
@@ -1117,6 +1118,8 @@ struct GameLingoCameraScreen: View {
                     .accessibilityLabel("Svítilna")
                     .accessibilityAddTraits(state.torchOn ? .isSelected : [])
                     .disabled(state.paused || state.unavailable || state.previewSession == nil || state.torchPending)
+                    GLHelpButton(title: "Překlad kamerou", explanation: "Zvol celý obraz nebo nastav žlutý rámeček na původní titulky.")
+                    }
                 }
             }
         }

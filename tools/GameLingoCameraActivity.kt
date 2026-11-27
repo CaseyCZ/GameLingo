@@ -417,6 +417,8 @@ class GameLingoCameraActivity : ComponentActivity() {
             addView(View(this@GameLingoCameraActivity), LinearLayout.LayoutParams(px(48), px(48)))
             addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             addView(torchButton, LinearLayout.LayoutParams(px(48), px(48)))
+            addView(GameLingoHelp.button(this@GameLingoCameraActivity,"camera"),
+                GameLingoHelp.layout(this@GameLingoCameraActivity,px(32),px(48)))
         }
         root.addView(header)
         updateTorchButton()

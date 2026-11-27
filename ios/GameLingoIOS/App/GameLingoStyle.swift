@@ -62,21 +62,8 @@ struct GLHelpButton: View {
         .accessibilityLabel("Nápověda: " + title)
         .sheet(isPresented: $showing) {
             NavigationStack {
-                ScrollView {
-                    VStack(alignment: .center, spacing: 15) {
-                        Label(LocalizedStringKey(title), systemImage: "questionmark.circle.fill")
-                            .font(.title2.bold())
-                            .foregroundStyle(GLStyle.blue)
-                        Text(LocalizedStringKey(explanation))
-                            .font(.body)
-                            .foregroundStyle(.white)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(22)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .multilineTextAlignment(.center)
-                }
-                .background(GLNeonBackground())
+                GLGuideContent(title: title, explanation: explanation)
+                    .background(GLNeonBackground())
                 .navigationTitle("Nápověda")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -87,7 +74,7 @@ struct GLHelpButton: View {
             }
             .tint(GLStyle.blue)
             .preferredColorScheme(.dark)
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
         }
     }
 }

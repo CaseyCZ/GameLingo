@@ -359,6 +359,25 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn('GLRocketIcon()', home)
         self.assertIn('GameLingoHelp.report(a)', text(TOOLS / "GameLingoTVSettings.kt"))
 
+    def test_new_support_routes_and_locales(self):
+        support = text(IOS / "GameLingoSupport.swift")
+        home = text(IOS / "GameLingoHome.swift")
+        visual = text(TOOLS / "GameLingoVisualKit.kt")
+        help_ui = text(TOOLS / "GameLingoHelp.kt")
+        self.assertLess(home.index("GLRocketIcon()"), home.index('GLHelpButton(title: "GameLingo"'))
+        self.assertLess(visual.index("GameLingoHelp.newsButton(activity)"), visual.index('GameLingoHelp.button(activity,"home")'))
+        for key in ("GLGuideContent", "GLNewsPage", "GLProblemReportPage", "@State private var position", "@State private var rule"):
+            self.assertIn(key, support)
+        for key in ("fun showNews(", "fun report(", "fun select(index:Int)", "var position=25", "QRCodeWriter().encode(url"):
+            self.assertIn(key, help_ui)
+        report = help_ui.split("fun report(a:Activity)",1)[1]
+        for forbidden in ("logLines", "lastEnglish", "activeCode()", "selectedXboxId", "getSharedPreferences"):
+            self.assertNotIn(forbidden, report)
+        for code in ("cs","en","sk"):
+            data = json.loads(text(ROOT / "shared" / "locales" / (code+".json")))
+            for key in ("Co je nového", "Nahlásit problém", "Ukázka bez změny nastavení", "Další krok"):
+                self.assertTrue(data[key])
+
     def test_dynamic_status_templates_exist_in_every_locale(self):
         shared = ROOT / "shared" / "locales"
         manifest = json.loads(text(shared / "manifest.json"))

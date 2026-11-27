@@ -127,6 +127,10 @@ object GameLingoVisualKit {
                     "info.circle" -> {circle(12f,12f,9f);line(12f,11f,12f,17f);circle(12f,7f,.6f)}
                     "questionmark.circle" -> {circle(12f,12f,9f);canvas.drawArc(8f,6f,16f,13f,180f,200f,false,p);path(15f,11f,12f,14f,12f,15f);circle(12f,18f,.55f)}
                     "rocket" -> {path(5f,17f,6f,10f,12f,5f,21f,3f,19f,12f,14f,18f,8f,19f,5f,17f);path(6f,10f,2f,13f,5f,17f);path(14f,18f,11f,23f,8f,19f);line(5f,20f,2f,23f);circle(15f,9f,2f)}
+                    "camera" -> {rect(3f,7f,21f,20f);path(7f,7f,9f,4f,15f,4f,17f,7f);circle(12f,13f,4f)}
+                    "wifi" -> {canvas.drawArc(2f,3f,22f,22f,220f,100f,false,p);canvas.drawArc(6f,8f,18f,20f,220f,100f,false,p);circle(12f,19f,1f)}
+                    "qrcode" -> {rect(3f,3f,9f,9f,0f);rect(15f,3f,21f,9f,0f);rect(3f,15f,9f,21f,0f);path(15f,15f,21f,15f,21f,21f,17f,21f,17f,18f)}
+                    "checkmark.circle" -> {circle(12f,12f,9f);path(7f,12f,10f,15f,17f,8f)}
                     "chevron.right" -> path(9f,6f,15f,12f,9f,18f)
                     "arrow.right" -> {line(4f,12f,20f,12f);path(14f,6f,20f,12f,14f,18f)}
                     "download" -> {line(12f,3f,12f,15f);path(7f,10f,12f,15f,17f,10f);path(4f,16f,4f,21f,20f,21f,20f,16f)}

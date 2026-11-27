@@ -17,6 +17,8 @@ object GameLingoHelp {
     private const val CYAN = "#38BDF8"
 
     private fun info(screen: String): Pair<String, String> = when (screen) {
+        "camera" -> "Překlad kamerou" to
+            "Zvol celý obraz nebo nastav žlutý rámeček na původní titulky."
         "languages" -> "Jazyky" to
             "Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle."
         "about" -> "O aplikaci / Licence" to
@@ -113,50 +115,129 @@ object GameLingoHelp {
         }
     }
 
+    private fun guide(topic:String):List<Pair<String,String>> = when(topic) {
+        "camera" -> listOf("camera" to "Zvol Kameru ve výběru zařízení.","tv" to "Namiř telefon na text nebo obrazovku.","viewfinder" to "Zvol celý obraz nebo nastav žlutý rámeček na původní titulky.","text.bubble" to "Překlad se zobrazí podle vybraného režimu.")
+        "glossary" -> listOf("text.bubble" to "Opiš originální výraz přesně ze hry.","character.book.closed.fill" to "Doplň chybný překlad a požadovanou opravu oddělené svislítky.","checkmark.circle" to "Ulož slovník a použij správný profil před hraním.")
+        "regions" -> listOf("viewfinder" to "Modrá čte dialogy, zelená určuje jejich výstup.","rectangle.dashed" to "Žlutá čte herní texty, oranžová určuje jejich výstup.","checkmark.circle" to "Uprav oblasti podle obrazu a ulož profil.")
+        "console" -> listOf("gamecontroller" to "Povol vzdálené funkce na konzoli a přihlas se ke svému účtu.","display.2" to "Vyber uloženou konzoli nebo přidej novou.","play.fill" to "Vyber zdroj obrazu a výstup titulků.")
+        "tv","pairing" -> listOf("wifi" to "Připoj telefon a televizi ke stejné domácí síti.","qrcode" to "Na televizi otevři párování a v telefonu načti QR kód nebo zadej celý kód.","checkmark.circle" to "Ověř spojení a spusť překlad.")
+        "home" -> listOf("gamecontroller" to "Vyber zdroj obrazu podle zařízení.","globe" to "Připoj zařízení a vyber jazyk hry a překladu.","play.fill" to "Nastav výstup a spusť překlad.")
+        else -> emptyList()
+    }
+    private fun picture(a:Activity,topic:String,index:Int,symbol:String):android.view.View =
+        android.widget.FrameLayout(a).apply {
+            background=GameLingoVisualKit.card(a)
+            if(topic=="glossary") addView(label(a,if(index==0)"Save game" else "Save game\nZachránit hru\n→ Uložit hru",10f).apply {
+                gravity=Gravity.CENTER;setTextColor(Color.parseColor("#02D6FF"))
+            },android.widget.FrameLayout.LayoutParams(-1,-1))
+            else if(topic=="regions"||(topic=="camera"&&index>=2)) addView(object:android.view.View(a) {
+                private val p=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+                override fun onDraw(c:android.graphics.Canvas) {
+                    val w=width.toFloat();val h=height.toFloat()
+                    p.style=android.graphics.Paint.Style.STROKE;p.strokeWidth=d(a,2).toFloat()
+                    p.color=if(topic=="camera")Color.YELLOW else Color.BLUE
+                    c.drawRect(w*.08f,h*.22f,w*.92f,h*.48f,p)
+                    p.color=if(topic=="camera")Color.TRANSPARENT else Color.GREEN
+                    c.drawRect(w*.08f,h*.60f,w*.92f,h*.86f,p)
+                    if(topic=="regions"&&index==1) {
+                        p.color=Color.YELLOW;c.drawRect(w*.58f,h*.02f,w*.92f,h*.20f,p)
+                        p.color=Color.rgb(249,115,22);c.drawRect(w*.58f,h*.87f,w*.92f,h*.99f,p)
+                    }
+                    p.style=android.graphics.Paint.Style.FILL;p.color=Color.WHITE;p.textAlign=android.graphics.Paint.Align.CENTER;p.textSize=minOf(w*.07f,h*.18f)
+                    c.drawText("Where are you going?",w/2,h*.40f,p);c.drawText("Kam jdeš?",w/2,h*.77f,p)
+                }
+            },android.widget.FrameLayout.LayoutParams(-1,-1))
+            else addView(GameLingoVisualKit.icon(a,symbol,Color.parseColor("#02D6FF")),
+                android.widget.FrameLayout.LayoutParams(d(a,34),d(a,34),Gravity.CENTER))
+        }
+
     fun show(activity: Activity, topic: String) {
-        val (titleKey, descriptionKey) = info(topic)
-        val title = GameLingoLanguages.ui(activity, titleKey)
-        val description = GameLingoLanguages.ui(activity, descriptionKey)
-        if (GameLingoTVUi.isTV(activity)) {
-            val body=LinearLayout(activity).apply { orientation=LinearLayout.VERTICAL }
-            body.addView(TextView(activity).apply {
-                text=description; gravity = android.view.Gravity.CENTER; textSize = GameLingoVisualKit.sp(activity, 19f)
-                setTextColor(Color.WHITE); setLineSpacing(5f,1.18f)
-                background=GameLingoTVUi.panel(activity)
-                val padding=GameLingoTVUi.dp(activity,24)
-                setPadding(padding,padding,padding,padding)
-            },LinearLayout.LayoutParams(-1,-2))
-            GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title,body)
-            return
+        val(titleKey,descriptionKey)=info(topic)
+        val title=GameLingoLanguages.ui(activity,titleKey)
+        val description=GameLingoLanguages.ui(activity, descriptionKey)
+        val custom=guide(topic)
+        val steps=if(custom.isNotEmpty())custom.map{it.first to tr(activity,it.second)}
+            else description.split(". ").filter{it.isNotBlank()}.map{"info.circle" to it}
+        val body=column(activity)
+        var selected=0
+        val details=column(activity).apply{visibility=android.view.View.GONE}
+        val enlarged=android.widget.FrameLayout(activity)
+        val explanation=label(activity,"")
+        details.addView(enlarged,LinearLayout.LayoutParams(-1,d(activity,110)))
+        details.addView(explanation)
+        val nav=LinearLayout(activity)
+        val previous=GameLingoTVUi.action(activity,tr(activity,"Předchozí krok")){}
+        val next=GameLingoTVUi.action(activity,tr(activity,"Další krok")){}
+        nav.addView(previous,LinearLayout.LayoutParams(0,-2,1f));nav.addView(next,LinearLayout.LayoutParams(0,-2,1f))
+        details.addView(nav)
+        fun select(index:Int) {
+            if(index !in steps.indices)return
+            selected=index;details.visibility=android.view.View.VISIBLE;enlarged.removeAllViews()
+            enlarged.addView(picture(activity,topic,index,steps[index].first),android.widget.FrameLayout.LayoutParams(-1,-1))
+            explanation.text=steps[index].second
+            previous.isEnabled=index>0;next.isEnabled=index<steps.lastIndex
         }
-        val container = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(22, 24, 22, 24)
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor(NAVY))
-                cornerRadius = 24f
+        previous.setOnClickListener{select(selected-1)};next.setOnClickListener{select(selected+1)}
+        steps.forEachIndexed{i,step->
+            val row=LinearLayout(activity).apply {
+                gravity=Gravity.CENTER_VERTICAL;setPadding(0,d(activity,3),0,d(activity,3));isClickable=true;isFocusable=true
+                contentDescription=(i+1).toString()+". "+step.second
+                setOnClickListener{select(i)}
             }
+            row.addView(picture(activity,topic,i,step.first),LinearLayout.LayoutParams(d(activity,96),d(activity,62)))
+            row.addView(label(activity,(i+1).toString()+". "+step.second),LinearLayout.LayoutParams(0,-2,1f))
+            body.addView(row)
         }
-        container.addView(TextView(activity).apply {
-            text = title; gravity = android.view.Gravity.CENTER
-            textSize = GameLingoVisualKit.sp(activity, 23f)
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            setPadding(6, 0, 6, 14)
-        })
-        container.addView(TextView(activity).apply {
-            text = description; gravity = android.view.Gravity.CENTER
-            textSize = GameLingoVisualKit.sp(activity, 16f)
-            setTextColor(Color.parseColor("#D8E2F0"))
-            setLineSpacing(4f, 1.12f)
-            setPadding(6, 0, 6, 12)
-        })
-        val scroll = ScrollView(activity)
-        scroll.addView(container)
-        AlertDialog.Builder(activity)
-            .setView(scroll)
-            .setPositiveButton(GameLingoLanguages.ui(activity, "Hotovo"), null)
-            .show()
+        body.addView(details)
+        details.addView(GameLingoTVUi.action(activity,tr(activity,"Hotovo")){details.visibility=android.view.View.GONE})
+        if(custom.isNotEmpty())body.addView(label(activity,description,12f))
+        if(topic in listOf("camera","regions","glossary")) {
+            val practice=column(activity).apply{visibility=android.view.View.GONE}
+            body.addView(GameLingoTVUi.action(activity,tr(activity,"Vyzkoušet")){
+                practice.visibility=if(practice.visibility==android.view.View.VISIBLE)android.view.View.GONE else android.view.View.VISIBLE
+            })
+            practice.addView(label(activity,tr(activity,"Ukázka bez změny nastavení"),12f))
+            if(topic=="glossary") {
+                practice.addView(label(activity,tr(activity,"Příklad pravidla (angličtina → čeština)"),12f))
+                practice.addView(label(activity,"Save game | Zachránit hru | Uložit hru",12f))
+                val result=label(activity,"Zachránit hru")
+                practice.addView(android.widget.Switch(activity).apply{
+                    text=tr(activity,"Použít ukázkové pravidlo");setTextColor(Color.WHITE)
+                    setOnCheckedChangeListener{_,checked->result.text=if(checked)"Uložit hru" else "Zachránit hru"}
+                });practice.addView(result)
+            } else {
+                var position=25;var full=false
+                val demo=object:android.view.View(activity) {
+                    private val p=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+                    override fun onDraw(c:android.graphics.Canvas){
+                        val w=width.toFloat();val h=height.toFloat()
+                        p.color=Color.parseColor("#111A33");p.style=android.graphics.Paint.Style.FILL;c.drawRect(0f,0f,w,h,p)
+                        p.color=Color.WHITE;p.textAlign=android.graphics.Paint.Align.CENTER;p.textSize=d(activity,13).toFloat()
+                        c.drawText("Where are you going?",w/2,h*.60f,p)
+                        val y=h*(.10f+.65f*position/100f)
+                        if(!full){p.color=if(topic=="camera")Color.YELLOW else Color.BLUE;p.style=android.graphics.Paint.Style.STROKE;p.strokeWidth=d(activity,2).toFloat();c.drawRect(w*.08f,y-h*.10f,w*.92f,y+h*.10f,p)}
+                        if(full||kotlin.math.abs(y-h*.56f)<h*.09f){p.style=android.graphics.Paint.Style.FILL;p.color=Color.WHITE;c.drawText("Kam jdeš?",w/2,h*.90f,p)}
+                    }
+                }
+                practice.addView(demo,LinearLayout.LayoutParams(-1,d(activity,116)))
+                val seek=android.widget.SeekBar(activity).apply {
+                    max=100;progress=25;contentDescription=tr(activity,"Posuň oblast na původní titulek.")
+                    setOnSeekBarChangeListener(object:android.widget.SeekBar.OnSeekBarChangeListener{
+                        override fun onProgressChanged(s:android.widget.SeekBar?,value:Int,fromUser:Boolean){position=value;demo.invalidate()}
+                        override fun onStartTrackingTouch(s:android.widget.SeekBar?){}
+                        override fun onStopTrackingTouch(s:android.widget.SeekBar?){}
+                    })
+                }
+                practice.addView(seek)
+                if(topic=="camera")practice.addView(android.widget.Switch(activity).apply{
+                    text=tr(activity,"Celý obraz");setTextColor(Color.WHITE);setOnCheckedChangeListener{_,checked->full=checked;seek.isEnabled=!checked;demo.invalidate()}
+                })
+            }
+            body.addView(practice)
+        }
+        GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title,body)
+        // Hidden practice controls must also have focus styling when revealed.
+        GameLingoTVUi.applyMenuFocus(activity,body)
     }
 
     fun newsButton(activity: Activity): TextView = button(activity, news = true)
@@ -177,7 +258,7 @@ object GameLingoHelp {
         val body=column(a)
         val v=version(a)
         body.addView(label(a,"GameLingo "+v,18f))
-        val entries=if(v=="0.5.9") listOf("Hlášení problémů v diagnostice","Raketa v horní liště otevírá novinky.") else listOf("Přehled této verze je na GitHubu.")
+        val entries=if(v=="0.5.9") listOf("Obrázková a interaktivní nápověda","Hlášení problémů v diagnostice","Raketa v horní liště otevírá novinky.") else listOf("Přehled této verze je na GitHubu.")
         entries.forEach { body.addView(label(a,"✓  "+tr(a,it))) }
         body.addView(GameLingoTVUi.action(a,tr(a,"Historie vydání")) { open(a,"https://github.com/CaseyCZ/GameLingo/releases") })
         GameLingoTVUi.page(a,tr(a,"Co je nového"),body)
