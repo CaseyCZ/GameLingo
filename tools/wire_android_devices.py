@@ -124,13 +124,13 @@ def main():
             '''            obsah.addView(volby, odsazeni(bottom = 5))''',
             '''            obsah.addView(volby, odsazeni(bottom = 5))
             // The two actions are aligned with the two source cards, not one full-width button.
-            val stahnoutMobil = GameLingoTVUi.action(this, "Stáhnout aplikaci") {
+            val stahnoutMobil = GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Stáhnout aplikaci")) {
                 GameLingoMobileDownloads.show(this)
             }.apply {
                 id = View.generateViewId()
                 setCompoundDrawablesWithIntrinsicBounds(GameLingoVisualKit.iconDrawable("download",Color.WHITE,dp(23)),null,null,null)
             }
-            val spravaZarizeni = GameLingoTVUi.action(this, "Spravovat zařízení") {
+            val spravaZarizeni = GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Zařízení")) {
                 '''+manager()+'''
             }.apply {
                 id = View.generateViewId()

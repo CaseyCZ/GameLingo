@@ -108,7 +108,8 @@ struct GLGuideContent: View {
         if t.contains("oblast") || t.contains("rozložení") { return "regions" }
         if t.contains("xbox") || t.contains("playstation") { return "console" }
         if t.contains("párov") || t.contains("google tv") || t == "gamelingo tv" { return "pairing" }
-        if t == "gamelingo" { return "home" }
+        if t == "gamelingo" || t == "vybrat zařízení" { return "home" }
+        if t == "výstup titulků" { return "pairing" }
         return "other"
     }
     private var steps: [(String,String)] {

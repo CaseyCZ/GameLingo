@@ -410,6 +410,22 @@ class ReleaseLocalizationTests(unittest.TestCase):
             for key in ("Co je nového", "Nahlásit problém", "Ukázka bez změny nastavení", "Další krok"):
                 self.assertTrue(data[key])
 
+    def test_picker_help_and_tv_actions_use_current_interface(self):
+        home = text(IOS / "GameLingoHome.swift")
+        style = text(IOS / "GameLingoStyle.swift")
+        guide = text(IOS / "GameLingoSupport.swift")
+        help_ui = text(TOOLS / "GameLingoHelp.kt")
+        wire = text(TOOLS / "wire_android_devices.py")
+        selector = text(TOOLS / "GameLingoTVUi.kt").split("fun select(a: Activity", 1)[1].split("fun header(", 1)[0]
+        self.assertIn("GLBackButton { sourcePicker = false; outputPicker = false }", home)
+        self.assertIn('GLInterfaceText.localized("Nápověda: ") + GLInterfaceText.localized(title)', style)
+        self.assertIn('t == "výstup titulků"', guide)
+        self.assertIn("val dialogWidth = if (isTV(a))", selector)
+        self.assertIn('GameLingoLanguages.ui(this, "Stáhnout aplikaci")', wire)
+        self.assertIn('GameLingoLanguages.ui(this, "Zařízení")', wire)
+        self.assertNotIn("PlayCaption", help_ui)
+        self.assertIn("abs(y-h*.60f)", help_ui)
+
     def test_dynamic_status_templates_exist_in_every_locale(self):
         shared = ROOT / "shared" / "locales"
         manifest = json.loads(text(shared / "manifest.json"))

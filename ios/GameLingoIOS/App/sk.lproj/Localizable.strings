@@ -2,7 +2,7 @@
 "%@ · automatické obnovení vyčerpáno" = "%@ · pokusy o automatické obnovenie vyčerpané";
 "1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat." = "1. Na TV otvor Preklad z telefónu. 2. Naskenuj QR alebo opíš 32 znakov kódu. 3. Vyber Spárovať.";
 "1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš šestimístný kód. 3. Zvol Spárovat." = "1. Na TV otvor Preklad z telefónu. 2. Naskenuj QR alebo opíš šesťmiestny kód. 3. Vyber Spárovať.";
-"1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Načti QR nebo opiš celý kód z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Pokud používáš starý přijímač PlayCaption, zavři jej. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru." = "1. Otvor GameLingo na telefóne.\n2. Zvoľ Google TV a vyber tento televízor.\n3. Naskenuj QR alebo opíš celý kód z obrazovky.\n\nTelefón a TV musia byť v rovnakej sieti. Ak používaš starý prijímač PlayCaption, zatvor ho. Prijímač môže zobraziť titulky cez HDMI obraz iba na podporovanom televízore.";
+"1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Načti QR nebo opiš celý kód z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru." = "1. Otvor GameLingo na telefóne.\n2. Zvoľ Google TV a vyber tento televízor.\n3. Naskenuj QR alebo opíš celý kód z obrazovky.\n\nTelefón a TV musia byť v rovnakej sieti. Prijímač môže zobraziť titulky cez HDMI obraz iba na podporovanom televízore.";
 "6místný kód z TV" = "Šesťmiestny kód z TV";
 "8místný PIN z PlayStation" = "Osemmiestny PIN z PlayStation";
 "APK není čitelná." = "APK nie je čitateľná.";
@@ -394,7 +394,7 @@
 "OCR herních textů" = "OCR herných textov";
 "OCR obrazovky: pouze MediaProjection" = "OCR obrazovky: iba MediaProjection";
 "OCR titulků" = "OCR titulkov";
-"OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit. Výchozí nastavení vychází z ověřeného základu PlayCaption." = "OCR číta dialógy vo zvolenom zdrojovom jazyku. Samostatne možno zapnúť dialógy, herné texty a voľby. Pred zmenou rýchlosti alebo oblastí odporúčame zastaviť preklad. Predvolené nastavenia vychádzajú z overeného základu PlayCaption.";
+"OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit." = "OCR číta dialógy vo zvolenom zdrojovom jazyku. Samostatne možno zapnúť dialógy, herné texty a voľby. Pred zmenou rýchlosti alebo oblastí odporúčame zastaviť preklad.";
 "OCR, překlad, oblasti a vzhled titulků" = "OCR, preklad, oblasti a vzhľad titulkov";
 "OCR: automaticky" = "OCR: automaticky";
 "OK" = "OK";

@@ -44,11 +44,11 @@ object GameLingoHelp {
         "glossary" -> "Herní slovník" to
             "Slovník opravuje vlastní výrazy a jména pro zvolenou jazykovou dvojici. Před úpravou zastav překlad."
         "tv" -> "GameLingo TV" to
-            "1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Načti QR nebo opiš celý kód z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Pokud používáš starý přijímač PlayCaption, zavři jej. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru."
+            "1. Otevři GameLingo na telefonu.\n2. Zvol Google TV a vyber tuto televizi.\n3. Načti QR nebo opiš celý kód z obrazovky.\n\nTelefon a TV musí být ve stejné síti. Přijímač může zobrazit titulky přes HDMI obraz jen na podporovaném televizoru."
         "regions" -> "Oblasti" to
             "Modrá oblast čte původní titulky. Zelená určuje místo přeložených dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů."
         "translation" -> "Překlad" to
-            "OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit. Výchozí nastavení vychází z ověřeného základu PlayCaption."
+            "OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit."
         "profiles" -> "Profily her" to
             "Profil ukládá aktuální OCR oblasti, volby a nastavení překladu pro konkrétní hru, film nebo aplikaci. Údaje o účtech Sony a Microsoft se do profilů neukládají."
         "console" -> "Xbox a PlayStation" to
@@ -218,7 +218,7 @@ object GameLingoHelp {
                         c.drawText("Where are you going?",w/2,h*.60f,p)
                         val y=h*(.10f+.65f*position/100f)
                         if(!full){p.color=if(topic=="camera")Color.YELLOW else Color.BLUE;p.style=android.graphics.Paint.Style.STROKE;p.strokeWidth=d(activity,2).toFloat();c.drawRect(w*.08f,y-h*.10f,w*.92f,y+h*.10f,p)}
-                        if(full||kotlin.math.abs(y-h*.56f)<h*.09f){p.style=android.graphics.Paint.Style.FILL;p.color=Color.WHITE;c.drawText("Kam jdeš?",w/2,h*.90f,p)}
+                        if(full||kotlin.math.abs(y-h*.60f)<h*.09f){p.style=android.graphics.Paint.Style.FILL;p.color=Color.WHITE;c.drawText("Kam jdeš?",w/2,h*.90f,p)}
                     }
                 }
                 practice.addView(demo,LinearLayout.LayoutParams(-1,d(activity,116)))
