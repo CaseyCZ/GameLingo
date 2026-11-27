@@ -90,7 +90,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for key in ("GLCameraPalette(cg)", "previous.text +", "previous.rect.union(rect)",
                     "overlay.ink.map { GLCameraPalette.color($0) } ?? GLCameraPalette.foreground(overlay.background)",
                     "GLCameraPalette.color(overlay.background)",
-                    ".rotationEffect(.radians(overlay.angle))",
+                    ".rotationEffect(.radians(projection == nil ? overlay.angle : 0))",
                     "self.overlayCache[$0.text] == nil",
                     "wholeImage ? 0.35 : 0.45",
                     "preview.aspectRatio(fullImage ? 9.0 / 16.0 : 0.9"):
