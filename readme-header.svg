@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="title desc">
+  <title id="title">GameLingo by CaseyCZ</title>
+  <desc id="desc">GameLingo logo: a game controller inside a cyan and violet speech bubble.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#07101f"/><stop offset="1" stop-color="#17102b"/></linearGradient>
+    <linearGradient id="accent"><stop stop-color="#00c2f9"/><stop offset="1" stop-color="#b149fe"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#38bdf8" stop-opacity=".18"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect x="1" y="1" width="1198" height="328" rx="27" fill="url(#bg)" stroke="#34425f" stroke-width="2"/>
+  <ellipse cx="180" cy="165" rx="305" ry="155" fill="url(#glow)"/>
+  <path d="M45 304H1155" stroke="url(#accent)" stroke-width="2" opacity=".8"/>
+  <g transform="translate(65 35) scale(.25)" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="140" y="180" width="742" height="620" rx="180" fill="none" stroke="url(#accent)" stroke-width="38"/>
+    <path d="M274 783L229 906 394 788" fill="none" stroke="url(#accent)" stroke-width="38"/>
+    <rect x="265" y="405" width="490" height="245" rx="115" fill="none" stroke="#f8fafc" stroke-width="33"/>
+    <path d="M370 467V550M329 508H412" stroke="#38bdf8" stroke-width="33"/>
+    <circle cx="596.5" cy="487.5" r="29.5" fill="#9f59f6"/>
+    <circle cx="675.5" cy="545.5" r="29.5" fill="#9f59f6"/>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="345" y="77" fill="#8db2ce" font-size="18" font-weight="bold" letter-spacing="5">CASEYCZ</text>
+    <text x="340" y="179" font-size="96" font-weight="bold" letter-spacing="-4" fill="#f8fafc">Game<tspan fill="#a360fa">Lingo</tspan></text>
+    <text x="346" y="229" fill="#c6d9ed" font-size="28">Play. Understand. Enjoy the story.</text>
+    <text x="346" y="270" fill="#38bdf8" font-size="17" letter-spacing="1.5">iOS  •  ANDROID  •  GOOGLE TV</text>
+  </g>
+</svg>
