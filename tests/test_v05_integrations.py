@@ -475,6 +475,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('menu("globe", "Jazyky"', phone)
         self.assertIn('tile("globe", "Jazyky"', tv)
 
+    def test_cache_controls_guard_direct_tv_capture_and_close_disabled_database(self):
+        cache = code(TOOLS/"GameLingoTranslationCache.kt")
+        self.assertIn("private fun busy() = GameLingoLanguages.translationSettingsBusy()", cache)
+        self.assertIn("if (GameLingoTranslationCache.isChanging()) return", cache)
+        self.assertIn('GameLingoLanguages.ui(a, "Vymazat uložené překlady")', cache)
+        self.assertIn('GameLingoLanguages.ui(a, "Překladová cache")', cache)
+        self.assertIn("if (!enable) {\n                            store?.close()\n                            store = null", cache)
+        self.assertIn("Cache vypnuta; uložené překlady lze vymazat zvlášť.", cache)
+        self.assertIn("epoch.incrementAndGet()", cache)
+
     def test_localized_tv_welcome_qr_and_cache(self):
         ui = code(TOOLS/"GameLingoTVUi.kt")
         qr = code(TOOLS/"GameLingoQRDisplay.kt")
