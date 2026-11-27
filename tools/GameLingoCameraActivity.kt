@@ -103,6 +103,8 @@ class GameLingoCameraActivity : ComponentActivity() {
     private var lastTranslated = ""
     private var translatedText = ""
     private var translatedLines = emptyList<String>()
+    private val overlayCache = LinkedHashMap<String, String>()
+    private var overlaySource: String? = null
     private var currentBlocks = emptyList<CameraBlock>()
     private var overlayEnabled = true
     private var tvTarget: TvProfil? = null
@@ -492,12 +494,16 @@ class GameLingoCameraActivity : ComponentActivity() {
     }
 
     private fun updateOverlays() {
-        val overlay = region.full && overlayEnabled && candidate == lastTranslated && translatedLines.size == currentBlocks.size &&
-            translatedLines.isNotEmpty()
-        preview.overlays = if (overlay) currentBlocks.zip(translatedLines).map { (block, text) ->
-            CameraOverlay(text, block.rect)
+        preview.overlays = if (region.full && overlayEnabled) currentBlocks.mapNotNull { block ->
+            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect) }
         } else emptyList()
         preview.invalidate()
+    }
+
+    private fun rememberOverlay(original: String, translated: String) {
+        if (translated.isBlank()) return
+        if (overlayCache.size >= 256 && original !in overlayCache) overlayCache.clear()
+        overlayCache[original] = translated
     }
 
     private fun receive(blocks: List<CameraBlock>) {
@@ -505,6 +511,7 @@ class GameLingoCameraActivity : ComponentActivity() {
         currentBlocks = blocks
         candidate = text
         if (text.isBlank()) {
+            updateOverlays()
             emptyFrames++
             if (emptyFrames >= 2 && (translatedText.isNotEmpty() || translating)) {
                 resetTranslation(); translator?.zavri(); translator = null
@@ -540,6 +547,10 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun translateRecognized(text: String, blocks: List<CameraBlock>, from: String, token: Int, current: Int) {
         val to = target
+        if (overlaySource != from) {
+            overlayCache.clear(); overlaySource = from
+            updateOverlays()
+        }
         if (translatorSource != from) {
             translator?.zavri(); translator = null
             translatorSource = from
@@ -553,6 +564,9 @@ class GameLingoCameraActivity : ComponentActivity() {
             lastTranslated = text
             translatedText = result
             translatedLines = lines
+            if (region.full && overlayEnabled && lines.size == blocks.size) {
+                blocks.zip(lines).forEach { (block, line) -> rememberOverlay(block.text, line) }
+            }
             if (output.text.toString() != result) output.text = result
             updateOverlays()
             publishTV(force = true)
@@ -576,11 +590,19 @@ class GameLingoCameraActivity : ComponentActivity() {
                     if (!matchesCurrent(text)) { translating = false; return }
                     if (index == blocks.size) { finishResult(result, mapped.toList()); return }
                     val original = blocks[index].text
+                    val cached = overlayCache[original]
+                    if (cached != null) {
+                        mapped.add(cached)
+                        next(index + 1)
+                        return
+                    }
                     engine.preloz(original, { item ->
                         if (!valid()) return@preloz
                         if (item.isBlank()) finishResult(result, emptyList())
                         else {
                             mapped.add(item)
+                            rememberOverlay(original, item)
+                            updateOverlays()
                             next(index + 1)
                         }
                     }, { finishResult(result, emptyList()) })
@@ -605,6 +627,7 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun resetTranslation(keepText: Boolean = false) {
         configRevision++
+        overlayCache.clear(); overlaySource = null
         candidate = ""; emptyFrames = 0; lastTranslated = ""; translating = false; retryAt = 0L
         if (!keepText) {
             translatedText = ""; translatedLines = emptyList(); currentBlocks = emptyList()
