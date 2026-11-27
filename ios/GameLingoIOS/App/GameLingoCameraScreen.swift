@@ -13,6 +13,57 @@ private struct GLCameraSurface: Sendable {
     let horizontal: Bool
 }
 
+// Four corners are ordered clockwise from the upper left in image coordinates.
+// The renderer maps a flat text rectangle back to the observed quadrilateral.
+private struct GLCameraQuad: Sendable {
+    let points: [CGPoint]
+
+    func projection(size: CGSize, rect: CGRect) -> ProjectionTransform? {
+        guard points.count == 4, size.width > 0, size.height > 0,
+              rect.width > 0, rect.height > 0 else { return nil }
+        let p = points.map { CGPoint(x: ($0.x - rect.minX) / rect.width * size.width,
+                                     y: ($0.y - rect.minY) / rect.height * size.height) }
+        guard p.allSatisfy({ $0.x.isFinite && $0.y.isFinite }) else { return nil }
+        for i in 0..<4 {
+            let a = p[i], b = p[(i + 1) % 4], c = p[(i + 2) % 4]
+            let cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)
+            guard cross > 0.001 else { return nil }
+        }
+        let dx1 = p[1].x - p[2].x, dx2 = p[3].x - p[2].x
+        let dy1 = p[1].y - p[2].y, dy2 = p[3].y - p[2].y
+        let dx3 = p[0].x - p[1].x + p[2].x - p[3].x
+        let dy3 = p[0].y - p[1].y + p[2].y - p[3].y
+        let det = dx1 * dy2 - dx2 * dy1
+        guard abs(det) > 0.001 else { return nil }
+        let g = (dx3 * dy2 - dx2 * dy3) / det
+        let h = (dx1 * dy3 - dx3 * dy1) / det
+        guard [1 + g, 1 + h, 1 + g + h].allSatisfy({ $0 > 0.2 && $0 < 5 }) else { return nil }
+        var t = CATransform3DIdentity
+        t.m11 = (p[1].x - p[0].x + g * p[1].x) / size.width
+        t.m12 = (p[1].y - p[0].y + g * p[1].y) / size.width
+        t.m14 = g / size.width
+        t.m21 = (p[3].x - p[0].x + h * p[3].x) / size.height
+        t.m22 = (p[3].y - p[0].y + h * p[3].y) / size.height
+        t.m24 = h / size.height
+        t.m41 = p[0].x; t.m42 = p[0].y
+        return ProjectionTransform(t)
+    }
+}
+
+private struct GLCameraTexture: Sendable {
+    let width: Int
+    let height: Int
+    let bytes: [UInt8]
+
+    func image() -> CGImage? {
+        guard let provider = CGDataProvider(data: Data(bytes) as CFData) else { return nil }
+        return CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32,
+                       bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                       bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue),
+                       provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+    }
+}
+
 private struct GLCameraBlock: Sendable {
     let text: String
     let rect: CGRect // upright image coordinates, origin at top left
@@ -21,6 +72,9 @@ private struct GLCameraBlock: Sendable {
     var ink: UInt32? = nil
     var lineCount: Int = 1
     var surface: GLCameraSurface? = nil
+    var quad: GLCameraQuad? = nil
+    var weight: Int = 0
+    var texture: GLCameraTexture? = nil
 }
 
 private struct GLCameraOverlay: Identifiable {
@@ -32,6 +86,9 @@ private struct GLCameraOverlay: Identifiable {
     let ink: UInt32?
     let lineCount: Int
     let surface: GLCameraSurface?
+    let quad: GLCameraQuad?
+    let weight: Int
+    let texture: GLCameraTexture?
 }
 
 // Sample the background near the text box edges, not the glyph centers.
@@ -130,6 +187,75 @@ private struct GLCameraPalette {
         }
         return candidate(top, bottom, left, right, horizontal: false) ??
                candidate(left, right, top, bottom, horizontal: true)
+    }
+
+    // Estimate stroke thickness and remove only pixels close to a reliable ink
+    // color. Keep the other sampled texture pixels intact. Reject dense masks,
+    // weak evidence and holes without local donors; use the existing fill then.
+    func textureAndWeight(for rect: CGRect, ink: UInt32?, lineCount: Int,
+                          restore: Bool) -> (GLCameraTexture?, Int) {
+        let n = Self.size
+        guard let ink, rect.minX >= 0, rect.minY >= 0, rect.maxX <= 1, rect.maxY <= 1 else { return (nil, 0) }
+        let x0 = Int(rect.minX * CGFloat(n)), y0 = Int(rect.minY * CGFloat(n))
+        let w = min(96, Int(rect.width * CGFloat(n))), h = min(48, Int(rect.height * CGFloat(n)))
+        guard w >= 24, h >= 10, h / max(1, lineCount) >= 8 else { return (nil, 0) }
+        var source = [UInt32](repeating: 0, count: w * h)
+        func distance(_ a: UInt32, _ b: UInt32) -> Int {
+            max(abs(Int((a >> 16) & 255) - Int((b >> 16) & 255)),
+                max(abs(Int((a >> 8) & 255) - Int((b >> 8) & 255)), abs(Int(a & 255) - Int(b & 255))))
+        }
+        for y in 0..<h { for x in 0..<w {
+            let px = min(n - 1, x0 + Int((CGFloat(x) + 0.5) * rect.width * CGFloat(n) / CGFloat(w)))
+            let py = min(n - 1, y0 + Int((CGFloat(y) + 0.5) * rect.height * CGFloat(n) / CGFloat(h)))
+            let i = (py * n + px) * 4
+            source[y*w+x] = UInt32(pixels[i]) * 65536 + UInt32(pixels[i+1]) * 256 + UInt32(pixels[i+2])
+        } }
+        let inkMask = source.map { distance($0, ink) <= 38 }
+        let count = inkMask.filter { $0 }.count
+        guard count >= max(8, w*h/25), count <= w*h*45/100 else { return (nil, 0) }
+        var thickness: [Int] = []
+        for y in 1..<(h-1) { for x in 1..<(w-1) where inkMask[y*w+x] {
+            var l = x, r = x, t = y, b = y
+            while l > 0 && inkMask[y*w+l-1] { l -= 1 }
+            while r+1 < w && inkMask[y*w+r+1] { r += 1 }
+            while t > 0 && inkMask[(t-1)*w+x] { t -= 1 }
+            while b+1 < h && inkMask[(b+1)*w+x] { b += 1 }
+            thickness.append(min(r-l+1, b-t+1))
+        } }
+        thickness.sort()
+        let ratio = Double(thickness.isEmpty ? 1 : thickness[thickness.count/2]) / Double(h) * Double(max(1,lineCount))
+        let weight = ratio >= 0.22 ? 2 : (ratio >= 0.14 ? 1 : 0)
+        guard restore else { return (nil, weight) }
+        var mask = inkMask
+        for y in 0..<h { for x in 0..<w where inkMask[y*w+x] {
+            for dy in -1...1 { for dx in -1...1 {
+                let xx=x+dx, yy=y+dy
+                if xx>=0 && xx<w && yy>=0 && yy<h { mask[yy*w+xx]=true }
+            } }
+        } }
+        guard mask.filter({$0}).count <= w*h*65/100 else { return (nil,weight) }
+        // Only use texture restoration if donors actually vary.
+        let donors = source.indices.filter { !mask[$0] }.map { source[$0] }
+        guard let first=donors.first, donors.filter({distance($0,first)>24}).count >= donors.count/5 else { return (nil,weight) }
+        var output=source
+        for y in 0..<h { for x in 0..<w where mask[y*w+x] {
+            var found: UInt32?
+            for radius in 1...8 {
+                let candidates = [(x,y-radius),(x,y+radius),(x-radius,y),(x+radius,y)]
+                for (xx,yy) in candidates where xx>=0 && xx<w && yy>=0 && yy<h && !mask[yy*w+xx] {
+                    found=source[yy*w+xx]; break
+                }
+                if found != nil { break }
+            }
+            guard let found else { return (nil,weight) }
+            output[y*w+x]=found
+        } }
+        var bytes=[UInt8](); bytes.reserveCapacity(w*h*4)
+        for rgb in output {
+            bytes.append(UInt8((rgb>>16)&255)); bytes.append(UInt8((rgb>>8)&255))
+            bytes.append(UInt8(rgb&255)); bytes.append(255)
+        }
+        return (GLCameraTexture(width:w,height:h,bytes:bytes),weight)
     }
 
     static func similar(_ a: UInt32, _ b: UInt32) -> Bool {
@@ -416,7 +542,17 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                         blocks.removeLast()
                     }
                 }
-                if wholeImage && block.lineCount == 1 && abs(angle) >= 0.12 {
+                if wholeImage && block.lineCount == 1 {
+                    // Vision already returns skewed line corners. Keep the physical
+                    // bounding box and project the flat translation to those corners.
+                    let points = [observation.topLeft, observation.topRight, observation.bottomRight, observation.bottomLeft]
+                        .map { CGPoint(x: $0.x, y: 1 - $0.y) }
+                    if points.allSatisfy({ $0.x >= 0 && $0.x <= 1 && $0.y >= 0 && $0.y <= 1 }) {
+                        block.quad = GLCameraQuad(points: points)
+                        block.angle = 0
+                    }
+                }
+                if wholeImage && block.quad == nil && block.lineCount == 1 && abs(angle) >= 0.12 {
                     let width = hypot(Double(observation.topRight.x - observation.topLeft.x) * Double(cg.width),
                                       Double(observation.topRight.y - observation.topLeft.y) * Double(cg.height)) / Double(cg.width)
                     let height = hypot(Double(observation.bottomLeft.x - observation.topLeft.x) * Double(cg.width),
@@ -430,11 +566,17 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 blocks.append(block)
             }
             if wholeImage, let palette {
-                for index in blocks.indices where abs(blocks[index].angle) < 0.06 {
+                for index in blocks.indices {
                     let block = blocks[index]
-                    // A merged paragraph is sampled using its final bounds.
-                    blocks[index].surface = palette.reconstructedSurface(for: block.rect,
-                        background: block.background, ink: block.ink)
+                    let horizontal = abs(block.angle) < 0.06 && (block.quad.map { abs($0.points[1].y - $0.points[0].y) < 0.003 && abs($0.points[3].x - $0.points[0].x) < 0.003 } ?? true)
+                    if horizontal {
+                        blocks[index].surface = palette.reconstructedSurface(for: block.rect,
+                            background: block.background, ink: block.ink)
+                    }
+                    let appearance = palette.textureAndWeight(for: block.rect, ink: block.ink,
+                        lineCount: block.lineCount, restore: horizontal && blocks[index].surface == nil)
+                    blocks[index].texture = appearance.0
+                    blocks[index].weight = appearance.1
                 }
             }
             let signature = blocks.map(\.text).joined(separator: "\n")
@@ -550,7 +692,8 @@ private final class GLCameraState: ObservableObject {
         overlays = currentBlocks.enumerated().compactMap { index, block in
             guard let text = overlayCache[block.text], !text.isEmpty else { return nil }
             return GLCameraOverlay(id: index, rect: block.rect, text: text, angle: block.angle,
-                                   background: block.background, ink: block.ink, lineCount: block.lineCount, surface: block.surface)
+                                   background: block.background, ink: block.ink, lineCount: block.lineCount, surface: block.surface,
+                                   quad: block.quad, weight: block.weight, texture: block.texture)
         }
     }
 
@@ -1030,8 +1173,12 @@ struct GameLingoCameraScreen: View {
                 }
                 if fullImage && overlayEnabled {
                     ForEach(state.overlays) { overlay in
+                        let boxSize = CGSize(width: max(1, proxy.size.width * overlay.rect.width),
+                                             height: max(1, proxy.size.height * overlay.rect.height))
+                        let projection = overlay.quad?.projection(size: boxSize, rect: overlay.rect)
                         Text(overlay.text)
-                            .font(.system(size: max(1, proxy.size.height * overlay.rect.height / CGFloat(overlay.lineCount) * 0.83)))
+                            .font(.system(size: max(1, boxSize.height / CGFloat(overlay.lineCount) * 0.83),
+                                          weight: overlay.weight == 2 ? .bold : (overlay.weight == 1 ? .semibold : .regular)))
                             .foregroundStyle(overlay.ink.map { GLCameraPalette.color($0) } ?? GLCameraPalette.foreground(overlay.background))
                             .minimumScaleFactor(0.18)
                             .lineLimit(max(1, overlay.lineCount + 1))
@@ -1039,7 +1186,9 @@ struct GameLingoCameraScreen: View {
                             .frame(width: max(1, proxy.size.width * overlay.rect.width),
                                    height: max(1, proxy.size.height * overlay.rect.height), alignment: .leading)
                             .background {
-                                if let surface = overlay.surface {
+                                if let texture = overlay.texture, let image = texture.image() {
+                                    Image(decorative: image, scale: 1).resizable().interpolation(.medium)
+                                } else if let surface = overlay.surface {
                                     LinearGradient(colors: [GLCameraPalette.color(surface.start), GLCameraPalette.color(surface.end)],
                                                    startPoint: surface.horizontal ? .leading : .top,
                                                    endPoint: surface.horizontal ? .trailing : .bottom)
@@ -1048,7 +1197,8 @@ struct GameLingoCameraScreen: View {
                                 }
                             }
                             .clipped()
-                            .rotationEffect(.radians(overlay.angle))
+                            .rotationEffect(.radians(projection == nil ? overlay.angle : 0))
+                            .projectionEffect(projection ?? ProjectionTransform(CGAffineTransform.identity))
                             .position(x: proxy.size.width * overlay.rect.midX,
                                       y: proxy.size.height * overlay.rect.midY)
                     }
