@@ -484,6 +484,9 @@ class GameLingoCameraActivity : ComponentActivity() {
                 livePreview.visibility = View.VISIBLE
                 previewStatus.visibility = if (preview.bitmap == null) View.VISIBLE else View.GONE
                 camera = p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, live, use)
+                // Restore continuous AF (when supported) and automatic metering;
+                // never lock the focus distance for live OCR.
+                camera?.cameraControl?.cancelFocusAndMetering()
                 if (!TvProfily(this).pouzeTelefon) enableTV()
                 camera?.let { c ->
                     c.cameraInfo.torchState.observe(this) { value ->
