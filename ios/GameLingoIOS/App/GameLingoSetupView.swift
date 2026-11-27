@@ -14,10 +14,11 @@ struct GameLingoSetupView: View {
     @State private var showPlayStation = false
 
     let onFinished: () -> Void
-    var onCameraSelected: () -> Void = {}
+    var onSourceSelected: (Bool) -> Void = { _ in }
+    @AppStorage("gamelingo.cameraSourceSelected") private var storedCameraSource = false
 
     private var consoleRegistered: Bool {
-        guard let selected = devices.chosenConsole else { return false }
+        guard let selected = devices.chosenConsole, selected.family == chosenFamily else { return false }
         if selected.family == .xbox {
             return devices.activeXbox(from: model.xbox) != nil
         }
@@ -40,7 +41,7 @@ struct GameLingoSetupView: View {
         // connected. The dashboard still checks Xbox/PS and TV readiness.
         devices.completedSetup = true
         onFinished()
-        if cameraSelected { onCameraSelected() }
+        onSourceSelected(cameraSelected)
         dismiss()
     }
 
@@ -89,7 +90,8 @@ struct GameLingoSetupView: View {
         }
         .onAppear {
             devices.refreshXbox(model.xbox.consoles)
-            if let family = devices.chosenConsole?.family { chosenFamily = family }
+            cameraSelected = storedCameraSource
+            if !cameraSelected, let family = devices.chosenConsole?.family { chosenFamily = family }
         }
         .onReceive(model.xbox.$consoles) { list in
             devices.refreshXbox(list)
@@ -134,7 +136,7 @@ struct GameLingoSetupView: View {
                     HStack(spacing: 17) {
                         GLPlatformBadge(family: .xbox, size: 60)
                         GLPlatformBadge(family: .playStation, size: 60)
-                        GLPlatformBadge(family: nil, isTelevision: true, size: 60)
+                        GLPlatformBadge(family: nil, size: 60, isCamera: true)
                     }
                     .padding(.vertical, 11)
                 }
@@ -163,6 +165,7 @@ struct GameLingoSetupView: View {
 
     private var consoleStep: some View {
         VStack(spacing: 13) {
+            Text("Vybrat zdroj").font(.headline)
             ForEach(GLConsoleFamily.allCases) { family in
                 Button {
                     cameraSelected = false
@@ -199,11 +202,34 @@ struct GameLingoSetupView: View {
                 }
                 .buttonStyle(.plain)
             }
-            GLPrimaryButton(title: "Překlad kamerou", systemImage: cameraSelected ? "checkmark.circle.fill" : "camera.fill") {
+            Button {
                 cameraSelected = true
                 chosenFamily = nil
-                devices.subtitleOutput = .phone
+            } label: {
+                HStack(spacing: 14) {
+                    GLPlatformBadge(family: nil, size: 57, isCamera: true)
+                    VStack(alignment: .center, spacing: 3) {
+                        Text("Kamera")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text("Překlad textů").font(.caption).foregroundStyle(GLNeon.mist)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    Image(systemName: cameraSelected ? "checkmark.circle.fill" : "chevron.right")
+                        .foregroundStyle(cameraSelected ? GLStyle.green : GLStyle.muted)
+                        .frame(width: 57, alignment: .trailing)
+                }
+                .padding(14)
+                .background(LinearGradient(
+                    colors: [GLNeon.panel, GLNeon.purple.opacity(0.15)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: RoundedRectangle(cornerRadius: 19))
+                .overlay(RoundedRectangle(cornerRadius: 19)
+                    .strokeBorder(cameraSelected ? GLNeon.cyan : GLNeon.purple.opacity(0.45), lineWidth: 1.5))
             }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(cameraSelected ? .isSelected : [])
             if !devices.consoles.isEmpty {
                 GLCard {
                     GLHeader(title: "Moje konzole", help:
@@ -265,6 +291,7 @@ struct GameLingoSetupView: View {
 
     private var outputStep: some View {
         VStack(spacing: 13) {
+            Text("Výstup titulků").font(.headline)
             ForEach(GLSubtitleOutput.allCases) { output in
                 Button {
                     devices.subtitleOutput = output

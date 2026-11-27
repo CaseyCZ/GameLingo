@@ -4,6 +4,7 @@ import SwiftUI
 struct GameLingoDevicesPanel: View {
     @EnvironmentObject var model: CaptionAppModel
     @ObservedObject var devices: GameLingoDevices
+    @AppStorage("gamelingo.cameraSourceSelected") private var cameraSource = false
 
     let addXbox: () -> Void
     let addPlayStation: () -> Void
@@ -49,27 +50,27 @@ struct GameLingoDevicesPanel: View {
                 emptyRow("Žádná konzole", icon: "gamecontroller")
             }
             ForEach(devices.consoles) { console in
-                GLNeonPanel(emphasized: devices.preferredConsoleID == console.id) {
+                GLNeonPanel(emphasized: (!cameraSource && devices.preferredConsoleID == console.id)) {
                     HStack(spacing: 12) {
                         GLPlatformBadge(family: console.family, size: 54)
                         VStack(alignment: .center, spacing: 4) {
                             Text(console.name).font(.headline)
-                            Text(devices.preferredConsoleID == console.id
+                            Text((!cameraSource && devices.preferredConsoleID == console.id)
                                  ? GLInterfaceText.localized("Vybraná konzole") : console.family.rawValue)
                                 .font(.caption)
-                                .foregroundStyle(devices.preferredConsoleID == console.id
+                                .foregroundStyle((!cameraSource && devices.preferredConsoleID == console.id)
                                                  ? GLStyle.green : GLNeon.mist)
                         }
                         .frame(maxWidth: .infinity)
                         .multilineTextAlignment(.center)
                         HStack(spacing: 3) {
-                            if devices.preferredConsoleID == console.id {
+                            if (!cameraSource && devices.preferredConsoleID == console.id) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundStyle(GLStyle.green)
                             }
                             Menu {
                                 Button("Použít", systemImage: "checkmark.circle") {
-                                    if !model.isRunning { devices.selectConsole(console.id) }
+                                    if !model.isRunning { devices.selectConsole(console.id); cameraSource = false }
                                 }
                                 .disabled(model.isRunning)
                                 Button("Přejmenovat", systemImage: "pencil") {
@@ -92,7 +93,7 @@ struct GameLingoDevicesPanel: View {
                     .contentShape(Rectangle())
                     .padding(13)
                     .onTapGesture {
-                        if !model.isRunning { devices.selectConsole(console.id) }
+                        if !model.isRunning { devices.selectConsole(console.id); cameraSource = false }
                     }
                 }
             }

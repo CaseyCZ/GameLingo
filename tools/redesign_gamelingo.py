@@ -74,22 +74,22 @@ def redesign_mobile(s: str) -> str:
                 else -> "GameLingo"
             }
             val primaryName = when (primaryFamily) {
-                "Camera" -> GameLingoLanguages.ui(this, "Překlad kamerou")
+                "Camera" -> GameLingoLanguages.ui(this, "Kamera")
                 "Xbox" -> "Xbox"
                 "PlayStation" -> psSelected?.name ?: "PlayStation"
-                else -> GameLingoLanguages.ui(this, "Vybrat konzoli")
+                else -> GameLingoLanguages.ui(this, "Vybrat zdroj")
             }
             obsah.addView(GameLingoVisualKit.deviceCard(
                 this, primaryFamily, primaryName,
                 if (cameraSource) GameLingoLanguages.ui(this, "Připraveno ke spuštění")
                 else if (liveImage) GameLingoLanguages.ui(this, "Snímání aktivní")
                 else if (nejakaKonzole) GameLingoLanguages.ui(this, "Nastaveno · spojení ověřím při spuštění")
-                else GameLingoLanguages.ui(this, "Přidat Xbox nebo PlayStation"),
+                else GameLingoLanguages.ui(this, "Vybrat zdroj"),
                 liveImage
             ) {
                 if (!RemotePlayService.aktivni) android.app.AlertDialog.Builder(this)
                     .setTitle(GameLingoLanguages.ui(this, "Vybrat zdroj"))
-                    .setItems(arrayOf("Xbox", "PlayStation", GameLingoLanguages.ui(this, "Překlad kamerou"))) { _, index ->
+                    .setItems(arrayOf("Xbox", "PlayStation", GameLingoLanguages.ui(this, "Kamera"))) { _, index ->
                         selectSource(listOf("Xbox", "PlayStation", "Camera")[index])
                     }.show()
             }, odsazeni(bottom = 10))
@@ -104,7 +104,14 @@ def redesign_mobile(s: str) -> str:
                 else if (savedTv == null) GameLingoLanguages.ui(this, "Vyber nebo spáruj televizi")
                 else GameLingoLanguages.ui(this, "Televize uložena · spojení se ověří"),
                 tvStore.pouzeTelefon
-            ) { openDevices() }, odsazeni(bottom = 18))
+            ) {
+                if (!RemotePlayService.aktivni) android.app.AlertDialog.Builder(this)
+                    .setTitle(GameLingoLanguages.ui(this, "Výstup titulků"))
+                    .setItems(arrayOf(GameLingoLanguages.ui(this, "Telefon"), "Google TV / Android TV")) { _, index ->
+                        tvStore.pouzeTelefon = index == 0
+                        if (index == 0) ukazHlavni() else vyberVystupTv()
+                    }.show()
+            }, odsazeni(bottom = 18))
 
             obsah.addView(GameLingoVisualKit.cta(
                 this,

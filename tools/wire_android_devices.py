@@ -92,8 +92,7 @@ def main():
                     connectXbox = { ukazPripojeniXbox() },
                     connectPlayStation = { ukazPripojeni() },
                     connectTV = { vyberVystupTv() },
-                    finished = { ukazHlavni() },
-                    connectCamera = { GameLingoCameraActivity.open(this) })
+                    finished = { ukazHlavni() })
             }
         }''',
             "mobile first-run wizard"

@@ -28,8 +28,7 @@ object GameLingoFirstRun {
         connectXbox: () -> Unit,
         connectPlayStation: () -> Unit,
         connectTV: () -> Unit,
-        finished: () -> Unit,
-        connectCamera: () -> Unit = {}
+        finished: () -> Unit
     ) {
         if (activity.isFinishing) return
         val cyan = Color.parseColor("#02D6FF")
@@ -161,7 +160,7 @@ object GameLingoFirstRun {
             when (open) {
                 1 -> connectXbox()
                 2 -> connectPlayStation()
-                0 -> if (consoleChoice == 2) connectCamera()
+                else -> Unit
             }
         }
         redraw = {
@@ -256,6 +255,10 @@ object GameLingoFirstRun {
                     })
                 }
                 2 -> {
+                    body.addView(TextView(activity).apply {
+                        text = tr("Vybrat zdroj"); gravity = Gravity.CENTER; setTextColor(Color.WHITE)
+                        textSize = GameLingoVisualKit.sp(activity, 17f); typeface = Typeface.DEFAULT_BOLD
+                    })
                     item("🎮  Xbox Remote Play", consoleChoice == 0) {
                         consoleChoice = 0
                         redraw()
@@ -264,9 +267,8 @@ object GameLingoFirstRun {
                         consoleChoice = 1
                         redraw()
                     }
-                    item("📷  " + tr("Překlad kamerou"), consoleChoice == 2) {
+                    item("📷  " + tr("Kamera"), consoleChoice == 2) {
                         consoleChoice = 2
-                        tvChoice = 0
                         redraw()
                     }
                     if (consoleChoice != 2) body.addView(TextView(activity).apply {
@@ -276,6 +278,10 @@ object GameLingoFirstRun {
                         else tr("Po výběru můžeš konzoli připojit v posledním kroku.")
                         textSize = GameLingoVisualKit.sp(activity, 14f)
                         setTextColor(muted)
+                    })
+                    body.addView(TextView(activity).apply {
+                        text = tr("Výstup titulků"); gravity = Gravity.CENTER; setTextColor(Color.WHITE)
+                        textSize = GameLingoVisualKit.sp(activity, 17f); typeface = Typeface.DEFAULT_BOLD
                     })
                     item("📱  " + tr("Na telefonu"), tvChoice == 0) {
                         tvChoice = 0

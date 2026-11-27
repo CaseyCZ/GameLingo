@@ -129,6 +129,7 @@ struct GLPlatformBadge: View {
     let family: GLConsoleFamily?
     var isTelevision = false
     var size: CGFloat = 49
+    var isCamera = false
 
     var body: some View {
         ZStack {
@@ -144,6 +145,10 @@ struct GLPlatformBadge: View {
                 Image(systemName: "tv.fill")
                     .font(.system(size: size * 0.42))
                     .foregroundStyle(GLNeon.cyan)
+            } else if isCamera {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: size * 0.47, weight: .semibold))
+                    .foregroundStyle(.white)
             } else if family == .xbox {
                 Image(systemName: "xbox.logo")
                     .font(.system(size: size * 0.57, weight: .regular))

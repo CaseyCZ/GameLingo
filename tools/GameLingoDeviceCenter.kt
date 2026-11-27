@@ -272,6 +272,8 @@ object GameLingoDeviceCenter {
                                             .setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
                                             .setPositiveButton("OK", null).show()
                                     } else if (GameLingoPlayStationConsoles.select(c, ps.ip)) {
+                                        c.getSharedPreferences("gamelingo_devices", android.content.Context.MODE_PRIVATE)
+                                            .edit().putBoolean("cameraSourceSelected", false).apply()
                                         onDismiss()
                                         onUpdated()
                                     }
@@ -344,7 +346,7 @@ object GameLingoDeviceCenter {
                                             .setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"), null)
                                             .show()
                                     } else {
-                                        prefs.edit().putString("selectedXboxId", xbox.id).apply()
+                                        prefs.edit().putString("selectedXboxId", xbox.id).putBoolean("cameraSourceSelected", false).apply()
                                         onDismiss()
                                         if (option == 1) onXbox() else onUpdated()
                                     }

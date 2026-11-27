@@ -28,9 +28,9 @@ struct GameLingoHome: View {
     @State private var tvSheet = false
     @State private var setupSheet = false
     @State private var cameraSheet = false
-    @State private var cameraAfterSetup = false
     @AppStorage("gamelingo.cameraSourceSelected") private var cameraSource = false
     @State private var sourcePicker = false
+    @State private var outputPicker = false
     @State private var regionsSheet = false
     @State private var profilesSheet = false
     @State private var settingsSheet = false
@@ -84,16 +84,8 @@ struct GameLingoHome: View {
                 .environmentObject(model)
         }
         .sheet(isPresented: $tvSheet) { tvScreen }
-        .sheet(isPresented: $setupSheet, onDismiss: {
-            if cameraAfterSetup {
-                cameraAfterSetup = false
-                cameraSheet = true
-            }
-        }) {
-            GameLingoSetupView(devices: devices, onFinished: {}, onCameraSelected: {
-                cameraSource = true
-                cameraAfterSetup = true
-            })
+        .sheet(isPresented: $setupSheet) {
+            GameLingoSetupView(devices: devices, onFinished: {}, onSourceSelected: { cameraSource = $0 })
                 .environmentObject(model)
         }
         .fullScreenCover(isPresented: $cameraSheet) {
@@ -103,7 +95,15 @@ struct GameLingoHome: View {
         .confirmationDialog("Vybrat zdroj", isPresented: $sourcePicker, titleVisibility: .visible) {
             Button("Xbox") { selectConsoleSource(.xbox) }
             Button("PlayStation") { selectConsoleSource(.playStation) }
-            Button("Překlad kamerou") { cameraSource = true }
+            Button("Kamera") { cameraSource = true }
+        }
+        .confirmationDialog("Výstup titulků", isPresented: $outputPicker, titleVisibility: .visible) {
+            Button("Telefon") { devices.subtitleOutput = .phone }
+            Button("Google TV") {
+                devices.subtitleOutput = .googleTV
+                devices.prepareTV(model.tv)
+                if !outputActuallyReady { tvSheet = true }
+            }
         }
         .task { if !model.isRunning && devices.completedSetup { updates.checkAtStartup() } }
         .onChange(of: updates.available) { _, _ in offerUpdateIfReady() }
@@ -282,7 +282,7 @@ struct GameLingoHome: View {
                     Rectangle().fill(GLNeon.edge).frame(width: 1, height: 58)
                     Button { if !model.isRunning { cameraSource = true } } label: {
                         VStack(spacing: 6) {
-                            Image(systemName: "camera.fill").font(.system(size: 25)).frame(width: 42, height: 42)
+                            GLPlatformBadge(family: nil, size: 42, isCamera: true)
                             Text("Kamera").font(.subheadline.bold()).lineLimit(1)
                         }.foregroundStyle(cameraSource ? GLNeon.cyan : .white)
                     }.buttonStyle(.plain).frame(maxWidth: .infinity)
@@ -396,10 +396,7 @@ struct GameLingoHome: View {
                 )
             }
             .buttonStyle(.plain)
-            Button {
-                if devices.subtitleOutput == .phone { tab = .devices }
-                else { tvSheet = true }
-            } label: {
+            Button { if !model.isRunning { outputPicker = true } } label: {
                 GameLingoDeviceRow(
                     icon: devices.subtitleOutput == .phone ? "smartphone" : "tv.fill",
                     name: GLInterfaceText.localized(devices.subtitleOutput.rawValue),
@@ -500,7 +497,7 @@ struct GameLingoHome: View {
         .disabled(cameraSource && model.cacheChanging)
         .accessibilityHint(model.isRunning
                            ? "Ukončit aktuální Remote Play a překlad"
-                           : "Spustit překlad z vybrané konzole")
+                           : (cameraSource ? "Překlad kamerou" : "Spustit překlad z vybrané konzole"))
     }
 
     private var readiness: some View {
