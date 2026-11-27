@@ -58,12 +58,34 @@ internal object GameLingoAutomaticConfig {
         else AlertDialog.Builder(a).setTitle(title).setSingleChoiceItems(labels,selected){dialog,index->dialog.dismiss();action(index)}
             .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null).show()
     }
-    fun mode(a: Activity, onChanged: () -> Unit = {}, advanced: (() -> Unit)? = null) {
+    fun mode(a: Activity, settings: Nastaveni, onStandardAreas: () -> Unit,
+             onLanguage: () -> Unit, onChanged: () -> Unit = {}) {
         if (!editable(a)) return
+        fun tr(key: String) = GameLingoLanguages.ui(a, key)
+        fun openAreas() {
+            if (!editable(a)) return
+            if (enabled(a)) showZones(a) else onStandardAreas()
+        }
+        fun areaDetail() = if (enabled(a)) "Automatické zóny" else "Standardní oblasti"
         val body = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(modePicker(a, onChanged, showTitle = false))
-        if (advanced != null) body.addView(GameLingoTVUi.action(a, GameLingoLanguages.ui(a, "Pokročilé nastavení OCR")) { advanced() })
-        GameLingoTVUi.page(a, GameLingoLanguages.ui(a, "Režim překladu"), body, helpTopic = "regions")
+        val areas = GameLingoVisualKit.detailRow(a, "rectangle.dashed", tr("Oblasti obrazovky"), tr(areaDetail())) { openAreas() }
+        body.addView(modePicker(a, onChanged = {
+            areas.findViewWithTag<TextView>("gamelingo-detail")?.text = tr(areaDetail())
+            onChanged()
+        }, showTitle = false))
+        fun addRow(row: View) {
+            body.addView(row, LinearLayout.LayoutParams(-1, -2).apply {
+                bottomMargin = GameLingoVisualKit.dp(a, 9)
+            })
+        }
+        addRow(GameLingoVisualKit.detailRow(a, "slider.horizontal.3", tr("Pokročilé nastavení OCR"), tr("Citlivost, režim a filtrování textu")) {
+            GameLingoOCRSettings.show(a, ::openAreas)
+        })
+        addRow(GameLingoVisualKit.detailRow(a, "character.book.closed.fill", tr("Překlad"), tr("Časování a aktuálnost titulků")) {
+            GameLingoSettings.showTranslation(a, settings, ::openAreas, onLanguage)
+        })
+        addRow(areas)
+        GameLingoTVUi.page(a, tr("Režim překladu"), body, helpTopic = "regions")
     }
     /** Inline two-option control matching the SwiftUI GLTranslationModePicker. */
     fun modePicker(a: Activity, onChanged: () -> Unit = {}, showTitle: Boolean = true): LinearLayout {

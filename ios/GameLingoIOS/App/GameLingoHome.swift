@@ -31,6 +31,7 @@ struct GameLingoHome: View {
     @State private var profilesSheet = false
     @State private var settingsSheet = false
     @State private var modeSheet = false
+    @State private var modeRegionsSheet = false
     @State private var appearanceSheet = false
     @State private var licenseSheet = false
     @State private var showPSLoginPIN = false
@@ -169,6 +170,20 @@ struct GameLingoHome: View {
                     } label: {
                         GLDetailRow(icon: "slider.horizontal.3", title: "Pokročilé nastavení OCR", detail: "Citlivost, režim a filtrování textu")
                     }.buttonStyle(.plain)
+                    NavigationLink {
+                        GameLingoTranslationSettingsView(model: model)
+                    } label: {
+                        GLDetailRow(icon: "character.book.closed.fill", title: "Překlad", detail: "Časování a aktuálnost titulků")
+                    }.buttonStyle(.plain)
+                    Button { modeRegionsSheet = true } label: {
+                        GLDetailRow(icon: "rectangle.dashed", title: "Oblasti obrazovky",
+                                    detail: model.automaticGameDialogue ? GLInterfaceText.localized("Aktivní zóny:") + " " + String(model.automaticZones.filter(\.enabled).count) : "Standardní oblasti")
+                    }.buttonStyle(.plain)
+                }
+                .sheet(isPresented: $modeRegionsSheet) {
+                    if model.automaticGameDialogue {
+                        NavigationStack { GLAutomaticZonesView(model: model) }
+                    } else { SubtitleSettingsView(model: model) }
                 }
             }
             .preferredColorScheme(.dark)

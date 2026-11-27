@@ -152,6 +152,26 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('cards[1].findViewWithTag', tv)
         self.assertIn('cards[3].findViewWithTag', tv)
 
+    def test_mode_page_groups_ocr_translation_and_areas(self):
+        home = code(IOS/"GameLingoHome.swift")
+        mode = home.split('.sheet(isPresented: $modeSheet)', 1)[1].split('.sheet(isPresented: $appearanceSheet)', 1)[0]
+        for marker in ("GLTranslationModePicker", "GameLingoOCRSettingsView",
+                       "GameLingoTranslationSettingsView", "GLAutomaticZonesView",
+                       "SubtitleSettingsView", "$modeRegionsSheet"):
+            self.assertIn(marker, mode)
+        android = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        mode = android.split("fun mode(a:", 1)[1].split("fun modePicker(", 1)[0]
+        for marker in ("modePicker(", "GameLingoOCRSettings.show(a, ::openAreas)",
+                       "GameLingoSettings.showTranslation(a, settings, ::openAreas, onLanguage)",
+                       "if (enabled(a)) showZones(a) else onStandardAreas()",
+                       'tr("Oblasti obrazovky")', "tr(areaDetail())"):
+            self.assertIn(marker, mode)
+        for name in ("redesign_gamelingo.py", "GameLingoTVSettings.kt"):
+            source = code(TOOLS/name)
+            self.assertIn("GameLingoAutomaticConfig.mode(", source)
+            self.assertIn("onStandardAreas =", source)
+            self.assertIn("onLanguage =", source)
+
     def test_centered_shared_menu_components(self):
         android = code(TOOLS/"GameLingoVisualKit.kt")
         tv = code(TOOLS/"GameLingoTVUi.kt")
