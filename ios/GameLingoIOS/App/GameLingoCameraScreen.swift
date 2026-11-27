@@ -94,6 +94,10 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
     private var device: AVCaptureDevice?
     private var running = false
     private var lastRead: TimeInterval = 0
+    private var analysisCost: TimeInterval = 0
+    private var stableFrames = 0
+    private var previousOCR = ""
+    private let textRequest = VNRecognizeTextRequest()
     private var language = "auto"
     private var region = CGRect(x: 0, y: 0, width: 1, height: 1)
     private var revision = 0
@@ -113,6 +117,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
             self.language = language
             self.region = region
             self.revision = revision
+            self.stableFrames = 0; self.previousOCR = ""
         }
     }
 
@@ -221,12 +226,16 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let now = ProcessInfo.processInfo.systemUptime
         let wholeImage = region == CGRect(x: 0, y: 0, width: 1, height: 1)
-        guard running, now - lastRead >= (wholeImage ? 0.35 : 0.45),
+        let base = wholeImage ? 0.35 : 0.45
+        let interval = wholeImage ? min(0.7, max(base, max(analysisCost * 1.25, stableFrames >= 3 ? 0.55 : base))) : base
+        guard running, now - lastRead >= interval,
               let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         lastRead = now
+        defer { analysisCost = analysisCost * 0.7 + (ProcessInfo.processInfo.systemUptime - now) * 0.3 }
+        autoreleasepool {
         let image = CIImage(cvPixelBuffer: buffer)
         guard let cg = context.createCGImage(image, from: image.extent) else { return }
-        let request = VNRecognizeTextRequest()
+        let request = textRequest
         request.recognitionLevel = .accurate
         // Vision's supported OCR languages vary with the OS and revision.
         // Unsupported explicit languages must not make the OCR request fail.
@@ -251,7 +260,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 guard let line = observation.topCandidates(1).first?.string, !line.isEmpty,
                       remaining > 0 else { continue }
                 let box = observation.boundingBox
-                let text = String(line.prefix(remaining))
+                let text = wholeImage ? String(line.prefix(remaining)).split(whereSeparator: { $0.isWhitespace }).joined(separator: " ") : String(line.prefix(remaining))
                 remaining -= text.count + 1
                 let rect = CGRect(x: box.minX, y: 1 - box.maxY, width: box.width, height: box.height)
                 let angle = atan2(Double(observation.topLeft.y - observation.topRight.y) * Double(cg.height),
@@ -289,9 +298,14 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 }
                 blocks.append(block)
             }
+            let signature = blocks.map(\.text).joined(separator: "\n")
+            stableFrames = signature == previousOCR && !signature.isEmpty ? min(3, stableFrames + 1) : 0
+            previousOCR = signature
             frame(UIImage(cgImage: cg), blocks, revision)
         } catch {
+            stableFrames = 0; previousOCR = ""
             frame(UIImage(cgImage: cg), [], revision)
+        }
         }
     }
 }
@@ -313,6 +327,10 @@ private final class GLCameraState: ObservableObject {
     private var torchRequest = 0
     private var capture: GLCameraCapture?
     private var task: Task<Void, Never>?
+    private var translationRequest = 0
+    private var previousVisible = Set<String>()
+    private var eligibleVisible = Set<String>()
+    private var cacheOrder: [String] = []
     private var revision = 0
     private var lifetime = 0
     private var candidate = ""
@@ -368,7 +386,7 @@ private final class GLCameraState: ObservableObject {
     func configure(source: String, target: GLTargetLanguage, region: CGRect, overlay: Bool) {
         guard self.source != source || self.target != target || self.region != region || self.overlayMode != overlay else { return }
         self.source = source; self.target = target; self.region = region; self.overlayMode = overlay
-        overlayCache.removeAll(); overlaySource = nil
+        overlayCache.removeAll(); overlaySource = nil; cacheOrder.removeAll()
         resetTranslation()
         applyConfiguration()
     }
@@ -379,6 +397,8 @@ private final class GLCameraState: ObservableObject {
 
     private func resetTranslation() {
         revision += 1
+        translationRequest += 1
+        previousVisible.removeAll(); eligibleVisible.removeAll()
         task?.cancel(); task = nil
         candidate = ""; emptyFrames = 0; lastTranslated = ""; translation = ""; recognizedText = ""; translating = false
         translatedLines = []; currentBlocks = []; overlays = []; translationFailed = false
@@ -398,8 +418,12 @@ private final class GLCameraState: ObservableObject {
     private func rememberOverlay(_ original: String, _ translated: String) {
         guard !translated.isEmpty else { return }
         if overlayCache.count >= 256 && overlayCache[original] == nil {
-            overlayCache.removeAll(keepingCapacity: true)
+            if let oldest = cacheOrder.first {
+                overlayCache.removeValue(forKey: oldest)
+                cacheOrder.removeFirst()
+            }
         }
+        if overlayCache[original] == nil { cacheOrder.append(original) }
         overlayCache[original] = translated
     }
 
@@ -418,6 +442,10 @@ private final class GLCameraState: ObservableObject {
         currentBlocks = blocks
         candidate = text
         recognizedText = text
+        if overlayMode {
+            receiveFullImage(text: text, blocks: blocks)
+            return
+        }
         if text.isEmpty {
             updateOverlays()
             emptyFrames += 1
@@ -444,10 +472,9 @@ private final class GLCameraState: ObservableObject {
         let current = revision
         let source = resolvedSource(text), target = target
         if overlaySource != source {
-            overlayCache.removeAll(); overlaySource = source
+            overlayCache.removeAll(); cacheOrder.removeAll(); overlaySource = source
             updateOverlays()
         }
-        let wantsOverlay = overlayMode
         task = Task { [weak self] in
             guard let self, let model = self.model else { return }
             defer { if self.revision == current { self.task = nil; self.translating = false } }
@@ -462,37 +489,76 @@ private final class GLCameraState: ObservableObject {
             self.lastTranslated = text
             self.translation = result
             self.translationFailed = false
-            self.translatedLines = []
-            self.updateOverlays()
-            self.publishTV(force: true)
-            var lines = result.components(separatedBy: "\n")
-            if wantsOverlay && (blocks.count > 1 || lines.count != blocks.count) {
-                // Do not align a provider's merged or split lines to the wrong text.
-                // Reuse the same cached translator for individual OCR blocks.
-                lines = []
-                for block in blocks {
-                    guard !Task.isCancelled, self.revision == current, self.matchesCurrent(text) else { return }
-                    if let cached = self.overlayCache[block.text] {
-                        lines.append(cached)
-                        continue
-                    }
-                    guard let line = await model.translateCameraText(block.text, source: source, target: target),
-                          !line.isEmpty else { lines = []; break }
-                    guard !Task.isCancelled, self.revision == current, self.running, !self.paused else { return }
-                    lines.append(line)
-                    self.rememberOverlay(block.text, line)
-                    self.updateOverlays()
-                }
-            }
-            guard !Task.isCancelled, self.revision == current, self.running,
-                  !self.paused, self.matchesCurrent(text) else { return }
-            self.translatedLines = lines
-            if wantsOverlay && lines.count == blocks.count {
-                for (block, line) in zip(blocks, lines) { self.rememberOverlay(block.text, line) }
-            }
-            self.updateOverlays()
             self.publishTV(force: true)
         }
+    }
+
+    // A block is translated once, then its geometry follows the current OCR frame.
+    // New blocks in an existing scene must survive one more sample.
+    private func receiveFullImage(text: String, blocks: [GLCameraBlock]) {
+        let visible = Set(blocks.map(\.text))
+        eligibleVisible = previousVisible.isEmpty ? visible : visible.intersection(previousVisible)
+        let sceneChanged = !previousVisible.isEmpty && visible.isDisjoint(with: previousVisible)
+        previousVisible = visible
+        if sceneChanged {
+            translationRequest += 1
+            task?.cancel(); task = nil; translating = false; retryAt = 0
+            eligibleVisible = visible
+        }
+        if text.isEmpty {
+            updateOverlays()
+            translation = ""; lastTranslated = ""
+            publishTV(force: true)
+            return
+        }
+        let source = resolvedSource(text), target = target
+        if overlaySource != source {
+            translationRequest += 1
+            task?.cancel(); task = nil; translating = false; retryAt = 0
+            overlayCache.removeAll(); cacheOrder.removeAll(); overlaySource = source
+        }
+        publishVisibleBlocks()
+        guard task == nil, ProcessInfo.processInfo.systemUptime >= retryAt,
+              let model = self.model,
+              let block = blocks.first(where: { eligibleVisible.contains($0.text) && overlayCache[$0.text] == nil }) else { return }
+        translating = true
+        let current = revision, request = translationRequest
+        task = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                if self.revision == current && self.translationRequest == request {
+                    self.task = nil; self.translating = false
+                }
+            }
+            var next: String? = block.text
+            while let original = next {
+                guard !Task.isCancelled, self.revision == current, self.translationRequest == request,
+                      self.running, !self.paused else { return }
+                let result = await model.translateCameraText(original, source: source, target: target)
+                guard !Task.isCancelled, self.revision == current, self.translationRequest == request,
+                      self.running, !self.paused else { return }
+                if let result, !result.isEmpty {
+                    if self.previousVisible.contains(original) {
+                        self.rememberOverlay(original, result)
+                        self.translationFailed = false
+                        self.publishVisibleBlocks()
+                    }
+                } else {
+                    self.translationFailed = true
+                    self.retryAt = ProcessInfo.processInfo.systemUptime + 2
+                    return
+                }
+                next = self.currentBlocks.first(where: { self.eligibleVisible.contains($0.text) && self.overlayCache[$0.text] == nil })?.text
+            }
+        }
+    }
+
+    private func publishVisibleBlocks() {
+        updateOverlays()
+        let result = currentBlocks.compactMap { overlayCache[$0.text] }.joined(separator: "\n")
+        let changed = translation != result
+        translation = result
+        publishTV(force: changed)
     }
 
     // Restrict local language identification to the camera's supported
@@ -563,7 +629,7 @@ private final class GLCameraState: ObservableObject {
         resetTranslation()
         capture?.stop(); capture = nil
         previewSession = nil; image = nil; resetTorch()
-        overlayCache.removeAll(); overlaySource = nil
+        overlayCache.removeAll(); overlaySource = nil; cacheOrder.removeAll()
     }
 }
 
