@@ -91,6 +91,15 @@ private struct GLCameraOverlay: Identifiable {
     let texture: GLCameraTexture?
 }
 
+// Share the camera's bounded palette estimator without exposing its texture renderer.
+func glGamePalettes(_ image: CGImage, rects: [CGRect]) -> [(UInt32?, UInt32?)] {
+    guard let palette = GLCameraPalette(image) else { return rects.map { _ in (nil, nil) } }
+    return rects.map { rect in
+        let background = palette.background(for: rect)
+        return (background, palette.ink(for: rect, background: background))
+    }
+}
+
 // Sample the background near the text box edges, not the glyph centers.
 // A small RGB image bounds the per-frame sampling cost.
 private struct GLCameraPalette {

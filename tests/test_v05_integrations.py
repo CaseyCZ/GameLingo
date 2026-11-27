@@ -1191,6 +1191,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("await self?.processFrame(buffer", model)
         self.assertNotIn("await self?.processFrame(frame", model)
 
+    def test_adaptive_zone_negotiation_and_color_capture(self):
+        tv = code(IOS/"PlayCaptionTV.swift")
+        receiver = code(TOOLS/"patch_tv_iphone.py")
+        pairing = code(TOOLS/"IPhoneTVPairing.kt")
+        android = code(TOOLS/"GameLingoTVPairing.kt")
+        self.assertIn('Z1-2-', tv)
+        self.assertIn('Z1-2-', android)
+        self.assertIn('receiverSupportsAdaptiveZones', tv)
+        self.assertIn('supportsAdaptiveZones', android)
+        self.assertIn('"PCZ2" -> "PCZ1"', pairing)
+        self.assertIn('nonce.startsWith("Z1-2-")', receiver)
+        self.assertIn('glGamePalettes(rgb, rects: rects)', code(IOS/"CaptionPipeline.swift"))
+        self.assertIn('automaticRGB(l,u,v)', code(TOOLS/"automatic_android.py"))
+        self.assertIn('canvas.clipRect(left,top,right,bottom)', code(TOOLS/"GameLingoZoneOverlay.kt"))
+
     def test_automatic_zones_use_signed_bounded_snapshots_and_old_profiles(self):
         ios = code(IOS/"PlayCaptionIOSApp.swift")
         tv = code(IOS/"PlayCaptionTV.swift")

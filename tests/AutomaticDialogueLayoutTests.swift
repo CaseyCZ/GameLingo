@@ -33,6 +33,10 @@ import CoreGraphics
         let menu = AutomaticDialogueLayout.select([.init(text: "PLAY", rect: CGRect(x: 0.01, y: 0.01, width: 0.05, height: 0.03))], centered: false)!
         precondition(abs(menu.layout.width - 0.08) < 0.00001)
         precondition(abs(menu.layout.centerX - 0.04) < 0.00001)
+        var styled = blocks[0]
+        styled.background = 0xffff00
+        styled.ink = 0
+        precondition(styled.background == 0xffff00 && styled.ink == 0)
         var tracker = AutomaticBlockTracker()
         let zone = UUID(), other = UUID()
         tracker.observe(zone: zone, blocks: blocks, now: 1)

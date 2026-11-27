@@ -52,7 +52,7 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT).apply {
                 gravity = Gravity.TOP or Gravity.LEFT
-                // Non-touchable overlay: keep Android's obscuring-opacity limit.
+                // Touch devices keep the obscuring-opacity limit; TV remote focus is unaffected.
                 alpha = if(context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN)) .8f else 1f
             }
             if (runCatching { wm.addView(candidate, lp) }.isFailure) return
@@ -104,7 +104,10 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
                 val bw=(right-left-2).toInt();val available=bottom-top-2
                 if(bw<2||available<2)continue
                 val bg=block.background?.or(0xff000000.toInt()) ?: Color.BLACK
-                val ink=block.ink?.or(0xff000000.toInt()) ?: if(Color.luminance(bg)>.179f)Color.BLACK else Color.WHITE
+                val fallback=if(Color.luminance(bg)>.179f)Color.BLACK else Color.WHITE
+                val candidate=block.ink?.or(0xff000000.toInt()) ?: fallback
+                val light=Color.luminance(bg);val inkLight=Color.luminance(candidate)
+                val ink=if((maxOf(light,inkLight)+.05f)/(minOf(light,inkLight)+.05f)>=4.5f)candidate else fallback
                 val tp=TextPaint(Paint.ANTI_ALIAS_FLAG).apply{color=ink}
                 fun layout(size:Float):StaticLayout {
                     tp.textSize=size
