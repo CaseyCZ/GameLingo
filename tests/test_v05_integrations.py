@@ -194,6 +194,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertEqual(device_center.count("LinearLayout.LayoutParams(railSize, railSize)"), 2)
         self.assertIn('android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.CENTER)', device_center)
 
+    def test_pairing_ip_keyboard_and_ps_pin_dismissal(self):
+        ps = code(IOS/"PlayStation/GameLingoPlayStationSetup.swift")
+        tv = code(IOS/"GameLingoTVSetupScreen.swift")
+        for source, field in ((ps, "IP adresa konzole"), (tv, "IP adresa televize")):
+            field_source = source.split(f'TextField("{field}",', 1)[1].split(".textFieldStyle", 1)[0]
+            self.assertIn(".keyboardType(.asciiCapable)", field_source)
+            self.assertNotIn(".numbersAndPunctuation", field_source)
+        self.assertIn(".focused($pinFocused)", ps)
+        self.assertIn('Button("Hotovo") { pinFocused = false }', ps)
+        self.assertIn("ToolbarItemGroup(placement: .keyboard)", ps)
+        self.assertIn("$0.isASCII && $0.isNumber", ps)
+        self.assertIn('Label("IP adresa konzole", systemImage: "exclamationmark.triangle")', ps)
+        self.assertIn("ps.register(address: host.trimmingCharacters(in: .whitespacesAndNewlines)", ps)
+
     def test_centered_shared_menu_components(self):
         android = code(TOOLS/"GameLingoVisualKit.kt")
         tv = code(TOOLS/"GameLingoTVUi.kt")

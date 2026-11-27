@@ -226,7 +226,7 @@ private struct GameLingoTVPairingPanel: View {
                     }
                     if showManualIP {
                         TextField("IP adresa televize", text: $tv.ip)
-                            .keyboardType(.numbersAndPunctuation)
+                            .keyboardType(.asciiCapable)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)

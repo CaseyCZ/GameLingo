@@ -23,6 +23,7 @@ private struct GameLingoPSConnectionView: View {
     @State private var consoleName = "PlayStation 5"
     @State private var isPS5 = true
     @State private var pin = ""
+    @FocusState private var pinFocused: Bool
     @State private var accountID: Data?
     @State private var redirectLink = ""
     @State private var advancedExpanded = false
@@ -157,7 +158,7 @@ private struct GameLingoPSConnectionView: View {
                         }
                         .pickerStyle(.segmented)
                         TextField("IP adresa konzole", text: $host)
-                            .keyboardType(.numbersAndPunctuation)
+                            .keyboardType(.asciiCapable)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .textFieldStyle(.roundedBorder)
@@ -219,10 +220,16 @@ private struct GameLingoPSConnectionView: View {
                                 help: "Na PS5 otevři Nastavení → Systém → Remote Play → Propojit zařízení. Zadaný osmimístný PIN slouží pouze k propojení. Připojení funguje jen na vlastních nebo autorizovaných konzolích.")
                             SecureField("8místný PIN z PlayStation", text: $pin)
                                 .keyboardType(.numberPad)
+                                .focused($pinFocused)
                                 .textFieldStyle(.roundedBorder)
                                 .onChange(of: pin) { _, new in
-                                    pin = String(new.filter(\.isNumber).prefix(8))
+                                    pin = String(new.filter { $0.isASCII && $0.isNumber }.prefix(8))
                                 }
+                            if host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Label("IP adresa konzole", systemImage: "exclamationmark.triangle")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
                             if registration.state == .registering {
                                 ProgressView("Páruji…")
                                 Button("Zrušit") { registration.cancel() }
@@ -233,7 +240,8 @@ private struct GameLingoPSConnectionView: View {
                                         accountID?.count != 8 ||
                                         host.trimmingCharacters(in: .whitespaces).isEmpty) {
                                     guard let accountID, let pin = validPIN else { return }
-                                    ps.register(address: host, name: consoleName,
+                                    pinFocused = false
+                                    ps.register(address: host.trimmingCharacters(in: .whitespacesAndNewlines), name: consoleName,
                                                 isPS5: isPS5, accountID: accountID,
                                                 pin: pin)
                                 }
@@ -259,6 +267,12 @@ private struct GameLingoPSConnectionView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     GLBackButton { dismiss() }
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    if pinFocused {
+                        Spacer()
+                        Button("Hotovo") { pinFocused = false }
+                    }
+                }
             }
         }
         .tint(GLNeon.cyan)
@@ -271,7 +285,7 @@ private struct GameLingoPSConnectionView: View {
         .onChange(of: registration.state) { _, newState in
             if newState == .succeeded {
                 devices.refreshPlayStation(ps.registered)
-                if let console = ps.registered.first(where: { $0.address == host }) {
+                if let console = ps.registered.first(where: { $0.address == host.trimmingCharacters(in: .whitespacesAndNewlines) }) {
                     devices.addRegisteredPlayStation(console)
                 }
                 // Do not keep a one-time PlayStation PIN in SwiftUI state.
