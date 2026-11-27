@@ -231,6 +231,11 @@ class GameLingoCameraActivity : ComponentActivity() {
         val donors=source.indices.filter { !mask[it] }.map { source[it] }
         val first=donors.firstOrNull() ?: return CameraAppearance(null,weight)
         if (donors.count { distance(it,first)>24 } < donors.size/5) return CameraAppearance(null,weight)
+        val inkLight = Color.luminance(ink)
+        if (donors.any { color ->
+            val light = Color.luminance(color)
+            (maxOf(light,inkLight)+.05f)/(minOf(light,inkLight)+.05f) < 4.5f
+        }) return CameraAppearance(null,weight)
         val result=source.copyOf()
         for (y in 0 until h) for (x in 0 until w) if (mask[y*w+x]) {
             var found: Int?=null
