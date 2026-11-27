@@ -107,16 +107,39 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         android = code(TOOLS/"GameLingoCameraActivity.kt")
         for key in ("struct GLCameraSurface: Sendable", "func reconstructedSurface(for rect: CGRect",
                     "(12...100).contains(variation)", "contrast(a) >= 4.5, contrast(b) >= 4.5",
-                    "guard agreement >= 8 else { return nil }", "abs(blocks[index].angle) < 0.06",
+                    "guard agreement >= 8 else { return nil }", "let horizontal = abs(block.angle) < 0.06",
                     "blocks[index].surface = palette.reconstructedSurface", "surface: block.surface",
                     "if let surface = overlay.surface", "LinearGradient(colors:",
                     "GLCameraPalette.color(overlay.background)"):
             self.assertIn(key, ios)
         for key in ("data class CameraSurface", "fun reconstructedSurface(bitmap: Bitmap",
                     "distance(a, b) !in 12..100", "contrast(a) < 4.5f || contrast(b) < 4.5f",
-                    "if (agreement < 8) return null", "region.full && kotlin.math.abs(angle) < 3.44f",
+                    "if (agreement < 8) return null", "val horizontal = kotlin.math.abs(angle) < 3.44f",
                     "reconstructedSurface(bitmap, rect, background, ink)", "block.ink, block.surface",
                     "overlay.surface?.let", "android.graphics.LinearGradient(", "paint.shader = null"):
+            self.assertIn(key, android)
+
+    def test_camera_texture_weight_and_perspective_retry(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        for key in ("struct GLCameraQuad: Sendable", "guard cross > 0.001",
+                    "t.m14 = g / size.width", "t.m24 = h / size.height",
+                    ".projectionEffect(projection ??", "textureAndWeight(for rect:",
+                    "let inkMask = source.map", "mask.filter({$0}).count <= w*h*65/100",
+                    "donors.allSatisfy", "guard let found else { return (nil,weight) }",
+                    "overlay.weight == 2 ? .bold", "CIPerspectiveCorrection",
+                    "attempted: &attemptedRectification", "original.confidence + 0.08",
+                    "results.count == 1", "if wholeImage && !attemptedRectification"):
+            self.assertIn(key, ios)
+        for key in ("data class CameraQuad", "setPolyToPoly(src, 0, dst, 0, 4)",
+                    "canvas.concat(projection)", "fun textureAndWeight(bitmap:",
+                    "val inkMask = BooleanArray", "mask.count { it } > w*h*65/100",
+                    "donors.any { color ->", "found ?: return CameraAppearance(null,weight)",
+                    "2 -> 700; 1 -> 600; else -> 400", "fun rectifiedCrop(bitmap:",
+                    "warp.setPolyToPoly(src,0,dst,0,4)", "line.confidence",
+                    "originalScore+.08f", "finishFrame(index, improved)",
+                    "validFrame() && region.full && task.isSuccessful",
+                    "rectified.recycle()"):
             self.assertIn(key, android)
 
     def test_camera_ink_confidence_and_reading_order(self):
