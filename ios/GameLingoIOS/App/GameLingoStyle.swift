@@ -59,7 +59,7 @@ struct GLHelpButton: View {
                 .font(.title3)
                 .foregroundStyle(GLStyle.blue)
         }
-        .accessibilityLabel("Nápověda: " + title)
+        .accessibilityLabel(Text(verbatim: GLInterfaceText.localized("Nápověda: ") + GLInterfaceText.localized(title)))
         .sheet(isPresented: $showing) {
             NavigationStack {
                 GLGuideContent(title: title, explanation: explanation)
