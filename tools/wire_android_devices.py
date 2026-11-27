@@ -457,6 +457,34 @@ def main():
 
             phone = folder/"TelefonActivity.kt"
             phone_code = phone.read_text(encoding="utf-8")
+            phone_code = one(phone_code,
+                "    private fun postavUpravy(): LinearLayout {",
+                "    private var gamelingoSelectedRegion = 1\n\n    private fun postavUpravy(): LinearLayout {",
+                "selected region persists across editor rebuilds")
+            phone_code = one(phone_code,
+                "        obrazovka.addView(modry, FrameLayout.LayoutParams(10, 10))\n        fun prekresli() {",
+                "        obrazovka.addView(modry, FrameLayout.LayoutParams(10, 10))\n        val orangeFrame = SrafovanyRamecek(this,\n            GameLingoLanguages.ui(this, \"Oranžová\"), Color.parseColor(\"#FF9E34\"))\n        obrazovka.addView(orangeFrame, FrameLayout.LayoutParams(10, 10))\n        modry.visibility = View.VISIBLE\n        ramecek.visibility = View.VISIBLE\n        val selection = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }\n        val regionFrames = listOf(modry, box, ramecek, orangeFrame)\n        val tabs = mutableListOf<TextView>()\n        val regionLabels = listOf(\"Modrá\", \"Zelená\", \"Žlutá\", \"Oranžová\")\n        val regionColors = listOf(OblastTitulku.MODRA, zelena, Color.parseColor(\"#FFD54A\"), Color.parseColor(\"#FF9E34\"))\n        fun renderSelection() {\n            tabs.forEachIndexed { index, tab ->\n                tab.text = (if (gamelingoSelectedRegion == index) \"✓ \" else \"\") + GameLingoLanguages.ui(this, regionLabels[index])\n                tab.isSelected = gamelingoSelectedRegion == index\n                tab.background = GameLingoVisualKit.card(this, selected = tab.isSelected)\n            }\n            regionFrames[gamelingoSelectedRegion].bringToFront()\n        }\n        regionLabels.forEachIndexed { index, label ->\n            val tab = TextView(this).apply {\n                text = GameLingoLanguages.ui(this@TelefonActivity, label)\n                textSize = GameLingoVisualKit.sp(this@TelefonActivity, 12f)\n                gravity = Gravity.CENTER\n                minHeight = dp(44)\n                setTextColor(regionColors[index])\n                isFocusable = true\n                setOnClickListener { gamelingoSelectedRegion = index; renderSelection() }\n            }\n            tabs.add(tab)\n            selection.addView(tab, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(3) })\n        }\n        obal.addView(selection)\n        renderSelection()\n        fun prekresli() {",
+                "four explicitly selected regions on one preview")
+            phone_code = one(phone_code,
+                "            val m = OblastTitulku.oblast\n            modry.layoutParams",
+                "            val orange = GameLingoOrangeOutput.read(this)\n            orangeFrame.layoutParams = (orangeFrame.layoutParams as FrameLayout.LayoutParams).apply {\n                width = ((orange[2]-orange[0])*w).toInt().coerceAtLeast(1)\n                height = ((orange[3]-orange[1])*h).toInt().coerceAtLeast(1)\n                leftMargin = (orange[0]*w).toInt(); topMargin = (orange[1]*h).toInt()\n            }\n            modry.alpha = if (OblastTitulku.rucne) 1f else .46f\n            ramecek.alpha = if (Volby.zapnuto) 1f else .46f\n            orangeFrame.alpha = if (Volby.zapnuto) 1f else .46f\n            val m = OblastTitulku.oblast\n            modry.layoutParams",
+                "show inactive regions dimmed and orange geometry")
+            phone_code = one(phone_code,
+                "        var zamcenyDotyk = false\n        var chytX",
+                "        var zamcenyDotyk = false\n        var orangeDragging = false\n        val regionReceiverId = TvProfily.aktivniId\n        val regionReceiverIp = Propojeni.Vysilac.cilIp\n        var chytX",
+                "capture region receiver identity")
+            phone_code = one(phone_code,
+                "            if (e.action == android.view.MotionEvent.ACTION_DOWN) ui.removeCallbacks(konecUprav)",
+                "            if (e.action == android.view.MotionEvent.ACTION_DOWN) ui.removeCallbacks(konecUprav)\n            if (gamelingoSelectedRegion == 3) {\n                val sameReceiver = TvProfily.aktivniId == regionReceiverId && Propojeni.Vysilac.cilIp == regionReceiverIp\n                if (e.action == android.view.MotionEvent.ACTION_DOWN)\n                    orangeDragging = sameReceiver && Volby.zapnuto && !GameLingoOrangeOutput.locked(this)\n                if (orangeDragging && sameReceiver && Volby.zapnuto && !GameLingoOrangeOutput.locked(this) &&\n                    w > 0 && h > 0 && e.action in listOf(android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_MOVE, android.view.MotionEvent.ACTION_UP)) {\n                    val moved = GameLingoOrangeOutput.moveCenter(GameLingoOrangeOutput.read(this), e.x/w, e.y/h)\n                    GameLingoOrangeOutput.save(this, moved, false)\n                    prekresli()\n                    val now = android.os.SystemClock.elapsedRealtime()\n                    if (e.action == android.view.MotionEvent.ACTION_UP || now-lastOrangePublish > 150L) {\n                        lastOrangePublish = now\n                        GameLingoOrangeOutput.publish(this)\n                    }\n                }\n                if (e.action == android.view.MotionEvent.ACTION_UP || e.action == android.view.MotionEvent.ACTION_CANCEL) {\n                    val changed = orangeDragging\n                    orangeDragging = false\n                    v.parent?.requestDisallowInterceptTouchEvent(false)\n                    if (changed && sameReceiver) {\n                        GameLingoOrangeOutput.publish(this)\n                        v.post { if (v.isAttachedToWindow) obnovUpravy() }\n                    }\n                }\n                return@setOnTouchListener true\n            }",
+                "orange drag independent of blue and yellow")
+            phone_code = one(phone_code,
+                "        var posledniPoslani = 0L\n",
+                "        var posledniPoslani = 0L\n        var lastOrangePublish = 0L\n",
+                "throttle orange preview")
+            phone_code = one(phone_code,
+                "                val vModrem = OblastTitulku.rucne && fx in m[0]..m[2] && fy in m[1]..m[3]\n                val vZlutem = !vModrem && Volby.zapnuto && fx in o[0]..o[2] && fy in o[1]..o[3]\n                // zamčený rámeček se nehne (a prst v něm nepohne ani ničím jiným)\n                zamcenyDotyk = (vModrem && OblastTitulku.zamceno) || (vZlutem && Volby.zamceno) ||\n                    (!vModrem && !vZlutem && zelenaZamcena)",
+                "                val vModrem = gamelingoSelectedRegion == 0\n                val vZlutem = gamelingoSelectedRegion == 2\n                // Only the explicitly selected region may move, regardless of overlap.\n                zamcenyDotyk = (vModrem && (!OblastTitulku.rucne || OblastTitulku.zamceno)) ||\n                    (vZlutem && (!Volby.zapnuto || Volby.zamceno)) ||\n                    (gamelingoSelectedRegion == 1 && zelenaZamcena)",
+                "explicit selection instead of overlap hit test")
             # Reload selected receiver preferences before publishing to the new target.
             phone_code = one(phone_code,
                 '        Propojeni.Vysilac.nastavCil(tv.ip, tv.jmeno)',
@@ -468,7 +496,7 @@ def main():
                 "restore initial orange geometry")
             phone_code = one(phone_code,
                 '        // ---- volby odpovědí: vypínač + zámeček + velikost žlutého rámečku',
-                '''        obal.addView(GameLingoOrangeOutput.editor(this) {},
+                '''        obal.addView(GameLingoOrangeOutput.editor(this, includePreview = false) { prekresli() },
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(14) })
 

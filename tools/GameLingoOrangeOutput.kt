@@ -39,6 +39,17 @@ object GameLingoOrangeOutput {
         editor.apply()
     }
 
+    fun moveCenter(rect: FloatArray, x: Float, y: Float): FloatArray {
+        val r = rect.takeIf(::valid)?.copyOf() ?: defaults()
+        if (!x.isFinite() || !y.isFinite()) return r
+        val width = r[2]-r[0]; val height = r[3]-r[1]
+        r[0] = (x-width/2).coerceIn(0f, 1f-width)
+        r[1] = (y-height/2).coerceIn(0f, 1f-height)
+        r[2] = (r[0]+width).coerceAtMost(1f)
+        r[3] = (r[1]+height).coerceAtMost(1f)
+        return r
+    }
+
     fun publish(c: Context, preview: Boolean = false) {
         Propojeni.Vysilac.nastavOranzovyVystup(read(c), if (preview)
             GameLingoPhoneSubtitleStyle.sample(c) else null)
@@ -46,7 +57,7 @@ object GameLingoOrangeOutput {
 
     /** Existing region editor, separate geometry controls so overlapping rectangles
      * cannot accidentally move the blue, yellow or green regions. */
-    fun editor(c: Context, onChanged: () -> Unit): LinearLayout {
+    fun editor(c: Context, includePreview: Boolean = true, onChanged: () -> Unit): LinearLayout {
         val dp: (Int) -> Int = { GameLingoVisualKit.dp(c, it) }
         val panel = LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
@@ -57,7 +68,7 @@ object GameLingoOrangeOutput {
         var isLocked = locked(c)
         val orange = Color.parseColor("#FF9E34")
         fun text(label: String) = TextView(c).apply {
-            this.text = label
+            this.text = GameLingoLanguages.ui(c, label)
             setTextColor(Color.WHITE)
             textSize = GameLingoVisualKit.sp(c, 14f)
             setPadding(0, dp(6), 0, dp(6))
@@ -77,7 +88,7 @@ object GameLingoOrangeOutput {
             }
         }
         preview.addView(sample, FrameLayout.LayoutParams(1, 1))
-        panel.addView(preview, LinearLayout.LayoutParams(
+        if (includePreview) panel.addView(preview, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, dp(130)))
         fun draw() {
             val w = preview.width
@@ -114,7 +125,7 @@ object GameLingoOrangeOutput {
         val sliders = mutableListOf<SeekBar>()
         fun slider(label: String, min: Int, max: Int, value: () -> Int, change: (Int) -> Unit) {
             val title = text("")
-            fun refresh() { title.text = "$label: ${value()} %" }
+            fun refresh() { title.text = GameLingoLanguages.ui(c, label) + ": ${value()} %" }
             refresh()
             panel.addView(title)
             val bar = SeekBar(c).apply {
@@ -154,11 +165,12 @@ object GameLingoOrangeOutput {
             r[1] = r[1].coerceAtMost(1f-height); r[3] = r[1]+height
         }
         slider("Velikost písma", 60, 200, { pct(r[4]) }) { r[4] = it/100f }
-        panel.addView(text(if (isLocked) "🔒 Zamčeno" else "🔓 Odemčeno").apply {
+        fun lockLabel() = (if (isLocked) "🔒 " else "🔓 ") + GameLingoLanguages.ui(c, if (isLocked) "Zamčeno" else "Odemčeno")
+        panel.addView(text(lockLabel()).apply {
             isFocusable = true
             setOnClickListener {
                 isLocked = !isLocked
-                text = if (isLocked) "🔒 Zamčeno" else "🔓 Odemčeno"
+                text = lockLabel()
                 sliders.forEach { it.isEnabled = !isLocked }
                 persist()
             }
@@ -171,7 +183,7 @@ object GameLingoOrangeOutput {
             setOnClickListener {
                 if (TvProfily.aktivniId != receiverID) return@setOnClickListener
                 if (Propojeni.Vysilac.cilIp == null) {
-                    android.widget.Toast.makeText(c, "Nejdříve připoj televizi.", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(c, GameLingoLanguages.ui(c, "Nejdříve připoj televizi."), android.widget.Toast.LENGTH_SHORT).show()
                 } else {
                     persist()
                     publish(c, preview = true)

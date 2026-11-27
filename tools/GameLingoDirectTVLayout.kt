@@ -63,7 +63,7 @@ object GameLingoDirectTVLayout {
         e.apply()
     }
     internal fun locked(c: Context, region: String): Boolean = prefs(c).getBoolean("directLock"+region, false)
-    private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
+    private fun busy() = GameLingoLanguages.translationSettingsBusy()
 
     private val names = arrayOf("Modrá · čtení dialogů", "Zelená · přeložené dialogy",
         "Žlutá · čtení dalších textů", "Oranžová · přeložené texty")
@@ -239,7 +239,7 @@ object GameLingoDirectTVLayout {
         }
         fun cycleMode() { mode=(mode+1)%(if(selected==1 || selected==3)3 else 2); refresh() }
         fun change(dx:Float,dy:Float) {
-            if(locks[selected]) return
+            if(locks[selected] || busy()) return
             val r=boxes[selected]
             when(mode) {
                 0 -> if(selected==1) {

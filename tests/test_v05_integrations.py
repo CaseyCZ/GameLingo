@@ -121,6 +121,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(automatic.index("val lines = b.lines.filter"), automatic.index('val text=lines.joinToString'))
         self.assertIn("GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)", automatic)
 
+    def test_standard_region_editor_selects_four_independent_regions(self):
+        wire = code(TOOLS/"wire_android_devices.py")
+        orange = code(TOOLS/"GameLingoOrangeOutput.kt")
+        tv = code(TOOLS/"GameLingoDirectTVLayout.kt")
+        for marker in ("gamelingoSelectedRegion", "orangeFrame", "regionFrames[gamelingoSelectedRegion]",
+                       "gamelingoSelectedRegion == 0", "gamelingoSelectedRegion == 2",
+                       "gamelingoSelectedRegion == 3", "GameLingoOrangeOutput.moveCenter",
+                       "sameReceiver", "includePreview = false"):
+            self.assertIn(marker, wire)
+        self.assertIn("if (includePreview) panel.addView(preview", orange)
+        self.assertIn("val width = r[2]-r[0]; val height = r[3]-r[1]", orange)
+        self.assertIn("if(locks[selected] || busy()) return", tv)
+
     def test_translation_dependent_options_and_automatic_stale_guard(self):
         settings = code(TOOLS/"GameLingoSettings.kt")
         for marker in ('visible(previousCount, it)', 'visible(goneDelay, it)',
