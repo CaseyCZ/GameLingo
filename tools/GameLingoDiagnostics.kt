@@ -16,41 +16,6 @@ import android.widget.TextView
  * frame, PSN login or paired TV from a saved local profile.
  */
 object GameLingoDiagnostics {
-    // Only categories emitted by translation_privacy.py, never arbitrary legacy log text.
-    private val safeEvents = setOf("[chyba zpracování]", "[OCR událost]", "[herní text: událost]",
-        "[Xbox: událost relace]", "[PlayStation: událost relace]", "[dekodér: událost]", "[technická událost]")
-    private fun safeLog(a: Activity): String = runCatching {
-        val file = java.io.File(a.filesDir, "titulky-private-v2.log")
-        if (!file.isFile || file.length() > 310_000L) return@runCatching ""
-        file.useLines { lines ->
-            lines.filter { line ->
-                line.length >= 10 && line.take(8).matches(Regex("[0-9]{2}:[0-9]{2}:[0-9]{2}")) &&
-                    line[8] == ' ' && line.substring(9) in safeEvents
-            }.toList().takeLast(60).joinToString("\n")
-        }
-    }.getOrDefault("")
-
-    fun showTechnicalLog(a: Activity) {
-        fun tr(key: String) = GameLingoLanguages.ui(a,key)
-        val log = safeLog(a)
-        val body = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
-        body.addView(TextView(a).apply {
-            text = log.ifBlank { tr("Zatím bez měření") }
-            setTextColor(Color.WHITE)
-            typeface = Typeface.MONOSPACE
-            setTextIsSelectable(true)
-        })
-        body.addView(GameLingoTVUi.action(a,tr("Sdílet log")) {
-            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(android.content.Intent.EXTRA_TEXT, "GameLingo · "+ a.packageManager.getPackageInfo(a.packageName,0).versionName+"\n"+log)
-            }
-            runCatching { a.startActivity(android.content.Intent.createChooser(send,tr("Sdílet log"))) }
-                .onFailure { android.widget.Toast.makeText(a,tr("Operace se nezdařila. Zkus ji znovu."),android.widget.Toast.LENGTH_SHORT).show() }
-        })
-        GameLingoTVUi.page(a,tr("Technický log"),body,helpTopic="diagnostics")
-    }
-
     fun show(activity: Activity) {
         if (activity.isFinishing) return
         val d: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
@@ -200,7 +165,7 @@ object GameLingoDiagnostics {
                 } else android.widget.Toast.makeText(activity,GameLingoLanguages.ui(activity,"TV neodpovídá. Zkontroluj domácí síť a přijímač."),android.widget.Toast.LENGTH_LONG).show()
             }
         }
-        action(GameLingoLanguages.ui(activity, "Technický log")) { showTechnicalLog(activity) }
+        action(GameLingoLanguages.ui(activity, "Technický log")) { GameLingoHelp.showTechnicalLog(activity) }
         action(GameLingoLanguages.ui(activity, "Vymazat místní log překladu")) {
             if (GameLingoLanguages.translationSettingsBusy()) {
                 android.app.AlertDialog.Builder(activity).setMessage(GameLingoLanguages.ui(activity, "Nejdříve zastav překlad a příjem."))

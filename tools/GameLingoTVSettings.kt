@@ -205,7 +205,7 @@ object GameLingoTVSettings {
             refreshPage?.dismiss()
             diagnostics(a)
         })
-        body.addView(GameLingoTVUi.action(a,tr("Technický log")) { GameLingoDiagnostics.showTechnicalLog(a) })
+        body.addView(GameLingoTVUi.action(a,tr("Technický log")) { GameLingoHelp.showTechnicalLog(a) })
         body.addView(GameLingoTVUi.action(a,tr("Test OCR")) { GameLingoScreenTranslationService.diagnostics(a) })
         body.addView(GameLingoTVUi.action(a,tr("Nahlásit problém")) { GameLingoHelp.report(a) })
         refreshPage = GameLingoTVUi.page(a,tr("Diagnostika TV"),body,helpTopic="diagnostics")

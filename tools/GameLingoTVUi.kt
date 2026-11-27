@@ -95,9 +95,17 @@ object GameLingoTVUi {
             GameLingoLanguages.ui(a,"Herní slovník") -> "glossary"
             GameLingoLanguages.ui(a,"Vybrat profil") -> "profiles"
             GameLingoLanguages.ui(a,"Jazyk aplikace"),GameLingoLanguages.ui(a,"Jazyk hry"),
-            GameLingoLanguages.ui(a,"Jazyk překladu") -> "languages"
+            GameLingoLanguages.ui(a,"Jazyk překladu"),GameLingoLanguages.ui(a,"Jazyk textu"),
+            GameLingoLanguages.ui(a,"Cílový jazyk") -> "languages"
             GameLingoLanguages.ui(a,"Režim OCR"),GameLingoLanguages.ui(a,"Žlutá: režim OCR"),
             GameLingoLanguages.ui(a,"Výchozí oblast") -> "ocr"
+            GameLingoLanguages.ui(a,"Režim překladu"),GameLingoLanguages.ui(a,"Počet předchozích replik"),
+            GameLingoLanguages.ui(a,"Prodleva po zmizení") -> "translation"
+            GameLingoLanguages.ui(a,"Vyber zařízení"),GameLingoLanguages.ui(a,"Vyber konzoli"),
+            GameLingoLanguages.ui(a,"Vyber Xbox"),GameLingoLanguages.ui(a,"Vyber PlayStation") -> "console"
+            GameLingoLanguages.ui(a,"Výstup titulků"),GameLingoLanguages.ui(a,"Vyber nebo přidej TV") -> "pairing"
+            GameLingoLanguages.ui(a,"Barva textu na TV"),GameLingoLanguages.ui(a,"Pozadí na TV"),
+            GameLingoLanguages.ui(a,"Velikost písma") -> "appearance"
             GameLingoLanguages.ui(a,"Diagnostika a kompatibilita") -> "diagnostics"
             GameLingoLanguages.ui(a,"Pokročilé nastavení"),GameLingoLanguages.ui(a,"Velikost rozhraní") -> "settings"
             else -> "home"

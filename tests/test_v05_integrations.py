@@ -508,17 +508,31 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('GameLingoLanguages.ui(c, "Odpárovat")', patch)
         self.assertIn('IPhoneTVPairing.unpair(c, phone.id)', patch)
 
+    def test_help_uses_shared_modules_and_contextual_steps(self):
+        help_ui = code(TOOLS/"GameLingoHelp.kt")
+        ui = code(TOOLS/"GameLingoTVUi.kt")
+        pairing = code(TOOLS/"GameLingoTVPairing.kt")
+        self.assertNotIn("GameLingoPhoneSubtitleStyle", pairing)
+        self.assertNotIn("GameLingoDiagnostics.showTechnicalLog", code(TOOLS/"GameLingoTVSettings.kt"))
+        self.assertIn("fun showTechnicalLog(a: Activity)", help_ui)
+        self.assertIn('topic=="diagnostics" && !GameLingoTVUi.isTV(activity)', help_ui)
+        self.assertIn("stepCounter.text=", help_ui)
+        self.assertIn('GameLingoLanguages.ui(a,"Počet předchozích replik")', ui)
+        for topic in ("languages", "ocr", "translation", "appearance", "profiles", "history", "cache"):
+            self.assertIn('"' + topic + '" -> listOf(', help_ui)
+
     def test_diagnostics_preview_and_log_are_scoped_and_safe(self):
         mobile = code(TOOLS/"GameLingoDiagnostics.kt")
         tv = code(TOOLS/"GameLingoTVSettings.kt")
         ios = code(IOS/"SettingsHomeView.swift")
         self.assertIn("GameLingoTVUi.mountPage(activity,dialog", mobile)
-        self.assertIn("line.substring(9) in safeEvents", mobile)
-        self.assertIn("takeLast(60)", mobile)
+        shared = code(TOOLS/"GameLingoHelp.kt")
+        self.assertIn("line.substring(9) in safeEvents", shared)
+        self.assertIn("takeLast(60)", shared)
         self.assertIn("GameLingoTVPairing.verify(activity,target)", mobile)
         self.assertIn("current.posledniId != target.id", mobile)
         self.assertIn("GameLingoLanguages.translationSettingsBusy()", mobile)
-        self.assertIn("GameLingoDiagnostics.showTechnicalLog(a)", tv)
+        self.assertIn("GameLingoHelp.showTechnicalLog(a)", tv)
         self.assertIn("refreshPage?.dismiss()", tv)
         self.assertIn("disabled: model.isRunning || !model.tv.receiverPaired", ios)
 

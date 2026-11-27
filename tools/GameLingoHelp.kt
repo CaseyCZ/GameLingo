@@ -25,7 +25,7 @@ object GameLingoHelp {
             "Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle."
         "about" -> "O aplikaci / Licence" to
             "Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty."
-        "settings" -> "Nastavení TV" to
+        "settings" -> "Nastavení" to
             "Jazyky, OCR a Překlad určují, co a jak se překládá. Rozložení nastavuje čtyři oblasti. Vzhled upravuje titulky a Profily ukládají konfiguraci pro hry, filmy a aplikace."
         "ocr" -> "OCR a rozpoznávání" to
             "Zvol režim rozpoznávání, filtrování menu a případně rozšířené hledání. Ruční modrá oblast omezuje čtení na místo dialogů. Před změnou zastav překlad."
@@ -39,8 +39,8 @@ object GameLingoHelp {
             "Telefon a TV připoj ke stejné síti. V mobilu otevři Zařízení, vyber TV a naskenuj QR kód nebo zadej celý párovací kód. Po vypršení platnosti vytvoř nový kód."
         "history" -> "Historie překladů" to
             "Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti."
-        "cache" -> "Překladová paměť" to
-            "Místní paměť ukládá originály a překlady pro opakované použití. Můžeš ji vypnout nebo vymazat bez odstranění profilů."
+        "cache" -> "Překladová cache" to
+            "Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu."
         "glossary" -> "Herní slovník" to
             "Slovník opravuje vlastní výrazy a jména pro zvolenou jazykovou dvojici. Před úpravou zastav překlad."
         "tv" -> "GameLingo TV" to
@@ -124,6 +124,13 @@ object GameLingoHelp {
         "console" -> listOf("gamecontroller" to "Povol vzdálené funkce na konzoli a přihlas se ke svému účtu.","display.2" to "Vyber uloženou konzoli nebo přidej novou.","play.fill" to "Vyber zdroj obrazu a výstup titulků.")
         "tv","pairing" -> listOf("wifi" to "Připoj telefon a televizi ke stejné domácí síti.","qrcode" to "Na televizi otevři párování a v telefonu načti QR kód nebo zadej celý kód.","checkmark.circle" to "Ověř spojení a spusť překlad.")
         "home" -> listOf("gamecontroller" to "Vyber zdroj obrazu podle zařízení.","globe" to "Připoj zařízení a vyber jazyk hry a překladu.","play.fill" to "Nastav výstup a spusť překlad.")
+        "languages" -> listOf("globe" to "Jazyk aplikace","gamecontroller" to "Vyber jazyk, ve kterém hra zobrazuje původní dialogy.","text.bubble" to "Vyber cílový jazyk pro dialogy i herní texty.")
+        "ocr" -> listOf("viewfinder" to "Zvol režim rozpoznávání, filtrování menu a případně rozšířené hledání. Ruční modrá oblast omezuje čtení na místo dialogů. Před změnou zastav překlad.","rectangle.dashed" to "Vyber jen oblasti, které chceš překládat.")
+        "translation" -> listOf("text.bubble" to "Překlad","slider.horizontal.3" to "Nastavení překladu","checkmark.circle" to "Nejdříve zastav překlad.")
+        "appearance" -> listOf("text.bubble" to "Velikost písma","slider.horizontal.3" to "Barva textu na TV","display.2" to "Pozadí na TV")
+        "profiles" -> listOf("gamecontroller" to "Uložit profil","checkmark.circle" to "Použít","character.book.closed.fill" to "Herní slovník")
+        "history" -> listOf("text.bubble" to "Uchovávat historii","checkmark.circle" to "Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti.","info.circle" to "Vymazat historii")
+        "cache" -> listOf("info.circle" to "Místní paměť ukládá originály a překlady pro opakované použití. Můžeš ji vypnout nebo vymazat bez odstranění profilů.","checkmark.circle" to "Vymazat uložené překlady")
         else -> emptyList()
     }
     private fun picture(a:Activity,topic:String,index:Int,symbol:String):android.view.View =
@@ -154,10 +161,14 @@ object GameLingoHelp {
         }
 
     fun show(activity: Activity, topic: String) {
-        val(titleKey,descriptionKey)=info(topic)
+        val(titleKey,descriptionKey)=if(topic=="diagnostics" && !GameLingoTVUi.isTV(activity))
+            "Diagnostika" to "Stav místních nastavení a zahájené relace. Uložené údaje nepotvrzují živé spojení s konzolí ani TV."
+            else info(topic)
         val title=GameLingoLanguages.ui(activity,titleKey)
         val description=GameLingoLanguages.ui(activity, descriptionKey)
-        val custom=guide(topic)
+        val custom=if(topic=="diagnostics" && !GameLingoTVUi.isTV(activity))
+            listOf("wifi" to "Ověřit spojení s TV","display.2" to "Zkusit titulek na TV","info.circle" to "Technický log")
+            else guide(topic)
         val steps=if(custom.isNotEmpty())custom.map{it.first to tr(activity,it.second)}
             else description.split(". ").filter{it.isNotBlank()}.map{"info.circle" to it}
         val body=column(activity)
@@ -165,6 +176,8 @@ object GameLingoHelp {
         val details=column(activity).apply{visibility=android.view.View.GONE}
         val enlarged=android.widget.FrameLayout(activity)
         val explanation=label(activity,"")
+        val stepCounter=label(activity,"",12f)
+        details.addView(stepCounter)
         details.addView(enlarged,LinearLayout.LayoutParams(-1,d(activity,110)))
         details.addView(explanation)
         val nav=LinearLayout(activity)
@@ -177,7 +190,10 @@ object GameLingoHelp {
             selected=index;details.visibility=android.view.View.VISIBLE;enlarged.removeAllViews()
             enlarged.addView(picture(activity,topic,index,steps[index].first),android.widget.FrameLayout.LayoutParams(-1,-1))
             explanation.text=steps[index].second
+            stepCounter.text="${index+1} / ${steps.size}"
             previous.isEnabled=index>0;next.isEnabled=index<steps.lastIndex
+            previous.alpha=if(previous.isEnabled)1f else .4f
+            next.alpha=if(next.isEnabled)1f else .4f
         }
         previous.setOnClickListener{select(selected-1)};next.setOnClickListener{select(selected+1)}
         steps.forEachIndexed{i,step->
@@ -240,6 +256,41 @@ object GameLingoHelp {
         GameLingoTVUi.page(activity,GameLingoLanguages.ui(activity, "Nápověda") + " · " + title,body)
         // Hidden practice controls must also have focus styling when revealed.
         GameLingoTVUi.applyMenuFocus(activity,body)
+    }
+
+    // Only categories emitted by translation_privacy.py, never arbitrary legacy log text.
+    private val safeEvents = setOf("[chyba zpracování]", "[OCR událost]", "[herní text: událost]",
+        "[Xbox: událost relace]", "[PlayStation: událost relace]", "[dekodér: událost]", "[technická událost]")
+    private fun safeLog(a: Activity): String = runCatching {
+        val file = java.io.File(a.filesDir, "titulky-private-v2.log")
+        if (!file.isFile || file.length() > 310_000L) return@runCatching ""
+        file.useLines { lines ->
+            lines.filter { line ->
+                line.length >= 10 && line.take(8).matches(Regex("[0-9]{2}:[0-9]{2}:[0-9]{2}")) &&
+                    line[8] == ' ' && line.substring(9) in safeEvents
+            }.toList().takeLast(60).joinToString("\n")
+        }
+    }.getOrDefault("")
+
+    fun showTechnicalLog(a: Activity) {
+        fun tr(key: String) = GameLingoLanguages.ui(a,key)
+        val log = safeLog(a)
+        val body = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        body.addView(TextView(a).apply {
+            text = log.ifBlank { tr("Zatím bez měření") }
+            setTextColor(Color.WHITE)
+            typeface = Typeface.MONOSPACE
+            setTextIsSelectable(true)
+        })
+        body.addView(GameLingoTVUi.action(a,tr("Sdílet log")) {
+            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(android.content.Intent.EXTRA_TEXT, "GameLingo · "+ a.packageManager.getPackageInfo(a.packageName,0).versionName+"\n"+log)
+            }
+            runCatching { a.startActivity(android.content.Intent.createChooser(send,tr("Sdílet log"))) }
+                .onFailure { android.widget.Toast.makeText(a,tr("Operace se nezdařila. Zkus ji znovu."),android.widget.Toast.LENGTH_SHORT).show() }
+        })
+        GameLingoTVUi.page(a,tr("Technický log"),body,helpTopic="diagnostics")
     }
 
     fun newsButton(activity: Activity): TextView = button(activity, news = true)

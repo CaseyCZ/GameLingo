@@ -252,13 +252,16 @@ object GameLingoTVPairing {
         return if (id != null && store.najdi(id) != null) store.nastaveni(id)
             else c.getSharedPreferences("gamelingo", Context.MODE_PRIVATE)
     }
+    // Shared protocol values; TV builds intentionally omit phone typography.
+    private val remoteCaptionColors = setOf("white", "yellow", "cyan", "green", "purple")
+    private val remoteCaptionBackgrounds = setOf("none", "dark", "translucent")
     fun captionColor(c: Context): String = appearancePrefs(c).getString("remoteCaptionColor", "white")
-        ?.takeIf { it in GameLingoPhoneSubtitleStyle.colors } ?: "white"
+        ?.takeIf { it in remoteCaptionColors } ?: "white"
     fun captionBackground(c: Context): String = appearancePrefs(c).getString("remoteCaptionBackground", "dark")
-        ?.takeIf { it in GameLingoPhoneSubtitleStyle.backgrounds } ?: "dark"
+        ?.takeIf { it in remoteCaptionBackgrounds } ?: "dark"
 
     fun saveCaptionStyle(c: Context, color: String, background: String) {
-        if (color !in GameLingoPhoneSubtitleStyle.colors || background !in GameLingoPhoneSubtitleStyle.backgrounds) return
+        if (color !in remoteCaptionColors || background !in remoteCaptionBackgrounds) return
         appearancePrefs(c).edit().putString("remoteCaptionColor", color).putString("remoteCaptionBackground", background).apply()
     }
 
