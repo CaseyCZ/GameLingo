@@ -84,6 +84,24 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Propojeni.Vysilac.cameraCaption", android)
         self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
 
+    def test_camera_adaptive_full_image_overlay(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        for key in ("GLCameraPalette(cg)", "previous.text +", "previous.rect.union(rect)",
+                    "GLCameraPalette.foreground(overlay.background)",
+                    ".background(GLCameraPalette.color(overlay.background))",
+                    ".rotationEffect(.radians(overlay.angle))",
+                    "blocks.count > 1 || lines.count != blocks.count",
+                    "wholeImage ? 0.35 : 0.45",
+                    "preview.aspectRatio(fullImage ? 9.0 / 16.0 : 0.9"):
+            self.assertIn(key, ios)
+        for key in ("sampleBackground(bitmap, rect)", "block.lines.size",
+                    "task.result.textBlocks.flatMap { it.lines }",
+                    "Color.luminance(overlay.background)", "StaticLayout.Builder.obtain",
+                    "canvas.rotate(overlay.angle", "if (region.full) 350L else 450L",
+                    "root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))"):
+            self.assertIn(key, android)
+
     def test_camera_overlay_reuses_only_visible_recognized_text(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")
