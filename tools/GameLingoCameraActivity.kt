@@ -67,11 +67,32 @@ class GameLingoCameraActivity : ComponentActivity() {
     }
 
     private data class CameraSurface(val start: Int, val end: Int, val horizontal: Boolean)
+    private data class CameraAppearance(val texture: Bitmap?, val weight: Int)
+    // Normalized clockwise OCR corners; map a flat layout back to the source plane.
+    private data class CameraQuad(val points: FloatArray) {
+        fun projection(box: RectF, imageBounds: RectF): Matrix? {
+            if (points.size != 8 || box.width() <= 0 || box.height() <= 0) return null
+            val dst = FloatArray(8) { i -> if (i % 2 == 0)
+                imageBounds.left + points[i] * imageBounds.width()
+                else imageBounds.top + points[i] * imageBounds.height() }
+            if (dst.any { !it.isFinite() }) return null
+            for (i in 0 until 4) {
+                val a = i * 2; val b = ((i + 1) % 4) * 2; val c = ((i + 2) % 4) * 2
+                val cross = (dst[b]-dst[a])*(dst[c+1]-dst[b+1]) - (dst[b+1]-dst[a+1])*(dst[c]-dst[b])
+                if (cross <= .001f) return null
+            }
+            val src = floatArrayOf(box.left, box.top, box.right, box.top,
+                box.right, box.bottom, box.left, box.bottom)
+            return Matrix().takeIf { it.setPolyToPoly(src, 0, dst, 0, 4) }
+        }
+    }
     private data class CameraBlock(val text: String, val rect: RectF, val angle: Float = 0f,
                                    val background: Int = Color.BLACK, val lineCount: Int = 1, val ink: Int? = null,
-                                   val surface: CameraSurface? = null)
+                                   val surface: CameraSurface? = null, val quad: CameraQuad? = null,
+                                   val appearance: CameraAppearance = CameraAppearance(null, 0))
     private data class CameraOverlay(val text: String, val rect: RectF, val angle: Float,
-                                     val background: Int, val lineCount: Int, val ink: Int?, val surface: CameraSurface?)
+                                     val background: Int, val lineCount: Int, val ink: Int?, val surface: CameraSurface?,
+                                     val quad: CameraQuad?, val appearance: CameraAppearance)
 
     // Preserve an observed ink color only when repeated samples provide readable contrast.
     private fun sampleInk(bitmap: Bitmap, rect: RectF, background: Int): Int? {
@@ -163,6 +184,66 @@ class GameLingoCameraActivity : ComponentActivity() {
             return CameraSurface(a, b, horizontal)
         }
         return candidate(top, bottom, left, right, false) ?: candidate(left, right, top, bottom, true)
+    }
+
+    // Bounded ink-color mask, stroke estimate, and local donor restoration.
+    // Preserve the non-mask texture; fall back when the mask or donors are unreliable.
+    private fun textureAndWeight(bitmap: Bitmap, rect: RectF, ink: Int?, lineCount: Int,
+                                 restore: Boolean): CameraAppearance {
+        if (ink == null || rect.left < 0 || rect.top < 0 || rect.right > 1 || rect.bottom > 1)
+            return CameraAppearance(null, 0)
+        val w = minOf(96, (rect.width() * 256).toInt())
+        val h = minOf(48, (rect.height() * 256).toInt())
+        if (w < 24 || h < 10 || h / lineCount.coerceAtLeast(1) < 8) return CameraAppearance(null, 0)
+        fun distance(a: Int, b: Int) = maxOf(
+            kotlin.math.abs(Color.red(a)-Color.red(b)), kotlin.math.abs(Color.green(a)-Color.green(b)),
+            kotlin.math.abs(Color.blue(a)-Color.blue(b)))
+        val source = IntArray(w*h) { i ->
+            val x = rect.left + rect.width() * (i%w + .5f)/w
+            val y = rect.top + rect.height() * (i/w + .5f)/h
+            bitmap.getPixel((x*bitmap.width).toInt().coerceIn(0,bitmap.width-1),
+                (y*bitmap.height).toInt().coerceIn(0,bitmap.height-1))
+        }
+        val inkMask = BooleanArray(source.size) { distance(source[it], ink) <= 38 }
+        val count = inkMask.count { it }
+        if (count < maxOf(8,w*h/25) || count > w*h*45/100) return CameraAppearance(null,0)
+        val thickness = ArrayList<Int>()
+        for (y in 1 until h-1) for (x in 1 until w-1) if (inkMask[y*w+x]) {
+            var l=x; var r=x; var t=y; var b=y
+            while (l>0 && inkMask[y*w+l-1]) l--
+            while (r+1<w && inkMask[y*w+r+1]) r++
+            while (t>0 && inkMask[(t-1)*w+x]) t--
+            while (b+1<h && inkMask[(b+1)*w+x]) b++
+            thickness.add(minOf(r-l+1,b-t+1))
+        }
+        thickness.sort()
+        val ratio = (thickness.getOrNull(thickness.size/2) ?: 1).toFloat()/h*lineCount.coerceAtLeast(1)
+        val weight = if (ratio >= .22f) 2 else if (ratio >= .14f) 1 else 0
+        if (!restore) return CameraAppearance(null,weight)
+        val mask=inkMask.copyOf()
+        for (y in 0 until h) for (x in 0 until w) if (inkMask[y*w+x]) {
+            for (dy in -1..1) for (dx in -1..1) {
+                val xx=x+dx; val yy=y+dy
+                if (xx in 0 until w && yy in 0 until h) mask[yy*w+xx]=true
+            }
+        }
+        if (mask.count { it } > w*h*65/100) return CameraAppearance(null,weight)
+        val donors=source.indices.filter { !mask[it] }.map { source[it] }
+        val first=donors.firstOrNull() ?: return CameraAppearance(null,weight)
+        if (donors.count { distance(it,first)>24 } < donors.size/5) return CameraAppearance(null,weight)
+        val result=source.copyOf()
+        for (y in 0 until h) for (x in 0 until w) if (mask[y*w+x]) {
+            var found: Int?=null
+            for (radius in 1..8) {
+                val candidates=arrayOf(x to y-radius,x to y+radius,x-radius to y,x+radius to y)
+                for ((xx,yy) in candidates) if (xx in 0 until w && yy in 0 until h && !mask[yy*w+xx]) {
+                    found=source[yy*w+xx]; break
+                }
+                if (found != null) break
+            }
+            result[y*w+x]=found ?: return CameraAppearance(null,weight)
+        }
+        return CameraAppearance(Bitmap.createBitmap(result,w,h,Bitmap.Config.ARGB_8888),weight)
     }
 
     private fun sampleBackground(bitmap: Bitmap, rect: RectF): Int {
@@ -676,9 +757,22 @@ class GameLingoCameraActivity : ComponentActivity() {
                                 (corners[1].x - corners[0].x).toDouble())).toFloat() else 0f
                         val background = if (region.full) runCatching { sampleBackground(bitmap, rect) }.getOrDefault(Color.BLACK) else Color.BLACK
                         val ink = if (region.full) runCatching { sampleInk(bitmap, rect, background) }.getOrNull() else null
-                        val surface = if (region.full && kotlin.math.abs(angle) < 3.44f)
+                        val quad = if (region.full && corners != null && corners.size == 4) {
+                            val points = FloatArray(8) { i -> if (i % 2 == 0)
+                                (left + corners[i/2].x).toFloat()/bitmap.width
+                                else (top + corners[i/2].y).toFloat()/bitmap.height }
+                            CameraQuad(points).takeIf { points.all { p -> p in 0f..1f } &&
+                                it.projection(rect, RectF(0f,0f,1f,1f)) != null }
+                        } else null
+                        val horizontal = kotlin.math.abs(angle) < 3.44f &&
+                            (quad?.points?.let { kotlin.math.abs(it[3]-it[1]) < .003f &&
+                                kotlin.math.abs(it[6]-it[0]) < .003f } ?: true)
+                        val surface = if (region.full && horizontal)
                             runCatching { reconstructedSurface(bitmap, rect, background, ink) }.getOrNull() else null
-                        if (region.full && corners != null && corners.size >= 4) {
+                        val appearance = if (region.full)
+                            runCatching { textureAndWeight(bitmap, rect, ink, lineCount, horizontal && surface == null) }
+                                .getOrDefault(CameraAppearance(null,0)) else CameraAppearance(null,0)
+                        if (region.full && quad == null && corners != null && corners.size >= 4) {
                             val width = kotlin.math.hypot((corners[1].x - corners[0].x).toDouble(),
                                 (corners[1].y - corners[0].y).toDouble()).toFloat() / bitmap.width
                             val height = kotlin.math.hypot((corners[3].x - corners[0].x).toDouble(),
@@ -686,7 +780,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                             val cx = rect.centerX(); val cy = rect.centerY()
                             if (width > 0f && height > 0f) rect.set(cx - width / 2, cy - height / 2, cx + width / 2, cy + height / 2)
                         }
-                        blocks.add(CameraBlock(text, rect, angle, background, lineCount.coerceAtLeast(1), ink, surface))
+                        blocks.add(CameraBlock(text, rect, angle, background, lineCount.coerceAtLeast(1), ink, surface, quad, appearance))
                     }
                     if (region.full) {
                         for (block in task.result.textBlocks.take(20)) {
@@ -728,7 +822,7 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun updateOverlays() {
         preview.overlays = if (region.full && overlayEnabled) currentBlocks.mapNotNull { block ->
-            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect, block.angle, block.background, block.lineCount, block.ink, block.surface) }
+            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect, block.angle, block.background, block.lineCount, block.ink, block.surface, block.quad, block.appearance) }
         } else emptyList()
         preview.invalidate()
     }
@@ -1086,7 +1180,9 @@ class GameLingoCameraActivity : ComponentActivity() {
                     val box = RectF(x + r.left * w, y + r.top * h, x + r.right * w, y + r.bottom * h)
                     if (box.width() <= 0 || box.height() <= 0) continue
                     canvas.save()
-                    canvas.rotate(overlay.angle, box.centerX(), box.centerY())
+                    val projection = overlay.quad?.projection(box, bounds)
+                    if (projection != null) canvas.concat(projection)
+                    else canvas.rotate(overlay.angle, box.centerX(), box.centerY())
                     canvas.clipRect(box)
                     paint.color = overlay.background
                     overlay.surface?.let { surface ->
@@ -1096,10 +1192,16 @@ class GameLingoCameraActivity : ComponentActivity() {
                             if (surface.horizontal) box.top else box.bottom,
                             surface.start, surface.end, android.graphics.Shader.TileMode.CLAMP)
                     }
-                    canvas.drawRect(box, paint)
+                    val texture = overlay.appearance.texture
+                    if (texture != null) {
+                        paint.shader = null
+                        canvas.drawBitmap(texture, null, box, paint)
+                    } else canvas.drawRect(box, paint)
                     paint.shader = null
                     val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                         color = overlay.ink ?: (if (Color.luminance(overlay.background) > .179f) Color.BLACK else Color.WHITE)
+                        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT,
+                            if (overlay.appearance.weight >= 1) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
                         textSize = (box.height() / overlay.lineCount * .83f).coerceAtLeast(1f)
                     }
                     val layoutWidth = box.width().toInt().coerceAtLeast(1)
