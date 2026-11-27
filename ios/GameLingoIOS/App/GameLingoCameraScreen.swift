@@ -220,7 +220,8 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let now = ProcessInfo.processInfo.systemUptime
-        guard running, now - lastRead >= 0.45,
+        let wholeImage = region == CGRect(x: 0, y: 0, width: 1, height: 1)
+        guard running, now - lastRead >= (wholeImage ? 0.35 : 0.45),
               let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         lastRead = now
         let image = CIImage(cvPixelBuffer: buffer)
@@ -244,7 +245,6 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 $0.boundingBox.midY > $1.boundingBox.midY
             }
             var blocks: [GLCameraBlock] = []
-            let wholeImage = region == CGRect(x: 0, y: 0, width: 1, height: 1)
             let palette = wholeImage ? GLCameraPalette(cg) : nil
             var remaining = 1200
             for observation in observations.prefix(20) {
@@ -274,6 +274,17 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                                               rect: previous.rect.union(rect), background: previous.background,
                                               lineCount: previous.lineCount + 1)
                         blocks.removeLast()
+                    }
+                }
+                if wholeImage && block.lineCount == 1 && abs(angle) >= 0.12 {
+                    let width = hypot(Double(observation.topRight.x - observation.topLeft.x) * Double(cg.width),
+                                      Double(observation.topRight.y - observation.topLeft.y) * Double(cg.height)) / Double(cg.width)
+                    let height = hypot(Double(observation.bottomLeft.x - observation.topLeft.x) * Double(cg.width),
+                                       Double(observation.bottomLeft.y - observation.topLeft.y) * Double(cg.height)) / Double(cg.height)
+                    if width > 0, height > 0 {
+                        let oriented = CGRect(x: rect.midX - CGFloat(width) / 2, y: rect.midY - CGFloat(height) / 2,
+                                              width: CGFloat(width), height: CGFloat(height))
+                        block = GLCameraBlock(text: text, rect: oriented, angle: angle, background: block.background)
                     }
                 }
                 blocks.append(block)
