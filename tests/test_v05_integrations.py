@@ -102,6 +102,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                     "root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))"):
             self.assertIn(key, android)
 
+    def test_automatic_ocr_filters_ignored_lines_before_grouping(self):
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        automatic = code(TOOLS/"GameLingoAutomaticOCR.kt")
+        self.assertIn("filterMenus: filterMenuText, ignoredLines: ignoredBlueLines", model)
+        self.assertIn("YellowOCRFilter.keepsAutomaticDialogue(text, filterMenus: filterMenus, ignored: ignored)", pipeline)
+        self.assertIn("GameLingoOCRConfig.ignoredBlueEntries", automatic)
+        self.assertLess(automatic.index("val lines = b.lines.filter"), automatic.index('val text=lines.joinToString'))
+        self.assertIn("GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)", automatic)
+
     def test_short_dialogue_geometry_respects_selected_mode(self):
         wire = code(TOOLS/"wire_gamelingo_languages.py")
         self.assertIn('geometry = folder / "VyberTitulku.kt"', wire)

@@ -1161,7 +1161,8 @@ final class CaptionAppModel: ObservableObject {
         publishAutomaticOutputs(now: now)
         await dialogueReset?.value
         guard isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
-        guard let reading = await pipeline.recognizeAutomaticZone(buffer, zones: automaticZones, gameLanguage: gameLanguage),
+        guard let reading = await pipeline.recognizeAutomaticZone(buffer, zones: automaticZones, gameLanguage: gameLanguage,
+              filterMenus: filterMenuText, ignoredLines: ignoredBlueLines),
               isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
         let seen = ProcessInfo.processInfo.systemUptime
         automaticTracker.observe(zone: reading.zone, blocks: reading.blocks, now: seen)

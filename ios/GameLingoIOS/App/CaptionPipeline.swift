@@ -158,7 +158,9 @@ actor CaptionPipeline {
     /// One actual crop per invocation, round-robin across enabled regions.
     /// No OCR of pixels outside the selected zone and no unbounded task queue.
     func recognizeAutomaticZone(_ buffer: CVPixelBuffer, zones: [AutomaticOCRZone],
-                                gameLanguage: GLGameLanguage) -> AutomaticZoneReading? {
+                                gameLanguage: GLGameLanguage, filterMenus: Bool = true,
+                                ignoredLines: String = "") -> AutomaticZoneReading? {
+        let ignored = OCRIgnoredLines.entries(ignoredLines)
         let enabled = zones.filter { $0.enabled && $0.valid }
         guard !enabled.isEmpty else { return nil }
         let now = ProcessInfo.processInfo.systemUptime
@@ -192,7 +194,8 @@ actor CaptionPipeline {
                 let lines: [AutomaticDialogueLayout.Line] = (request.results ?? []).compactMap { item in
                     guard let text = item.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines),
                           text.filter({ $0.isLetter }).count >= 2,
-                          !looksLikeMenu(text, conservative: true),
+                          YellowOCRFilter.keepsAutomaticDialogue(text, filterMenus: filterMenus, ignored: ignored),
+                          (!filterMenus || !looksLikeMenu(text, conservative: true)),
                           let rect = AutomaticDialogueLayout.fullFrameRect(croppedVision: item.boundingBox, crop: zone.rect)
                     else { return nil }
                     return .init(text: text, rect: rect)

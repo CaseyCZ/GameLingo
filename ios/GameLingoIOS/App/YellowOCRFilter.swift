@@ -17,6 +17,13 @@ enum OCRIgnoredLines {
 enum YellowOCRFilter {
     private static let prompt = try! NSRegularExpression(pattern: #"(?i)^(?:press|hold|tap) +(?:button +)?(?:A|B|X|Y|LB|RB|LT|RT|L1|L2|L3|R1|R2|R3|START|SELECT|OPTIONS|MENU|\[(?:A|B|X|Y|LB|RB|LT|RT|L1|L2|L3|R1|R2|R3|START|SELECT|OPTIONS|MENU)\])(?: +to +(?:continue|confirm|skip|select|go back))?[.!]?$"#)
 
+    // Only filter complete lines, before grouping into dialogue blocks.
+    // The explicit ignored list remains effective even if menu filtering is off.
+    static func keepsAutomaticDialogue(_ text: String, filterMenus: Bool, ignored: Set<String>) -> Bool {
+        OCRIgnoredLines.keeps(text, entries: ignored) &&
+            keeps(text, enabled: filterMenus)
+    }
+
     /// Match the Android game-text lane: retain short choices such as NO.
     static func hasReadableText(_ text: String) -> Bool {
         text.filter { $0.isLetter }.count >= 2

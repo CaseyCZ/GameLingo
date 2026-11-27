@@ -2,6 +2,15 @@ package cz.titulky.tv
 import org.junit.Test
 import org.junit.Assert.*
 class GameLingoAutomaticTrackerTest {
+    @Test fun ignoredHudAndExplicitPromptsDoNotSuppressDialogue(){
+        val ignored = GameLingoIgnoredLines.entries("  Inventory  \nSPEED LIMIT")
+        val lines = listOf("Inventory", "Press [A] to continue", "I need the inventory.", "No!")
+        assertEquals(listOf("I need the inventory.", "No!"),
+            lines.filter { GameLingoYellowOCRFilter.keepsAutomaticDialogue(it,true,ignored) })
+        assertTrue(GameLingoYellowOCRFilter.keepsAutomaticDialogue("Press [A] to continue",false,ignored))
+        assertFalse(GameLingoYellowOCRFilter.keepsAutomaticDialogue("speed limit",false,ignored))
+        assertTrue(GameLingoYellowOCRFilter.keepsAutomaticDialogue("I pressed A to continue.",true,ignored))
+    }
     @Test fun independentZonesAndStableTracks(){
         val t=GameLingoAutomaticTracker()
         val a=AutoBlock("One",AutoRect(.2f,.2f,.4f,.3f))

@@ -88,9 +88,23 @@ internal class GameLingoAutomaticOCR(
             reader.process(InputImage.fromBitmap(image,0)).addOnCompleteListener { task ->
                 try {
                     if(!alive()||!task.isSuccessful)return@addOnCompleteListener
+                    val ignored = GameLingoOCRConfig.ignoredBlueEntries
+                    val filterMenus = GameLingoOCRConfig.filterMenuText
                     val blocks=task.result.textBlocks.mapNotNull { b ->
-                        val box=b.boundingBox ?: return@mapNotNull null
-                        val text=b.text.trim().replace(Regex("\\s+")," ")
+                        // Filter individual OCR lines before joining them, not the
+                        // combined block: an ignored HUD label can share a block
+                        // with genuine dialogue.
+                        val lines = b.lines.filter {
+                            GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)
+                        }
+                        if (lines.isEmpty()) return@mapNotNull null
+                        val box = if (lines.size == b.lines.size) b.boundingBox else {
+                            val boxes = lines.mapNotNull { it.boundingBox }
+                            boxes.firstOrNull()?.let { first ->
+                                android.graphics.Rect(first).apply { boxes.drop(1).forEach { union(it) } }
+                            }
+                        } ?: return@mapNotNull null
+                        val text=lines.joinToString(" ") { it.text }.trim().replace(Regex("\\s+")," ")
                         if(text.count{it.isLetter()}<2)return@mapNotNull null
                         val rect=AutoRect(((x+box.left).toFloat()/w).coerceIn(0f,1f),
                             ((y+box.top).toFloat()/h).coerceIn(0f,1f),

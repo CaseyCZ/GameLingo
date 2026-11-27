@@ -3,6 +3,14 @@ import Foundation
 @main
 struct OCRCadenceTests {
     static func main() {
+        let automaticIgnored = OCRIgnoredLines.entries("  Inventory  \nSPEED LIMIT")
+        let automaticLines = ["Inventory", "Press [A] to continue", "I need the inventory.", "No!"]
+        precondition(automaticLines.filter {
+            YellowOCRFilter.keepsAutomaticDialogue($0, filterMenus: true, ignored: automaticIgnored)
+        } == ["I need the inventory.", "No!"])
+        precondition(YellowOCRFilter.keepsAutomaticDialogue("Press [A] to continue", filterMenus: false, ignored: automaticIgnored))
+        precondition(!YellowOCRFilter.keepsAutomaticDialogue("speed limit", filterMenus: false, ignored: automaticIgnored))
+        precondition(YellowOCRFilter.keepsAutomaticDialogue("I pressed A to continue.", filterMenus: true, ignored: automaticIgnored))
         let stable = OCRCadence.preset("classic")
         let balanced = OCRCadence.preset("automatic")
         let fast = OCRCadence.preset("street")
