@@ -14,9 +14,9 @@ GameLingo is an independent AGPL-3.0 project. See the accompanying project licen
 | Mbed TLS 2.28.0 / Opus 1.5.2 | iOS native core | Apache-2.0 / BSD-family, exact source licenses and exceptions retained when available |
 | curl / nanopb / Jerasure / GF-Complete | Native core | See exact submodule licenses; do not infer from project names |
 | Font Awesome Free 6.7.2 Brands | Android / TV | © Fonticons, Inc.; CC BY 4.0 https://creativecommons.org/licenses/by/4.0/ ; Xbox and PlayStation SVG paths converted to VectorDrawable, color changed; https://github.com/FortAwesome/Font-Awesome/tree/6.7.2 |
-| ML Kit OCR / Language ID | Android / TV | Google ML Kit terms and privacy, not an open-source license for the SDK: https://developers.google.com/ml-kit/terms |
+| ML Kit OCR / Language ID; Translation (mobile only) | Android / TV | Google ML Kit terms and privacy, not an open-source license for the SDK: https://developers.google.com/ml-kit/terms |
 | SQLite / system frameworks | Platforms | SQLite public domain; system SDK terms apply |
 
 Xbox, PlayStation, Google TV and other marks belong to their respective owners. GameLingo is not sponsored by or affiliated with those owners.
 
-Online Google GTX, Microsoft Edge and MyMemory services are separate from library licenses. Authorization, attribution and service terms are not established by this notice. See the [historical provider audit](https://github.com/CaseyCZ/GameLingo/blob/0b9e7a3a03a4cab0fa7cf1c9a0def1b2910d2adf/docs/LICENSE-AND-PROVIDER-AUDIT.md). A test build is not a public distribution clearance.
+Online Google GTX, Microsoft Edge and MyMemory services are separate from library licenses. Authorization, attribution and service terms are not established by this notice. A test build is not a public distribution clearance.
