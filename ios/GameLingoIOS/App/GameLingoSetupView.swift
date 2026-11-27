@@ -73,7 +73,7 @@ struct GameLingoSetupView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     GLHelpButton(title: "První spuštění", explanation:
-                        "Vyber konzoli, jazyk hry a cílový jazyk překladu, potom výstup titulků. Google TV se páruje šestimístným kódem. Vše můžeš později změnit v Nastavení a Zařízeních.")
+                        "1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat.")
                 }
             }
         }

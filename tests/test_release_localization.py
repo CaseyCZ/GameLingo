@@ -342,7 +342,11 @@ class ReleaseLocalizationTests(unittest.TestCase):
         setup = text(IOS / "GameLingoSetupView.swift")
         self.assertNotIn("Text(language.title)", setup)
         self.assertNotIn("Text(devices.subtitleOutput.rawValue)", setup)
-        self.assertIn('GLInterfaceText.localized("Vyber nebo přidej TV")', setup)
+        # Empty TV cards were removed from first-run; keep the real device name verbatim.
+        self.assertIn("if let television = devices.chosenTelevision", setup)
+        self.assertIn("Text(verbatim: television.name)", setup)
+        self.assertIn('GLPrimaryButton(title: "Spárovat TV"', setup)
+        self.assertNotIn('GLInterfaceText.localized("Vyber nebo přidej TV")', setup)
         self.assertIn('GLInterfaceText.localized("Nevybráno")', setup)
         home = text(IOS / "GameLingoHome.swift")
         self.assertIn('Text(LocalizedStringKey(model.isRunning ? "Zastavit překlad" : "Spustit překlad"))', home)
