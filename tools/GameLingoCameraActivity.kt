@@ -22,6 +22,9 @@ import android.widget.ImageButton
 import android.graphics.Path
 import android.graphics.ColorFilter
 import android.graphics.PixelFormat
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
 import android.graphics.drawable.Drawable
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -63,8 +66,34 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
     }
 
-    private data class CameraBlock(val text: String, val rect: RectF)
-    private data class CameraOverlay(val text: String, val rect: RectF)
+    private data class CameraBlock(val text: String, val rect: RectF, val angle: Float = 0f,
+                                   val background: Int = Color.BLACK, val lineCount: Int = 1)
+    private data class CameraOverlay(val text: String, val rect: RectF, val angle: Float,
+                                     val background: Int, val lineCount: Int)
+
+    private fun sampleBackground(bitmap: Bitmap, rect: RectF): Int {
+        val bins = HashMap<Int, IntArray>()
+        fun sample(x: Float, y: Float) {
+            val px = (x * bitmap.width).toInt().coerceIn(0, bitmap.width - 1)
+            val py = (y * bitmap.height).toInt().coerceIn(0, bitmap.height - 1)
+            val rgb = bitmap.getPixel(px, py)
+            val r = Color.red(rgb); val g = Color.green(rgb); val b = Color.blue(rgb)
+            val key = (r / 32) * 64 + (g / 32) * 8 + b / 32
+            val bin = bins.getOrPut(key) { IntArray(4) }
+            bin[0]++; bin[1] += r; bin[2] += g; bin[3] += b
+        }
+        val dx = min(rect.width() * .08f, .008f)
+        val dy = min(rect.height() * .12f, .008f)
+        for (step in 0 until 12) {
+            val t = (step + .5f) / 12
+            val x = rect.left + rect.width() * t
+            val y = rect.top + rect.height() * t
+            sample(x, rect.top + dy); sample(x, rect.bottom - dy)
+            sample(rect.left + dx, y); sample(rect.right - dx, y)
+        }
+        val best = bins.values.maxByOrNull { it[0] } ?: return Color.BLACK
+        return Color.rgb(best[1] / best[0], best[2] / best[0], best[3] / best[0])
+    }
 
     private data class Region(val full: Boolean = true, val centerY: Float = .78f,
                               val height: Float = .24f, val centerX: Float = .5f,
@@ -535,16 +564,37 @@ class GameLingoCameraActivity : ComponentActivity() {
                 val blocks = mutableListOf<CameraBlock>()
                 var remaining = 1200
                 if (task.isSuccessful) {
-                    for (line in task.result.textBlocks.flatMap { it.lines }.take(20)) {
-                        val box = line.boundingBox ?: continue
-                        if (line.text.isBlank() || remaining <= 0) continue
-                        val text = line.text.take(remaining)
+                    fun addBlock(original: String, box: android.graphics.Rect?, corners: Array<android.graphics.Point>?, lineCount: Int) {
+                        if (box == null || original.isBlank() || remaining <= 0 || blocks.size >= 20) return
+                        val text = original.take(remaining)
                         remaining -= text.length + 1
-                        blocks.add(CameraBlock(text, RectF(
+                        val rect = RectF(
                             (left + box.left).toFloat() / bitmap.width,
                             (top + box.top).toFloat() / bitmap.height,
                             (left + box.right).toFloat() / bitmap.width,
-                            (top + box.bottom).toFloat() / bitmap.height)))
+                            (top + box.bottom).toFloat() / bitmap.height)
+                        val angle = if (corners != null && corners.size >= 2)
+                            Math.toDegrees(kotlin.math.atan2((corners[1].y - corners[0].y).toDouble(),
+                                (corners[1].x - corners[0].x).toDouble())).toFloat() else 0f
+                        val background = if (region.full) sampleBackground(bitmap, rect) else Color.BLACK
+                        if (region.full && corners != null && corners.size >= 4) {
+                            val width = kotlin.math.hypot((corners[1].x - corners[0].x).toDouble(),
+                                (corners[1].y - corners[0].y).toDouble()).toFloat() / bitmap.width
+                            val height = kotlin.math.hypot((corners[3].x - corners[0].x).toDouble(),
+                                (corners[3].y - corners[0].y).toDouble()).toFloat() / bitmap.height
+                            val cx = rect.centerX(); val cy = rect.centerY()
+                            if (width > 0f && height > 0f) rect.set(cx - width / 2, cy - height / 2, cx + width / 2, cy + height / 2)
+                        }
+                        blocks.add(CameraBlock(text, rect, angle, background, lineCount.coerceAtLeast(1)))
+                    }
+                    if (region.full) {
+                        for (block in task.result.textBlocks.take(20)) {
+                            addBlock(block.text.replace("\n", " "), block.boundingBox, block.cornerPoints, block.lines.size)
+                        }
+                    } else {
+                        for (line in task.result.textBlocks.flatMap { it.lines }.take(20)) {
+                            addBlock(line.text, line.boundingBox, line.cornerPoints, 1)
+                        }
                     }
                 }
                 receive(blocks)
@@ -558,7 +608,7 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun updateOverlays() {
         preview.overlays = if (region.full && overlayEnabled) currentBlocks.mapNotNull { block ->
-            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect) }
+            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect, block.angle, block.background, block.lineCount) }
         } else emptyList()
         preview.invalidate()
     }
@@ -642,7 +692,7 @@ class GameLingoCameraActivity : ComponentActivity() {
             }
             val result = translated
             val lines = result.split("\n")
-            if (!region.full || !overlayEnabled || lines.size == blocks.size) {
+            if (!region.full || !overlayEnabled || (blocks.size == 1 && lines.size == blocks.size)) {
                 finishResult(result, lines)
             } else {
                 // Only place a translation on a source line when alignment is known.
@@ -875,17 +925,27 @@ class GameLingoCameraActivity : ComponentActivity() {
                     val r = overlay.rect
                     val box = RectF(x + r.left * w, y + r.top * h, x + r.right * w, y + r.bottom * h)
                     if (box.width() <= 0 || box.height() <= 0) continue
-                    paint.color = GameLingoPhoneSubtitleStyle.backgroundColor(
-                        GameLingoPhoneSubtitleStyle.background(context))
-                    if (paint.color == Color.TRANSPARENT) paint.color = Color.argb(224, 0, 0, 0)
-                    canvas.drawRect(box, paint)
-                    paint.color = GameLingoPhoneSubtitleStyle.textColor(GameLingoPhoneSubtitleStyle.color(context))
-                    paint.textSize = (box.height() * .8f * GameLingoPhoneSubtitleStyle.scale(context)).coerceAtLeast(8f)
-                    val measured = paint.measureText(overlay.text)
-                    if (measured > box.width()) paint.textSize *= box.width() / measured
                     canvas.save()
+                    canvas.rotate(overlay.angle, box.centerX(), box.centerY())
                     canvas.clipRect(box)
-                    canvas.drawText(overlay.text, box.left, box.centerY() - (paint.ascent() + paint.descent()) / 2, paint)
+                    paint.color = overlay.background
+                    canvas.drawRect(box, paint)
+                    val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = if (Color.luminance(overlay.background) > .179f) Color.BLACK else Color.WHITE
+                        textSize = (box.height() / overlay.lineCount * .83f).coerceAtLeast(1f)
+                    }
+                    val layoutWidth = box.width().toInt().coerceAtLeast(1)
+                    fun layout() = StaticLayout.Builder.obtain(overlay.text, 0, overlay.text.length, textPaint, layoutWidth)
+                        .setAlignment(Layout.Alignment.ALIGN_NORMAL).setIncludePad(false).build()
+                    var textLayout = layout()
+                    repeat(12) {
+                        if (textLayout.height > box.height() && textPaint.textSize > 1f) {
+                            textPaint.textSize = (textPaint.textSize * .8f).coerceAtLeast(1f)
+                            textLayout = layout()
+                        }
+                    }
+                    canvas.translate(box.left, box.top + ((box.height() - textLayout.height) / 2).coerceAtLeast(0f))
+                    textLayout.draw(canvas)
                     canvas.restore()
                 }
             }
