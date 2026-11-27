@@ -45,8 +45,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("live, use)", android)
         self.assertNotIn("confirmations < 2", android)
         self.assertIn("if (!TvProfily(this).pouzeTelefon) enableTV()", android)
-        self.assertIn("finishResult(result, emptyList(), complete = false)", android)
-        self.assertLess(camera.index("self.translation = result"), camera.index("for block in blocks"))
+        self.assertIn("receiveFullImage(text, blocks)", android)
+        self.assertIn("receiveFullImage(text: text, blocks: blocks)", camera)
         self.assertIn("cameraSourceSelected", code(TOOLS/"redesign_gamelingo.py"))
         self.assertIn("Prekladac(this, to, from)", android)
         self.assertIn("Manifest.permission.CAMERA", android)
@@ -78,8 +78,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for key in ("Překlad přes původní text", "Jazyk textu", "Obnovit oblast", "Náhled obrazovky"):
             self.assertIn(key, camera)
             self.assertIn(key, android)
-        self.assertIn("lines.count != blocks.count", camera)
-        self.assertIn("lines.size == blocks.size", android)
+        self.assertIn("self.previousVisible.contains(original)", camera)
+        self.assertIn("original in previousVisible", android)
         self.assertIn("GameLingoTVPairing.connected(tv.ip)", android)
         self.assertIn("Propojeni.Vysilac.cameraCaption", android)
         self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
@@ -91,7 +91,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                     "GLCameraPalette.foreground(overlay.background)",
                     ".background(GLCameraPalette.color(overlay.background))",
                     ".rotationEffect(.radians(overlay.angle))",
-                    "blocks.count > 1 || lines.count != blocks.count",
+                    "self.overlayCache[$0.text] == nil",
                     "wholeImage ? 0.35 : 0.45",
                     "preview.aspectRatio(fullImage ? 9.0 / 16.0 : 0.9"):
             self.assertIn(key, ios)
@@ -100,6 +100,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                     "Color.luminance(overlay.background)", "StaticLayout.Builder.obtain",
                     "canvas.rotate(overlay.angle", "if (region.full) 350L else 450L",
                     "root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))"):
+            self.assertIn(key, android)
+
+    def test_camera_live_block_pipeline_optimization(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        for key in ("visible.intersection(previousVisible)", "visible.isDisjoint(with: previousVisible)",
+                    "self.translationRequest == request", "self.previousVisible.contains(original)",
+                    "self.overlayCache[$0.text] == nil", "cacheOrder.removeFirst()",
+                    "private let textRequest = VNRecognizeTextRequest()", "autoreleasepool {",
+                    "min(0.7, max(base", "stableFrames >= 3 ? 0.55",
+                    "candidate.split(whereSeparator: { $0.isWhitespace })"):
+            self.assertIn(key, ios)
+        for key in ("visible.intersect(previousVisible)", "request == translationRequest",
+                    "original in previousVisible", "it.text !in overlayCache",
+                    "overlayCache.keys.firstOrNull()", "output.post { next() }",
+                    "analysisCost * 5 / 4", "coerceAtMost(700L)", "Bitmap.createScaledBitmap",
+                    "if (fallback !== bitmap) bitmap.recycle()", "normalized(candidate) == normalized(text)"):
             self.assertIn(key, android)
 
     def test_camera_overlay_reuses_only_visible_recognized_text(self):
