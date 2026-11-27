@@ -572,14 +572,12 @@ private final class GLCameraState: ObservableObject {
            result.value >= 0.45, GLTargetLanguage(rawValue: result.key.rawValue) != nil {
             return result.key.rawValue
         }
-        return model?.gameLanguage.rawValue ?? "en"
+        return overlaySource ?? model?.gameLanguage.rawValue ?? "en"
     }
 
     private func matchesCurrent(_ text: String) -> Bool {
-        if candidate == text { return true }
-        let previous = Set(text.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }))
-        let current = Set(candidate.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }))
-        return !previous.isEmpty && previous.intersection(current).count * 2 >= max(previous.count, current.count)
+        // Whitespace jitter is harmless; changed words, numbers or punctuation are not.
+        text.split(whereSeparator: { $0.isWhitespace }) == candidate.split(whereSeparator: { $0.isWhitespace })
     }
 
     func setTV(_ enabled: Bool) {
