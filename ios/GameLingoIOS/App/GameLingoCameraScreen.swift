@@ -8,12 +8,81 @@ import UIKit
 private struct GLCameraBlock: Sendable {
     let text: String
     let rect: CGRect // upright image coordinates, origin at top left
+    var angle: Double = 0
+    var background: UInt32 = 0
+    var lineCount: Int = 1
 }
 
 private struct GLCameraOverlay: Identifiable {
     let id: Int
     let rect: CGRect
     let text: String
+    let angle: Double
+    let background: UInt32
+    let lineCount: Int
+}
+
+// Sample the background near the text box edges, not the glyph centers.
+// A small RGB image bounds the per-frame sampling cost.
+private struct GLCameraPalette {
+    let pixels: [UInt8]
+    static let size = 128
+
+    init?(_ image: CGImage) {
+        let n = Self.size
+        var data = [UInt8](repeating: 0, count: n * n * 4)
+        let ok = data.withUnsafeMutableBytes { bytes -> Bool in
+            guard let ctx = CGContext(data: bytes.baseAddress, width: n, height: n,
+                                      bitsPerComponent: 8, bytesPerRow: n * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
+            ctx.interpolationQuality = .low
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: CGFloat(n), height: CGFloat(n)))
+            return true
+        }
+        guard ok else { return nil }
+        pixels = data
+    }
+
+    func background(for rect: CGRect) -> UInt32 {
+        let n = Self.size
+        var bins: [UInt32: (count: Int, red: Int, green: Int, blue: Int)] = [:]
+        for step in 0..<12 {
+            let t = (CGFloat(step) + 0.5) / 12
+            let x = rect.minX + rect.width * t, y = rect.minY + rect.height * t
+            let dx = min(rect.width * 0.08, 0.008), dy = min(rect.height * 0.12, 0.008)
+            for point in [CGPoint(x: x, y: rect.minY + dy), CGPoint(x: x, y: rect.maxY - dy),
+                          CGPoint(x: rect.minX + dx, y: y), CGPoint(x: rect.maxX - dx, y: y)] {
+                let px = min(n - 1, max(0, Int(point.x * CGFloat(n))))
+                let py = min(n - 1, max(0, Int(point.y * CGFloat(n))))
+                let i = (py * n + px) * 4
+                let r = Int(pixels[i]), g = Int(pixels[i+1]), b = Int(pixels[i+2])
+                let key = UInt32((r / 32) * 64 + (g / 32) * 8 + b / 32)
+                let old = bins[key] ?? (count: 0, red: 0, green: 0, blue: 0)
+                bins[key] = (old.count + 1, old.red + r, old.green + g, old.blue + b)
+            }
+        }
+        guard let best = bins.max(by: { $0.value.count < $1.value.count })?.value else { return 0 }
+        return UInt32((best.red / best.count) * 65536 + (best.green / best.count) * 256 + best.blue / best.count)
+    }
+
+    static func similar(_ a: UInt32, _ b: UInt32) -> Bool {
+        [16, 8, 0].allSatisfy { shift in abs(Int((a >> shift) & 255) - Int((b >> shift) & 255)) <= 40 }
+    }
+
+    static func color(_ rgb: UInt32) -> Color {
+        Color(red: Double((rgb >> 16) & 255) / 255, green: Double((rgb >> 8) & 255) / 255,
+              blue: Double(rgb & 255) / 255)
+    }
+
+    static func foreground(_ rgb: UInt32) -> Color {
+        func linear(_ v: UInt32) -> Double {
+            let x = Double(v) / 255
+            return x <= 0.04045 ? x / 12.92 : pow((x + 0.055) / 1.055, 2.4)
+        }
+        let luminance = 0.2126 * linear((rgb >> 16) & 255) + 0.7152 * linear((rgb >> 8) & 255) + 0.0722 * linear(rgb & 255)
+        return luminance > 0.179 ? .black : .white
+    }
 }
 
 /// Camera-only source, with a single capture queue and no audio or recording.
@@ -175,6 +244,8 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 $0.boundingBox.midY > $1.boundingBox.midY
             }
             var blocks: [GLCameraBlock] = []
+            let wholeImage = region == CGRect(x: 0, y: 0, width: 1, height: 1)
+            let palette = wholeImage ? GLCameraPalette(cg) : nil
             var remaining = 1200
             for observation in observations.prefix(20) {
                 guard let line = observation.topCandidates(1).first?.string, !line.isEmpty,
@@ -182,8 +253,30 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 let box = observation.boundingBox
                 let text = String(line.prefix(remaining))
                 remaining -= text.count + 1
-                blocks.append(GLCameraBlock(text: text,
-                    rect: CGRect(x: box.minX, y: 1 - box.maxY, width: box.width, height: box.height)))
+                let rect = CGRect(x: box.minX, y: 1 - box.maxY, width: box.width, height: box.height)
+                let angle = atan2(Double(observation.topLeft.y - observation.topRight.y) * Double(cg.height),
+                                  Double(observation.topRight.x - observation.topLeft.x) * Double(cg.width))
+                var block = GLCameraBlock(text: text, rect: rect, angle: angle,
+                                          background: palette?.background(for: rect) ?? 0)
+                // Merge adjacent, similarly styled horizontal lines into sentences.
+                // Keep columns, separate colors and tilted lines independent.
+                if wholeImage, let previous = blocks.last,
+                   abs(previous.angle) < 0.12, abs(block.angle) < 0.12,
+                   GLCameraPalette.similar(previous.background, block.background) {
+                    let lineHeight = previous.rect.height / CGFloat(previous.lineCount)
+                    let gap = rect.minY - previous.rect.maxY
+                    let overlap = min(rect.maxX, previous.rect.maxX) - max(rect.minX, previous.rect.minX)
+                    if gap >= -lineHeight * 0.2 && gap <= lineHeight * 0.85 &&
+                       rect.height >= lineHeight * 0.55 && rect.height <= lineHeight * 1.7 &&
+                       overlap >= min(rect.width, previous.rect.width) * 0.65 &&
+                       abs(rect.minX - previous.rect.minX) <= lineHeight * 0.8 {
+                        block = GLCameraBlock(text: previous.text + " " + text,
+                                              rect: previous.rect.union(rect), background: previous.background,
+                                              lineCount: previous.lineCount + 1)
+                        blocks.removeLast()
+                    }
+                }
+                blocks.append(block)
             }
             frame(UIImage(cgImage: cg), blocks, revision)
         } catch {
@@ -286,7 +379,8 @@ private final class GLCameraState: ObservableObject {
         guard overlayMode else { overlays = []; return }
         overlays = currentBlocks.enumerated().compactMap { index, block in
             guard let text = overlayCache[block.text], !text.isEmpty else { return nil }
-            return GLCameraOverlay(id: index, rect: block.rect, text: text)
+            return GLCameraOverlay(id: index, rect: block.rect, text: text, angle: block.angle,
+                                   background: block.background, lineCount: block.lineCount)
         }
     }
 
@@ -361,7 +455,7 @@ private final class GLCameraState: ObservableObject {
             self.updateOverlays()
             self.publishTV(force: true)
             var lines = result.components(separatedBy: "\n")
-            if wantsOverlay && lines.count != blocks.count {
+            if wantsOverlay && (blocks.count > 1 || lines.count != blocks.count) {
                 // Do not align a provider's merged or split lines to the wrong text.
                 // Reuse the same cached translator for individual OCR blocks.
                 lines = []
@@ -723,13 +817,16 @@ struct GameLingoCameraScreen: View {
                 if fullImage && overlayEnabled {
                     ForEach(state.overlays) { overlay in
                         Text(overlay.text)
-                            .font(.system(size: max(9, min(22, proxy.size.height * overlay.rect.height * model.phoneFontScale)), weight: .semibold))
-                            .foregroundStyle(model.phoneTextColor.color)
-                            .minimumScaleFactor(0.35)
-                            .lineLimit(2)
-                            .frame(width: max(30, proxy.size.width * overlay.rect.width),
-                                   height: max(18, proxy.size.height * overlay.rect.height))
-                            .background(model.phoneBackground.fill)
+                            .font(.system(size: max(1, proxy.size.height * overlay.rect.height / CGFloat(overlay.lineCount) * 0.83)))
+                            .foregroundStyle(GLCameraPalette.foreground(overlay.background))
+                            .minimumScaleFactor(0.18)
+                            .lineLimit(max(1, overlay.lineCount + 1))
+                            .multilineTextAlignment(.leading)
+                            .frame(width: max(1, proxy.size.width * overlay.rect.width),
+                                   height: max(1, proxy.size.height * overlay.rect.height), alignment: .leading)
+                            .background(GLCameraPalette.color(overlay.background))
+                            .clipped()
+                            .rotationEffect(.radians(overlay.angle))
                             .position(x: proxy.size.width * overlay.rect.midX,
                                       y: proxy.size.height * overlay.rect.midY)
                     }
