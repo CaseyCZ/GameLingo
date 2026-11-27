@@ -857,6 +857,7 @@ private final class GLCameraState: ObservableObject {
             }
             self.lastTranslated = text
             self.translation = result
+            model.recordCameraHistory(original: text, translated: result, source: source, target: target)
             self.translationFailed = false
             self.publishTV(force: true)
         }
@@ -918,6 +919,7 @@ private final class GLCameraState: ObservableObject {
                     self.blockRetryAt.removeValue(forKey: original)
                     if self.previousVisible.contains(original) {
                         self.rememberOverlay(original, result)
+                        model.recordCameraHistory(original: original, translated: result, source: source, target: target)
                         self.translationFailed = false
                         self.publishVisibleBlocks()
                     }

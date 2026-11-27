@@ -297,6 +297,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("overlayCache.size >= 256", android)
         self.assertIn("if (overlaySource != from)", android)
 
+    def test_history_records_accepted_camera_and_automatic_results(self):
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        camera = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        automatic = code(TOOLS/"GameLingoAutomaticOCR.kt")
+        self.assertIn('translationHistory.append(kind: "Automatický"', model)
+        self.assertIn('translationHistory.append(kind: "Kamera"', model)
+        self.assertEqual(camera.count("model.recordCameraHistory("), 2)
+        self.assertEqual(android.count('GameLingoTranslationHistory.append("Kamera"'), 2)
+        self.assertIn('GameLingoTranslationHistory.append("Automatický",source,target,t.block.text,corrected)', automatic)
+        self.assertIn("!GameLingoOCRConfig.expired(context, at-now)", automatic)
+
     def test_camera_navigation_zoom_and_empty_text_parity(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")

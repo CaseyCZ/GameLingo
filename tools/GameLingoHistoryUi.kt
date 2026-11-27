@@ -32,7 +32,7 @@ internal object GameLingoHistoryUi {
         root.addView(toggle)
         val controls = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL }
         val refresh = Button(a).apply { text = tr("Obnovit"); if (GameLingoTVUi.isTV(a)) textSize = GameLingoVisualKit.sp(a, 16f) }
-        val clear = Button(a).apply { text = tr("Vymazat"); if (GameLingoTVUi.isTV(a)) textSize = GameLingoVisualKit.sp(a, 16f) }
+        val clear = Button(a).apply { text = tr("Vymazat historii"); if (GameLingoTVUi.isTV(a)) textSize = GameLingoVisualKit.sp(a, 16f) }
         controls.addView(refresh, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(clear, LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(controls)
@@ -54,13 +54,15 @@ internal object GameLingoHistoryUi {
             val format = DateFormat.getTimeInstance(DateFormat.MEDIUM)
             for (entry in items) {
                 list.addView(TextView(a).apply {
-                    text = entry.kind + " · " + entry.source + " → " + entry.target + " · " +
+                    val kind = tr(if (entry.kind == "Herní text") "Herní texty" else entry.kind)
+                    text = kind + " · " + entry.source + " → " + entry.target + " · " +
                         format.format(Date(entry.time)) + "\n\n" + entry.translated + "\n\n" + entry.original
                     textSize = GameLingoVisualKit.sp(a, 17f)
-                    setPadding(dp(8), dp(12), dp(8), dp(16))
+                    setPadding(dp(12), dp(12), dp(12), dp(16))
+                    background = GameLingoVisualKit.card(a)
                     isFocusable = true
                     setTextIsSelectable(true)
-                })
+                }, LinearLayout.LayoutParams(-1,-2).apply { bottomMargin = dp(8) })
             }
         }
         toggle.setOnCheckedChangeListener { _, checked ->
@@ -69,7 +71,7 @@ internal object GameLingoHistoryUi {
         }
         refresh.setOnClickListener { update() }
         clear.setOnClickListener {
-            AlertDialog.Builder(a).setTitle(tr("Vymazat celou historii?"))
+            AlertDialog.Builder(a).setTitle(tr("Vymazat celou historii překladů?"))
                 .setPositiveButton(tr("Vymazat")) { _, _ -> GameLingoTranslationHistory.clear(); update() }
                 .setNegativeButton(tr("Zrušit"), null).show()
         }

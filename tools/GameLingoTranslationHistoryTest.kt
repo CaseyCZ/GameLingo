@@ -3,6 +3,22 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoTranslationHistoryTest {
+    @Test fun differentModesRemainDistinctAndOptOutClearsAll() {
+        val history = GameLingoTranslationHistory
+        history.setEnabled(false)
+        history.setEnabled(true)
+        try {
+            for (kind in listOf("Dialog", "Automatický", "Kamera")) {
+                history.append(kind, "en", "cs", "Hello", "Ahoj")
+                history.append(kind, "en", "cs", "Hello", "Ahoj")
+            }
+            assertEquals(listOf("Kamera", "Automatický", "Dialog"), history.snapshot().map { it.kind })
+            history.setEnabled(false)
+            history.append("Kamera", "en", "cs", "Private", "Soukromé")
+            assertTrue(history.snapshot().isEmpty())
+        } finally { history.setEnabled(false) }
+    }
+
     @Test fun optInBoundDeduplicateAndClear() {
         val history = GameLingoTranslationHistory
         history.setEnabled(false)

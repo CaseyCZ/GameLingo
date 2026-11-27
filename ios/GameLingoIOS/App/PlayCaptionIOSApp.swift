@@ -416,6 +416,13 @@ final class CaptionAppModel: ObservableObject {
 
     func setHistoryEnabled(_ enabled: Bool) { translationHistory.setEnabled(enabled) }
     func clearHistory() { translationHistory.clear() }
+
+    // Record only accepted camera results; provider responses alone are not history.
+    func recordCameraHistory(original: String, translated: String, source: String, target: GLTargetLanguage) {
+        guard !isRunning else { return }
+        translationHistory.append(kind: "Kamera", source: source, target: target.rawValue,
+                                  original: original, translated: translated)
+    }
     @Published private(set) var performanceSummary = "Zatím bez měření"
     private var performance: [String: PerformanceWindow] = [:]
     private var performanceTimer: Task<Void, Never>?
@@ -1132,8 +1139,11 @@ final class CaptionAppModel: ObservableObject {
                 if finished - current.lastSeen <= AutomaticBlockTracker.staleAfter,
                    (!self.skipOldTranslations || finished - now <= self.maxTranslationAge),
                    case .success(let raw) = outcome, !raw.isEmpty {
-                    self.automaticTranslations[id] = self.glossaryTranslation(original: original, translated: raw,
+                    let corrected = self.glossaryTranslation(original: original, translated: raw,
                         source: source.rawValue, target: target.rawValue)
+                    self.automaticTranslations[id] = corrected
+                    self.translationHistory.append(kind: "Automatický", source: source.rawValue,
+                        target: target.rawValue, original: original, translated: corrected)
                 } else {
                     self.automaticRetries[id] = finished + 2
                 }

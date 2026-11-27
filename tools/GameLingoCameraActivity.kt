@@ -980,6 +980,7 @@ class GameLingoCameraActivity : ComponentActivity() {
             }
             lastTranslated = text
             translatedText = result
+            GameLingoTranslationHistory.append("Kamera",from,to,text,result)
             if (output.text.toString() != result) output.text = result
             publishTV(force = true)
         }, {
@@ -1053,6 +1054,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                     blockRetryAt.remove(original)
                     if (original in previousVisible) {
                         rememberOverlay(original, result)
+                        GameLingoTranslationHistory.append("Kamera",from,target,original,result)
                         publishVisibleBlocks()
                     }
                     // Avoid recursively invoking synchronous cache hits.
