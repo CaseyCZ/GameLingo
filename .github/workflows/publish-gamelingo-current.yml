@@ -116,16 +116,14 @@ jobs:
           python3 tools/create_ios_update_manifest.py "release/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" "$TAG" "$GAMELINGO_VERSION" "$GAMELINGO_BUILD" release/GameLingo-iOS-update.json
           files+=(GameLingo-TV-update.json GameLingo-Android-update.json GameLingo-iOS-update.json)
           cat > release-notes.md <<EOF
-          # GameLingo ${GAMELINGO_VERSION} TEST — aktuální vydání
-          - iOS (nepodepsaná IPA), Android a Google TV (testovací APK).
-          - Aktualizace přímo v aplikaci, trvalé podpisy obou APK; iOS IPA k vlastnímu podepsání.
-          - Čtyři nezávislé oblasti OCR a výstupu, rychlost, stabilizace a časování dialogů, profily a diagnostika.
-          - Pouze vývojový kandidát: automatické sestavení nenahrazuje fyzickou QA ani licenční prověření.
-          - Párování používat v důvěryhodné domácí síti; přenos není šifrovaný.
-          - Dokumentace: https://github.com/$REPO/tree/$BUILD_SOURCE/docs
-          Zdroj sestavení: https://github.com/$REPO/tree/$BUILD_SOURCE
-          Sestavení: https://github.com/$REPO/actions/runs/$RUN
-          Licence a upstream: https://github.com/$REPO/blob/$BUILD_SOURCE/ATTRIBUTION.md
+          # GameLingo ${GAMELINGO_VERSION} TEST
+          Překlad herních titulků a textů v reálném čase.
+
+          - iOS (IPA k vlastnímu podepsání), Android a Google TV (APK).
+          - Aktualizace v aplikaci, nastavitelné OCR oblasti, profily a slovníky.
+          - Testovací vydání; fyzické a licenční ověření není dokončeno. Párování jen v důvěryhodné domácí síti (nešifrovaný přenos).
+
+          [Zdrojový kód](https://github.com/$REPO/tree/$BUILD_SOURCE) · [Licence a původ](https://github.com/$REPO/blob/$BUILD_SOURCE/ATTRIBUTION.md)
           EOF
           # A new public release must advance the semantic version. Retrying the same tag is safe.
           gh release list -R "$REPO" --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft == false) | .tagName' > existing-versions.txt
