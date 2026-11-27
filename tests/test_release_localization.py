@@ -417,7 +417,7 @@ class ReleaseLocalizationTests(unittest.TestCase):
         help_ui = text(TOOLS / "GameLingoHelp.kt")
         wire = text(TOOLS / "wire_android_devices.py")
         selector = text(TOOLS / "GameLingoTVUi.kt").split("fun select(a: Activity", 1)[1].split("fun header(", 1)[0]
-        self.assertIn("GLBackButton { sourcePicker = false; outputPicker = false }", home)
+        self.assertIn("GLBackButton { sourcePicker = false; outputPicker = false; addDevicePicker = false }", home)
         self.assertIn('GLInterfaceText.localized("Nápověda: ") + GLInterfaceText.localized(title)', style)
         self.assertIn('t == "výstup titulků"', guide)
         self.assertIn("val dialogWidth = if (isTV(a))", selector)
