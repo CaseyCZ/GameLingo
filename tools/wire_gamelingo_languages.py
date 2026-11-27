@@ -92,7 +92,7 @@ def main():
         GameLingoTranslationCache.lookup(cacheContext, source, target, text) { cached ->
             ui.post {
                 if (!currentPair(source, target)) chyba("Změna jazyka nebo relace")
-                else if (cached != null) { zdroj = "paměť"; hotovo(cached) }
+                else if (cached != null && GameLingoControllerSymbols.valid(text, cached)) { zdroj = "paměť"; hotovo(cached) }
                 else miss()
             }
         }
@@ -267,6 +267,16 @@ def main():
     t = restrict_provider_transport(t)
     if not tv_variant(root):
         t = install_mobile_translator(t, folder)
+    # Keep provider cache keys and returned text unmasked; each provider sees
+    # only temporary placeholders. Failed restoration follows existing fallback.
+    for signature, name, args in (
+        ("private fun google(text: String, cilJazyk: String = cil, sourceJazyk: String = zdrojovyJazyk): String? {", "google", "cilJazyk, sourceJazyk"),
+        ("private fun edge(text: String, target: String, source: String): String? {", "edge", "target, source"),
+        ("private fun myMemory(text: String, target: String, source: String): String? {", "myMemory", "target, source"),
+    ):
+        raw_signature = signature.replace("fun " + name + "(", "fun " + name + "Raw(", 1)
+        wrapper = signature + "\n        val protected = GameLingoControllerSymbols(text)\n        return " + name + "Raw(protected.input, " + args + ")?.let { protected.restore(it) }\n    }\n\n    " + raw_signature
+        t = once(t, signature, wrapper, translator.name)
     translator.write_text(t, encoding="utf8")
 
     service = folder / "RemotePlayService.kt"

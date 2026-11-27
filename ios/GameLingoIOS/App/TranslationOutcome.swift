@@ -80,3 +80,48 @@ enum GLTranslationOutcome {
     }
 
 }
+
+
+/// Preserve explicitly recognized controller labels and symbols, without
+/// guessing whether ordinary A/B/X/Y letters are controller buttons.
+struct GLControllerSymbols {
+    private static let pattern = try! NSRegularExpression(pattern: #"\[(?:A|B|X|Y|LB|RB|LT|RT|LS|RS|L1|L2|L3|R1|R2|R3|START|SELECT|OPTIONS|MENU|SHARE|VIEW)\]|[△○×□]"#)
+    let input: String
+    private let pairs: [(marker: String, symbol: String)]
+    init(_ original: String) {
+        var prefix = "GLBUTTON"
+        while original.localizedCaseInsensitiveContains(prefix) { prefix += "Z" }
+        var masked = original
+        var tokens: [(String, String)] = []
+        let matches = Self.pattern.matches(in: original, range: NSRange(original.startIndex..., in: original))
+        for (index, match) in matches.enumerated().reversed() {
+            guard let range = Range(match.range, in: original) else { continue }
+            let marker = prefix + String(index) + "TOKEN"
+            let symbol = String(original[range])
+            // UTF-16 offsets remain valid because replacements run backwards.
+            if let target = Range(match.range, in: masked) {
+                masked.replaceSubrange(target, with: marker)
+                tokens.append((marker, symbol))
+            }
+        }
+        input = masked
+        pairs = tokens
+    }
+    static func symbols(_ text: String) -> [String] {
+        pattern.matches(in: text, range: NSRange(text.startIndex..., in: text))
+            .compactMap { Range($0.range, in: text).map { String(text[$0]) } }.sorted()
+    }
+    static func valid(original: String, translated: String) -> Bool {
+        symbols(original).isEmpty || symbols(original) == symbols(translated)
+    }
+    func restore(_ translated: String) -> String? {
+        var result = translated
+        for (marker, symbol) in pairs {
+            guard let range = result.range(of: marker, options: .caseInsensitive),
+                  result[range.upperBound...].range(of: marker, options: .caseInsensitive) == nil else { return nil }
+            result.replaceSubrange(range, with: symbol)
+        }
+        guard Self.symbols(result) == pairs.map({ $0.symbol }).sorted() || pairs.isEmpty else { return nil }
+        return result
+    }
+}

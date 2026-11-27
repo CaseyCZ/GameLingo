@@ -438,7 +438,8 @@ actor CaptionPipeline {
         let engines = ["google-gtx-v1", "microsoft-edge-v1", "mymemory-v1"]
         for engine in engines {
             if let cached = await translationCache.lookup(engine: engine, source: sourceCode,
-                target: target.rawValue, original: original) { return .success(cached) }
+                target: target.rawValue, original: original),
+                GLControllerSymbols.valid(original: original, translated: cached) { return .success(cached) }
         }
         var lastFailure: GLTranslationFailure = .providerUnavailable
         for engine in engines {
@@ -448,8 +449,16 @@ actor CaptionPipeline {
             let now = ProcessInfo.processInfo.systemUptime
             guard let ticket = providerBreakers[engine, default: TranslationCircuitBreaker()]
                 .acquire(now: now) else { continue }
-            let outcome = await requestTranslation(engine: engine, original: original,
+            let protected = GLControllerSymbols(original)
+            let rawOutcome = await requestTranslation(engine: engine, original: protected.input,
                 source: sourceCode, target: target.rawValue)
+            let outcome: Result<String, GLTranslationFailure>
+            switch rawOutcome {
+            case .success(let translated):
+                if let restored = protected.restore(translated) { outcome = .success(restored) }
+                else { outcome = .failure(.invalidResponse) }
+            case .failure(let error): outcome = .failure(error)
+            }
             let success: Bool?
             switch outcome {
             case .success: success = true

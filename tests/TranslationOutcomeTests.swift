@@ -13,6 +13,18 @@ struct TranslationOutcomeTests {
         GLTranslationOutcome.googleResponse(Data(body.utf8), statusCode: status)
     }
     static func main() {
+        let original = "Press [A] then [R2] △ and [A]."
+        let protected = GLControllerSymbols(original)
+        precondition(protected.restore(protected.input) == original)
+        precondition(protected.restore(protected.input.replacingOccurrences(of: "Press", with: "Stiskni")) == "Stiskni [A] then [R2] △ and [A].")
+        precondition(protected.restore(protected.input.replacingOccurrences(of: "GLBUTTON0TOKEN", with: "")) == nil)
+        precondition(protected.restore(protected.input + " GLBUTTON0TOKEN") == nil)
+        precondition(GLControllerSymbols.valid(original: original, translated: "Stiskni [A] a [R2] △ [A]."))
+        precondition(!GLControllerSymbols.valid(original: original, translated: "Stiskni [B] a [R2] △ [A]."))
+        precondition(GLControllerSymbols("A car, X rays").input == "A car, X rays")
+        let collision = GLControllerSymbols("GLBUTTON [A]")
+        precondition(collision.restore(collision.input) == "GLBUTTON [A]")
+
         expect(response("[[[\"Ahoj, \",\"Hello, \"],[\"světe!\",\"world!\"]]]"), .success("Ahoj, světe!"))
         expect(response("[[[\"Paris\",\"Paris\"]]]"), .success("Paris"))
         expect(response("[[[\" \",\"Hello\"]]]"), .failure(.invalidResponse))
