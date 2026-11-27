@@ -501,6 +501,68 @@ def main():
             "selected console switch availability")
         service.write_text(source, encoding="utf-8")
 
+    if mobile_dashboard:
+        phone = folder / "TelefonActivity.kt"
+        phone_code = phone.read_text(encoding="utf8")
+        # Reuse proven drag/slider geometry without opening a translation session.
+        phone_code = one(phone_code,
+            "    override fun onCreate(savedInstanceState: Bundle?) {",
+            """    private val editorOnly: Boolean
+        get() = intent.getBooleanExtra("gamelingo_editor_only", false)
+
+    private fun showStandaloneEditor() {
+        OblastTitulku.nacti(this)
+        Volby.nacti(this)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = GameLingoVisualKit.pageBackground(this@TelefonActivity)
+            setPadding(dp(12), dp(10), dp(12), dp(12))
+        }
+        val back = GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Zpět")) { finish() }
+        root.addView(GameLingoTVUi.header(this,
+            GameLingoTVUi.title(this, GameLingoLanguages.ui(this, "Oblasti obrazovky"), 22f),
+            back, GameLingoHelp.button(this, "regions")))
+        upravy = postavUpravy().apply { visibility = View.VISIBLE }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(upravy, LinearLayout.LayoutParams(-1, -2))
+        }
+        root.addView(android.widget.ScrollView(this).apply {
+            isFillViewport = true
+            addView(container)
+        }, LinearLayout.LayoutParams(-1, 0, 1f))
+        setContentView(root)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {""",
+            "separate standard region editor")
+        phone_code = one(phone_code,
+            "        super.onCreate(savedInstanceState)",
+            """        super.onCreate(savedInstanceState)
+        if (editorOnly) {
+            showStandaloneEditor()
+            return
+        }""", "editor never starts remote play")
+        phone_code = one(phone_code, "        super.onResume()\n        ui.removeCallbacks(obnova)",
+            "        super.onResume()\n        if (editorOnly) return\n        ui.removeCallbacks(obnova)", "editor no live refresh")
+        phone_code = one(phone_code, "        super.onStart()\n        vPozadi = false",
+            "        super.onStart()\n        if (editorOnly) return\n        vPozadi = false", "editor no background translation lifecycle")
+        phone_code = one(phone_code, "    override fun onStop() {\n        if (!isChangingConfigurations",
+            "    override fun onStop() {\n        if (editorOnly) { super.onStop(); return }\n        if (!isChangingConfigurations", "editor no delayed stop")
+        phone_code = one(phone_code, "    override fun onBackPressed() {\n        if (RemotePlayService.aktivni)",
+            "    override fun onBackPressed() {\n        if (editorOnly) { finish(); return }\n        if (RemotePlayService.aktivni)", "editor back returns to settings")
+        phone_code = one(phone_code, "        if (isFinishing) zastav()",
+            "        if (editorOnly) ui.removeCallbacksAndMessages(null)\n        else if (isFinishing) zastav()", "editor cannot stop live service")
+        phone_code = one(phone_code, "        super.onConfigurationChanged(newConfig)\n        prepniSirku(",
+            "        super.onConfigurationChanged(newConfig)\n        if (editorOnly) return\n        prepniSirku(", "rotation stays in editor")
+        # No inherited TV selection or LG developer menu inside offline geometry.
+        phone_code = one(phone_code,
+            '        obal.addView(TextView(this).apply {\n            text = "▣  Oblasti na obrazovce · "',
+            '        if (!editorOnly) obal.addView(TextView(this).apply {\n            text = "▣  Oblasti na obrazovce · "', "hide legacy TV control in editor")
+        phone_code = one(phone_code, "        obal.addView(LgDevModeView(this) {",
+            "        if (!editorOnly) obal.addView(LgDevModeView(this) {", "hide legacy LG setup in editor")
+        phone.write_text(phone_code, encoding="utf8")
+
     # Remove the remaining legacy welcome paths on both variants, including
     # language selection. The native onboarding is the only welcome.
     code = code.replace("else if (maUkazatBetu()) ukazBetu() else pokracuj()", "else pokracuj()")

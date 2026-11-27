@@ -372,6 +372,16 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn('helpTopic="glossary"', text(TOOLS / "GameLingoGlossaryUi.kt"))
         self.assertIn("back.nextFocusRightId = help.id", text(TOOLS / "GameLingoTVUi.kt"))
 
+    def test_standard_region_editor_is_not_a_translation_session(self):
+        wire = text(TOOLS / "wire_android_devices.py")
+        dashboard = text(TOOLS / "redesign_gamelingo.py")
+        self.assertIn('putExtra("gamelingo_editor_only", true)', dashboard)
+        self.assertIn("showStandaloneEditor()", wire)
+        self.assertIn("editor never starts remote play", wire)
+        self.assertIn("editor cannot stop live service", wire)
+        self.assertIn("rotation stays in editor", wire)
+        self.assertIn("hide legacy LG setup in editor", wire)
+
     def test_mobile_onboarding_cannot_open_legacy_beta_on_rotation(self):
         wire = text(TOOLS / "wire_android_devices.py")
         brand = text(TOOLS / "brand_android.py")

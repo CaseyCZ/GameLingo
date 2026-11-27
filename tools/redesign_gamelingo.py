@@ -32,7 +32,7 @@ def redesign_mobile(s: str) -> str:
             fun openSettings() { openTab(3) }
             fun editAreas() {
                 if (nejakaKonzole)
-                    startActivity(Intent(this, TelefonActivity::class.java))
+                    startActivity(Intent(this, TelefonActivity::class.java).putExtra("gamelingo_editor_only", true))
                 else android.app.AlertDialog.Builder(this)
                     .setMessage(GameLingoLanguages.ui(this, "Nejprve vyber a připoj konzoli."))
                     .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
