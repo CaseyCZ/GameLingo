@@ -234,27 +234,50 @@ object GameLingoTVUpdater {
                 .setPositiveButton(tr(a, "Otevřít nastavení")) { _, _ ->
                     val observer = object : android.app.Application.ActivityLifecycleCallbacks {
                         private var paused = false
-                        override fun onActivityCreated(activity: Activity, state: android.os.Bundle?) {}
-                        override fun onActivityStarted(activity: Activity) {}
-                        override fun onActivityPaused(activity: Activity) {
-                            if (activity === a) paused = true
-                        }
-                        override fun onActivityResumed(activity: Activity) {
-                            if (activity !== a || !paused) return
-                            a.application.unregisterActivityLifecycleCallbacks(this)
-                            a.window.decorView.post {
-                                if (!alive(a)) return@post
+                        private var checking = false
+                        private var finished = false
+                        private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                        private var attempts = 0
+                        private val permissionRetry = object : Runnable {
+                            override fun run() {
+                                if (finished) return
+                                if (!alive(a) || busy()) { finishCheck(); return }
+                                // Some TV firmware propagates the unknown-source AppOp
+                                // after onResume. Only Android's own permission result
+                                // may authorize the installer, never the settings UI.
                                 if (a.packageManager.canRequestPackageInstalls()) {
+                                    finishCheck()
                                     confirmInstall(a, apk)
+                                } else if (++attempts < 10) {
+                                    handler.postDelayed(this, 350L)
                                 } else {
+                                    finishCheck()
                                     message(a, tr(a, "Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu."))
                                 }
                             }
                         }
+                        private fun finishCheck() {
+                            if (finished) return
+                            finished = true
+                            handler.removeCallbacks(permissionRetry)
+                            a.application.unregisterActivityLifecycleCallbacks(this)
+                        }
+                        override fun onActivityCreated(activity: Activity, state: android.os.Bundle?) {}
+                        override fun onActivityStarted(activity: Activity) {}
+                        override fun onActivityPaused(activity: Activity) {
+                            if (activity !== a) return
+                            // Never launch the installer later over another app.
+                            if (checking) finishCheck() else paused = true
+                        }
+                        override fun onActivityResumed(activity: Activity) {
+                            if (activity !== a || !paused || checking || finished) return
+                            checking = true
+                            handler.postDelayed(permissionRetry, 350L)
+                        }
                         override fun onActivityStopped(activity: Activity) {}
                         override fun onActivitySaveInstanceState(activity: Activity, state: android.os.Bundle) {}
                         override fun onActivityDestroyed(activity: Activity) {
-                            if (activity === a) a.application.unregisterActivityLifecycleCallbacks(this)
+                            if (activity === a) finishCheck()
                         }
                     }
                     a.application.registerActivityLifecycleCallbacks(observer)
@@ -275,6 +298,10 @@ object GameLingoTVUpdater {
     private fun confirmInstall(a: Activity, apk: File) {
         if (!alive(a)) return
         if (busy()) { message(a, tr(a, "Nejdříve zastav překlad.")); return }
+        if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
+            message(a, tr(a, "Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu."))
+            return
+        }
         runCatching {
             require(apk.isFile && apk.length() in 1L..MAX_APK)
             val archive = a.packageManager.getPackageArchiveInfo(apk.path, flags())

@@ -1797,6 +1797,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for script in ("wire_mobile_update.py", "direct_tv_mode.py"):
             self.assertIn('GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")', code(TOOLS/script))
 
+    def test_update_permission_return_waits_for_system_state_and_cancels_on_pause(self):
+        updater = code(TOOLS/"GameLingoTVUpdater.kt")
+        observer = updater.split("val observer = object", 1)[1].split("a.application.registerActivityLifecycleCallbacks(observer)", 1)[0]
+        self.assertIn("handler.postDelayed(permissionRetry, 350L)", observer)
+        self.assertIn("++attempts < 10", observer)
+        self.assertIn("handler.removeCallbacks(permissionRetry)", observer)
+        self.assertIn("if (checking) finishCheck() else paused = true", observer)
+        self.assertIn("if (activity === a) finishCheck()", observer)
+        self.assertLess(observer.index("if (a.packageManager.canRequestPackageInstalls())"), observer.index("confirmInstall(a, apk)"))
+        confirm = updater.split("private fun confirmInstall(", 1)[1].split("private fun download(", 1)[0]
+        self.assertLess(confirm.index("!a.packageManager.canRequestPackageInstalls()"), confirm.index("a.startActivity(Intent(Intent.ACTION_VIEW)"))
+
     def test_about_notices_and_update_installation_guards(self):
         about = code(TOOLS/"GameLingoAbout.kt")
         updater = code(TOOLS/"GameLingoTVUpdater.kt")
