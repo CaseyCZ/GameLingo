@@ -29,10 +29,13 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
     private var revision = 0
     private let frame: @Sendable (UIImage, [GLCameraBlock], Int) -> Void
     private let failure: @Sendable () -> Void
+    private let ready: @Sendable (AVCaptureSession) -> Void
 
-    init(frame: @escaping @Sendable (UIImage, [GLCameraBlock], Int) -> Void, failure: @escaping @Sendable () -> Void) {
+    init(frame: @escaping @Sendable (UIImage, [GLCameraBlock], Int) -> Void,
+         ready: @escaping @Sendable (AVCaptureSession) -> Void, failure: @escaping @Sendable () -> Void) {
         self.frame = frame
         self.failure = failure
+        self.ready = ready
     }
 
     func configure(language: String, region: CGRect, revision: Int) {
@@ -74,7 +77,8 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
             }
             self.analysisQueue.async { self.running = true; self.lastRead = 0 }
             self.session.startRunning()
-            if !self.session.isRunning { self.analysisQueue.async { self.running = false }; self.failure() }
+            if self.session.isRunning { self.ready(self.session) }
+            else { self.analysisQueue.async { self.running = false }; self.failure() }
         }
     }
 
@@ -176,6 +180,7 @@ private final class GLCameraState: ObservableObject {
 
     func start(model: CaptionAppModel, source: GLGameLanguage, target: GLTargetLanguage, region: CGRect, overlay: Bool) async {
         guard !running, !model.isRunning else { return }
+        unavailable = false; paused = false
         self.model = model
         self.source = source; self.target = target; self.region = region; self.overlayMode = overlay
         lifetime += 1
@@ -190,6 +195,11 @@ private final class GLCameraState: ObservableObject {
                       self.revision == frameRevision else { return }
                 self.receive(image: image, blocks: blocks)
             }
+        }, ready: { [weak self] session in
+            Task { @MainActor in
+                guard let self, self.running, !self.paused, self.lifetime == current else { return }
+                self.previewSession = session
+            }
         }, failure: { [weak self] in
             Task { @MainActor in
                 guard let self, self.lifetime == current else { return }
@@ -197,12 +207,12 @@ private final class GLCameraState: ObservableObject {
             }
         })
         self.capture = capture
-        self.previewSession = capture.session
         applyConfiguration()
         capture.start()
     }
 
     func configure(source: GLGameLanguage, target: GLTargetLanguage, region: CGRect, overlay: Bool) {
+        guard self.source != source || self.target != target || self.region != region || self.overlayMode != overlay else { return }
         self.source = source; self.target = target; self.region = region; self.overlayMode = overlay
         resetTranslation()
         applyConfiguration()
@@ -322,7 +332,7 @@ private final class GLCameraState: ObservableObject {
         guard capture != nil else { return }
         paused.toggle()
         if paused {
-            revision += 1; task?.cancel(); task = nil
+            revision += 1; task?.cancel(); task = nil; translating = false
             capture?.stop(); torchOn = false
             if tvOutput { model?.sendCameraSubtitle("") }
         } else {
@@ -355,22 +365,36 @@ struct GameLingoCameraScreen: View {
     @Environment(\.scenePhase) private var phase
     @State private var source: GLGameLanguage = .english
     @State private var target: GLTargetLanguage = .czech
-    @State private var fullImage = true
-    @State private var overlayEnabled = true
-    @State private var centerX = 0.5
-    @State private var centerY = 0.78
-    @State private var regionWidth = 0.9
-    @State private var regionHeight = 0.24
+    @AppStorage("gamelingo.camera.fullImage") private var fullImage = true
+    @AppStorage("gamelingo.camera.overlay") private var overlayEnabled = true
+    @AppStorage("gamelingo.camera.regionX") private var regionX = 0.05
+    @AppStorage("gamelingo.camera.regionY") private var regionY = 0.66
+    @AppStorage("gamelingo.camera.regionWidth") private var regionWidth = 0.9
+    @AppStorage("gamelingo.camera.regionHeight") private var regionHeight = 0.24
+    @State private var draftRegion: CGRect?
+    @State private var dragOrigin: CGRect?
+    private static let defaultRegion = CGRect(x: 0.05, y: 0.66, width: 0.9, height: 0.24)
     @State private var zoom = 1.0
     @ObservedObject var devices: GameLingoDevices
     @ObservedObject var receiver: PlayCaptionTV
 
+    private var selectedRegion: CGRect {
+        let h = min(1, max(0.08, regionHeight))
+        let w = min(1, max(0.15, regionWidth))
+        return CGRect(x: min(1 - w, max(0, regionX)),
+                      y: min(1 - h, max(0, regionY)), width: w, height: h)
+    }
+
     private var region: CGRect {
-        if fullImage { return CGRect(x: 0, y: 0, width: 1, height: 1) }
-        let height = min(0.8, max(0.08, regionHeight))
-        let width = min(0.95, max(0.15, regionWidth))
-        return CGRect(x: min(1 - width, max(0, centerX - width / 2)),
-                      y: min(1 - height, max(0, centerY - height / 2)), width: width, height: height)
+        fullImage ? CGRect(x: 0, y: 0, width: 1, height: 1) : selectedRegion
+    }
+
+    private func commitRegion(_ rect: CGRect) {
+        regionX = Double(rect.minX); regionY = Double(rect.minY)
+        regionWidth = Double(rect.width); regionHeight = Double(rect.height)
+        draftRegion = nil; dragOrigin = nil
+        state.configure(source: source, target: target, region: fullImage ? region : rect,
+                        overlay: fullImage && overlayEnabled)
     }
 
     private var tvReady: Bool {
@@ -404,16 +428,24 @@ struct GameLingoCameraScreen: View {
                             Text(LocalizedStringKey(tvReady ? "TV připojena" : "Spárovat")).foregroundStyle(tvReady ? GLStyle.green : .orange)
                         }
                     }.font(.caption)
-                    preview.frame(height: 300)
+                    GLNeonPanel(emphasized: true) {
+                        VStack(alignment: .leading, spacing: 9) {
+                            HStack {
+                                Label("Náhled obrazovky", systemImage: "camera.fill").font(.subheadline.bold())
+                                Spacer()
+                                if !fullImage { Text("Vybraná oblast").font(.caption).foregroundStyle(.yellow) }
+                            }
+                            preview.frame(height: 340)
+                            if !fullImage {
+                                Text("Vyber oblast, potom uprav její polohu a velikost v náhledu.")
+                                    .font(.caption).foregroundStyle(GLNeon.mist)
+                                Button("Obnovit oblast") { commitRegion(Self.defaultRegion) }
+                                    .font(.subheadline).foregroundStyle(GLNeon.cyan)
+                            }
+                        }.padding(12)
+                    }
                     if fullImage {
                         Toggle("Překlad přes původní text", isOn: $overlayEnabled)
-                    } else {
-                        Group {
-                            regionSlider("Vodorovná pozice oblasti", value: $centerX, range: 0...1)
-                            regionSlider("Pozice oblasti", value: $centerY, range: 0...1)
-                            regionSlider("Šířka oblasti", value: $regionWidth, range: 0.15...0.95)
-                            regionSlider("Velikost oblasti", value: $regionHeight, range: 0.08...0.8)
-                        }
                     }
                     if state.translationFailed { Text("Překlad selhal.").foregroundStyle(.orange) }
                     if state.translating { ProgressView().tint(GLNeon.cyan) }
@@ -461,11 +493,7 @@ struct GameLingoCameraScreen: View {
         .onChange(of: source) { _, _ in update() }
         .onChange(of: target) { _, _ in update() }
         .onChange(of: fullImage) { _, _ in update() }
-        .onChange(of: centerX) { _, _ in update() }
-        .onChange(of: centerY) { _, _ in update() }
-        .onChange(of: regionWidth) { _, _ in update() }
         .onChange(of: overlayEnabled) { _, _ in update() }
-        .onChange(of: regionHeight) { _, _ in update() }
         .onChange(of: zoom) { _, value in state.zoom(value) }
         .onChange(of: tvReady) { _, value in state.setTV(value) }
         .onChange(of: phase) { _, value in if value == .background { state.stop(); dismiss() } }
@@ -477,12 +505,56 @@ struct GameLingoCameraScreen: View {
         state.configure(source: source, target: target, region: region, overlay: fullImage && overlayEnabled)
     }
 
-    private func regionSlider(_ label: LocalizedStringKey, value: Binding<Double>,
-                              range: ClosedRange<Double>) -> some View {
-        HStack {
-            Text(label).font(.caption).frame(width: 120, alignment: .leading)
-            Slider(value: value, in: range).accessibilityLabel(Text(label))
-        }
+    // Drag the filled region to move it; drag any corner to resize it.
+    // Keep the opposite corner fixed and clamp to the actual image.
+    private func regionDrag(size: CGSize, corner: Int?) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("cameraImage"))
+            .onChanged { value in
+                let original = dragOrigin ?? selectedRegion
+                if dragOrigin == nil { dragOrigin = original }
+                let dx = value.translation.width / max(1, size.width)
+                let dy = value.translation.height / max(1, size.height)
+                if let corner {
+                    let left = corner == 0 || corner == 2
+                    let top = corner == 0 || corner == 1
+                    let x1 = left ? min(original.maxX - 0.15, max(0, original.minX + dx)) : original.minX
+                    let x2 = left ? original.maxX : max(original.minX + 0.15, min(1, original.maxX + dx))
+                    let y1 = top ? min(original.maxY - 0.08, max(0, original.minY + dy)) : original.minY
+                    let y2 = top ? original.maxY : max(original.minY + 0.08, min(1, original.maxY + dy))
+                    draftRegion = CGRect(x: x1, y: y1, width: x2 - x1, height: y2 - y1)
+                } else {
+                    draftRegion = CGRect(x: min(1 - original.width, max(0, original.minX + dx)),
+                                         y: min(1 - original.height, max(0, original.minY + dy)),
+                                         width: original.width, height: original.height)
+                }
+            }
+            .onEnded { _ in commitRegion(draftRegion ?? selectedRegion) }
+    }
+
+    private func regionEditor(size: CGSize) -> some View {
+        let rect = draftRegion ?? selectedRegion
+        return ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.yellow.opacity(0.12))
+                .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.yellow, lineWidth: 2))
+                .contentShape(Rectangle())
+                .frame(width: size.width * rect.width, height: size.height * rect.height)
+                .position(x: size.width * rect.midX, y: size.height * rect.midY)
+                .gesture(regionDrag(size: size, corner: nil))
+                .accessibilityLabel("Vybraná oblast")
+            ForEach(0..<4, id: \.self) { corner in
+                let left = corner == 0 || corner == 2
+                let top = corner == 0 || corner == 1
+                Circle().fill(Color.yellow)
+                    .frame(width: 13, height: 13)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+                    .position(x: size.width * (left ? rect.minX : rect.maxX),
+                              y: size.height * (top ? rect.minY : rect.maxY))
+                    .gesture(regionDrag(size: size, corner: corner))
+                    .accessibilityHidden(true)
+            }
+        }.frame(width: size.width, height: size.height)
     }
 
     private var preview: some View {
@@ -493,8 +565,17 @@ struct GameLingoCameraScreen: View {
             GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 Color.black
-                if state.paused, let image = state.image { Image(uiImage: image).resizable().scaledToFit() }
-                else if let session = state.previewSession { GLLiveCameraPreview(session: session) }
+                if state.paused, let image = state.image {
+                    Image(uiImage: image).resizable().scaledToFit()
+                } else if let session = state.previewSession {
+                    GLLiveCameraPreview(session: session, fallback: state.image)
+                } else if let image = state.image {
+                    Image(uiImage: image).resizable().scaledToFit()
+                } else {
+                    Text("Čekám na první snímek").font(.caption)
+                        .foregroundStyle(GLNeon.mist)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
                 if fullImage && overlayEnabled {
                     ForEach(state.overlays) { overlay in
                         Text(overlay.text)
@@ -510,11 +591,9 @@ struct GameLingoCameraScreen: View {
                     }
                 }
                 if !fullImage {
-                    Rectangle().strokeBorder(Color.yellow, lineWidth: 2)
-                        .frame(width: proxy.size.width * region.width, height: proxy.size.height * region.height)
-                        .offset(x: proxy.size.width * region.minX, y: proxy.size.height * region.minY)
+                    regionEditor(size: proxy.size)
                 }
-            }
+            }.coordinateSpace(name: "cameraImage")
             }.frame(width: width, height: height)
                 .position(x: container.size.width / 2, y: container.size.height / 2)
         }.background(.black).clipShape(RoundedRectangle(cornerRadius: 14))
@@ -523,17 +602,51 @@ struct GameLingoCameraScreen: View {
 
 private struct GLLiveCameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
+    let fallback: UIImage?
+
     final class PreviewView: UIView {
-        override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
-        var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
-    }
-    func makeUIView(context: Context) -> PreviewView { PreviewView() }
-    func updateUIView(_ view: PreviewView, context: Context) {
-        view.previewLayer.videoGravity = .resizeAspect
-        if view.previewLayer.session !== session { view.previewLayer.session = session }
-        if let connection = view.previewLayer.connection, connection.isVideoOrientationSupported {
-            connection.videoOrientation = .portrait
+        private let backup = UIImageView()
+        private let previewLayer = AVCaptureVideoPreviewLayer()
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            backgroundColor = .black
+            backup.contentMode = .scaleAspectFit
+            addSubview(backup)
+            previewLayer.videoGravity = .resizeAspect
+            layer.addSublayer(previewLayer)
+        }
+        required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+        func update(session: AVCaptureSession, fallback: UIImage?) {
+            backup.image = fallback
+            if previewLayer.session !== session { previewLayer.session = session }
+            orient()
+            // The sampled frame remains visible if the native layer has not
+            // started presenting video. No dependence on OCR for native FPS.
+            previewLayer.opacity = previewLayer.isPreviewing || fallback == nil ? 1 : 0
+            setNeedsLayout()
+        }
+
+        private func orient() {
+            if let connection = previewLayer.connection, connection.isVideoOrientationSupported,
+               connection.videoOrientation != .portrait {
+                connection.videoOrientation = .portrait
+            }
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            backup.frame = bounds
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            previewLayer.frame = bounds
+            CATransaction.commit()
+            orient()
         }
     }
+    func makeUIView(context: Context) -> PreviewView { PreviewView(frame: .zero) }
+    func updateUIView(_ view: PreviewView, context: Context) {
+        view.update(session: session, fallback: fallback)
+    }
 }
-

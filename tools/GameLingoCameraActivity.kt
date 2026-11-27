@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.util.Size
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -63,9 +64,9 @@ class GameLingoCameraActivity : ComponentActivity() {
                               val width: Float = .9f) {
         fun rect(): RectF {
             if (full) return RectF(0f, 0f, 1f, 1f)
-            val h = height.coerceIn(.08f, .8f)
+            val h = height.coerceIn(.08f, 1f)
             val y = (centerY - h / 2).coerceIn(0f, 1f - h)
-            val w = width.coerceIn(.15f, .95f)
+            val w = width.coerceIn(.15f, 1f)
             val x = (centerX - w / 2).coerceIn(0f, 1f - w)
             return RectF(x, y, x + w, y + h)
         }
@@ -108,7 +109,9 @@ class GameLingoCameraActivity : ComponentActivity() {
     private lateinit var output: TextView
     private lateinit var pauseButton: Button
     private lateinit var torchButton: Button
-    private lateinit var modeButton: Button
+    private lateinit var fullButton: Button
+    private lateinit var areaButton: Button
+    private lateinit var previewStatus: TextView
     private lateinit var overlayButton: Button
     private var tvButton: TextView? = null
     private lateinit var regionControls: LinearLayout
@@ -120,6 +123,11 @@ class GameLingoCameraActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         source = GameLingoLanguages.game(this)
         target = GameLingoLanguages.target(this)
+        val prefs = getSharedPreferences("gamelingo_camera", MODE_PRIVATE)
+        fun coordinate(key: String, fallback: Float) = prefs.getFloat(key, fallback).takeIf { it.isFinite() } ?: fallback
+        region = Region(prefs.getBoolean("full", true), coordinate("centerY", .78f),
+            coordinate("height", .24f), coordinate("centerX", .5f), coordinate("width", .9f))
+        overlayEnabled = prefs.getBoolean("overlay", true)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(px(16), px(12), px(16), px(16))
@@ -160,39 +168,71 @@ class GameLingoCameraActivity : ComponentActivity() {
             gravity = Gravity.CENTER; setTextColor(Color.WHITE)
         }
         root.addView(tvButton)
-        modeButton = button("Celý obraz") {
-            updateRegion(region.copy(full = !region.full))
-            modeButton.text = tr(if (region.full) "Celý obraz" else "Vybraná oblast")
-            regionControls.visibility = if (region.full) View.GONE else View.VISIBLE
-            overlayButton.visibility = if (region.full) View.VISIBLE else View.GONE
-        }
-        root.addView(modeButton)
+        val modes = LinearLayout(this)
+        fullButton = button("Celý obraz") { updateRegion(region.copy(full = true)); updateMode() }
+        areaButton = button("Vybraná oblast") { updateRegion(region.copy(full = false)); updateMode() }
+        modes.addView(fullButton, LinearLayout.LayoutParams(0, px(44), 1f))
+        modes.addView(areaButton, LinearLayout.LayoutParams(0, px(44), 1f))
+        root.addView(modes)
         overlayButton = button("Překlad přes původní text") {
             overlayEnabled = !overlayEnabled
             overlayButton.text = (if (overlayEnabled) "✓  " else "") + tr("Překlad přes původní text")
+            getSharedPreferences("gamelingo_camera", MODE_PRIVATE).edit().putBoolean("overlay", overlayEnabled).apply()
             resetTranslation()
         }
-        overlayButton.text = "✓  " + tr("Překlad přes původní text")
-        root.addView(overlayButton)
+        overlayButton.text = (if (overlayEnabled) "✓  " else "") + tr("Překlad přes původní text")
+        val previewCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(px(12), px(12), px(12), px(12))
+            background = GameLingoVisualKit.card(this@GameLingoCameraActivity, selected = true)
+        }
+        previewCard.addView(TextView(this).apply {
+            text = tr("Náhled obrazovky")
+            setTextColor(Color.WHITE); textSize = 16f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 0, 0, px(8))
+        })
         livePreview = PreviewView(this).apply {
             scaleType = PreviewView.ScaleType.FIT_CENTER
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
-        preview = CameraFrame(this)
-        root.addView(FrameLayout(this).apply {
+        preview = CameraFrame(this).apply {
+            region = this@GameLingoCameraActivity.region
+            contentDescription = tr("Vyber oblast, potom uprav její polohu a velikost v náhledu.")
+            onRegionCommitted = { value -> updateRegion(value) }
+        }
+        previewStatus = TextView(this).apply {
+            text = tr("Čekám na první snímek")
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.argb(150, 0, 0, 0))
+            setPadding(px(8), px(5), px(8), px(5))
+        }
+        previewCard.addView(FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
             addView(livePreview, FrameLayout.LayoutParams(-1, -1))
             addView(preview, FrameLayout.LayoutParams(-1, -1))
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(300)))
+            addView(previewStatus, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(340)))
+        // The native preview runs independently of recognition. If it has
+        // not begun streaming yet, show the latest analyzed image instead.
+        livePreview.previewStreamState.observe(this) { stream ->
+            preview.showBitmap = paused || stream != PreviewView.StreamState.STREAMING
+            preview.invalidate()
+        }
         regionControls = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            visibility = View.GONE
-            addView(row("Vodorovná pozice oblasti", 100, 50) { updateRegion(region.copy(centerX = it / 100f)) })
-            addView(row("Pozice oblasti", 100, 78) { updateRegion(region.copy(centerY = it / 100f)) })
-            addView(row("Šířka oblasti", 80, 75) { updateRegion(region.copy(width = .15f + it / 100f)) })
-            addView(row("Velikost oblasti", 72, 16) { updateRegion(region.copy(height = .08f + it / 100f)) })
+            addView(TextView(this@GameLingoCameraActivity).apply {
+                text = tr("Vyber oblast, potom uprav její polohu a velikost v náhledu.")
+                setTextColor(Color.parseColor("#92A4C7")); textSize = 13f
+                setPadding(0, px(8), 0, px(4))
+            })
+            addView(button("Obnovit oblast") { updateRegion(Region(full = false)) })
         }
-        root.addView(regionControls)
+        previewCard.addView(regionControls)
+        root.addView(previewCard)
+        root.addView(overlayButton)
+        updateMode()
         output = TextView(this).apply {
             gravity = Gravity.CENTER; minHeight = px(52); setPadding(px(8), px(8), px(8), px(8))
             textSize = 20f * GameLingoPhoneSubtitleStyle.scale(this@GameLingoCameraActivity)
@@ -253,9 +293,24 @@ class GameLingoCameraActivity : ComponentActivity() {
             }.show()
     }
 
+    private fun updateMode() {
+        fullButton.background = GameLingoVisualKit.card(this, selected = region.full)
+        areaButton.background = GameLingoVisualKit.card(this, selected = !region.full)
+        fullButton.isSelected = region.full
+        areaButton.isSelected = !region.full
+        regionControls.visibility = if (region.full) View.GONE else View.VISIBLE
+        overlayButton.visibility = if (region.full) View.VISIBLE else View.GONE
+    }
+
     private fun updateRegion(value: Region) {
-        region = value
-        resetTranslation()
+        if (region != value) {
+            region = value
+            resetTranslation()
+            getSharedPreferences("gamelingo_camera", MODE_PRIVATE).edit()
+                .putBoolean("full", value.full)
+                .putFloat("centerX", value.centerX).putFloat("centerY", value.centerY)
+                .putFloat("width", value.width).putFloat("height", value.height).apply()
+        }
         preview.region = value
         preview.invalidate()
     }
@@ -304,8 +359,9 @@ class GameLingoCameraActivity : ComponentActivity() {
                 val live = Preview.Builder().setTargetResolution(Size(1280, 720)).build()
                 live.setSurfaceProvider(livePreview.surfaceProvider)
                 liveUseCase = live
-                preview.showBitmap = false
+                preview.showBitmap = true
                 livePreview.visibility = View.VISIBLE
+                previewStatus.visibility = if (preview.bitmap == null) View.VISIBLE else View.GONE
                 camera = p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, live, use)
                 if (!TvProfily(this).pouzeTelefon) enableTV()
                 torchButton.isEnabled = camera?.cameraInfo?.hasFlashUnit() == true
@@ -340,6 +396,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                     bitmap.recycle(); return@addOnCompleteListener
                 }
                 preview.bitmap = bitmap
+                previewStatus.visibility = View.GONE
                 preview.invalidate()
                 val blocks = mutableListOf<CameraBlock>()
                 var remaining = 1200
@@ -544,25 +601,102 @@ class GameLingoCameraActivity : ComponentActivity() {
         torchButton.isEnabled = false; torchButton.isSelected = false
         translator?.zavri(); translator = null
         if (!keepFrame) preview.bitmap = null
+        previewStatus.visibility = if (preview.bitmap == null) View.VISIBLE else View.GONE
         preview.invalidate()
     }
 
     override fun onStop() { releaseCamera(); super.onStop() }
     override fun onDestroy() { recognizer.close(); worker.shutdown(); super.onDestroy() }
 
-    /** The OCR and drawn rectangle share precisely the same upright bitmap. */
+    /** The editor uses the same normalized upright frame as OCR. */
     private class CameraFrame(context: android.content.Context) : View(context) {
         var bitmap: Bitmap? = null
         var showBitmap = false
         var region = Region()
         var overlays = emptyList<CameraOverlay>()
+        var onRegionCommitted: (Region) -> Unit = {}
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        override fun onDraw(canvas: Canvas) {
-            val image = bitmap ?: return
+        private var dragOrigin: RectF? = null
+        private var draft: RectF? = null
+        private var startX = 0f
+        private var startY = 0f
+        private var corner = -1
+        private val density get() = resources.displayMetrics.density
+
+        private fun imageBounds(): RectF? {
+            val image = bitmap ?: return null
+            if (width <= 0 || height <= 0) return null
             val scale = min(width.toFloat() / image.width, height.toFloat() / image.height)
             val w = image.width * scale; val h = image.height * scale
             val x = (width - w) / 2; val y = (height - h) / 2
-            if (showBitmap) canvas.drawBitmap(image, null, RectF(x, y, x + w, y + h), paint)
+            return RectF(x, y, x + w, y + h)
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            if (region.full) return false
+            val bounds = imageBounds() ?: return false
+            val nx = (event.x - bounds.left) / bounds.width()
+            val ny = (event.y - bounds.top) / bounds.height()
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    val r = region.rect()
+                    val corners = listOf(r.left to r.top, r.right to r.top, r.left to r.bottom, r.right to r.bottom)
+                    val near = corners.map { (x, y) ->
+                        val dx = (nx - x) * bounds.width()
+                        val dy = (ny - y) * bounds.height()
+                        dx * dx + dy * dy
+                    }
+                    corner = near.indices.minByOrNull { near[it] }?.takeIf { near[it] <= (22f * density) * (22f * density) } ?: -1
+                    if (corner < 0 && !r.contains(nx, ny)) return false
+                    dragOrigin = r
+                    startX = nx; startY = ny
+                    parent.requestDisallowInterceptTouchEvent(true)
+                    return true
+                }
+                MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP -> {
+                    val original = dragOrigin ?: return false
+                    val dx = nx - startX; val dy = ny - startY
+                    val r = if (corner >= 0) {
+                        val left = corner == 0 || corner == 2
+                        val top = corner == 0 || corner == 1
+                        RectF(
+                            if (left) (original.left + dx).coerceIn(0f, (original.right - .15f).coerceAtLeast(0f)) else original.left,
+                            if (top) (original.top + dy).coerceIn(0f, (original.bottom - .08f).coerceAtLeast(0f)) else original.top,
+                            if (left) original.right else (original.right + dx).coerceIn((original.left + .15f).coerceAtMost(1f), 1f),
+                            if (top) original.bottom else (original.bottom + dy).coerceIn((original.top + .08f).coerceAtMost(1f), 1f))
+                    } else {
+                        val x = (original.left + dx).coerceIn(0f, (1f - original.width()).coerceAtLeast(0f))
+                        val y = (original.top + dy).coerceIn(0f, (1f - original.height()).coerceAtLeast(0f))
+                        RectF(x, y, x + original.width(), y + original.height())
+                    }
+                    draft = r
+                    if (event.actionMasked == MotionEvent.ACTION_UP) {
+                        dragOrigin = null; draft = null
+                        parent.requestDisallowInterceptTouchEvent(false)
+                        onRegionCommitted(Region(false, r.centerY(), r.height(), r.centerX(), r.width()))
+                        performClick()
+                    }
+                    invalidate()
+                    return true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    dragOrigin = null; draft = null
+                    parent.requestDisallowInterceptTouchEvent(false)
+                    invalidate()
+                    return true
+                }
+            }
+            return dragOrigin != null
+        }
+
+        override fun performClick(): Boolean { super.performClick(); return true }
+
+        override fun onDraw(canvas: Canvas) {
+            val image = bitmap ?: return
+            val bounds = imageBounds() ?: return
+            val w = bounds.width(); val h = bounds.height()
+            val x = bounds.left; val y = bounds.top
+            if (showBitmap) canvas.drawBitmap(image, null, bounds, paint)
             if (region.full) {
                 for (overlay in overlays) {
                     val r = overlay.rect
@@ -583,12 +717,21 @@ class GameLingoCameraActivity : ComponentActivity() {
                 }
             }
             if (!region.full) {
-                val r = region.rect()
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 3f * resources.displayMetrics.density
-                paint.color = Color.YELLOW
-                canvas.drawRect(x + r.left * w, y + r.top * h, x + r.right * w, y + r.bottom * h, paint)
+                val r = draft ?: region.rect()
+                val box = RectF(x + r.left * w, y + r.top * h, x + r.right * w, y + r.bottom * h)
                 paint.style = Paint.Style.FILL
+                paint.color = Color.argb(30, 255, 255, 0)
+                canvas.drawRect(box, paint)
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 2f * density
+                paint.color = Color.YELLOW
+                canvas.drawRect(box, paint)
+                paint.style = Paint.Style.FILL
+                for (cx in listOf(box.left, box.right)) {
+                    for (cy in listOf(box.top, box.bottom)) {
+                        canvas.drawCircle(cx, cy, 6f * density, paint)
+                    }
+                }
             }
         }
     }

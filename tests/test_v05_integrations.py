@@ -69,7 +69,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("consoleChoice = 2\n                        tvChoice = 0", first_run)
         self.assertIn("GameLingoCameraActivity.open(this)", code(TOOLS/"redesign_gamelingo.py"))
         self.assertIn('android:exported="false"', wire)
-        for key in ("Překlad přes původní text", "Jazyk textu", "Šířka oblasti"):
+        for key in ("Překlad přes původní text", "Jazyk textu", "Obnovit oblast", "Náhled obrazovky"):
             self.assertIn(key, camera)
             self.assertIn(key, android)
         self.assertIn("lines.count != blocks.count", camera)
@@ -77,6 +77,34 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoTVPairing.connected(tv.ip)", android)
         self.assertIn("Propojeni.Vysilac.cameraCaption", android)
         self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
+
+    def test_camera_region_editor_uses_direct_manipulation(self):
+        camera = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        for obsolete in ("Vodorovná pozice oblasti", "Šířka oblasti", "Velikost oblasti"):
+            self.assertNotIn(obsolete, camera)
+            self.assertNotIn(obsolete, android)
+        self.assertIn("GLNeonPanel(emphasized: true)", camera)
+        self.assertIn("regionEditor(size: proxy.size)", camera)
+        self.assertIn("DragGesture(minimumDistance: 0", camera)
+        self.assertIn("ForEach(0..<4", camera)
+        self.assertIn(".onEnded { _ in commitRegion", camera)
+        self.assertIn('AppStorage("gamelingo.camera.regionX")', camera)
+        self.assertIn("state.configure(source: source, target: target, region: fullImage ? region : rect", camera)
+        self.assertIn("if self.session.isRunning { self.ready(self.session) }", camera)
+        self.assertNotIn("self.previewSession = capture.session", camera)
+        self.assertIn("previewLayer.frame = bounds", camera)
+        self.assertIn("previewLayer.isPreviewing", camera)
+        self.assertIn("fallback: state.image", camera)
+        self.assertIn("MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP", android)
+        self.assertIn("MotionEvent.ACTION_CANCEL", android)
+        self.assertIn("onRegionCommitted(Region(false", android)
+        self.assertIn("parent.requestDisallowInterceptTouchEvent(true)", android)
+        self.assertIn("canvas.drawCircle(cx, cy", android)
+        self.assertIn('getSharedPreferences("gamelingo_camera", MODE_PRIVATE)', android)
+        self.assertIn("livePreview.previewStreamState.observe(this)", android)
+        self.assertIn("PreviewView.StreamState.STREAMING", android)
+        self.assertIn('button("Obnovit oblast")', android)
 
     def test_reset_defaults_preserves_profiles_and_pairing(self):
         ios_model = code(IOS/"PlayCaptionIOSApp.swift")
