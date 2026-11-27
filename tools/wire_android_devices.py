@@ -81,13 +81,12 @@ def main():
             '''        prevezmiAccountId(intent)
         ukazUvod()''',
             '''        prevezmiAccountId(intent)
-        if (telefon && !GameLingoFirstRun.completed(this) && nast.jazyk == null) {
-            // First-run language choices are owned by GameLingo, not upstream.
-            nast.jazyk = GameLingoLanguages.systemApp(this)
-        }
-        ukazUvod()
+        // No delayed upstream splash callback may replace the onboarding page.
+        if (nast.jazyk == null) nast.jazyk = GameLingoLanguages.systemApp(this)
+        ukazHlavni()
         if (telefon && !GameLingoFirstRun.completed(this)) {
             ui.post {
+                if (isFinishing || isDestroyed) return@post
                 GameLingoFirstRun.show(this,
                     connectXbox = { ukazPripojeniXbox() },
                     connectPlayStation = { ukazPripojeni() },
@@ -502,6 +501,17 @@ def main():
             "selected console switch availability")
         service.write_text(source, encoding="utf-8")
 
+    # Remove the remaining legacy welcome paths on both variants, including
+    # language selection. The native onboarding is the only welcome.
+    code = code.replace("else if (maUkazatBetu()) ukazBetu() else pokracuj()", "else pokracuj()")
+    code = one(code,
+        'if (obrazovka == "jazyk" && maUkazatBetu()) ukazBetu() else ukazHlavni()',
+        'ukazHlavni()', "remove legacy post-language promotion")
+    start = code.index("    private fun ukazBetu() {")
+    end = code.index("    /** Tlačítko OK na uvítání", start)
+    code = code[:start] + code[end:]
+    if "ukazBetu()" in code:
+        raise RuntimeError("Legacy PlayCaption welcome is still reachable")
     mainFile.write_text(code,encoding="utf-8")
 
     profiles=folder/"TvProfily.kt"

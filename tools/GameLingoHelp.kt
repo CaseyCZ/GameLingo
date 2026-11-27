@@ -258,7 +258,7 @@ object GameLingoHelp {
         val body=column(a)
         val v=version(a)
         body.addView(label(a,"GameLingo "+v,18f))
-        val entries=if(v=="0.5.9") listOf("Obrázková a interaktivní nápověda","Hlášení problémů v diagnostice","Raketa v horní liště otevírá novinky.") else listOf("Přehled této verze je na GitHubu.")
+        val entries=if(v.substringBefore('-')=="0.5.9") listOf("Obrázková a interaktivní nápověda","Hlášení problémů v diagnostice","Raketa v horní liště otevírá novinky.") else listOf("Přehled této verze je na GitHubu.")
         entries.forEach { body.addView(label(a,"✓  "+tr(a,it))) }
         body.addView(GameLingoTVUi.action(a,tr(a,"Historie vydání")) { open(a,"https://github.com/CaseyCZ/GameLingo/releases") })
         GameLingoTVUi.page(a,tr(a,"Co je nového"),body)

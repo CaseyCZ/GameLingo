@@ -359,6 +359,15 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn('GLRocketIcon()', home)
         self.assertIn('GameLingoHelp.report(a)', text(TOOLS / "GameLingoTVSettings.kt"))
 
+    def test_mobile_onboarding_cannot_open_legacy_beta_on_rotation(self):
+        wire = text(TOOLS / "wire_android_devices.py")
+        brand = text(TOOLS / "brand_android.py")
+        self.assertIn('if (nast.jazyk == null) nast.jazyk = GameLingoLanguages.systemApp(this)', wire)
+        self.assertIn('ukazHlavni()\n        if (telefon && !GameLingoFirstRun.completed(this))', wire)
+        self.assertIn('Legacy PlayCaption welcome is still reachable', wire)
+        self.assertIn('android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"', brand)
+        self.assertIn("v.substringBefore('-')", text(TOOLS / "GameLingoHelp.kt"))
+
     def test_new_support_routes_and_locales(self):
         support = text(IOS / "GameLingoSupport.swift")
         home = text(IOS / "GameLingoHome.swift")

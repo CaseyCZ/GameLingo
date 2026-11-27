@@ -24,6 +24,11 @@ def main():
         exactly_one(gradle,'applicationId = "cz.titulky.tv"',
                     'applicationId = "cz.caseycz.gamelingo.mobile"')
         exactly_one(strings,">PlayCaption</string>",">GameLingo</string>")
+        # Keep the live dashboard, settings dialogs and onboarding state on
+        # rotation. The dedicated phone subtitle activity remains rotatable.
+        manifest = root / "app/src/main/AndroidManifest.xml"
+        exactly_one(manifest, 'android:name=".MainActivity"',
+                    'android:name=".MainActivity"\n            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"')
     else:
         # BuildType has an applicationIdSuffix, not an applicationId property.
         # Set the independent TV ID in defaultConfig and remove the old suffix.
