@@ -88,7 +88,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")
         for key in ("GLCameraPalette(cg)", "previous.text +", "previous.rect.union(rect)",
-                    "GLCameraPalette.foreground(overlay.background)",
+                    "overlay.ink.map { GLCameraPalette.color($0) } ?? GLCameraPalette.foreground(overlay.background)",
                     ".background(GLCameraPalette.color(overlay.background))",
                     ".rotationEffect(.radians(overlay.angle))",
                     "self.overlayCache[$0.text] == nil",
@@ -100,6 +100,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                     "Color.luminance(overlay.background)", "StaticLayout.Builder.obtain",
                     "canvas.rotate(overlay.angle", "if (region.full) 350L else 450L",
                     "root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))"):
+            self.assertIn(key, android)
+
+    def test_camera_ink_confidence_and_reading_order(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        for key in ("recognized.confidence >= 0.30", "!wholeImage || recognized.confidence",
+                    "palette?.ink(for: rect, background: background)",
+                    "best.count >= 8", ">= 4.5 ? rgb : nil",
+                    "GLCameraPalette.compatibleInk(previous.ink, block.ink)",
+                    "wholeImage ? Self.columnOrder(rows) : rows",
+                    "sorted.count - index >= 2"):
+            self.assertIn(key, ios)
+        for key in ("block.lines.map { it.confidence }.filter { it > 0f }",
+                    "scores.average() < .30", "sampleInk(bitmap, rect, background)",
+                    "best[0] < 8", "contrast(it) >= 4.5f",
+                    "overlay.ink ?: (if", "if (region.full) columnOrder(blocks) else blocks",
+                    "sorted.size - i >= 2"):
             self.assertIn(key, android)
 
     def test_camera_live_block_pipeline_optimization(self):
