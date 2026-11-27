@@ -69,18 +69,38 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 }
                 self.session.commitConfiguration()
                 self.device = device
-                do {
-                    try device.lockForConfiguration()
-                    if device.isFocusModeSupported(.continuousAutoFocus) { device.focusMode = .continuousAutoFocus }
-                    if device.isExposureModeSupported(.continuousAutoExposure) { device.exposureMode = .continuousAutoExposure }
-                    device.unlockForConfiguration()
-                } catch { /* retain camera defaults */ }
             }
             self.analysisQueue.async { self.running = true; self.lastRead = 0 }
             self.session.startRunning()
-            if self.session.isRunning { self.ready(self.session) }
+            if self.session.isRunning {
+                self.configureAutomaticFocus()
+                self.ready(self.session)
+            }
             else { self.analysisQueue.async { self.running = false }; self.failure() }
         }
+    }
+
+    // Called only on the session queue, after the active camera format is set.
+    private func configureAutomaticFocus() {
+        guard let device = self.device else { return }
+        do {
+            try device.lockForConfiguration()
+            defer { device.unlockForConfiguration() }
+            if device.isAutoFocusRangeRestrictionSupported {
+                device.autoFocusRangeRestriction = .none
+            }
+            if device.isFocusPointOfInterestSupported {
+                device.focusPointOfInterest = CGPoint(x: 0.5, y: 0.5)
+            }
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            } else if device.isFocusModeSupported(.autoFocus) {
+                device.focusMode = .autoFocus
+            }
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+        } catch { /* Fixed-focus devices or unavailable configuration retain camera defaults. */ }
     }
 
     func stop() {
