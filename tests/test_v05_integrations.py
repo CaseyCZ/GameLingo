@@ -2015,6 +2015,10 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         unpair = center.split("pinSupported && option == 4", 1)[1].split("} else {", 1)[0]
         self.assertIn("GameLingoTVPairing.forget(c, tv.ip)", unpair)
         self.assertNotIn("tvStore.odeber", unpair)
+        preview = center.split("private fun showTestCaption", 1)[1].split("/** Shared content", 1)[0]
+        self.assertIn("GameLingoTVPairing.verify(c, tv)", preview)
+        self.assertIn("Propojeni.Vysilac.ukazka(sample)", preview)
+        self.assertIn("RemotePlayService.aktivni", preview)
 
     def test_mobile_and_tv_device_rename_share_actions(self):
         center = code(TOOLS/"GameLingoDeviceCenter.kt")

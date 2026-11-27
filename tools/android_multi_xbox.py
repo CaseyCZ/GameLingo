@@ -77,6 +77,22 @@ def main():
     if source.count(anchor)!=1:
         raise RuntimeError("Xbox discovery callback anchor changed")
     source=source.replace(anchor,'                    if (obrazovka != "xbox" || generation != xboxListGeneration || isFinishing || isDestroyed) return@runOnUiThread\n                    val prefs',1)
+    anchor='        k3.addView(pripojStav, odsazeni(top = 6))'
+    if source.count(anchor)!=1:
+        raise RuntimeError("Xbox finish action anchor changed")
+    source=source.replace(anchor,'''        k3.addView(tlacitko(GameLingoLanguages.ui(this, "Hotovo"), 18f) {
+            val selected = xboxNalezena
+            if (RemotePlayService.aktivni) {
+                pripojStav.text = GameLingoLanguages.ui(this, "Nejdřív zastav překlad.")
+            } else if (selected == null || !XboxUcet.prihlasen(this)) {
+                pripojStav.text = GameLingoLanguages.ui(this, "Vybrat konzoli")
+            } else {
+                xboxRelace?.zastav()
+                xboxRelace = null
+                ukazHlavni()
+            }
+        }, obal(top = 8))
+        k3.addView(pripojStav, odsazeni(top = 6))''',1)
     path.write_text(source,encoding="utf-8")
     print("Android GameLingo: all Xbox consoles selectable")
 

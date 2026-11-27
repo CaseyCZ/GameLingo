@@ -148,6 +148,52 @@ object GameLingoDeviceCenter {
         }
     }
 
+    /** Send only to an authenticated receiver, never during gameplay. */
+    private fun showTestCaption(c: Activity, tv: TvProfil) {
+        fun tr(key: String) = GameLingoLanguages.ui(c, key)
+        val input = android.widget.EditText(c).apply {
+            hint = tr("Zkušební text")
+            setText(tr("Zkušební titulek GameLingo"))
+            filters = arrayOf(android.text.InputFilter.LengthFilter(300))
+        }
+        val dialog = AlertDialog.Builder(c)
+            .setTitle(tr("Zkušební titulek"))
+            .setView(input)
+            .setPositiveButton(tr("Zobrazit na TV"), null)
+            .setNegativeButton(tr("Zrušit"), null).create()
+        dialog.show()
+        val send = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        send.setOnClickListener {
+            val sample = input.text.toString().trim()
+            if (sample.isBlank()) {
+                input.error = tr("Zkušební text")
+                return@setOnClickListener
+            }
+            if (RemotePlayService.aktivni) {
+                input.error = tr("Nejdřív zastav překlad.")
+                return@setOnClickListener
+            }
+            send.isEnabled = false
+            GameLingoTVPairing.verify(c, tv) { verified ->
+                if (!dialog.isShowing || c.isFinishing || c.isDestroyed) return@verify
+                send.isEnabled = true
+                if (!verified || !GameLingoTVPairing.paired(c, tv.ip)) {
+                    input.error = tr("TV neodpovídá. Ověř IP, připojení a případně zadej nový kód.")
+                } else if (RemotePlayService.aktivni) {
+                    input.error = tr("Nejdřív zastav překlad.")
+                } else {
+                    // Explicitly selects the target for the preview, using the signed sender.
+                    val store = TvProfily(c)
+                    if (store.najdi(tv.id)?.ip != tv.ip) return@verify
+                    store.vyber(tv.id)
+                    Propojeni.Vysilac.nastavCil(tv.ip, tv.jmeno)
+                    Propojeni.Vysilac.ukazka(sample)
+                    dialog.dismiss()
+                }
+            }
+        }
+    }
+
     /** Shared content for the native mobile device tab and the TV dialog. */
     fun content(c: Activity,
              onXbox: () -> Unit,
@@ -460,7 +506,7 @@ object GameLingoDeviceCenter {
                 chooseDevice(c, tv.jmeno, if (pinSupported)
                         arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Spárovat kódem z TV"),
                             GameLingoLanguages.ui(c, "Ověřit spojení"), GameLingoLanguages.ui(c, "Odebrat"),
-                            GameLingoLanguages.ui(c, "Zrušit párování"))
+                            GameLingoLanguages.ui(c, "Zrušit párování"), GameLingoLanguages.ui(c, "Zkušební titulek"))
                         else arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Odebrat"))) { option ->
                         if (RemotePlayService.aktivni) {
                             AlertDialog.Builder(c)
@@ -485,6 +531,8 @@ object GameLingoDeviceCenter {
                                         else GameLingoLanguages.ui(c, "TV neodpovídá. Ověř IP, připojení a případně zadej nový kód."))
                                     .setPositiveButton("OK", null).show()
                             }
+                        } else if (pinSupported && option == 5) {
+                            showTestCaption(c, tv)
                         } else if (pinSupported && option == 4) {
                             AlertDialog.Builder(c)
                                 .setTitle(GameLingoLanguages.ui(c, "Zrušit párování TV?"))
