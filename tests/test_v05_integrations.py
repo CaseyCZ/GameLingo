@@ -84,6 +84,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Propojeni.Vysilac.cameraCaption", android)
         self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
 
+    def test_camera_overlay_reuses_only_visible_recognized_text(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        self.assertIn("currentBlocks.enumerated().compactMap", ios)
+        self.assertIn("overlayCache[block.text]", ios)
+        self.assertIn("overlayCache.count >= 256", ios)
+        self.assertIn("if overlaySource != source", ios)
+        self.assertIn("currentBlocks.mapNotNull", android)
+        self.assertIn("overlayCache[block.text]", android)
+        self.assertIn("overlayCache.size >= 256", android)
+        self.assertIn("if (overlaySource != from)", android)
+
     def test_camera_torch_state_and_lifecycle(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")
