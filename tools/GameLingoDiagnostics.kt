@@ -16,6 +16,41 @@ import android.widget.TextView
  * frame, PSN login or paired TV from a saved local profile.
  */
 object GameLingoDiagnostics {
+    // Only categories emitted by translation_privacy.py, never arbitrary legacy log text.
+    private val safeEvents = setOf("[chyba zpracování]", "[OCR událost]", "[herní text: událost]",
+        "[Xbox: událost relace]", "[PlayStation: událost relace]", "[dekodér: událost]", "[technická událost]")
+    private fun safeLog(a: Activity): String = runCatching {
+        val file = java.io.File(a.filesDir, "titulky-private-v2.log")
+        if (!file.isFile || file.length() > 310_000L) return@runCatching ""
+        file.useLines { lines ->
+            lines.filter { line ->
+                line.length >= 10 && line.take(8).matches(Regex("[0-9]{2}:[0-9]{2}:[0-9]{2}")) &&
+                    line[8] == ' ' && line.substring(9) in safeEvents
+            }.toList().takeLast(60).joinToString("\n")
+        }
+    }.getOrDefault("")
+
+    fun showTechnicalLog(a: Activity) {
+        fun tr(key: String) = GameLingoLanguages.ui(a,key)
+        val log = safeLog(a)
+        val body = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        body.addView(TextView(a).apply {
+            text = log.ifBlank { tr("Zatím bez měření") }
+            setTextColor(Color.WHITE)
+            typeface = Typeface.MONOSPACE
+            setTextIsSelectable(true)
+        })
+        body.addView(GameLingoTVUi.action(a,tr("Sdílet log")) {
+            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(android.content.Intent.EXTRA_TEXT, "GameLingo · "+ a.packageManager.getPackageInfo(a.packageName,0).versionName+"\n"+log)
+            }
+            runCatching { a.startActivity(android.content.Intent.createChooser(send,tr("Sdílet log"))) }
+                .onFailure { android.widget.Toast.makeText(a,tr("Operace se nezdařila. Zkus ji znovu."),android.widget.Toast.LENGTH_SHORT).show() }
+        })
+        GameLingoTVUi.page(a,tr("Technický log"),body,helpTopic="diagnostics")
+    }
+
     fun show(activity: Activity) {
         if (activity.isFinishing) return
         val d: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
@@ -25,17 +60,6 @@ object GameLingoDiagnostics {
             setPadding(d(20), d(22), d(20), d(26))
             background = GameLingoVisualKit.pageBackground(activity)
         }
-        val heading = TextView(activity).apply {
-            text = GameLingoLanguages.ui(activity, "Diagnostika")
-            textSize = GameLingoVisualKit.sp(activity, 27f)
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-        }
-        root.addView(LinearLayout(activity).apply {
-            gravity=Gravity.CENTER_VERTICAL
-            addView(heading,LinearLayout.LayoutParams(0,-2,1f))
-            addView(GameLingoHelp.button(activity,"diagnostics"),GameLingoHelp.layout(activity,d(36),d(44)))
-        })
         root.addView(TextView(activity).apply {
             text = GameLingoLanguages.ui(activity, "Stav místních nastavení a zahájené relace. Uložené údaje nepotvrzují živé spojení s konzolí ani TV.")
             gravity = Gravity.CENTER
@@ -155,15 +179,37 @@ object GameLingoDiagnostics {
                 }
             }
         }
+        action(GameLingoLanguages.ui(activity, "Zkusit titulek na TV")) {
+            if (GameLingoLanguages.translationSettingsBusy() || verifying) return@action
+            val store = TvProfily(activity)
+            val target = store.posledniId?.let { store.najdi(it) }
+            if (store.pouzeTelefon || target == null || !GameLingoTVPairing.paired(activity,target.ip)) {
+                android.widget.Toast.makeText(activity,GameLingoLanguages.ui(activity,"Nejdříve vyber a spáruj TV."),android.widget.Toast.LENGTH_LONG).show()
+                return@action
+            }
+            verifying = true
+            GameLingoTVPairing.verify(activity,target) { ok ->
+                verifying = false
+                val current = TvProfily(activity)
+                if (!dialog.isShowing || GameLingoLanguages.translationSettingsBusy() || current.pouzeTelefon ||
+                    current.posledniId != target.id || current.najdi(target.id)?.ip != target.ip) return@verify
+                if (ok) {
+                    Propojeni.Vysilac.nastavCil(target.ip,target.jmeno)
+                    Propojeni.Vysilac.ukazka(GameLingoLanguages.ui(activity,"Zkušební titulek GameLingo"))
+                    refresh()
+                } else android.widget.Toast.makeText(activity,GameLingoLanguages.ui(activity,"TV neodpovídá. Zkontroluj domácí síť a přijímač."),android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+        action(GameLingoLanguages.ui(activity, "Technický log")) { showTechnicalLog(activity) }
         action(GameLingoLanguages.ui(activity, "Vymazat místní log překladu")) {
-            if (RemotePlayService.aktivni || PrijemService.bezi) {
+            if (GameLingoLanguages.translationSettingsBusy()) {
                 android.app.AlertDialog.Builder(activity).setMessage(GameLingoLanguages.ui(activity, "Nejdříve zastav překlad a příjem."))
                     .setPositiveButton("OK", null).show()
             } else android.app.AlertDialog.Builder(activity)
                 .setMessage(GameLingoLanguages.ui(activity, "Vymazat starý i nový místní log překladu? Ostatní diagnostické soubory zůstanou."))
                 .setNegativeButton(GameLingoLanguages.ui(activity, "Zrušit"), null)
                 .setPositiveButton(GameLingoLanguages.ui(activity, "Vymazat")) { _, _ ->
-                    if (RemotePlayService.aktivni || PrijemService.bezi) return@setPositiveButton
+                    if (GameLingoLanguages.translationSettingsBusy()) return@setPositiveButton
                     val removed = listOf("titulky.log", "titulky-private-v2.log").map { name ->
                         val file = java.io.File(activity.filesDir, name)
                         !file.exists() || file.delete()
@@ -175,16 +221,6 @@ object GameLingoDiagnostics {
         }
         action(GameLingoLanguages.ui(activity, "Nahlásit problém")) { GameLingoHelp.report(activity) }
         action(GameLingoLanguages.ui(activity, "Hotovo")) { dialog.dismiss() }
-        val scroll = ScrollView(activity).apply {
-            isFillViewport = true
-            addView(root)
-        }
-        dialog.setContentView(scroll)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        GameLingoTVUi.mountPage(activity,dialog,GameLingoLanguages.ui(activity,"Diagnostika"),root,helpTopic="diagnostics")
     }
 }

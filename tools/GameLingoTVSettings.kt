@@ -174,6 +174,7 @@ object GameLingoTVSettings {
             "\n" + GameLingoXboxDiagnostics.summary() +
             "\n\n" + GameLingoScreenTranslationService.phaseSummary(a)
         val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
+        var refreshPage: android.app.Dialog? = null
         body.addView(GameLingoTVUi.title(a,tr("Stav"),24f))
         body.addView(GameLingoTVUi.title(a,info+"\n"+tr("Překryv:")+" "+tr(if(Settings.canDrawOverlays(a)) "Povolen" else "Nepovolen"),20f).apply {
             background=GameLingoTVUi.panel(a); val pad=d(a,16);setPadding(pad,pad,pad,pad)
@@ -199,8 +200,14 @@ object GameLingoTVSettings {
                             }.show()
                     }
         })
+        body.addView(GameLingoTVUi.action(a,tr("Aktualizovat stav")) {
+            // Rebuild the snapshot without starting capture.
+            refreshPage?.dismiss()
+            diagnostics(a)
+        })
+        body.addView(GameLingoTVUi.action(a,tr("Technický log")) { GameLingoDiagnostics.showTechnicalLog(a) })
         body.addView(GameLingoTVUi.action(a,tr("Test OCR")) { GameLingoScreenTranslationService.diagnostics(a) })
         body.addView(GameLingoTVUi.action(a,tr("Nahlásit problém")) { GameLingoHelp.report(a) })
-        GameLingoTVUi.page(a,tr("Diagnostika TV"),body,helpTopic="diagnostics")
+        refreshPage = GameLingoTVUi.page(a,tr("Diagnostika TV"),body,helpTopic="diagnostics")
     }
 }

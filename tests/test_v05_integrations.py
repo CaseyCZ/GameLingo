@@ -508,6 +508,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('GameLingoLanguages.ui(c, "Odpárovat")', patch)
         self.assertIn('IPhoneTVPairing.unpair(c, phone.id)', patch)
 
+    def test_diagnostics_preview_and_log_are_scoped_and_safe(self):
+        mobile = code(TOOLS/"GameLingoDiagnostics.kt")
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        ios = code(IOS/"SettingsHomeView.swift")
+        self.assertIn("GameLingoTVUi.mountPage(activity,dialog", mobile)
+        self.assertIn("line.substring(9) in safeEvents", mobile)
+        self.assertIn("takeLast(60)", mobile)
+        self.assertIn("GameLingoTVPairing.verify(activity,target)", mobile)
+        self.assertIn("current.posledniId != target.id", mobile)
+        self.assertIn("GameLingoLanguages.translationSettingsBusy()", mobile)
+        self.assertIn("GameLingoDiagnostics.showTechnicalLog(a)", tv)
+        self.assertIn("refreshPage?.dismiss()", tv)
+        self.assertIn("disabled: model.isRunning || !model.tv.receiverPaired", ios)
+
     def test_localized_device_pairing_and_diagnostics(self):
         device = code(TOOLS/"GameLingoDeviceCenter.kt")
         pairing = code(TOOLS/"GameLingoTVPairing.kt")

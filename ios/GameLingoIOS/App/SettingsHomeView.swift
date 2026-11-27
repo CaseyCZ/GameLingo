@@ -883,8 +883,9 @@ private struct GameLingoDiagnosticsView: View {
             GLCard {
                 GLPrimaryButton(title: "Zkusit titulek na TV",
                     systemImage: "tv",
-                    disabled: !model.tv.receiverPaired || !model.tv.receiverConnected) {
-                    model.tv.sendSubtitle("Zkušební titulek GameLingo", duration: 8_000, preview: true)
+                    disabled: model.isRunning || !model.tv.receiverPaired || !model.tv.receiverConnected) {
+                    guard !model.isRunning, model.tv.receiverPaired, model.tv.receiverConnected else { return }
+                    model.tv.sendSubtitle(GLInterfaceText.localized("Zkušební titulek GameLingo"), duration: 8_000, preview: true)
                 }
             }
             GLCard {
