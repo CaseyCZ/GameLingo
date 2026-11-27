@@ -1395,6 +1395,40 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(workflow.index('gh release edit "$TAG"'),
                         workflow.index('gh release delete "$old"'))
 
+    def test_release_tag_cleanup_is_conservative_and_preserves_current(self):
+        import runpy
+        plan = runpy.run_path(str(TOOLS/"cleanup_release_tags.py"))["plan_cleanup"]
+        names = ("GameLingo-iOS-v0.5.6-dev-unsigned.ipa",
+                 "GameLingo-Android-v0.5.6-dev-TEST.apk",
+                 "GameLingo-GoogleTV-v0.5.6-dev-TEST.apk", "SHA256SUMS.txt",
+                 "GameLingo-TV-update.json", "GameLingo-Android-update.json",
+                 "GameLingo-iOS-update.json")
+        current = "v0.5.6-test-446c68ca-r45974974161"
+        release = {"tag_name": current, "draft": False,
+                   "assets": [{"name": n, "state": "uploaded", "size": 1} for n in names]}
+        protected_draft = "v0.5.3-test-abcdef12-r123"
+        older = ["v0.5.4-test-6ddf3f16-r45945942215", "v0.5.0-test-81905d9"]
+        tags = [current, protected_draft, "v0.5.6-test-abcdef12-r5",
+                "v0.5.7-test-abcdef12-r6", "v0.5.1", "custom-test", *older]
+        self.assertEqual(plan([release, {"tag_name": protected_draft, "draft": True}], tags),
+                         sorted(older))
+        self.assertEqual(plan([release], [current]), [])
+        for invalid in ([], [release, dict(release, tag_name=older[0])],
+                        [dict(release, assets=[])], [dict(release, tag_name="v0.5.6")]):
+            with self.assertRaises(ValueError):
+                plan(invalid, tags)
+        with self.assertRaises(ValueError):
+            plan([release], older)
+        workflow = code(ROOT/".github/workflows/publish-gamelingo-current.yml")
+        self.assertIn("cleanup_only:", workflow)
+        self.assertIn("!inputs.cleanup_only", workflow)
+        self.assertIn("needs.release.result == 'success'", workflow)
+        self.assertIn("inputs.cleanup_only && needs.release.result == 'skipped'", workflow)
+        self.assertIn("gh api --paginate --slurp", workflow)
+        self.assertIn('gh api --method DELETE "repos/$REPO/git/refs/tags/$old"', workflow)
+        self.assertLess(workflow.index("python3 tools/cleanup_release_tags.py releases.json"),
+                        workflow.index('gh api --method DELETE "repos/$REPO/git/refs/tags/$old"'))
+
     def test_build_and_publish_workflows_preserve_signing_and_validation(self):
         folder = ROOT/".github/workflows"
         workflow = code(folder/"audit-0.5-ci.yml")
