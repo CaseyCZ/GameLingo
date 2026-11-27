@@ -5,6 +5,14 @@ import NaturalLanguage
 import CoreImage
 import UIKit
 
+// A bounded, evidence-based approximation for smooth backgrounds.
+// Busy artwork is not treated as a recoverable gradient.
+private struct GLCameraSurface: Sendable {
+    let start: UInt32
+    let end: UInt32
+    let horizontal: Bool
+}
+
 private struct GLCameraBlock: Sendable {
     let text: String
     let rect: CGRect // upright image coordinates, origin at top left
@@ -12,6 +20,7 @@ private struct GLCameraBlock: Sendable {
     var background: UInt32 = 0
     var ink: UInt32? = nil
     var lineCount: Int = 1
+    var surface: GLCameraSurface? = nil
 }
 
 private struct GLCameraOverlay: Identifiable {
@@ -22,6 +31,7 @@ private struct GLCameraOverlay: Identifiable {
     let background: UInt32
     let ink: UInt32?
     let lineCount: Int
+    let surface: GLCameraSurface?
 }
 
 // Sample the background near the text box edges, not the glyph centers.
@@ -66,6 +76,60 @@ private struct GLCameraPalette {
         }
         guard let best = bins.max(by: { $0.value.count < $1.value.count })?.value else { return 0 }
         return UInt32((best.red / best.count) * 65536 + (best.green / best.count) * 256 + best.blue / best.count)
+    }
+
+    // Reconstruct a smooth ramp from two coherent opposing edges, checked
+    // against the perpendicular edges. Never sample outside the owned box.
+    func reconstructedSurface(for rect: CGRect, background: UInt32, ink: UInt32?) -> GLCameraSurface? {
+        guard rect.width > 0.015, rect.height > 0.015,
+              rect.minX >= 0, rect.minY >= 0, rect.maxX <= 1, rect.maxY <= 1 else { return nil }
+        func sample(_ x: CGFloat, _ y: CGFloat) -> UInt32 {
+            let n = Self.size
+            let px = min(n - 1, max(0, Int(x * CGFloat(n))))
+            let py = min(n - 1, max(0, Int(y * CGFloat(n))))
+            let i = (py * n + px) * 4
+            return UInt32(pixels[i]) * 65536 + UInt32(pixels[i+1]) * 256 + UInt32(pixels[i+2])
+        }
+        func distance(_ a: UInt32, _ b: UInt32) -> Int {
+            [16, 8, 0].map { abs(Int((a >> $0) & 255) - Int((b >> $0) & 255)) }.max() ?? 0
+        }
+        func median(_ values: [UInt32]) -> UInt32 {
+            [16, 8, 0].reduce(UInt32(0)) { result, shift in
+                let channel = values.map { ($0 >> shift) & 255 }.sorted()
+                return result | (channel[channel.count / 2] << shift)
+            }
+        }
+        func blend(_ a: UInt32, _ b: UInt32, _ t: Double) -> UInt32 {
+            [16, 8, 0].reduce(UInt32(0)) { result, shift in
+                let x = Double((a >> shift) & 255), y = Double((b >> shift) & 255)
+                return result | (UInt32((x + (y - x) * t).rounded()) << shift)
+            }
+        }
+        let ts = (0..<12).map { (CGFloat($0) + 0.5) / 12 }
+        let left = ts.map { sample(rect.minX + rect.width * 0.04, rect.minY + rect.height * $0) }
+        let right = ts.map { sample(rect.maxX - rect.width * 0.04, rect.minY + rect.height * $0) }
+        let top = ts.map { sample(rect.minX + rect.width * $0, rect.minY + rect.height * 0.08) }
+        let bottom = ts.map { sample(rect.minX + rect.width * $0, rect.maxY - rect.height * 0.08) }
+        let foreground = ink ?? (Self.luminance(background) > 0.179 ? UInt32(0) : UInt32(0xffffff))
+        func contrast(_ color: UInt32) -> Double {
+            let a = Self.luminance(color), b = Self.luminance(foreground)
+            return (max(a, b) + 0.05) / (min(a, b) + 0.05)
+        }
+        func candidate(_ first: [UInt32], _ last: [UInt32], _ crossA: [UInt32], _ crossB: [UInt32], horizontal: Bool) -> GLCameraSurface? {
+            let a = median(first), b = median(last), variation = distance(a, b)
+            guard (12...100).contains(variation),
+                  first.filter({ distance($0, a) <= 22 }).count >= 9,
+                  last.filter({ distance($0, b) <= 22 }).count >= 9,
+                  contrast(a) >= 4.5, contrast(b) >= 4.5 else { return nil }
+            let agreement = ts.indices.filter { i in
+                let expected = blend(a, b, Double(ts[i]))
+                return distance(crossA[i], expected) <= 35 && distance(crossB[i], expected) <= 35
+            }.count
+            guard agreement >= 8 else { return nil }
+            return GLCameraSurface(start: a, end: b, horizontal: horizontal)
+        }
+        return candidate(top, bottom, left, right, horizontal: false) ??
+               candidate(left, right, top, bottom, horizontal: true)
     }
 
     static func similar(_ a: UInt32, _ b: UInt32) -> Bool {
@@ -365,6 +429,14 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 }
                 blocks.append(block)
             }
+            if wholeImage, let palette {
+                for index in blocks.indices where abs(blocks[index].angle) < 0.06 {
+                    let block = blocks[index]
+                    // A merged paragraph is sampled using its final bounds.
+                    blocks[index].surface = palette.reconstructedSurface(for: block.rect,
+                        background: block.background, ink: block.ink)
+                }
+            }
             let signature = blocks.map(\.text).joined(separator: "\n")
             stableFrames = signature == previousOCR && !signature.isEmpty ? min(3, stableFrames + 1) : 0
             previousOCR = signature
@@ -478,7 +550,7 @@ private final class GLCameraState: ObservableObject {
         overlays = currentBlocks.enumerated().compactMap { index, block in
             guard let text = overlayCache[block.text], !text.isEmpty else { return nil }
             return GLCameraOverlay(id: index, rect: block.rect, text: text, angle: block.angle,
-                                   background: block.background, ink: block.ink, lineCount: block.lineCount)
+                                   background: block.background, ink: block.ink, lineCount: block.lineCount, surface: block.surface)
         }
     }
 
@@ -966,7 +1038,15 @@ struct GameLingoCameraScreen: View {
                             .multilineTextAlignment(.leading)
                             .frame(width: max(1, proxy.size.width * overlay.rect.width),
                                    height: max(1, proxy.size.height * overlay.rect.height), alignment: .leading)
-                            .background(GLCameraPalette.color(overlay.background))
+                            .background {
+                                if let surface = overlay.surface {
+                                    LinearGradient(colors: [GLCameraPalette.color(surface.start), GLCameraPalette.color(surface.end)],
+                                                   startPoint: surface.horizontal ? .leading : .top,
+                                                   endPoint: surface.horizontal ? .trailing : .bottom)
+                                } else {
+                                    GLCameraPalette.color(overlay.background)
+                                }
+                            }
                             .clipped()
                             .rotationEffect(.radians(overlay.angle))
                             .position(x: proxy.size.width * overlay.rect.midX,
