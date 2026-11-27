@@ -114,6 +114,8 @@ object GameLingoProfiles {
         put("phoneScale", GameLingoPhoneSubtitleStyle.scale(c).toDouble())
         put("phoneColor", GameLingoPhoneSubtitleStyle.color(c))
         put("phoneBackground", GameLingoPhoneSubtitleStyle.background(c))
+        put("tvColor", GameLingoTVPairing.captionColor(c))
+        put("tvBackground", GameLingoTVPairing.captionBackground(c))
         val p = layoutPrefs(c)
         put("volbyZap", p.getBoolean("volbyZap", false))
         put("volbyText", p.getBoolean("volbyRezimText", false))
@@ -172,6 +174,9 @@ object GameLingoProfiles {
         val phoneBackground = data.optString("phoneBackground", "")
         if (phoneBackground in GameLingoPhoneSubtitleStyle.backgrounds) GameLingoPhoneSubtitleStyle.setBackground(c, phoneBackground)
 
+        val tvColor = data.optString("tvColor", GameLingoTVPairing.captionColor(c))
+        val tvBackground = data.optString("tvBackground", GameLingoTVPairing.captionBackground(c))
+        GameLingoTVPairing.saveCaptionStyle(c, tvColor, tvBackground)
         val p = layoutPrefs(c)
         val output = p.edit()
         for ((key, prefKey) in listOf(

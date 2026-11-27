@@ -121,6 +121,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(automatic.index("val lines = b.lines.filter"), automatic.index('val text=lines.joinToString'))
         self.assertIn("GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)", automatic)
 
+    def test_android_remote_tv_caption_style_is_independent_and_signed(self):
+        appearance = code(TOOLS/"GameLingoSubtitleAppearance.kt")
+        pairing = code(TOOLS/"GameLingoTVPairing.kt")
+        profiles = code(TOOLS/"GameLingoProfiles.kt")
+        self.assertIn('styleChoices("Barva textu na TV"', appearance)
+        self.assertIn('styleChoices("Pozadí na TV"', appearance)
+        self.assertIn("GameLingoTVPairing.verify(activity,target)", appearance)
+        self.assertIn("remoteCaptionColor", pairing)
+        self.assertIn("remoteCaptionBackground", pairing)
+        self.assertIn('freshBody("STYLE', pairing)
+        self.assertIn("sign(secret, body)", pairing)
+        self.assertIn("selectedTarget(c, ip, generation)", pairing)
+        self.assertIn('put("tvColor"', profiles)
+        self.assertIn('put("tvBackground"', profiles)
+
     def test_standard_region_editor_selects_four_independent_regions(self):
         wire = code(TOOLS/"wire_android_devices.py")
         orange = code(TOOLS/"GameLingoOrangeOutput.kt")

@@ -22,7 +22,10 @@ object GameLingoSubtitleAppearance {
     fun show(activity: Activity) {
         if (activity.isFinishing) return
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
-        val prefs = TvProfily.nastaveni(activity)
+        val prefs = GameLingoTVPairing.appearancePrefs(activity)
+        val receiverId = TvProfily(activity).posledniId
+        fun sameOutput(): Boolean = TvProfily(activity).posledniId == receiverId &&
+            GameLingoTVPairing.appearancePrefs(activity) === prefs
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val dp: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         val muted = Color.parseColor("#92A4C7")
@@ -74,6 +77,7 @@ object GameLingoSubtitleAppearance {
         var width = prefs.getFloat("tvSirka", 0.62f).coerceIn(0.30f, 0.95f)
         val sliders = mutableListOf<SeekBar>()
         fun publish() {
+            if (!sameOutput()) return
             prefs.edit().putFloat("tvPismo", font).putFloat("tvSirka", width).apply()
             val area = floatArrayOf(
                 prefs.getFloat("tvX", 0.5f), prefs.getFloat("tvY", 0.93f),
@@ -208,9 +212,61 @@ object GameLingoSubtitleAppearance {
             LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = dp(8); bottomMargin = dp(12) })
+        // Separate TV sample and controls, not a reuse of the phone style.
+        val tvPreview = text("",18f,bold=true).apply {
+            text = GameLingoPhoneSubtitleStyle.sample(activity)
+            setPadding(dp(14),dp(12),dp(14),dp(12))
+        }
+        fun refreshTVPreview() {
+            tvPreview.textSize = 18f * font
+            tvPreview.setTextColor(GameLingoPhoneSubtitleStyle.textColor(GameLingoTVPairing.captionColor(activity)))
+            tvPreview.setBackgroundColor(GameLingoPhoneSubtitleStyle.backgroundColor(GameLingoTVPairing.captionBackground(activity)))
+        }
+        layout.addView(GameLingoVisualKit.captionPreview(activity,tvPreview))
+        fun styleChoices(title: String, choices: List<String>, isColor: Boolean) {
+            layout.addView(text(title,16f,bold=true))
+            val row = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
+            val buttons = mutableListOf<TextView>()
+            fun selected() = if (isColor) GameLingoTVPairing.captionColor(activity) else GameLingoTVPairing.captionBackground(activity)
+            fun refresh() {
+                buttons.forEachIndexed { i, button ->
+                    val key = choices[i]
+                    button.isSelected = key == selected()
+                    button.background = GameLingoVisualKit.card(activity,button.isSelected)
+                    val name = tr(when(key) {
+                        "white" -> "Bílá"; "yellow" -> "Žlutá"; "cyan" -> "Tyrkysová"
+                        "green" -> "Zelená"; "purple" -> "Fialová"; "dark" -> "Tmavé"
+                        "translucent" -> "Průhledné"; else -> "Žádné"
+                    })
+                    button.contentDescription = name
+                    button.text = (if(button.isSelected) "✓ " else "") + if(isColor) "●" else name
+                }
+                refreshTVPreview()
+            }
+            choices.forEach { key ->
+                val button = text("",if(isColor) 23f else 13f).apply {
+                    if (isColor) setTextColor(GameLingoPhoneSubtitleStyle.textColor(key))
+                    minHeight = dp(48); isFocusable = true
+                    setOnClickListener {
+                        if (!sameOutput()) return@setOnClickListener
+                        GameLingoTVPairing.saveCaptionStyle(activity,
+                            if(isColor) key else GameLingoTVPairing.captionColor(activity),
+                            if(isColor) GameLingoTVPairing.captionBackground(activity) else key)
+                        refresh()
+                        GameLingoTVPairing.publishCaptionStyle(activity)
+                    }
+                }
+                buttons.add(button)
+                row.addView(button,LinearLayout.LayoutParams(0,-2,1f).apply { marginEnd=dp(3) })
+            }
+            addCard(row); refresh()
+        }
+        styleChoices("Barva textu na TV",GameLingoPhoneSubtitleStyle.colors,true)
+        styleChoices("Pozadí na TV",GameLingoPhoneSubtitleStyle.backgrounds,false)
         slider("Velikost písma TV", 70, 180, (font * 100).toInt(),
             forTelevision = true) {
             font = it / 100f
+            refreshTVPreview()
         }
         slider("Šířka titulků", 30, 95, (width * 100).toInt(),
             forTelevision = true) {
@@ -230,6 +286,7 @@ object GameLingoSubtitleAppearance {
             contentDescription = tr("Zamknout polohu a vzhled titulků")
             thumbTintList = ColorStateList.valueOf(cyan)
             setOnCheckedChangeListener { _, checked ->
+                if (!sameOutput()) return@setOnCheckedChangeListener
                 prefs.edit().putBoolean("rozvrhZamek", checked).apply()
                 sliders.forEach { it.isEnabled = !checked }
             }
@@ -245,7 +302,7 @@ object GameLingoSubtitleAppearance {
         val selectedTv = tvStore.posledniId?.let { tvStore.najdi(it) }
         val senderIp = Propojeni.Vysilac.cilIp
         val tvSelected = !tvStore.pouzeTelefon && selectedTv != null &&
-            senderIp != null && senderIp == selectedTv.ip
+            senderIp != null && senderIp == selectedTv.ip && GameLingoTVPairing.paired(activity,senderIp)
         layout.addView(TextView(activity).apply {
             text = tr("Náhled na TV")
             contentDescription = tr("Odeslat ukázkový překlad do vybrané TV")
@@ -258,8 +315,15 @@ object GameLingoSubtitleAppearance {
             isEnabled = tvSelected
             alpha = if (tvSelected) 1f else 0.45f
             setOnClickListener {
-                if (tvSelected && Propojeni.Vysilac.cilIp == selectedTv?.ip)
-                    Propojeni.Vysilac.ukazka(GameLingoPhoneSubtitleStyle.sample(activity))
+                val target = selectedTv ?: return@setOnClickListener
+                if (!tvSelected || !sameOutput() || GameLingoLanguages.translationSettingsBusy()) return@setOnClickListener
+                GameLingoTVPairing.verify(activity,target) { verified ->
+                    if (!dialog.isShowing || !sameOutput() || GameLingoLanguages.translationSettingsBusy()) return@verify
+                    if (verified) GameLingoTVPairing.publishCaptionStyle(activity) {
+                        if (dialog.isShowing && sameOutput() && !GameLingoLanguages.translationSettingsBusy())
+                            Propojeni.Vysilac.ukazka(GameLingoPhoneSubtitleStyle.sample(activity))
+                    } else android.widget.Toast.makeText(activity,tr("TV neodpovídá. Zkontroluj domácí síť a přijímač."),android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
         }, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, dp(54)

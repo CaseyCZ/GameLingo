@@ -245,6 +245,58 @@ object GameLingoTVPairing {
     private var lastActiveProbeIp = ""
     private var lastActiveProbeAt = 0L
 
+    // Remote TV appearance is separate from phone typography and local TV settings.
+    internal fun appearancePrefs(c: Context): android.content.SharedPreferences {
+        val store = TvProfily(c)
+        val id = if (store.pouzeTelefon) null else store.posledniId
+        return if (id != null && store.najdi(id) != null) store.nastaveni(id)
+            else c.getSharedPreferences("gamelingo", Context.MODE_PRIVATE)
+    }
+    fun captionColor(c: Context): String = appearancePrefs(c).getString("remoteCaptionColor", "white")
+        ?.takeIf { it in GameLingoPhoneSubtitleStyle.colors } ?: "white"
+    fun captionBackground(c: Context): String = appearancePrefs(c).getString("remoteCaptionBackground", "dark")
+        ?.takeIf { it in GameLingoPhoneSubtitleStyle.backgrounds } ?: "dark"
+
+    fun saveCaptionStyle(c: Context, color: String, background: String) {
+        if (color !in GameLingoPhoneSubtitleStyle.colors || background !in GameLingoPhoneSubtitleStyle.backgrounds) return
+        appearancePrefs(c).edit().putString("remoteCaptionColor", color).putString("remoteCaptionBackground", background).apply()
+    }
+
+    private fun selectedTarget(c: Context, ip: String, generation: Long): Boolean {
+        val store = TvProfily(c)
+        return !store.pouzeTelefon && store.posledniId?.let { store.najdi(it)?.ip } == ip &&
+            Propojeni.Vysilac.cilIp == ip && Propojeni.Vysilac.outputGeneration() == generation
+    }
+
+    // Called off the UI thread. No unsigned fallback or new sender identity.
+    private fun sendCaptionStyle(c: Context, ip: String, generation: Long, secret: String,
+                                 socket: DatagramSocket, address: InetAddress, port: Int) {
+        if (!selectedTarget(c, ip, generation) || token(c, ip) != secret) return
+        val body = freshBody("STYLE\t${pairingId(c)}\t${captionColor(c)}\t${captionBackground(c)}")
+        val packet = ("PCPAIR1\t$body\t" + sign(secret, body)).toByteArray(Charsets.UTF_8)
+        socket.send(DatagramPacket(packet, packet.size, address, port))
+    }
+
+    /** Send appearance only to the currently selected, authenticated receiver. */
+    fun publishCaptionStyle(c: Context, onSent: (() -> Unit)? = null) {
+        val context = c.applicationContext
+        val ip = Propojeni.Vysilac.cilIp ?: return
+        val generation = Propojeni.Vysilac.outputGeneration()
+        if (!selectedTarget(context, ip, generation) || !connected(ip)) return
+        Thread {
+            val secret = token(context, ip) ?: return@Thread
+            val sent = runCatching {
+                val port = receiverPort(ip)
+                val address = InetAddress.getByName(ip)
+                DatagramSocket().use { socket -> sendCaptionStyle(context, ip, generation, secret, socket, address, port) }
+                true
+            }.getOrDefault(false)
+            if (sent) main.post {
+                if (selectedTarget(context, ip, generation) && token(context, ip) == secret) onSent?.invoke()
+            }
+        }.apply { name = "gamelingo-tv-style"; isDaemon = true }.start()
+    }
+
     /** Actual sender heartbeat, only during an active translation session.
      * UDP send success and unsigned port discovery are not liveness proof. */
     fun verifyActive(ip: String, generation: Long) {
@@ -278,7 +330,11 @@ object GameLingoTVPairing {
                         val bytes=reply.data.copyOfRange(reply.offset,reply.offset+reply.length)
                         val correctPeer=reply.address==address&&reply.port==port
                         val capable=correctPeer&&MessageDigest.isEqual(extended.toByteArray(Charsets.UTF_8),bytes)
-                        (capable || correctPeer&&MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8),bytes)) to capable
+                        val verified = capable || correctPeer&&MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8),bytes)
+                        if (verified) runCatching {
+                            sendCaptionStyle(context, ip, generation, secret, socket, address, port)
+                        }
+                        verified to capable
                     }
                 }.getOrDefault(false to false)
                 main.post {

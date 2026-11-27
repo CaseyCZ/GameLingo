@@ -28,7 +28,7 @@ object GameLingoSettings {
             (PrijemService.bezi && PrijemService.telefonPripojen())) return false
         val keys = listOf(
             "pribehovy", "casPribehuProcenta", "prekryvat", "dialogy", "napovedy",
-            "tvX", "tvY", "tvSirka", "tvPismo", "rozvrhZamek",
+            "tvX", "tvY", "tvSirka", "tvPismo", "rozvrhZamek", "remoteCaptionColor", "remoteCaptionBackground",
             "volbyZap", "volbyUkazat", "volbyZamek", "volbyRezimText",
             "volbyL", "volbyT", "volbyR", "volbyB",
             "titRucne", "titZamek", "titL", "titT", "titR", "titB",
