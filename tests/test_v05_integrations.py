@@ -1191,6 +1191,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("await self?.processFrame(buffer", model)
         self.assertNotIn("await self?.processFrame(frame", model)
 
+    def test_subtitle_font_controls_share_10_to_200_percent(self):
+        settings = code(IOS/"SettingsHomeView.swift")
+        regions = code(IOS/"SubtitleSettingsView.swift")
+        self.assertGreaterEqual(settings.count("range: 0.10...2.00"), 2)
+        self.assertGreaterEqual(regions.count("0.10...2.00"), 2)
+        appearance = code(TOOLS/"GameLingoSubtitleAppearance.kt")
+        self.assertIn('slider("Velikost písma", 10, 200', appearance)
+        self.assertIn('slider("Velikost písma TV", 10, 200', appearance)
+        self.assertIn('geometry("Velikost písma",3,10,200)', code(TOOLS/"GameLingoTVCaptionStyle.kt"))
+        self.assertIn('slider("Velikost písma", 10, 200', code(TOOLS/"GameLingoOrangeOutput.kt"))
+        self.assertIn('font in .1f..2.5f', code(TOOLS/"GameLingoZonePacket.kt"))
+        self.assertIn('posuvnik(t("tvPismo"), 10, 200,', code(TOOLS/"redesign_gamelingo.py"))
+
     def test_automatic_zone_preview_and_independent_reset(self):
         ios = code(IOS/"GLAutomaticZonesView.swift")
         android = code(TOOLS/"GameLingoAutomaticConfig.kt")

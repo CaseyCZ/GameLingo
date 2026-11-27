@@ -40,7 +40,7 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
     fun show(packet: GameLingoZonePacket, local: Boolean = false) {
         check(Looper.myLooper() == Looper.getMainLooper())
         val allowed = if(local) !PrijemService.bezi && (RemotePlayService.aktivni || GameLingoScreenTranslationService.running) else PrijemService.bezi
-        if (packet.font <= 0f || packet.blocks.isEmpty() || !allowed || !Settings.canDrawOverlays(context)) {
+        if (packet.blocks.isEmpty() || !allowed || !Settings.canDrawOverlays(context)) {
             clear()
             return
         }

@@ -638,7 +638,8 @@ final class PlayCaptionTV: ObservableObject {
         repeatTask = nil
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !target.isEmpty else { return }
-        let font = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1
+        let savedFont = UserDefaults.standard.object(forKey: "outputFont") as? Double ?? 1
+        let font = savedFont.isFinite ? min(2, max(0.1, savedFont)) : 1
         var blocks = [String]()
         let adaptive = receiverSupportsAdaptiveZones && !outputs.isEmpty
         let limit = min(512, (adaptive ? 3000 : 4608) / max(1, min(32, outputs.count)))
@@ -684,7 +685,8 @@ final class PlayCaptionTV: ObservableObject {
         let x = automaticLayout?.centerX ?? (prefs.object(forKey: "outputX") as? Double) ?? 0.5
         let y = automaticLayout?.bottomY ?? (prefs.object(forKey: "outputBottom") as? Double) ?? 0.93
         let width = automaticLayout?.width ?? (prefs.object(forKey: "outputWidth") as? Double) ?? 0.62
-        let font = (prefs.object(forKey: "outputFont") as? Double) ?? 1.0
+        let savedFont = prefs.object(forKey: "outputFont") as? Double ?? 1.0
+        let font = savedFont.isFinite ? min(2, max(0.1, savedFont)) : 1
         // Original PlayCaption 0.22 protocol: field 4 is an empty hint.
         // Without it the TV misreads X/Y/width and draws a huge black strip.
         let fields = [

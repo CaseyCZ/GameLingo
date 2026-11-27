@@ -238,7 +238,7 @@ class ReleaseLocalizationTests(unittest.TestCase):
     def test_automatic_zone_editor_shares_one_screen_on_phone_and_tv(self):
         source = text(TOOLS / "GameLingoAutomaticConfig.kt")
         self.assertIn("fun showZones(a: Activity)", source)
-        self.assertIn('GameLingoTVUi.mountPage(a, dialog, tr("Oblasti překladu"), page, helpTopic = "regions")', source)
+        self.assertIn('GameLingoTVUi.mountPage(a, dialog, tr("Oblasti překladu"), page, helpTopic = "regions", onClose = {', source)
         self.assertIn("GameLingoVisualKit.neonTitle(", source)
         self.assertIn('GameLingoVisualKit.card(a, true)', source)
         self.assertIn("val tv = GameLingoTVUi.isTV(a)", source)

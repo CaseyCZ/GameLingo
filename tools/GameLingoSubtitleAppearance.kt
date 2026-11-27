@@ -73,7 +73,7 @@ object GameLingoSubtitleAppearance {
         }
         addCard(previewCard)
 
-        var font = prefs.getFloat("tvPismo", 1f).coerceIn(0.1f, 2f)
+        var font = prefs.getFloat("tvPismo", 1f).let { if(it.isFinite()) it.coerceIn(0.1f, 2f) else 1f }
         var width = prefs.getFloat("tvSirka", 0.62f).coerceIn(0.30f, 0.95f)
         val sliders = mutableListOf<SeekBar>()
         fun publish() {
