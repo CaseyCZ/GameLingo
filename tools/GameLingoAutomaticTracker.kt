@@ -16,10 +16,10 @@ internal data class AutoRect(val left: Float, val top: Float, val right: Float, 
     }
 }
 internal data class AutoZone(val id: String, val name: String, val enabled: Boolean, val rect: AutoRect, val centered: Boolean)
-internal data class AutoBlock(val text: String, val rect: AutoRect) {
-    fun output(translated: String, centered: Boolean = true): GameLingoZoneBlock {
-        val width = (rect.width + if(centered) .06f else .008f).coerceIn(if(centered) .15f else .08f,1f)
-        return GameLingoZoneBlock(translated,rect.center.coerceIn(width/2,1-width/2),rect.bottom.coerceIn(.05f,1f),width)
+internal data class AutoBlock(val text: String, val rect: AutoRect, val background: Int? = null, val ink: Int? = null) {
+    fun output(translated: String): GameLingoZoneBlock {
+        // Use the source box for replacement; the old protocol expands tiny labels on encode.
+        return GameLingoZoneBlock(translated,rect.center,rect.bottom,rect.width,rect.height,background,ink)
     }
 }
 internal class GameLingoAutomaticTracker {

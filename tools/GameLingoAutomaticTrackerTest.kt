@@ -13,9 +13,10 @@ class GameLingoAutomaticTrackerTest {
     }
     @Test fun customMenuGeometryAndControllerLabels(){
         val block=AutoBlock("Play",AutoRect(.01f,.01f,.06f,.04f))
-        val output=block.output("Hrát",false)
-        assertEquals(.08f,output.width,.0001f)
-        assertEquals(.04f,output.x,.0001f)
+        val output=block.output("Hrát")
+        assertEquals(.05f,output.width,.0001f)
+        assertEquals(.03f,output.height!!,.0001f)
+        assertEquals(.08f,output.legacyGeometry().width,.0001f)
         for (label in listOf("LT","RT","LB","R1")) {
             assertFalse(GameLingoYellowOCRFilter.keepsAutomaticDialogue(label,false,emptySet()))
         }
