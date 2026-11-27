@@ -102,14 +102,30 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
         }
     }
 
-    func torch(_ enabled: Bool, completion: @escaping @Sendable (Bool) -> Void) {
+    func torch(_ enabled: Bool, completion: @escaping @Sendable (Bool, Bool) -> Void) {
         queue.async {
-            guard let device = self.device, device.hasTorch, device.isTorchAvailable,
-                  (try? device.lockForConfiguration()) != nil else { completion(false); return }
-            defer { device.unlockForConfiguration() }
-            let mode: AVCaptureDevice.TorchMode = enabled ? .on : .off
-            if device.isTorchModeSupported(mode) { device.torchMode = mode }
-            completion(device.torchMode == .on)
+            guard self.session.isRunning, let device = self.device, device.hasTorch else {
+                completion(false, false); return
+            }
+            do {
+                try device.lockForConfiguration()
+                defer { device.unlockForConfiguration() }
+                if enabled {
+                    guard device.isTorchAvailable, device.isTorchModeSupported(.on) else {
+                        completion(device.torchMode == .on, false); return
+                    }
+                    try device.setTorchModeOn(level: AVCaptureDevice.maxAvailableTorchLevel)
+                } else {
+                    guard device.isTorchModeSupported(.off) else {
+                        completion(device.torchMode == .on, false); return
+                    }
+                    device.torchMode = .off
+                }
+                let on = device.torchMode == .on
+                completion(on, on == enabled)
+            } catch {
+                completion(device.torchMode == .on, false)
+            }
         }
     }
 
@@ -168,6 +184,9 @@ private final class GLCameraState: ObservableObject {
     @Published var paused = false
     @Published var unavailable = false
     @Published var torchOn = false
+    @Published var torchPending = false
+    @Published var torchFailed = false
+    private var torchRequest = 0
     private var capture: GLCameraCapture?
     private var task: Task<Void, Never>?
     private var revision = 0
@@ -356,18 +375,33 @@ private final class GLCameraState: ObservableObject {
         paused.toggle()
         if paused {
             revision += 1; task?.cancel(); task = nil; translating = false
-            capture?.stop(); torchOn = false
+            capture?.stop(); resetTorch()
             if tvOutput { model?.sendCameraSubtitle("") }
         } else {
             resetTranslation(); applyConfiguration()
+            previewSession = nil
             capture?.start()
         }
     }
 
     func zoom(_ value: Double) { capture?.zoom(CGFloat(value)) }
+    private func resetTorch() {
+        torchRequest += 1
+        torchOn = false; torchPending = false; torchFailed = false
+    }
+
     func toggleTorch() {
-        capture?.torch(!torchOn) { [weak self] enabled in
-            Task { @MainActor in self?.torchOn = enabled }
+        guard running, !paused, previewSession != nil, !torchPending, let capture else { return }
+        torchRequest += 1
+        let request = torchRequest
+        torchPending = true; torchFailed = false
+        capture.torch(!torchOn) { [weak self] enabled, success in
+            Task { @MainActor in
+                guard let self, self.running, !self.paused, self.torchRequest == request else { return }
+                self.torchOn = enabled
+                self.torchPending = false
+                self.torchFailed = !success
+            }
         }
     }
 
@@ -376,7 +410,7 @@ private final class GLCameraState: ObservableObject {
         lifetime += 1
         resetTranslation()
         capture?.stop(); capture = nil
-        previewSession = nil; image = nil; torchOn = false
+        previewSession = nil; image = nil; resetTorch()
     }
 }
 
@@ -486,8 +520,9 @@ struct GameLingoCameraScreen: View {
                     }.accessibilityLabel("Přiblížení")
                     HStack {
                         Button { state.toggleTorch() } label: {
-                            Label("Svítilna", systemImage: state.torchOn ? "flashlight.on.fill" : "flashlight.off.fill")
-                        }.disabled(state.paused || state.unavailable)
+                            Label("Svítilna", systemImage: state.torchFailed ? "exclamationmark.triangle.fill" : (state.torchOn ? "flashlight.on.fill" : "flashlight.off.fill"))
+                                .foregroundStyle(state.torchFailed ? Color.orange : (state.torchOn ? Color.yellow : Color.white))
+                        }.disabled(state.paused || state.unavailable || state.previewSession == nil || state.torchPending)
                         Spacer()
                         Button { state.togglePause() } label: {
                             Label(state.paused ? "Pokračovat" : "Pozastavit", systemImage: state.paused ? "play.fill" : "pause.fill")
