@@ -229,7 +229,7 @@ object GameLingoOCRSettings {
             dialog.dismiss()
             showPage(activity, onAreas, advanced)
         }
-        if(GameLingoTVUi.isTV(activity)) {
+        run {
             action("Výchozí oblast",GameLingoOCRConfig.regionLabels[GameLingoOCRConfig.regionKeys.indexOf(GameLingoOCRConfig.region(activity))],
                 canEdit && !OblastTitulku.rucne) {
                 GameLingoTVUi.select(activity,tr("Výchozí oblast"),GameLingoOCRConfig.regionLabels.map(::tr).toTypedArray(),
@@ -248,7 +248,7 @@ object GameLingoOCRSettings {
             "Obnovit původní režim, filtrování a automatické čtení.",
             canEdit) {
             GameLingoOCRConfig.reset(activity)
-            if(GameLingoTVUi.isTV(activity)) GameLingoOCRConfig.setRegion(activity,"legacy")
+            GameLingoOCRConfig.setRegion(activity,"legacy")
             OblastTitulku.rucne = false
             OblastTitulku.oblast = OblastTitulku.VYCHOZI.copyOf()
             OblastTitulku.uloz(activity)

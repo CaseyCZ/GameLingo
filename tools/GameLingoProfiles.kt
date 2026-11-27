@@ -90,6 +90,11 @@ object GameLingoProfiles {
         put("previousDialogueCount", GameLingoOCRConfig.previousDialogueCount(c))
         put("hideOnSourceGone", GameLingoOCRConfig.hideOnSourceGone(c))
         put("sourceGoneDelay", GameLingoOCRConfig.sourceGoneDelay(c))
+        put("autoRegion", GameLingoOCRConfig.region(c))
+        put("fixedTiming", GameLingoOCRConfig.fixedTiming(c))
+        put("seconds", GameLingoOCRConfig.seconds(c))
+        put("skipOld", GameLingoOCRConfig.skipOld(c))
+        put("maxAge", GameLingoOCRConfig.maxAge(c))
         put("pribehovy", settings.pribehovy)
         put("cas", settings.casPribehuProcenta)
         put("prekryvat", settings.prekryvat)
@@ -134,6 +139,13 @@ object GameLingoProfiles {
         GameLingoOCRConfig.setPreviousDialogueCount(c, data.optInt("previousDialogueCount", 1))
         GameLingoOCRConfig.setHideOnSourceGone(c, data.optBoolean("hideOnSourceGone", false))
         GameLingoOCRConfig.setSourceGoneDelay(c, data.optInt("sourceGoneDelay", 0))
+        val autoRegion = data.optString("autoRegion", "")
+        if (autoRegion in GameLingoOCRConfig.regionKeys) GameLingoOCRConfig.setRegion(c, autoRegion)
+        GameLingoOCRConfig.saveTiming(c,
+            fixed = data.optBoolean("fixedTiming", GameLingoOCRConfig.fixedTiming(c)),
+            duration = data.optInt("seconds", GameLingoOCRConfig.seconds(c)),
+            skip = data.optBoolean("skipOld", GameLingoOCRConfig.skipOld(c)),
+            age = data.optInt("maxAge", GameLingoOCRConfig.maxAge(c)))
         settings.pribehovy = data.optBoolean("pribehovy", settings.pribehovy)
         settings.casPribehuProcenta = data.optInt("cas", settings.casPribehuProcenta)
         settings.prekryvat = data.optBoolean("prekryvat", settings.prekryvat)

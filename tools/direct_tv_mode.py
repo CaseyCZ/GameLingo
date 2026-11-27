@@ -1,4 +1,4 @@
-"""Direct-on-TV rendering and OCR; receiver mode and mobile remain unchanged."""
+"""Direct-on-TV rendering and shared console OCR and timing integration."""
 from pathlib import Path
 from tv_navigation import patch_navigation
 
@@ -45,17 +45,17 @@ def patch_direct_tv(folder):
         """if (OblastTitulku.rucne) OblastTitulku.oblast.copyOf().takeIf {
             it.size == 4 && it.all { value -> value.isFinite() && value in 0f..1f } &&
                 it[2] > it[0] + 0.10f && it[3] > it[1] + 0.05f
-        } else if (!telefon) GameLingoOCRConfig.preset(this) else null""")
+        } else GameLingoOCRConfig.preset(this)""")
     # Optional iOS timing in the console path, without changing the verified default.
     # The common language integration already bounds ordinary captions to four seconds.
     one("        ukaz(cesky, 4000, box, radku, barvyJmen)",
-        "        ukaz(cesky, if (telefon) 4000L else GameLingoOCRConfig.displayMs(this,4000L), box, radku, barvyJmen)")
+        "        ukaz(cesky, GameLingoOCRConfig.displayMs(this,4000L), box, radku, barvyJmen)")
     one("            (ukazanoKdy + 4000L - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)",
-        "            (ukazanoKdy + (if (telefon) 4000L else GameLingoOCRConfig.displayMs(this,4000L)) - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)")
+        "            (ukazanoKdy + GameLingoOCRConfig.displayMs(this,4000L) - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)")
     one("        val token = platnostPrekladu.novy()\n        val oblast =",
         "        val token = platnostPrekladu.novy()\n        val tvTranslationStarted = android.os.SystemClock.elapsedRealtime()\n        val oblast =")
     one("            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika",
-        "            if (!telefon && GameLingoOCRConfig.expired(this,android.os.SystemClock.elapsedRealtime()-tvTranslationStarted)) return\n            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika")
+        "            if (GameLingoOCRConfig.expired(this,android.os.SystemClock.elapsedRealtime()-tvTranslationStarted)) return\n            if (cislo < posledniUkazany) return // mezitím se ukázala novější replika")
     one("        ui.post(pribehHlidac)\n        Pady.hlidej(this)",
         "        if (!telefon) { Volby.nacti(this); OblastTitulku.nacti(this) }\n        ui.post(pribehHlidac)\n        Pady.hlidej(this)")
     # YUV PS decoder uses aligned crop just like GL and I420.

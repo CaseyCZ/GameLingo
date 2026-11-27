@@ -200,7 +200,8 @@ object GameLingoSettings {
             })
         })
         add(sliderCard)
-        if(television) {
+        // Timing is shared by both console clients; TV focus remains device-specific.
+        run {
             add(row(activity,"Pevná doba titulku","Nastavení v sekundách jako na iOS; příběhová fronta zachovává vlastní časování.",
                 GameLingoOCRConfig.fixedTiming(activity)) { GameLingoOCRConfig.saveTiming(activity,fixed=it) })
             fun timingSlider(title:String,min:Int,max:Int,value:Int,save:(Int)->Unit) {
@@ -209,7 +210,7 @@ object GameLingoSettings {
                 panel.addView(caption)
                 panel.addView(SeekBar(activity).apply {
                     this.max=max-min;progress=value-min;keyProgressIncrement=1;isFocusable=true
-                    GameLingoTVUi.controlFocus(activity,this)
+                    if (television) GameLingoTVUi.controlFocus(activity,this)
                     setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener {
                         override fun onProgressChanged(bar:SeekBar, v:Int, fromUser:Boolean) {
                             caption.text="${tr(title)}: "+(v+min)+" s"

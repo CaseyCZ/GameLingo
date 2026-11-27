@@ -1162,7 +1162,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("(ukazanoKdy + 4000L - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)", wiring)
         self.assertNotIn("coerceIn(0L, 800L)", wiring)
         direct = code(TOOLS/"direct_tv_mode.py")
-        self.assertIn("GameLingoOCRConfig.displayMs(this,4000L)) - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)", direct)
+        self.assertIn("GameLingoOCRConfig.displayMs(this,4000L) - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)", direct)
 
     def test_point1_standalone_empty_ocr_preserves_reading_deadline(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
@@ -2005,6 +2005,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(marker,home)
         self.assertIn("Active phone reception stays in the background",wiring)
         self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
+
+    def test_mobile_console_uses_shared_timing_and_ocr_presets(self):
+        settings = code(TOOLS/"GameLingoSettings.kt")
+        ocr = code(TOOLS/"GameLingoOCRSettings.kt")
+        profile = code(TOOLS/"GameLingoProfiles.kt")
+        direct = code(TOOLS/"direct_tv_mode.py")
+        self.assertNotIn('if(television) {\n            add(row(activity,"Pevná doba titulku"', settings)
+        self.assertNotIn('if(GameLingoTVUi.isTV(activity)) {\n            action("Výchozí oblast"', ocr)
+        for key in ("autoRegion", "fixedTiming", "seconds", "skipOld", "maxAge"):
+            self.assertIn('put("' + key + '"', profile)
+            self.assertIn('data.opt', profile)
+        self.assertIn('GameLingoOCRConfig.saveTiming(c,', profile)
+        self.assertIn('} else GameLingoOCRConfig.preset(this)', direct)
+        self.assertIn('ukaz(cesky, GameLingoOCRConfig.displayMs(this,4000L)', direct)
+        self.assertIn('if (GameLingoOCRConfig.expired(this,', direct)
+        self.assertNotIn('if (!telefon && GameLingoOCRConfig.expired', direct)
+        self.assertNotIn('if (telefon) 4000L else GameLingoOCRConfig.displayMs', direct)
 
     def test_tv_ios_parity_settings_are_persisted_and_used(self):
         config=code(TOOLS/"GameLingoOCRConfig.kt")
