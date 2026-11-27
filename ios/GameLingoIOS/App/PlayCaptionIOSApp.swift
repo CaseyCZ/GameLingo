@@ -253,11 +253,17 @@ final class CaptionAppModel: ObservableObject {
     @Published var outputWidth: Double = (UserDefaults.standard.object(forKey: "outputWidth") as? Double) ?? 0.62 {
         didSet { UserDefaults.standard.set(outputWidth, forKey: "outputWidth") }
     }
-    @Published var outputFont: Double = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1.0 {
+    @Published var outputFont: Double = {
+        let value = UserDefaults.standard.object(forKey: "outputFont") as? Double ?? 1
+        return value.isFinite ? min(2, max(0, value)) : 1
+    }() {
         didSet { UserDefaults.standard.set(outputFont, forKey: "outputFont") }
     }
     @Published var phoneFontScale: Double =
-        (UserDefaults.standard.object(forKey: "gamelingo.phoneFontScale") as? Double) ?? 1.0 {
+        {
+        let value = UserDefaults.standard.object(forKey: "gamelingo.phoneFontScale") as? Double ?? 1
+        return value.isFinite ? min(2, max(0, value)) : 1
+    }() {
         didSet { UserDefaults.standard.set(phoneFontScale, forKey: "gamelingo.phoneFontScale") }
     }
     @Published var phoneTextColor: GLPhoneSubtitleColor = GLPhoneSubtitleColor(
@@ -387,7 +393,7 @@ final class CaptionAppModel: ObservableObject {
     /// Normal dialogue subtitles continue using outputFont.
     @Published var choicesOutputFont: Double = {
         let saved = UserDefaults.standard.object(forKey: "choicesOutputFont") as? Double ?? 1.0
-        return saved.isFinite && (0.6...2.0).contains(saved) ? saved : 1.0
+        return saved.isFinite && (0.0...2.0).contains(saved) ? saved : 1.0
     }() {
         didSet { UserDefaults.standard.set(choicesOutputFont, forKey: "choicesOutputFont") }
     }
@@ -600,7 +606,7 @@ final class CaptionAppModel: ObservableObject {
         outputX = profile.outputX
         outputBottom = profile.outputBottom
         outputWidth = profile.outputWidth
-        outputFont = profile.outputFont
+        outputFont = profile.outputFont.isFinite ? min(2, max(0, profile.outputFont)) : 1
         outputLocked = profile.outputLocked
         choicesArea = profile.choicesArea
         choicesTextMode = profile.choicesTextMode
@@ -614,7 +620,8 @@ final class CaptionAppModel: ObservableObject {
         choicesEnabled = profile.choicesEnabled
         if let rect = profile.choicesOutputArea { choicesOutputArea = rect }
         if let locked = profile.choicesOutputLocked { choicesOutputLocked = locked }
-        choicesOutputFont = profile.choicesOutputFont ?? 1.0
+        let savedChoiceFont = profile.choicesOutputFont ?? 1.0
+        choicesOutputFont = savedChoiceFont.isFinite ? min(2, max(0, savedChoiceFont)) : 1
         subtitleDuration = profile.subtitleDuration
         showPreviousDialogue = profile.showPreviousDialogue ?? false
         previousDialogueCount = min(2, max(1, profile.previousDialogueCount ?? 1))
@@ -630,7 +637,7 @@ final class CaptionAppModel: ObservableObject {
            let language = GLTargetLanguage(rawValue: savedTarget) {
             targetLanguage = language
         }
-        if let value = profile.phoneFontScale, value >= 0.7 && value <= 1.8 {
+        if let value = profile.phoneFontScale, value.isFinite && value >= 0 && value <= 2 {
             phoneFontScale = value
         }
         if let name = profile.phoneTextColor, let value = GLPhoneSubtitleColor(rawValue: name) {

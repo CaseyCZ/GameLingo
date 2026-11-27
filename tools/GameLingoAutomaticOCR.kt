@@ -170,7 +170,11 @@ internal class GameLingoAutomaticOCR(
             if(chosen.any{GameLingoAutomaticTracker.same(it.first,track.block)})continue
             if(chosen.size<32)chosen+=track.block to track.block.output(value)
         }
-        val packet=GameLingoZonePacket(aspect,1f,chosen.map{it.second})
+        val font=if(GameLingoTVUi.isTV(context)) context.getSharedPreferences("gamelingo",Context.MODE_PRIVATE).getFloat("directGreen3",1f)
+            else if(Propojeni.Vysilac.cilIp!=null) TvProfily.nastaveni(context).getFloat("tvPismo",1f)
+            else GameLingoPhoneSubtitleStyle.scale(context)
+        val scale=if(font.isFinite())font.coerceIn(0f,2f) else 1f
+        val packet=GameLingoZonePacket(aspect,scale,if(scale==0f)emptyList() else chosen.map{it.second})
         if(packet!=lastPacket||(packet.blocks.isNotEmpty()&&now-publishedAt>=800L)){
             output(packet);lastPacket=packet;publishedAt=now
         }

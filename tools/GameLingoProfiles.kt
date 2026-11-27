@@ -168,7 +168,7 @@ object GameLingoProfiles {
         GameLingoOCRConfig.setIgnoredLines(c, true, data.optString("ignoredYellowLines", ""))
         if (data.has("ocrExpand")) GameLingoOCRConfig.setExpandSearch(c, data.optBoolean("ocrExpand", GameLingoOCRConfig.expandSearch))
         val phoneScale = data.optDouble("phoneScale", Double.NaN).toFloat()
-        if (phoneScale.isFinite() && phoneScale in 0.70f..1.80f) GameLingoPhoneSubtitleStyle.setScale(c, phoneScale)
+        if (phoneScale.isFinite() && phoneScale in 0f..2f) GameLingoPhoneSubtitleStyle.setScale(c, phoneScale)
         val phoneColor = data.optString("phoneColor", "")
         if (phoneColor in GameLingoPhoneSubtitleStyle.colors) GameLingoPhoneSubtitleStyle.setColor(c, phoneColor)
         val phoneBackground = data.optString("phoneBackground", "")
@@ -198,7 +198,7 @@ object GameLingoProfiles {
         }
         for ((key, min, max) in listOf(
             Triple("tvX", 0f, 1f), Triple("tvY", 0f, 1f),
-            Triple("tvSirka", 0.15f, 1f), Triple("tvPismo", 0.6f, 2f)
+            Triple("tvSirka", 0.15f, 1f), Triple("tvPismo", 0f, 2f)
         )) {
             val v = data.optDouble(key, Double.NaN).toFloat()
             if (v.isFinite() && v in min..max) output.putFloat(key, v)

@@ -42,7 +42,7 @@ internal data class GameLingoZonePacket(val aspect: Float, val font: Float, val 
             val aspect=fields[1].toFloat()
             val font=fields[2].toFloat()
             val count=fields[3].toInt()
-            require(aspect.isFinite() && aspect in .5f..4f && font.isFinite() && font in .5f..2.5f)
+            require(aspect.isFinite() && aspect in .5f..4f && font.isFinite() && font in 0f..2.5f)
             require(count in 0..32 && fields.size==4+count*stride)
             val blocks=(0 until count).map { i ->
                 val p=4+i*stride

@@ -20,7 +20,7 @@ object GameLingoOrangeOutput {
     fun valid(r: FloatArray): Boolean = r.size == 5 &&
         r.take(4).all { it.isFinite() && it in 0f..1f } &&
         r[2] > r[0] + 0.10f && r[3] > r[1] + 0.05f &&
-        r[4].isFinite() && r[4] in 0.6f..2f
+        r[4].isFinite() && r[4] in 0f..2f
 
     fun read(c: Context): FloatArray = readFrom(prefs(c))
     fun readFrom(p: android.content.SharedPreferences): FloatArray {
@@ -99,7 +99,7 @@ object GameLingoOrangeOutput {
                 ((r[3]-r[1])*h).toInt().coerceAtLeast(1)).apply {
                 leftMargin = (r[0]*w).toInt(); topMargin = (r[1]*h).toInt()
             }
-            sample.textSize = (10f*r[4]).coerceIn(6f, 20f)
+            sample.textSize = (10f*r[4]).coerceIn(0f, 20f)
         }
         preview.addOnLayoutChangeListener { _, l, t, right, b, ol, ot, oright, ob ->
             val width = right-l
@@ -164,7 +164,7 @@ object GameLingoOrangeOutput {
             val height = it/100f
             r[1] = r[1].coerceAtMost(1f-height); r[3] = r[1]+height
         }
-        slider("Velikost písma", 60, 200, { pct(r[4]) }) { r[4] = it/100f }
+        slider("Velikost písma", 0, 200, { pct(r[4]) }) { r[4] = it/100f }
         fun lockLabel() = (if (isLocked) "🔒 " else "🔓 ") + GameLingoLanguages.ui(c, if (isLocked) "Zamčeno" else "Odemčeno")
         panel.addView(text(lockLabel()).apply {
             isFocusable = true

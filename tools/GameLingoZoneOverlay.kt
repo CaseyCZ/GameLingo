@@ -40,7 +40,7 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
     fun show(packet: GameLingoZonePacket, local: Boolean = false) {
         check(Looper.myLooper() == Looper.getMainLooper())
         val allowed = if(local) !PrijemService.bezi && (RemotePlayService.aktivni || GameLingoScreenTranslationService.running) else PrijemService.bezi
-        if (packet.blocks.isEmpty() || !allowed || !Settings.canDrawOverlays(context)) {
+        if (packet.font <= 0f || packet.blocks.isEmpty() || !allowed || !Settings.canDrawOverlays(context)) {
             clear()
             return
         }
@@ -141,7 +141,7 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
                 val width = (frameW*block.width).roundToInt().coerceIn(1,w.toInt())
                 if(child is TextView) {
                     // Scale to the actual video, not the TV's logical density.
-                    val nominal = (frameH * .032f * packet.font).coerceAtLeast(8f)
+                    val nominal = (frameH * .032f * packet.font).coerceAtLeast(1f)
                     val probe = TextPaint(child.paint).apply { textSize=nominal }
                     val textWidth = probe.measureText(block.text)
                     val fitted = if(textWidth > width-6 && width>8) (nominal*(width-6)/textWidth).coerceAtLeast(nominal*.60f) else nominal

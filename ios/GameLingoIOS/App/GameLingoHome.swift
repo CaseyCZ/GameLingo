@@ -510,20 +510,20 @@ struct GameLingoHome: View {
                 tile("Vzhled titulků", icon: "paintpalette") { appearanceSheet = true }
             }
             readiness
-            if devices.subtitleOutput == .phone && model.automaticGameDialogue {
+            if devices.subtitleOutput == .phone && model.automaticGameDialogue && model.phoneFontScale > 0 {
                 ForEach(model.automaticOutputs) { output in
                     GLCard {
                         Text(model.automaticZones.first { $0.id == output.zone }?.name ?? GLInterfaceText.localized("Překlad"))
                             .font(.caption)
-                        Text(output.text).font(.headline)
+                        Text(output.text).font(.system(size: max(1, 17 * model.phoneFontScale), weight: .semibold))
                     }
                 }
             }
-            if devices.subtitleOutput == .phone && !model.phoneSubtitle.isEmpty {
+            if devices.subtitleOutput == .phone && model.phoneFontScale > 0 && !model.phoneSubtitle.isEmpty {
                 GLCard {
                     GLHeader(title: "Dialog")
                     Text(model.phoneSubtitle)
-                        .font(.system(size: 23 * model.phoneFontScale,
+                        .font(.system(size: max(1, 23 * model.phoneFontScale),
                                       weight: .bold))
                         .foregroundStyle(model.phoneTextColor.color)
                         .multilineTextAlignment(.center)
@@ -534,11 +534,11 @@ struct GameLingoHome: View {
                                     in: RoundedRectangle(cornerRadius: 12))
                 }
             }
-            if devices.subtitleOutput == .phone && !model.lastChoices.isEmpty {
+            if devices.subtitleOutput == .phone && model.phoneFontScale > 0 && !model.lastChoices.isEmpty {
                 GLCard {
                     GLHeader(title: "Přeložené herní texty")
                     Text(model.lastChoices)
-                        .font(.system(size: 21 * model.phoneFontScale,
+                        .font(.system(size: max(1, 21 * model.phoneFontScale),
                                       weight: .semibold))
                         .foregroundStyle(model.phoneTextColor.color)
                         .multilineTextAlignment(.center)

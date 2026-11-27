@@ -35,13 +35,13 @@ object GameLingoDirectTVLayout {
     }
     fun orange(c: Context): FloatArray {
         val r = read(c, "directOrange", orangeDefault)
-        return r.takeIf { validRect(it) && it[4].isFinite() && it[4] in 0.6f..2f } ?: orangeDefault.copyOf()
+        return r.takeIf { validRect(it) && it[4].isFinite() && it[4] in 0f..2f } ?: orangeDefault.copyOf()
     }
     fun green(c: Context): FloatArray? = if (prefs(c).getBoolean("directGreenEnabled", false)) storedGreen(c) else null
     internal fun storedGreen(c: Context): FloatArray {
         val r = read(c, "directGreen", greenDefault)
         return r.takeIf { it.all { v -> v.isFinite() } && it[0] in 0f..1f &&
-            it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0.6f..2f } ?: greenDefault.copyOf()
+            it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0f..2f } ?: greenDefault.copyOf()
     }
     fun blue(c: Context): FloatArray {
         OblastTitulku.nacti(c)
@@ -168,7 +168,7 @@ object GameLingoDirectTVLayout {
         val savedGreen=green(a)
         val storedGreen=read(a,"directGreen",greenDefault)
         val validGreen=storedGreen.takeIf { r -> r.all { it.isFinite() } &&
-            r[0] in 0f..1f && r[1] in 0f..1f && r[2] in .2f..1f && r[3] in .6f..2f }
+            r[0] in 0f..1f && r[1] in 0f..1f && r[2] in .2f..1f && r[3] in 0f..2f }
         val boxes=arrayOf(blue(a),savedGreen ?: validGreen ?: greenDefault.copyOf(),yellow(a),orange(a))
         val defaults=arrayOf(OblastTitulku.VYCHOZI.copyOf(),greenDefault.copyOf(),Volby.VYCHOZI.copyOf(),orangeDefault.copyOf())
         val locks=booleanArrayOf(OblastTitulku.zamceno,locked(a,"Green"),Volby.zamceno,locked(a,"Orange"))
@@ -253,14 +253,14 @@ object GameLingoDirectTVLayout {
                 1 -> if(selected==1) {
                     r[2]=(r[2]+dx).coerceIn(.2f,1f)
                     r[0]=r[0].coerceIn(r[2]/2f,1f-r[2]/2f)
-                    r[3]=(r[3]+dy).coerceIn(.6f,2f)
+                    r[3]=(r[3]+dy).coerceIn(0f,2f)
                 } else {
                     val w=(r[2]-r[0]+dx).coerceIn(.11f,1f)
                     val h=(r[3]-r[1]+dy).coerceIn(.06f,1f)
                     r[0]=r[0].coerceAtMost(1f-w); r[2]=(r[0]+w).coerceAtMost(1f)
                     r[1]=r[1].coerceAtMost(1f-h); r[3]=(r[1]+h).coerceAtMost(1f)
                 }
-                2 -> { val index=if(selected==1)3 else 4; if(index<r.size) r[index]=(r[index]+dx+dy).coerceIn(.6f,2f) }
+                2 -> { val index=if(selected==1)3 else 4; if(index<r.size) r[index]=(r[index]+dx+dy).coerceIn(0f,2f) }
             }
             if(selected==0) manual=true
             if(selected==1) custom=true

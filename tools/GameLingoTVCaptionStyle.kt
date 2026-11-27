@@ -101,6 +101,7 @@ object GameLingoTVCaptionStyle {
             label.text = "${tr("Neprůhlednost pozadí")}: $percent %"
             if(opacityBar.progress != percent) opacityBar.progress=percent
             preview.textSize=24f*GameLingoDirectTVLayout.storedGreen(a)[3]
+            preview.alpha=if(GameLingoDirectTVLayout.storedGreen(a)[3]==0f)0f else 1f
             preview.setTextColor(textColor(a)); preview.setBackgroundColor(background(a))
         }
         root.addView(GameLingoVisualKit.captionPreview(a,preview))
@@ -159,7 +160,7 @@ object GameLingoTVCaptionStyle {
             })
             root.addView(title);root.addView(bar)
         }
-        geometry("Velikost písma",3,60,200)
+        geometry("Velikost písma",3,0,200)
         geometry("Šířka titulků",2,20,100)
         root.addView(GameLingoTVUi.action(a,tr("Náhled na TV")){
             if(RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running || OverlayService.overlayTestActive) return@action
