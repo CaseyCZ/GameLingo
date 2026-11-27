@@ -150,7 +150,7 @@ internal object GameLingoCachePrivacyUi {
             return
         }
         val enabled = GameLingoTranslationCache.enabled(a)
-        if (GameLingoTVUi.isTV(a)) {
+        run {
             val body=android.widget.LinearLayout(a).apply { orientation=android.widget.LinearLayout.VERTICAL }
             body.addView(GameLingoTVUi.title(a,GameLingoLanguages.ui(a, "Místní překladová paměť")+" · "+if(enabled)GameLingoLanguages.ui(a, "zapnuto") else GameLingoLanguages.ui(a, "vypnuto"),22f))
             body.addView(GameLingoTVUi.title(a,GameLingoLanguages.ui(a, "Ukládá originály a překlady na tomto zařízení. Historie a profily jsou oddělené."),18f,true))
@@ -165,19 +165,6 @@ internal object GameLingoCachePrivacyUi {
             page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Překladová paměť"),body,helpTopic="cache")
             return
         }
-        android.app.AlertDialog.Builder(a)
-            .setTitle(GameLingoLanguages.ui(a, "Překladová cache"))
-            .setMessage(GameLingoLanguages.ui(a, "Ukládá originály i překlady na tomto zařízení. Je oddělená od historie. Vypnutí může zvýšit počet online požadavků a omezit překlad bez internetu.") + " " + GameLingoLanguages.ui(a, "Stav") + ": " + if (enabled) GameLingoLanguages.ui(a, "zapnuto") else GameLingoLanguages.ui(a, "vypnuto"))
-            .setNeutralButton(if (enabled) GameLingoLanguages.ui(a, "Vypnout") else GameLingoLanguages.ui(a, "Zapnout")) { _, _ ->
-                if (!busy()) change(a, !enabled)
-            }
-            .setPositiveButton(GameLingoLanguages.ui(a, "Vymazat")) { _, _ ->
-                android.app.AlertDialog.Builder(a)
-                    .setMessage(GameLingoLanguages.ui(a, "Vymazat pouze místní překladovou cache? Profily, účty ani historii to nesmaže."))
-                    .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null)
-                    .setPositiveButton(GameLingoLanguages.ui(a, "Vymazat")) { _, _ -> if (!busy()) change(a, null) }.show()
-            }
-            .setNegativeButton(GameLingoLanguages.ui(a, "Zavřít"), null).show()
     }
     private fun change(a: android.app.Activity, value: Boolean?) {
         GameLingoTranslationCache.manage(a, value) { success ->

@@ -370,11 +370,12 @@ object GameLingoTVUi {
             setPadding(dp(a, 48), dp(a, 28), dp(a, 48), dp(a, 28))
             background = GameLingoVisualKit.pageBackground(a)
         }
-        root.addView(brand(a), LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            bottomMargin = dp(a, 27)
-        })
+        root.addView(LinearLayout(a).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(View(a), LinearLayout.LayoutParams(dp(a,64),dp(a,64)))
+            addView(brand(a), LinearLayout.LayoutParams(0,-2,1f))
+            addView(GameLingoHelp.button(a,"languages"), GameLingoHelp.layout(a))
+        }, LinearLayout.LayoutParams(-1,-2).apply { bottomMargin = dp(a,27) })
         root.addView(title(a, GameLingoLanguages.ui(a, "Vítej v GameLingo TV"), 30f),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply {

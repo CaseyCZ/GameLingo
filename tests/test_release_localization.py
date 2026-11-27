@@ -186,7 +186,7 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("GameLingoTVUi.controlFocus(activity, row)", kit)
         self.assertIn("GameLingoTVUi.header(a, heading, back, help)", dashboard)
         self.assertIn("(listOf(license) + sources).chunked(2)", about)
-        self.assertIn("GameLingoTVUi.page(activity, tr(\"Licence třetích stran\"), body)", about)
+        self.assertIn('GameLingoTVUi.page(activity, tr("Licence třetích stran"), body, helpTopic = "about")', about)
 
     def test_android_tv_and_phone_settings_mount_fixed_navigation(self):
         for module in ("GameLingoSettings.kt", "GameLingoOCRSettings.kt",

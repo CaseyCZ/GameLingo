@@ -317,10 +317,16 @@ struct GameLingoHome: View {
                 .accessibilityHidden(true)
             GLNeonPanel(emphasized: true, radius: 24) {
                 VStack(spacing: 10) {
-                    Text(LocalizedStringKey(sourcePicker ? "Vybrat zařízení" : "Výstup titulků"))
-                        .font(.headline).foregroundStyle(.white)
-                        .accessibilityAddTraits(.isHeader)
-                        .padding(.bottom, 4)
+                    HStack {
+                        Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
+                        Text(LocalizedStringKey(sourcePicker ? "Vybrat zařízení" : "Výstup titulků"))
+                            .font(.headline).foregroundStyle(.white)
+                            .accessibilityAddTraits(.isHeader)
+                            .frame(maxWidth: .infinity)
+                        GLHelpButton(title: sourcePicker ? "Vybrat zařízení" : "Výstup titulků",
+                            explanation: sourcePicker ? "Vyber zdroj obrazu podle zařízení." : "Vyber zdroj obrazu a výstup titulků.")
+                            .frame(width: 44, height: 44)
+                    }
                     if sourcePicker {
                         selectionRow("Xbox", icon: "gamecontroller.fill",
                                      family: .xbox, selected: !cameraSource && devices.chosenConsole?.family == .xbox) {
