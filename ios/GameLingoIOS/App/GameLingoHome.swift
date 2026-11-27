@@ -388,7 +388,7 @@ struct GameLingoHome: View {
             .padding(9)
             .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 15))
             .overlay(RoundedRectangle(cornerRadius: 15)
-                .strokeBorder(selected ? GLNeon.cyan : GLNeon.edge, lineWidth: 1))
+                .strokeBorder(selected ? AnyShapeStyle(GLNeon.cyan) : AnyShapeStyle(GLNeon.edge), lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
