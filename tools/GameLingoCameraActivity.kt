@@ -532,7 +532,8 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun analyze(frame: ImageProxy, token: Int) {
         val now = SystemClock.elapsedRealtime()
-        if (!running || token != generation || now - lastSample < 450L || !ocrBusy.compareAndSet(false, true)) {
+        val sampleInterval = if (region.full) 350L else 450L
+        if (!running || token != generation || now - lastSample < sampleInterval || !ocrBusy.compareAndSet(false, true)) {
             frame.close(); return
         }
         lastSample = now
@@ -576,7 +577,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                         val angle = if (corners != null && corners.size >= 2)
                             Math.toDegrees(kotlin.math.atan2((corners[1].y - corners[0].y).toDouble(),
                                 (corners[1].x - corners[0].x).toDouble())).toFloat() else 0f
-                        val background = if (region.full) sampleBackground(bitmap, rect) else Color.BLACK
+                        val background = if (region.full) runCatching { sampleBackground(bitmap, rect) }.getOrDefault(Color.BLACK) else Color.BLACK
                         if (region.full && corners != null && corners.size >= 4) {
                             val width = kotlin.math.hypot((corners[1].x - corners[0].x).toDouble(),
                                 (corners[1].y - corners[0].y).toDouble()).toFloat() / bitmap.width
