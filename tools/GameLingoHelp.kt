@@ -17,6 +17,8 @@ object GameLingoHelp {
     private const val CYAN = "#38BDF8"
 
     private fun info(screen: String): Pair<String, String> = when (screen) {
+        "news" -> "Co je nového" to "Přehled této verze je na GitHubu."
+        "report" -> "Nahlásit problém" to "GitHub je veřejný. Před odesláním zkontroluj hlášení; potřebuješ účet."
         "camera" -> "Překlad kamerou" to
             "Zvol celý obraz nebo nastav žlutý rámeček na původní titulky."
         "languages" -> "Jazyky" to
@@ -261,7 +263,7 @@ object GameLingoHelp {
         val entries=if(v.substringBefore('-')=="0.5.9") listOf("Obrázková a interaktivní nápověda","Hlášení problémů v diagnostice","Raketa v horní liště otevírá novinky.") else listOf("Přehled této verze je na GitHubu.")
         entries.forEach { body.addView(label(a,"✓  "+tr(a,it))) }
         body.addView(GameLingoTVUi.action(a,tr(a,"Historie vydání")) { open(a,"https://github.com/CaseyCZ/GameLingo/releases") })
-        GameLingoTVUi.page(a,tr(a,"Co je nového"),body)
+        GameLingoTVUi.page(a,tr(a,"Co je nového"),body,helpTopic="news")
     }
     // Explicit safe metadata only, no raw logs, OCR content or authentication.
     fun report(a:Activity){
@@ -308,6 +310,6 @@ object GameLingoHelp {
             })
             body.addView(GameLingoTVUi.action(a,tr(a,"Otevřít GitHub")){open(a,issues)})
         }
-        GameLingoTVUi.page(a,tr(a,"Nahlásit problém"),body)
+        GameLingoTVUi.page(a,tr(a,"Nahlásit problém"),body,helpTopic="report")
     }
 }

@@ -30,7 +30,7 @@ object GameLingoRegions {
             if (GameLingoAutomaticConfig.enabled(activity))
                 "Automatické oblasti překladu"
             else "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
-            "viewfinder"), LinearLayout.LayoutParams(
+            "viewfinder", helpTopic = "regions"), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = d(15) })
         page.addView(TextView(activity).apply {

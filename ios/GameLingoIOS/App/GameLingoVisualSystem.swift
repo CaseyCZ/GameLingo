@@ -176,6 +176,7 @@ struct GLNeonTitle: View {
     let title: String
     let subtitle: String
     var icon: String = "sparkles"
+    var help: String? = nil
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
@@ -191,7 +192,11 @@ struct GLNeonTitle: View {
                 Text(LocalizedStringKey(subtitle)).font(.caption).foregroundStyle(GLNeon.mist)
             }
             .frame(maxWidth: .infinity)
-            Color.clear.frame(width: 41, height: 1).accessibilityHidden(true)
+            if let help {
+                GLHelpButton(title: title, explanation: help).frame(width: 41, height: 44)
+            } else {
+                Color.clear.frame(width: 41, height: 1).accessibilityHidden(true)
+            }
         }
         .frame(maxWidth: .infinity)
         .multilineTextAlignment(.center)

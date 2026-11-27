@@ -102,8 +102,11 @@ internal object GameLingoGlossaryUi {
                 }
             }
         }
-        if(GameLingoTVUi.isTV(a)) GameLingoTVUi.select(a,GameLingoLanguages.ui(a, "Herní slovník"),labels.toTypedArray(),onSelect=::choose)
-        else AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Herní slovník")).setItems(labels.toTypedArray()){_,i->choose(i)}
-            .setNegativeButton(GameLingoLanguages.ui(a, "Zavřít"),null).show()
+        val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
+        var page: android.app.Dialog?=null
+        labels.forEachIndexed { index,label ->
+            body.addView(GameLingoTVUi.action(a,label) { page?.dismiss();choose(index) })
+        }
+        page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a,"Herní slovník"),body,helpTopic="glossary")
     }
 }

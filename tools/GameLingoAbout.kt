@@ -41,7 +41,7 @@ object GameLingoAbout {
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(6) })
         else page.addView(GameLingoVisualKit.neonTitle(activity,
-            "O aplikaci", "GameLingo – hraj a rozuměj svým hrám", "info.circle"),
+            "O aplikaci", "GameLingo – hraj a rozuměj svým hrám", "info.circle", helpTopic = if (showClose) null else "about"),
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = pad(15) })
 
@@ -122,7 +122,7 @@ object GameLingoAbout {
                     setPadding(pad(12),pad(8),pad(12),pad(8))
                 })
             }
-            GameLingoTVUi.page(activity, tr("Licence třetích stran"), body)
+            GameLingoTVUi.page(activity, tr("Licence třetích stran"), body, helpTopic = "about")
         }
         val sources = listOf(
             link("GameLingo na GitHubu", "https://github.com/CaseyCZ/GameLingo"),

@@ -91,7 +91,19 @@ object GameLingoTVUi {
         }
         val back = action(a, GameLingoLanguages.ui(a, "Zpět")) { dialog.dismiss() }
         back.id = View.generateViewId()
-        body.addView(header(a, title(a, heading, 27f), back))
+        val topic = when (heading) {
+            GameLingoLanguages.ui(a,"Herní slovník") -> "glossary"
+            GameLingoLanguages.ui(a,"Vybrat profil") -> "profiles"
+            GameLingoLanguages.ui(a,"Jazyk aplikace"),GameLingoLanguages.ui(a,"Jazyk hry"),
+            GameLingoLanguages.ui(a,"Jazyk překladu") -> "languages"
+            GameLingoLanguages.ui(a,"Režim OCR"),GameLingoLanguages.ui(a,"Žlutá: režim OCR"),
+            GameLingoLanguages.ui(a,"Výchozí oblast") -> "ocr"
+            GameLingoLanguages.ui(a,"Diagnostika a kompatibilita") -> "diagnostics"
+            GameLingoLanguages.ui(a,"Pokročilé nastavení"),GameLingoLanguages.ui(a,"Velikost rozhraní") -> "settings"
+            else -> "home"
+        }
+        val help = GameLingoHelp.button(a,topic)
+        body.addView(header(a, title(a, heading, 27f), back, help))
         val rows = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; clipChildren=false; clipToPadding=false }
         val buttons = labels.mapIndexed { index, label ->
             action(a, (if (index == selected) "✓  " else "    ") + label) {
@@ -117,6 +129,9 @@ object GameLingoTVUi {
             button.nextFocusDownId = buttons.getOrNull(i+1)?.id ?: button.id
         }
         back.nextFocusUpId = back.id
+        back.nextFocusRightId = help.id
+        help.nextFocusLeftId = back.id
+        help.nextFocusDownId = buttons.firstOrNull()?.id ?: back.id
         back.nextFocusDownId = buttons.firstOrNull()?.id ?: back.id
         dialog.setContentView(body)
         dialog.show()

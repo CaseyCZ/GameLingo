@@ -39,14 +39,10 @@ object GameLingoVisualKit {
             setPadding(dp(activity,16), dp(activity,16), dp(activity,16), dp(activity,12))
             background = card(activity, selected = true)
         }
-        content.addView(TextView(activity).apply {
-            text = GameLingoLanguages.ui(activity, heading)
-            gravity = Gravity.CENTER
-            textSize = sp(activity,18f)
-            setTextColor(Color.WHITE)
-            setTypeface(null, Typeface.BOLD)
-            setPadding(0,0,0,dp(activity,10))
-        })
+        val headingView = heading(activity, GameLingoLanguages.ui(activity, heading))
+        val back = GameLingoTVUi.action(activity,GameLingoLanguages.ui(activity,"Zpět")) { dialog.dismiss() }
+        content.addView(GameLingoTVUi.header(activity, headingView, back,
+            GameLingoHelp.button(activity, if (heading == "Výstup titulků") "pairing" else "home")))
         for ((key, label) in options) {
             content.addView(deviceCard(activity, key, GameLingoLanguages.ui(activity, label),
                 if (selected == key) GameLingoLanguages.ui(activity, "Vybráno") else "",
@@ -268,7 +264,7 @@ object GameLingoVisualKit {
 
     /** Native Android equivalent of SwiftUI GLNeonTitle (centered, balanced rails). */
     fun neonTitle(activity: Activity, title: String, subtitle: String,
-                  symbol: String): LinearLayout {
+                  symbol: String, helpTopic: String? = null): LinearLayout {
         val rail = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -299,7 +295,9 @@ object GameLingoVisualKit {
                 ViewGroup.LayoutParams.WRAP_CONTENT))
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         // Fixed balancing rail keeps the title centered across the full screen.
-        rail.addView(View(activity), LinearLayout.LayoutParams(dp(activity, 41), dp(activity, 41)))
+        if (helpTopic != null) rail.addView(GameLingoHelp.button(activity, helpTopic),
+            GameLingoHelp.layout(activity,dp(activity,41),dp(activity,44)))
+        else rail.addView(View(activity), LinearLayout.LayoutParams(dp(activity, 41), dp(activity, 41)))
         return rail
     }
 

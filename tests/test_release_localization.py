@@ -359,6 +359,19 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn('GLRocketIcon()', home)
         self.assertIn('GameLingoHelp.report(a)', text(TOOLS / "GameLingoTVSettings.kt"))
 
+    def test_contextual_help_is_present_on_tab_and_secondary_headers(self):
+        visual = text(IOS / "GameLingoVisualSystem.swift")
+        home = text(IOS / "GameLingoHome.swift")
+        self.assertIn("GLHelpButton(title: title, explanation: help)", visual)
+        self.assertIn("help: ", home)
+        self.assertIn('GLHelpButton(title: "PlayStation"', text(IOS / "PlayStation" / "GameLingoPlayStationSetup.swift"))
+        self.assertIn('GLHelpButton(title: "Párování telefonu"', text(IOS / "GameLingoTVSetupScreen.swift"))
+        self.assertIn('helpTopic = "regions"', text(TOOLS / "GameLingoRegions.kt"))
+        self.assertIn('helpTopic = "settings"', text(TOOLS / "GameLingoSettings.kt"))
+        self.assertIn('helpTopic="history"', text(TOOLS / "GameLingoHistoryUi.kt"))
+        self.assertIn('helpTopic="glossary"', text(TOOLS / "GameLingoGlossaryUi.kt"))
+        self.assertIn("back.nextFocusRightId = help.id", text(TOOLS / "GameLingoTVUi.kt"))
+
     def test_mobile_onboarding_cannot_open_legacy_beta_on_rotation(self):
         wire = text(TOOLS / "wire_android_devices.py")
         brand = text(TOOLS / "brand_android.py")

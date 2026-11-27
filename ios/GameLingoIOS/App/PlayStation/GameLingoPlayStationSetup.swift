@@ -267,6 +267,9 @@ private struct GameLingoPSConnectionView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     GLBackButton { dismiss() }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    GLHelpButton(title: "PlayStation", explanation: "Pro Xbox se přihlašuješ svým účtem Microsoft a povolíš vzdálené funkce. Pro PS5/PS4 použij Remote Play a údaje svého účtu PlayStation. Párovací PIN z konzole se liší od hesla. Do hry ani do konzole se nic neinstaluje.")
+                }
                 ToolbarItemGroup(placement: .keyboard) {
                     if pinFocused {
                         Spacer()

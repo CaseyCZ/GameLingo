@@ -10,7 +10,7 @@ struct GameLingoSettingsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                GameLingoSettingsOverview(model: model)
+                GameLingoSettingsOverview(model: model, showInlineHelp: false)
                     .padding(.horizontal, 18)
                     .padding(.top, 20)
                     .padding(.bottom, 36)
@@ -35,6 +35,7 @@ struct GameLingoSettingsView: View {
 struct GameLingoSettingsOverview: View {
     @ObservedObject var model: CaptionAppModel
     var onDevices: (() -> Void)? = nil
+    var showInlineHelp = true
     @State private var showRegions = false
     @State private var showAdvancedSettings = false
     @State private var showDevices = false
@@ -47,7 +48,7 @@ struct GameLingoSettingsOverview: View {
         VStack(alignment: .center, spacing: 13) {
             GLNeonTitle(title: "Nastavení",
                         subtitle: "Přizpůsobení překladu a titulků",
-                        icon: "gearshape.fill")
+                        icon: "gearshape.fill", help: showInlineHelp ? "Jazyky, OCR a Překlad určují, co a jak se překládá. Rozložení nastavuje čtyři oblasti. Vzhled upravuje titulky a Profily ukládají konfiguraci pro hry, filmy a aplikace." : nil)
                 .padding(.bottom, 5)
 
             sectionLabel(GameLingoUIContract.settingsSections[0])

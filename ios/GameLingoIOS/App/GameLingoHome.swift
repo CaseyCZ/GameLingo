@@ -60,9 +60,9 @@ struct GameLingoHome: View {
                         case .regions: regionsPage
                         case .devices: devicesPage
                         case .settings:
-                            GameLingoSettingsOverview(model: model) {
+                            GameLingoSettingsOverview(model: model, onDevices: {
                                 tab = .devices
-                            }
+                            })
                         case .about: aboutPage
                         }
                     }
@@ -608,7 +608,7 @@ struct GameLingoHome: View {
         VStack(alignment: .center, spacing: 14) {
             GLNeonTitle(title: "Oblasti obrazovky",
                         subtitle: model.automaticGameDialogue ? "Automatické oblasti překladu" : "Čtyři nezávislé oblasti pro rozpoznávání a překlad",
-                        icon: "viewfinder")
+                        icon: "viewfinder", help: "Modrá oblast čte původní titulky. Zelená určuje místo přeložených dialogů. Žlutá čte volby a herní texty, oranžová zobrazuje jejich překlad. Polohu a rozměry měň podle konkrétní hry. Oblasti se ukládají do profilů.")
             Button { regionsSheet = true } label: {
                 GLDetailRow(icon: "rectangle.dashed",
                             title: "Otevřít editor oblastí",
@@ -648,7 +648,7 @@ struct GameLingoHome: View {
         VStack(alignment: .center, spacing: 14) {
             GLNeonTitle(title: "Profily her",
                         subtitle: "Pro každou hru vlastní oblasti, rychlost OCR a titulky",
-                        icon: "gamecontroller")
+                        icon: "gamecontroller", help: "Profil ukládá aktuální OCR oblasti, volby a nastavení překladu pro konkrétní hru, film nebo aplikaci. Údaje o účtech Sony a Microsoft se do profilů neukládají.")
             Button { profilesSheet = true } label: {
                 Label("Spravovat profily her", systemImage: "gamecontroller.fill")
                     .font(.headline)
@@ -691,7 +691,7 @@ struct GameLingoHome: View {
         VStack(alignment: .center, spacing: 15) {
             GLNeonTitle(title: "O aplikaci",
                         subtitle: "GameLingo – hraj a rozuměj svým hrám",
-                        icon: "info.circle")
+                        icon: "info.circle", help: "Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty.")
             GLNeonPanel(emphasized: true) {
                 VStack(spacing: 11) {
                     GLBrandWordmark()

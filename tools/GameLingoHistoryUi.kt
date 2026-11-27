@@ -74,19 +74,7 @@ internal object GameLingoHistoryUi {
                 .setNegativeButton(tr("Zrušit"), null).show()
         }
         update()
-        if (GameLingoTVUi.isTV(a)) {
-            GameLingoTVUi.controlFocus(a,toggle)
-            GameLingoTVUi.controlFocus(a,refresh)
-            GameLingoTVUi.controlFocus(a,clear)
-            GameLingoTVUi.page(a,tr("Historie překladů"),root,scroll=false,helpTopic="history")
-            toggle.requestFocus()
-            return
-        }
-        val dialog = AlertDialog.Builder(a).setTitle(tr("Historie překladů"))
-            .setView(root).setPositiveButton(tr("Hotovo"), null).create()
-        dialog.show()
-        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * (if (GameLingoTVUi.isTV(a)) 0.70 else 0.90)).toInt(),
-            (a.resources.displayMetrics.heightPixels * (if (GameLingoTVUi.isTV(a)) 0.70 else 0.82)).toInt())
+        GameLingoTVUi.page(a,tr("Historie překladů"),root,scroll=false,helpTopic="history")
         toggle.requestFocus()
     }
 }

@@ -348,6 +348,9 @@ private struct GameLingoTVPairingPanel: View {
                     ToolbarItem(placement: .topBarLeading) {
                         GLBackButton { showQRScanner = false }
                     }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        GLHelpButton(title: "Párování telefonu", explanation: "Telefon a TV připoj ke stejné síti. V mobilu otevři Zařízení, vyber TV a naskenuj QR kód nebo zadej celý párovací kód. Po vypršení platnosti vytvoř nový kód.")
+                    }
                 }
             }
         }

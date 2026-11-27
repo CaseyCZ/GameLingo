@@ -39,7 +39,12 @@ struct GLNewsPage: View {
                 }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
             }.background(GLNeonBackground())
                 .navigationTitle("Co je nového").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .topBarLeading) { GLBackButton { dismiss() } } }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) { GLBackButton { dismiss() } }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        GLHelpButton(title: "Co je nového", explanation: "Přehled této verze je na GitHubu.")
+                    }
+                }
         }.tint(GLStyle.blue).preferredColorScheme(.dark)
     }
 }
@@ -77,7 +82,12 @@ struct GLProblemReportPage: View {
                     if let url = URL(string: "https://github.com/CaseyCZ/GameLingo/issues/new") { Link("Otevřít GitHub", destination: url) }
                 }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
             }.background(GLNeonBackground()).navigationTitle("Nahlásit problém").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .topBarLeading) { GLBackButton { dismiss() } } }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) { GLBackButton { dismiss() } }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        GLHelpButton(title: "Nahlásit problém", explanation: "GitHub je veřejný. Před odesláním zkontroluj hlášení; potřebuješ účet.")
+                    }
+                }
         }.preferredColorScheme(.dark).tint(GLStyle.blue)
     }
 }
