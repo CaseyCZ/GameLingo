@@ -460,7 +460,7 @@ struct GameLingoCameraScreen: View {
                                 Spacer()
                                 if !fullImage { Text("Vybraná oblast").font(.caption).foregroundStyle(.yellow) }
                             }
-                            preview.aspectRatio(fullImage ? (state.image.map { $0.size.width / max(1, $0.size.height) } ?? 9.0 / 16.0) : 0.9, contentMode: .fit)
+                            preview.aspectRatio(fullImage ? 9.0 / 16.0 : 0.9, contentMode: .fit)
                             if !fullImage {
                                 Text("Vyber oblast, potom uprav její polohu a velikost v náhledu.")
                                     .font(.caption).foregroundStyle(GLNeon.mist)
@@ -472,19 +472,13 @@ struct GameLingoCameraScreen: View {
                     if fullImage {
                         Toggle("Překlad přes původní text", isOn: $overlayEnabled)
                     }
-                    if state.translationFailed { Text("Překlad selhal.").foregroundStyle(.orange) }
-                    if state.translating { ProgressView().tint(GLNeon.cyan) }
-                    if state.translation.isEmpty && !state.recognizedText.isEmpty {
-                        Text(state.recognizedText).font(.caption).foregroundStyle(GLStyle.muted).lineLimit(3)
-                    }
-                    if (!fullImage || !overlayEnabled || state.overlays.isEmpty) && !state.translation.isEmpty {
-                    Text(state.translation).font(.system(size: 20 * model.phoneFontScale, weight: .semibold))
-                        .foregroundStyle(model.phoneTextColor.color)
-                        .frame(maxWidth: .infinity, minHeight: 50)
-                        .padding(8)
-                        .background(model.phoneBackground.fill, in: RoundedRectangle(cornerRadius: 12))
-                        .textSelection(.enabled)
-                    }
+                    translationPanel
+                    Text("Online překlad může odesílat rozpoznaný text externím poskytovatelům.")
+                        .font(.caption).foregroundStyle(GLStyle.muted)
+                }.padding(16)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 8) {
                     HStack {
                         Image(systemName: "magnifyingglass")
                         Slider(value: $zoom, in: 1...4)
@@ -499,11 +493,10 @@ struct GameLingoCameraScreen: View {
                             Label(state.paused ? "Pokračovat" : "Pozastavit", systemImage: state.paused ? "play.fill" : "pause.fill")
                         }.disabled(state.unavailable)
                     }
-                    if state.unavailable { Text("Fotoaparát není dostupný.").foregroundStyle(.orange) }
-                    Text("Online překlad může odesílat rozpoznaný text externím poskytovatelům.")
-                        .font(.caption).foregroundStyle(GLStyle.muted)
                     GLPrimaryButton(title: "Zastavit překlad", systemImage: "stop.fill") { state.stop(); dismiss() }
-                }.padding(16)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 8)
+                .background(GLNeon.panel)
             }
             .background(GLNeonBackground())
             .navigationTitle("Překlad kamerou")
@@ -526,6 +519,40 @@ struct GameLingoCameraScreen: View {
         .onChange(of: phase) { _, value in if value == .background { state.stop(); dismiss() } }
         .onDisappear { state.stop() }
         .preferredColorScheme(.dark)
+    }
+
+    // Keep all dynamic OCR, provider status and subtitles inside a fixed
+    // viewport. Long text scrolls locally; the camera controls never reflow.
+    private var translationPanel: some View {
+        ScrollView {
+            VStack(spacing: 5) {
+                if state.unavailable {
+                    Text("Fotoaparát není dostupný.").foregroundStyle(.orange)
+                } else if state.translationFailed {
+                    Text("Překlad selhal.").foregroundStyle(.orange)
+                } else if state.translating {
+                    HStack(spacing: 6) {
+                        ProgressView().tint(GLNeon.cyan)
+                        Text("Překládám").font(.caption).foregroundStyle(GLStyle.muted)
+                    }
+                }
+                if !state.translation.isEmpty {
+                    Text(state.translation)
+                        .font(.system(size: 20 * model.phoneFontScale, weight: .semibold))
+                        .foregroundStyle(model.phoneTextColor.color)
+                        .textSelection(.enabled)
+                } else if !state.recognizedText.isEmpty {
+                    Text(state.recognizedText).font(.caption).foregroundStyle(GLStyle.muted)
+                        .textSelection(.enabled)
+                }
+            }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, minHeight: 88)
+            .padding(8)
+        }
+        .frame(height: 108)
+        .background(model.phoneBackground.fill, in: RoundedRectangle(cornerRadius: 12))
+        .clipped()
     }
 
     private func update() {

@@ -111,6 +111,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     private var retryAt = 0L
     private lateinit var preview: CameraFrame
     private lateinit var output: TextView
+    private lateinit var outputViewport: ScrollView
     private lateinit var pauseButton: Button
     private lateinit var torchButton: Button
     private lateinit var fullButton: Button
@@ -248,8 +249,25 @@ class GameLingoCameraActivity : ComponentActivity() {
             GameLingoPhoneSubtitleStyle.apply(this@GameLingoCameraActivity, this)
             setTextIsSelectable(true)
         }
-        root.addView(output)
-        root.addView(row("Přiblížení", 30, 0) {
+        outputViewport = ScrollView(this).apply {
+            isFillViewport = true
+            isNestedScrollingEnabled = true
+            addView(output, ViewGroup.LayoutParams(-1, -2))
+            setOnTouchListener { view, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> view.parent.requestDisallowInterceptTouchEvent(true)
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> view.parent.requestDisallowInterceptTouchEvent(false)
+                }
+                false
+            }
+        }
+        root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))
+        val controls = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(px(16), px(6), px(16), px(8))
+            background = GameLingoVisualKit.pageBackground(this@GameLingoCameraActivity)
+        }
+        controls.addView(row("Přiblížení", 30, 0) {
             zoom = 1f + it / 10f
             camera?.let { c -> c.cameraControl.setZoomRatio(zoom.coerceAtMost(c.cameraInfo.zoomState.value?.maxZoomRatio ?: 1f)) }
         })
@@ -273,13 +291,18 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
         actions.addView(torchButton, LinearLayout.LayoutParams(0, px(48), 1f))
         actions.addView(pauseButton, LinearLayout.LayoutParams(0, px(48), 1f))
-        root.addView(actions)
+        controls.addView(actions)
         root.addView(TextView(this).apply {
             text = tr("Online překlad může odesílat rozpoznaný text externím poskytovatelům.")
             setTextColor(Color.parseColor("#92A4C7")); textSize = 12f
         })
-        root.addView(button("Zastavit překlad") { finish() })
-        setContentView(ScrollView(this).apply { addView(root) })
+        controls.addView(button("Zastavit překlad") { finish() })
+        setContentView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(ScrollView(this@GameLingoCameraActivity).apply { addView(root) },
+                LinearLayout.LayoutParams(-1, 0, 1f))
+            addView(controls, LinearLayout.LayoutParams(-1, -2))
+        })
     }
 
     private fun updateLanguages() {
@@ -305,7 +328,7 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun updatePreviewHeight() {
         val width = previewContainer.width.takeIf { it > 0 } ?: (resources.displayMetrics.widthPixels - px(56)).coerceAtLeast(1)
-        val aspect = preview.bitmap?.let { it.height.toFloat() / it.width } ?: 16f / 9f
+        val aspect = 16f / 9f
         val height = if (region.full) (width * aspect).toInt() else px(340)
         val params = previewContainer.layoutParams
         if (params.height != height) {
@@ -452,7 +475,6 @@ class GameLingoCameraActivity : ComponentActivity() {
         preview.overlays = if (overlay) currentBlocks.zip(translatedLines).map { (block, text) ->
             CameraOverlay(text, block.rect)
         } else emptyList()
-        output.visibility = if (overlay || output.text.isNullOrBlank()) View.GONE else View.VISIBLE
         preview.invalidate()
     }
 
@@ -476,7 +498,7 @@ class GameLingoCameraActivity : ComponentActivity() {
             clearTV()
         }
         updateOverlays()
-        if (translatedText.isEmpty()) { output.text = text; output.visibility = View.VISIBLE }
+        if (translatedText.isEmpty() && output.text.toString() != text) { output.text = text }
         if (translating || SystemClock.elapsedRealtime() < retryAt) return
         val current = configRevision
         val token = generation
@@ -509,7 +531,7 @@ class GameLingoCameraActivity : ComponentActivity() {
             lastTranslated = text
             translatedText = result
             translatedLines = lines
-            output.text = result
+            if (output.text.toString() != result) output.text = result
             updateOverlays()
             publishTV(force = true)
         }
@@ -547,7 +569,6 @@ class GameLingoCameraActivity : ComponentActivity() {
             if (token == generation && current == configRevision) {
                 translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L
                 output.text = tr("Překlad selhal.")
-                output.visibility = View.VISIBLE
             }
         })
     }

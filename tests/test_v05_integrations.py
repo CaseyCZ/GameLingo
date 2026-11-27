@@ -84,6 +84,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Propojeni.Vysilac.cameraCaption", android)
         self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
 
+    def test_camera_translation_layout_does_not_reflow(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        self.assertIn("translationPanel", ios)
+        self.assertIn(".frame(height: 108)", ios)
+        self.assertIn(".safeAreaInset(edge: .bottom", ios)
+        self.assertIn("preview.aspectRatio(fullImage ? 9.0 / 16.0", ios)
+        self.assertIn("root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))", android)
+        self.assertIn("addView(controls, LinearLayout.LayoutParams(-1, -2))", android)
+        self.assertNotIn("output.visibility =", android)
+        self.assertNotIn("preview.bitmap?.let { it.height.toFloat() / it.width }", android)
+
     def test_camera_language_selection_is_independent(self):
         camera = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")
