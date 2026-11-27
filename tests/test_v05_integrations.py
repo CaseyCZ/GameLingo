@@ -107,6 +107,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("addView(torchButton, LinearLayout.LayoutParams(px(48), px(48)))", android)
         self.assertNotIn("actions.addView(torchButton", android)
 
+    def test_camera_continuous_autofocus(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        self.assertIn("device.focusMode = .continuousAutoFocus", ios)
+        self.assertIn("device.autoFocusRangeRestriction = .none", ios)
+        self.assertIn("device.focusMode = .autoFocus", ios)
+        self.assertIn("device.exposureMode = .continuousAutoExposure", ios)
+        self.assertIn("self.configureAutomaticFocus()", ios)
+        self.assertLess(ios.index("self.session.startRunning()"), ios.index("self.configureAutomaticFocus()"))
+        self.assertIn("camera?.cameraControl?.cancelFocusAndMetering()", android)
+        self.assertLess(android.index("camera = p.bindToLifecycle"), android.index("camera?.cameraControl?.cancelFocusAndMetering()"))
+
     def test_camera_torch_state_and_lifecycle(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")
@@ -166,7 +178,8 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn(".onEnded { _ in commitRegion", camera)
         self.assertIn('AppStorage("gamelingo.camera.regionX")', camera)
         self.assertIn("state.configure(source: source, target: target, region: fullImage ? region : rect", camera)
-        self.assertIn("if self.session.isRunning { self.ready(self.session) }", camera)
+        self.assertIn("if self.session.isRunning {", camera)
+        self.assertIn("self.ready(self.session)", camera)
         self.assertNotIn("self.previewSession = capture.session", camera)
         self.assertIn("previewLayer.frame = bounds", camera)
         self.assertIn("previewLayer.isPreviewing", camera)
