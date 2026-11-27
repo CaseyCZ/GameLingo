@@ -16,14 +16,14 @@ object GameLingoPhoneSubtitleStyle {
     val backgrounds = listOf("none", "dark", "translucent")
 
     private fun prefs(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-    fun scale(c: Context): Float = prefs(c).getFloat("scale", 1f).coerceIn(0f, 2f)
+    fun scale(c: Context): Float = prefs(c).getFloat("scale", 1f).coerceIn(0.1f, 2f)
     fun color(c: Context): String = prefs(c).getString("color", "white")
         ?.takeIf { it in colors } ?: "white"
     fun background(c: Context): String = prefs(c).getString("background", "none")
         ?.takeIf { it in backgrounds } ?: "none"
 
     fun setScale(c: Context, scale: Float) {
-        prefs(c).edit().putFloat("scale", scale.coerceIn(0f, 2f)).apply()
+        prefs(c).edit().putFloat("scale", scale.coerceIn(0.1f, 2f)).apply()
     }
     fun setColor(c: Context, selected: String) {
         require(selected in colors)
@@ -59,7 +59,6 @@ object GameLingoPhoneSubtitleStyle {
         else -> Color.TRANSPARENT
     }
     fun apply(context: Context, view: TextView) {
-        view.alpha = if (scale(context) == 0f) 0f else 1f
         view.setTextColor(textColor(color(context)))
         view.background = GradientDrawable().apply {
             setColor(backgroundColor(background(context)))

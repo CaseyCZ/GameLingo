@@ -549,7 +549,6 @@ struct GameLingoAppearanceSettingsView: View {
                     Text(model.targetLanguage.sampleSubtitle)
                         .font(.system(size: max(1, 19 * model.phoneFontScale), weight: .bold))
                         .foregroundStyle(model.phoneTextColor.color)
-                        .opacity(model.phoneFontScale == 0 ? 0 : 1)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
@@ -568,7 +567,7 @@ struct GameLingoAppearanceSettingsView: View {
                 GLValueSlider(title: "Velikost písma",
                     value: "\(Int(model.phoneFontScale * 100)) %",
                     selection: $model.phoneFontScale,
-                    range: 0.00...2.00)
+                    range: 0.10...2.00)
                 Text("Barva textu")
                     .font(.subheadline.bold())
                 HStack(spacing: 9) {
@@ -642,7 +641,7 @@ struct GameLingoAppearanceSettingsView: View {
                 GLValueSlider(title: "Velikost písma TV",
                     value: "\(Int(model.outputFont * 100)) %",
                     selection: $model.outputFont,
-                    range: 0.00...2.00,
+                    range: 0.10...2.00,
                     disabled: model.outputLocked)
                 GLValueSlider(title: "Šířka titulků",
                     value: "\(Int(model.outputWidth * 100)) %",

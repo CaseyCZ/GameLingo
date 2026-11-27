@@ -705,7 +705,7 @@ def main():
         val scale = if (Propojeni.Vysilac.cilIp == null)
             GameLingoPhoneSubtitleStyle.scale(this) else 1f
         t.setAutoSizeTextTypeUniformWithConfiguration(
-            14, (VELIKOSTI[velikost] * scale).toInt().coerceAtLeast(14),
+            1, (VELIKOSTI[velikost] * scale).toInt().coerceAtLeast(2),
             1, android.util.TypedValue.COMPLEX_UNIT_SP)
     }'''),
             ('''            nastavVelikost(this)
@@ -727,6 +727,8 @@ def main():
             if code.count(old)!=1:
                 raise RuntimeError("Android phone caption renderer anchor changed: "+old[:65])
             code=code.replace(old,new,1)
+        code=code.replace('posuvnik(t("tvPismo"), 50, 250,', 'posuvnik(t("tvPismo"), 10, 200,')
+        code=code.replace('(9f * rozvrh[3]).coerceIn(7f, 20f)', '(9f * rozvrh[3]).coerceIn(0.9f, 18f)')
         phone.write_text(code,encoding="utf8")
 
         # Independent native UI belongs only to GameLingo's Android mobile

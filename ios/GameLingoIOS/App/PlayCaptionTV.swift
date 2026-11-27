@@ -640,10 +640,10 @@ final class PlayCaptionTV: ObservableObject {
         guard !target.isEmpty else { return }
         let font = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1
         var blocks = [String]()
-        let adaptive = receiverSupportsAdaptiveZones && !outputs.isEmpty && font > 0
+        let adaptive = receiverSupportsAdaptiveZones && !outputs.isEmpty
         let limit = min(512, (adaptive ? 3000 : 4608) / max(1, min(32, outputs.count)))
         func decimal(_ value: Double) -> String { String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), value) }
-        for output in (font > 0 ? Array(outputs.prefix(32)) : []) {
+        for output in outputs.prefix(32) {
             var text = output.text
             while text.utf8.count > limit { text.removeLast() }
             guard !text.isEmpty else { continue }
@@ -658,7 +658,7 @@ final class PlayCaptionTV: ObservableObject {
                 blocks += [Data(text.utf8).base64EncodedString(), decimal(l.centerX), decimal(l.bottomY), decimal(l.width)]
             }
         }
-        let header = [adaptive ? "PCZ2" : "PCZ1", String(min(4, max(0.5, aspect))), String(min(2, max(0, font))), String(blocks.count / (adaptive ? 7 : 4))]
+        let header = [adaptive ? "PCZ2" : "PCZ1", String(min(4, max(0.5, aspect))), String(min(2, max(0.1, font))), String(blocks.count / (adaptive ? 7 : 4))]
         _ = sendSignedSubtitle(Data((header + blocks).joined(separator: "\t").utf8), to: target, reportStatus: false)
     }
 
@@ -675,7 +675,7 @@ final class PlayCaptionTV: ObservableObject {
         }
         UserDefaults.standard.set(target, forKey: "tvIP")
         sequence += 1
-        let clean = (((UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1) > 0 ? subtitle : "").replacingOccurrences(of: "\\", with: "\\\\")
+        let clean = subtitle.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\t", with: " ")
             .replacingOccurrences(of: "\n", with: "\\n")
         // Same 5 layout fields as Android: center X, bottom Y, width,
@@ -754,7 +754,7 @@ final class PlayCaptionTV: ObservableObject {
         // Older PlayCaption receivers ignore additional fields safely.
         let outputSuffix: String
         if let rect = outputArea {
-            let scale = outputFont.isFinite ? min(2.0, max(0.0, outputFont)) : 1.0
+            let scale = outputFont.isFinite ? min(2.0, max(0.1, outputFont)) : 1.0
             outputSuffix = "\t\(rect.minX)\t\(rect.minY)\t\(rect.maxX)\t\(rect.maxY)\t\(scale)"
         } else {
             outputSuffix = ""

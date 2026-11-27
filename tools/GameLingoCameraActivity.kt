@@ -1309,7 +1309,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                                 when (overlay.appearance.weight) { 2 -> 700; 1 -> 600; else -> 400 }, false)
                             else android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT,
                                 if (overlay.appearance.weight >= 1) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
-                        textSize = (box.height() / overlay.lineCount * .83f).coerceAtLeast(1f)
+                        textSize = (box.height() / overlay.lineCount * .83f * GameLingoPhoneSubtitleStyle.scale(context)).coerceAtLeast(1f)
                     }
                     val layoutWidth = box.width().toInt().coerceAtLeast(1)
                     fun layout() = StaticLayout.Builder.obtain(overlay.text, 0, overlay.text.length, textPaint, layoutWidth)

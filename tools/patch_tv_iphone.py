@@ -376,7 +376,7 @@ def main() -> None:
          '                                priVolbach?.invoke(seznam, casti[7].toIntOrNull() ?: -1, oblast, casti[2].toIntOrNull() ?: 0)\n',
          '                                val vystup = if (casti.size >= 13) runCatching {\n'
          '                                    val font = casti.getOrNull(13)?.toFloatOrNull()\n'
-         '                                        ?.takeIf { it.isFinite() && it in 0.6f..2.0f } ?: 1f\n'
+         '                                        ?.takeIf { it.isFinite() && it in 0.1f..2.0f } ?: 1f\n'
          '                                    floatArrayOf(casti[9].toFloat(), casti[10].toFloat(),\n'
          '                                        casti[11].toFloat(), casti[12].toFloat(), font)\n'
          '                                }.getOrNull()?.takeIf { r ->\n'
@@ -425,6 +425,9 @@ def main() -> None:
          '        const val ACTION_SET_NAPOVEDA = "cz.titulky.tv.SET_NAPOVEDA"\n',
          '        const val EXTRA_VYSTUP_VOLEB = "vystup_voleb"\n'
          '        const val ACTION_SET_NAPOVEDA = "cz.titulky.tv.SET_NAPOVEDA"\n')
+    once(overlay,
+         'textSize = VELIKOST_PISMA * r[3].coerceIn(0.5f, 2.5f)',
+         'textSize = VELIKOST_PISMA * r[3].coerceIn(0.1f, 2f)')
     # Explicit output geometry takes priority over automatic "next to OCR"
     # placement. Fallback remains exactly the original behavior.
     once(overlay,
@@ -433,7 +436,7 @@ def main() -> None:
          '        lp.y = (o[1] * h).toInt()\n'
          '        if (vystup != null && vystup.size == 5 &&\n'
          '            vystup.take(4).all { it.isFinite() && it in 0f..1f } &&\n'
-         '            vystup[4].isFinite() && vystup[4] in 0.6f..2f &&\n'
+         '            vystup[4].isFinite() && vystup[4] in 0.1f..2f &&\n'
          '            vystup[2] > vystup[0] + 0.1f && vystup[3] > vystup[1] + 0.05f) {\n'
          '            val sirkaVystupu = ((vystup[2] - vystup[0]) * w).toInt().coerceAtLeast(80)\n'
          '            lp.gravity = Gravity.TOP or Gravity.START\n'

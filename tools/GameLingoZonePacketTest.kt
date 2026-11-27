@@ -7,6 +7,12 @@ class GameLingoZonePacketTest {
     private fun parse(fields: List<String>) = GameLingoZonePacket.parse(fields) { Base64.getDecoder().decode(it) }
     private val header = listOf("PCZ1","1.7778","1","1")
     private val block = listOf("SGVsbG8=","0.5","0.9","0.3")
+    @Test fun fontScaleAcceptsNewEndpoints() {
+        for (font in listOf("0.1","2.0")) {
+            assertEquals(font.toFloat(),parse(listOf("PCZ1","1.7778",font,"1")+block)!!.font,.0001f)
+        }
+        assertNull(parse(listOf("PCZ1","1.7778","0.09","1")+block))
+    }
     @Test fun snapshotAndClear() {
         assertEquals("Hello",parse(header+block)!!.blocks.single().text)
         assertTrue(parse(listOf("PCZ1","1.7778","1","0"))!!.blocks.isEmpty())

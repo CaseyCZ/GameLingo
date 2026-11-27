@@ -1200,7 +1200,7 @@ struct GameLingoCameraScreen: View {
                 }
                 if !state.translation.isEmpty {
                     Text(state.translation)
-                        .font(.system(size: 20 * model.phoneFontScale, weight: .semibold))
+                        .font(.system(size: max(1, 20 * model.phoneFontScale), weight: .semibold))
                         .foregroundStyle(model.phoneTextColor.color)
                         .textSelection(.enabled)
                 } else if !state.recognizedText.isEmpty {
@@ -1298,7 +1298,7 @@ struct GameLingoCameraScreen: View {
                                              height: max(1, proxy.size.height * overlay.rect.height))
                         let projection = overlay.quad?.projection(size: boxSize, rect: overlay.rect)
                         Text(overlay.text)
-                            .font(.system(size: max(1, boxSize.height / CGFloat(overlay.lineCount) * 0.83),
+                            .font(.system(size: max(1, boxSize.height / CGFloat(overlay.lineCount) * 0.83 * model.phoneFontScale),
                                           weight: overlay.weight == 2 ? .bold : (overlay.weight == 1 ? .semibold : .regular)))
                             .foregroundStyle(overlay.ink.map { GLCameraPalette.color($0) } ?? GLCameraPalette.foreground(overlay.background))
                             .minimumScaleFactor(0.18)
