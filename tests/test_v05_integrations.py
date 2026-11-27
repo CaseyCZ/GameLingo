@@ -1171,7 +1171,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         brand = code(TOOLS/"brand_android.py")
         wiring = code(TOOLS/"wire_gamelingo_languages.py")
         verify = code(TOOLS/"verify_gamelingo.py")
-        workflow = code(ROOT/".github/workflows/build-gamelingo.yml")
+        workflow = code(ROOT/".github/workflows/audit-0.5-ci.yml")
         self.assertIn("strip_dependency(gradle.read_text", brand)
         self.assertIn("t = tv_translator(t)", wiring)
         self.assertIn("finalize_tv(root, folder)", wiring)
@@ -1360,15 +1360,24 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(workflow.index('gh release edit "$TAG"'),
                         workflow.index('gh release delete "$old"'))
 
-    def test_audit_forwards_only_explicit_signing_secrets(self):
-        caller = code(ROOT/".github/workflows/audit-0.5-ci.yml")
-        callee = code(ROOT/".github/workflows/build-gamelingo.yml")
+    def test_build_and_publish_workflows_preserve_signing_and_validation(self):
+        folder = ROOT/".github/workflows"
+        workflow = code(folder/"audit-0.5-ci.yml")
+        publisher = code(folder/"publish-gamelingo-current.yml")
+        self.assertEqual({p.name for p in folder.glob("*.yml")},
+                         {"audit-0.5-ci.yml", "publish-gamelingo-current.yml"})
         for platform in ("TV", "MOBILE"):
             for suffix in ("KEYSTORE_B64", "KEYSTORE_PASSWORD"):
                 name = f"GAMELINGO_{platform}_{suffix}"
-                self.assertIn("      " + name + ": ${{ secrets." + name + " }}", caller)
-                self.assertIn("      " + name + ":\n        required: false", callee)
-        self.assertEqual(callee.count("Persistent APK signing secrets missing on Master."), 2)
+                self.assertEqual(workflow.count(name + ": ${{ secrets." + name + " }}"), 1)
+        self.assertEqual(workflow.count("Persistent APK signing secrets missing on Master."), 2)
+        self.assertNotIn("uses: ./.github/workflows/", workflow)
+        self.assertIn("verify_tv_navigation.py upstream", workflow)
+        self.assertIn("needs: [ios, android_mobile, google_tv]", workflow)
+        self.assertEqual(workflow.count("needs: quick"), 3)
+        self.assertGreaterEqual(workflow.count("github.event_name != 'pull_request'"), 5)
+        self.assertIn("needs: [run_link, quick, package]", workflow)
+        self.assertIn("actions/workflows/audit-0.5-ci.yml/runs", publisher)
 
     def test_mobile_and_ios_updates_share_release_contract(self):
         import runpy
@@ -1380,7 +1389,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("cz.caseycz.gamelingo.mobile", android)
         self.assertIn("GameLingo-Android-update.json", android)
         self.assertIn("patch_mobile_update(folder)", code(TOOLS/"wire_gamelingo_languages.py"))
-        self.assertIn("GAMELINGO_MOBILE_KEYSTORE_B64", code(ROOT/".github/workflows/build-gamelingo.yml"))
+        self.assertIn("GAMELINGO_MOBILE_KEYSTORE_B64", code(ROOT/".github/workflows/audit-0.5-ci.yml"))
         publish = code(ROOT/".github/workflows/publish-gamelingo-current.yml")
         self.assertIn("GameLingo-iOS-update.json", publish)
         self.assertIn("GameLingo-Android-update.json", publish)
@@ -1451,7 +1460,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("FLAG_SECURE", capture)
         self.assertIn("content.scaleX=factor", fit)
         self.assertIn("GITHUB_RUN_NUMBER", code(TOOLS/"brand_android.py"))
-        self.assertIn("verify_tv_ui_apk.py", code(TOOLS.parent/".github/workflows/build-gamelingo.yml"))
+        self.assertIn("verify_tv_ui_apk.py", code(TOOLS.parent/".github/workflows/audit-0.5-ci.yml"))
 
     def test_tv_projection_waits_for_typed_foreground_and_success_before_background(self):
         capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
@@ -1753,7 +1762,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('ForEach(GameLingoUIContract.setupSteps.indices',setup)
 
     def test_pinned_native_source_and_build(self):
-        workflow=code(ROOT/".github/workflows/build-gamelingo.yml")
+        workflow=code(ROOT/".github/workflows/audit-0.5-ci.yml")
         project=code(ROOT/"ios/GameLingoIOS/project.yml")
         self.assertIn('482611539977496cad047560c9bc1ebc5809a566',workflow)
         self.assertIn('Build native PlayStation',workflow)

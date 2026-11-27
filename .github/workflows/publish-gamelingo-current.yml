@@ -1,4 +1,4 @@
-name: Publish only newest GameLingo (verified installers)
+name: GameLingo · Publish Release
 
 on:
   workflow_dispatch:
