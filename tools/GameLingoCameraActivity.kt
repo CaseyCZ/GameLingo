@@ -18,6 +18,11 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageButton
+import android.graphics.Path
+import android.graphics.ColorFilter
+import android.graphics.PixelFormat
+import android.graphics.drawable.Drawable
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -118,7 +123,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     private lateinit var output: TextView
     private lateinit var outputViewport: ScrollView
     private lateinit var pauseButton: Button
-    private lateinit var torchButton: Button
+    private lateinit var torchButton: ImageButton
     private lateinit var fullButton: Button
     private lateinit var areaButton: Button
     private lateinit var previewStatus: TextView
@@ -170,7 +175,36 @@ class GameLingoCameraActivity : ComponentActivity() {
             text = tr("Překlad kamerou"); textSize = 24f; gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
         }
-        root.addView(title)
+        torchButton = ImageButton(this).apply {
+            contentDescription = tr("Svítilna")
+            background = GameLingoVisualKit.card(this@GameLingoCameraActivity)
+            scaleType = android.widget.ImageView.ScaleType.CENTER
+            isEnabled = false
+            setOnClickListener {
+            val c = camera ?: return@setOnClickListener
+            if (!c.cameraInfo.hasFlashUnit() || torchPending) return@setOnClickListener
+            val desired = c.cameraInfo.torchState.value != TorchState.ON
+            torchPending = true; torchFailed = false
+            updateTorchButton()
+            val future = c.cameraControl.enableTorch(desired)
+            future.addListener({
+                if (camera === c) {
+                    torchFailed = !runCatching { future.get(); true }.getOrDefault(false)
+                    torch = c.cameraInfo.torchState.value == TorchState.ON
+                    torchPending = false
+                    updateTorchButton()
+                }
+            }, ContextCompat.getMainExecutor(this))
+            }
+        }
+        val header = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(View(this@GameLingoCameraActivity), LinearLayout.LayoutParams(px(48), px(48)))
+            addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(torchButton, LinearLayout.LayoutParams(px(48), px(48)))
+        }
+        root.addView(header)
+        updateTorchButton()
         languageButton = button("Jazyky") { chooseLanguages() }
         updateLanguages()
         root.addView(languageButton)
@@ -277,28 +311,11 @@ class GameLingoCameraActivity : ComponentActivity() {
             camera?.let { c -> c.cameraControl.setZoomRatio(zoom.coerceAtMost(c.cameraInfo.zoomState.value?.maxZoomRatio ?: 1f)) }
         })
         val actions = LinearLayout(this)
-        torchButton = button("Svítilna") {
-            val c = camera ?: return@button
-            if (!c.cameraInfo.hasFlashUnit() || torchPending) return@button
-            val desired = c.cameraInfo.torchState.value != TorchState.ON
-            torchPending = true; torchFailed = false
-            updateTorchButton()
-            val future = c.cameraControl.enableTorch(desired)
-            future.addListener({
-                if (camera === c) {
-                    torchFailed = !runCatching { future.get(); true }.getOrDefault(false)
-                    torch = c.cameraInfo.torchState.value == TorchState.ON
-                    torchPending = false
-                    updateTorchButton()
-                }
-            }, ContextCompat.getMainExecutor(this))
-        }.apply { isEnabled = false }
         pauseButton = button("Pozastavit") {
             paused = !paused
             pauseButton.text = tr(if (paused) "Pokračovat" else "Pozastavit")
             if (paused) releaseCamera(keepFrame = true) else startCamera()
         }
-        actions.addView(torchButton, LinearLayout.LayoutParams(0, px(48), 1f))
         actions.addView(pauseButton, LinearLayout.LayoutParams(0, px(48), 1f))
         controls.addView(actions)
         root.addView(TextView(this).apply {
@@ -396,8 +413,51 @@ class GameLingoCameraActivity : ComponentActivity() {
     private fun updateTorchButton() {
         torchButton.isEnabled = camera?.cameraInfo?.hasFlashUnit() == true && !torchPending
         torchButton.isSelected = torch
-        torchButton.text = tr("Svítilna") + if (torchFailed) " ⚠" else if (torch) " ✓" else ""
-        torchButton.setTextColor(if (torchFailed) Color.YELLOW else if (torch) Color.CYAN else Color.WHITE)
+        torchButton.setImageDrawable(TorchIcon(px(24), torch, torchFailed,
+            if (!torchButton.isEnabled && !torchPending) Color.GRAY else if (torchFailed) Color.YELLOW else if (torch) Color.CYAN else Color.WHITE))
+    }
+
+    private class TorchIcon(private val size: Int, private val on: Boolean,
+                            private val failed: Boolean, color: Int) : Drawable() {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            style = Paint.Style.STROKE
+            strokeWidth = 1.8f
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        override fun getIntrinsicWidth() = size
+        override fun getIntrinsicHeight() = size
+        override fun draw(canvas: Canvas) {
+            canvas.save()
+            canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
+            canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
+            if (failed) {
+                val warning = Path().apply {
+                    moveTo(12f, 3f); lineTo(22f, 21f); lineTo(2f, 21f); close()
+                }
+                canvas.drawPath(warning, paint)
+                canvas.drawLine(12f, 9f, 12f, 14f, paint)
+                canvas.drawPoint(12f, 17.5f, paint)
+            } else {
+                val body = Path().apply {
+                    moveTo(7f, 7f); lineTo(17f, 7f); lineTo(17f, 11f)
+                    lineTo(15f, 14f); lineTo(15f, 22f); lineTo(9f, 22f)
+                    lineTo(9f, 14f); lineTo(7f, 11f); close()
+                }
+                canvas.drawPath(body, paint)
+                canvas.drawLine(7f, 11f, 17f, 11f, paint)
+                if (on) {
+                    canvas.drawLine(12f, 1f, 12f, 4f, paint)
+                    canvas.drawLine(5f, 2f, 7f, 4f, paint)
+                    canvas.drawLine(19f, 2f, 17f, 4f, paint)
+                }
+            }
+            canvas.restore()
+        }
+        override fun setAlpha(alpha: Int) { paint.alpha = alpha }
+        override fun setColorFilter(colorFilter: ColorFilter?) { paint.colorFilter = colorFilter }
+        override fun getOpacity() = PixelFormat.TRANSLUCENT
     }
 
     private fun startCamera() {
