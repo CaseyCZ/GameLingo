@@ -381,7 +381,7 @@ def patch_direct_tv(folder):
         <service android:name=".GameLingoScreenTranslationService" android:exported="false"
             android:foregroundServiceType="mediaProjection"/>
     </application>""", 1)
-    xml = xml.replace("</application>", """    <provider android:name="androidx.core.content.FileProvider"
+    xml = xml.replace("</application>", """    <receiver android:name=".GameLingoInstallReceiver" android:exported="false"/>\n        <provider android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.updates" android:exported="false"
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS"

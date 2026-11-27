@@ -9,7 +9,10 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
-import androidx.core.content.FileProvider
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.pm.PackageInstaller
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -223,101 +226,209 @@ object GameLingoTVUpdater {
         }.apply { name = "gamelingo-tv-update-check"; isDaemon = true }.start()
     }
 
-    /** Resume the verified download after Android's unknown-app-source permission screen. */
+    // The PackageInstaller callback is explicit and private to this app. A persisted
+    // session/nonce lets a final result survive replacement of the old app process.
+    private const val RESULT_ACTION = "cz.titulky.tv.GAMELINGO_INSTALL_RESULT"
+    private fun installPrefs(c: Context) = c.getSharedPreferences("gamelingo_install_session", Context.MODE_PRIVATE)
+    private class InstallAttempt(val activity: Activity, val progress: AlertDialog) {
+        val cancelled = AtomicBoolean(false)
+        @Volatile var sessionId = -1
+        @Volatile var foreground = true
+        var confirmationStarted = false
+        lateinit var observer: android.app.Application.ActivityLifecycleCallbacks
+    }
+    private var activeInstall: InstallAttempt? = null // main thread only
+
+    private fun finishAttempt(attempt: InstallAttempt) {
+        if (activeInstall !== attempt) return
+        activeInstall = null
+        attempt.activity.application.unregisterActivityLifecycleCallbacks(attempt.observer)
+        if (attempt.progress.isShowing) attempt.progress.dismiss()
+        working.set(false)
+    }
+
+    private fun abandon(c: Context, id: Int) {
+        if (id >= 0) runCatching { c.packageManager.packageInstaller.abandonSession(id) }
+    }
+
+    private fun clearSession(c: Context, id: Int) {
+        val prefs = installPrefs(c)
+        if (prefs.getInt("session", -1) == id) prefs.edit().remove("session").remove("nonce").apply()
+    }
+
     private fun install(a: Activity, apk: File) {
         if (!alive(a)) return
         if (busy()) { message(a, tr(a, "Nejdříve zastav překlad.")); return }
-        if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
-            AlertDialog.Builder(a).setTitle(tr(a, "Povolení instalace"))
-                .setMessage(tr(a, "Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování."))
-                .setNegativeButton(tr(a, "Zrušit")) { _, _ -> apk.delete() }
-                .setPositiveButton(tr(a, "Otevřít nastavení")) { _, _ ->
-                    val observer = object : android.app.Application.ActivityLifecycleCallbacks {
-                        private var paused = false
-                        private var checking = false
-                        private var finished = false
-                        private val handler = android.os.Handler(android.os.Looper.getMainLooper())
-                        private var attempts = 0
-                        private val permissionRetry = object : Runnable {
-                            override fun run() {
-                                if (finished) return
-                                if (!alive(a) || busy()) { finishCheck(); return }
-                                // Some TV firmware propagates the unknown-source AppOp
-                                // after onResume. Only Android's own permission result
-                                // may authorize the installer, never the settings UI.
-                                if (a.packageManager.canRequestPackageInstalls()) {
-                                    finishCheck()
-                                    confirmInstall(a, apk)
-                                } else if (++attempts < 10) {
-                                    handler.postDelayed(this, 350L)
-                                } else {
-                                    finishCheck()
-                                    message(a, tr(a, "Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu."))
-                                }
-                            }
-                        }
-                        private fun finishCheck() {
-                            if (finished) return
-                            finished = true
-                            handler.removeCallbacks(permissionRetry)
-                            a.application.unregisterActivityLifecycleCallbacks(this)
-                        }
-                        override fun onActivityCreated(activity: Activity, state: android.os.Bundle?) {}
-                        override fun onActivityStarted(activity: Activity) {}
-                        override fun onActivityPaused(activity: Activity) {
-                            if (activity !== a) return
-                            // Never launch the installer later over another app.
-                            if (checking) finishCheck() else paused = true
-                        }
-                        override fun onActivityResumed(activity: Activity) {
-                            if (activity !== a || !paused || checking || finished) return
-                            checking = true
-                            handler.postDelayed(permissionRetry, 350L)
-                        }
-                        override fun onActivityStopped(activity: Activity) {}
-                        override fun onActivitySaveInstanceState(activity: Activity, state: android.os.Bundle) {}
-                        override fun onActivityDestroyed(activity: Activity) {
-                            if (activity === a) finishCheck()
-                        }
-                    }
-                    a.application.registerActivityLifecycleCallbacks(observer)
-                    runCatching {
-                        a.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                            Uri.parse("package:" + a.packageName)))
-                    }.onFailure {
-                        a.application.unregisterActivityLifecycleCallbacks(observer)
-                        message(a, tr(a, "Systémové nastavení instalace nelze otevřít."))
-                    }
-                }.show()
-            return
-        }
+        // Do not reject a verified APK merely because canRequestPackageInstalls()
+        // is false. The native installer owns the permission and consent flow.
         confirmInstall(a, apk)
     }
 
-    /** The system package installer handles process shutdown; no invisible receiver lock. */
     private fun confirmInstall(a: Activity, apk: File) {
         if (!alive(a)) return
         if (busy()) { message(a, tr(a, "Nejdříve zastav překlad.")); return }
-        if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
-            message(a, tr(a, "Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu."))
+        if (!working.compareAndSet(false, true)) { message(a, tr(a, "Jiná aktualizace již probíhá.")); return }
+        val app = a.applicationContext
+        val progress = AlertDialog.Builder(a).setTitle(tr(a, "Aktualizace GameLingo"))
+            .setMessage(tr(a, "Čekám na systémový souhlas"))
+            .setNegativeButton(tr(a, "Zrušit"), null).create()
+        val attempt = InstallAttempt(a, progress)
+        activeInstall = attempt
+        attempt.observer = object : android.app.Application.ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, state: android.os.Bundle?) {}
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityResumed(activity: Activity) { if (activity === a) attempt.foreground = true }
+            override fun onActivityPaused(activity: Activity) {
+                if (activity !== a) return
+                attempt.foreground = false
+                if (!attempt.confirmationStarted) attempt.cancelled.set(true)
+            }
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, state: android.os.Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {
+                if (activity !== a) return
+                if (!attempt.confirmationStarted) attempt.cancelled.set(true)
+                finishAttempt(attempt)
+            }
+        }
+        a.application.registerActivityLifecycleCallbacks(attempt.observer)
+        progress.setOnCancelListener { attempt.cancelled.set(true) }
+        progress.show()
+        progress.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            attempt.cancelled.set(true)
+            progress.dismiss()
+        }
+        Thread {
+            var id = -1
+            var committed = false
+            val result = runCatching {
+                require(apk.isFile && apk.length() in 1L..MAX_APK)
+                val expectedHash = apk.name.removePrefix("verified-").removeSuffix(".apk")
+                require(hashPattern.matches(expectedHash) && apk.name == "verified-" + expectedHash + ".apk")
+                val archive = a.packageManager.getPackageArchiveInfo(apk.path, flags()) ?: error("APK není čitelná.")
+                val current = installed(a)
+                require(a.packageName == ID && archive.packageName == ID &&
+                    code(archive) > code(current) && signers(archive).isNotEmpty() && signers(archive) == signers(current)) {
+                    "Podpis, identita nebo verze APK nesouhlasí."
+                }
+                val installer = app.packageManager.packageInstaller
+                val prefs = installPrefs(app)
+                val previous = prefs.getInt("session", -1)
+                // A new explicit attempt may discard an orphaned, unconfirmed session.
+                // Do not replace a session still known to this process.
+                if (previous >= 0) {
+                    if (installer.getSessionInfo(previous) != null) abandon(app, previous)
+                    clearSession(app, previous)
+                }
+                val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+                    setAppPackageName(ID)
+                    setSize(apk.length())
+                    if (Build.VERSION.SDK_INT >= 31) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED)
+                }
+                id = installer.createSession(params)
+                attempt.sessionId = id
+                val nonce = java.util.UUID.randomUUID().toString()
+                check(prefs.edit().putInt("session", id).putString("nonce", nonce).commit())
+                installer.openSession(id).use { session ->
+                    val digest = MessageDigest.getInstance("SHA-256")
+                    val size = apk.length()
+                    var copied = 0L
+                    apk.inputStream().use { input ->
+                        session.openWrite("base.apk", 0, size).use { out ->
+                            val buffer = ByteArray(65536)
+                            while (true) {
+                                require(!attempt.cancelled.get() && alive(a)) { "Stahování zrušeno." }
+                                val n = input.read(buffer)
+                                if (n < 0) break
+                                copied += n
+                                require(copied <= size && copied <= MAX_APK)
+                                digest.update(buffer, 0, n)
+                                out.write(buffer, 0, n)
+                            }
+                            require(copied == size && hex(digest.digest()) == expectedHash) { "Kontrolní součet APK nesouhlasí." }
+                            session.fsync(out)
+                        }
+                    }
+                    require(!attempt.cancelled.get() && alive(a) && !busy()) { "Stahování zrušeno." }
+                    val callback = Intent(app, GameLingoInstallReceiver::class.java).apply {
+                        action = RESULT_ACTION
+                        data = Uri.parse("gamelingo-install://" + ID + "/" + id + "/" + nonce)
+                    }
+                    val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                        (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
+                    val status = PendingIntent.getBroadcast(app, id, callback, flags)
+                    session.commit(status.intentSender)
+                    committed = true
+                }
+            }
+            if (!committed) {
+                abandon(app, id)
+                clearSession(app, id)
+                a.runOnUiThread {
+                    finishAttempt(attempt)
+                    if (alive(a) && !attempt.cancelled.get()) {
+                        message(a, tr(a, "Aktualizace nebyla nainstalována:") + " " +
+                            updateError(a, result.exceptionOrNull() ?: IllegalStateException()))
+                    }
+                }
+            }
+        }.apply { name = "gamelingo-native-install"; isDaemon = true }.start()
+    }
+
+    internal fun installResult(context: Context, intent: Intent) {
+        if (intent.action != RESULT_ACTION) return
+        val prefs = installPrefs(context)
+        val id = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1)
+        val nonce = prefs.getString("nonce", null) ?: return
+        if (id < 0 || prefs.getInt("session", -1) != id ||
+            intent.data != Uri.parse("gamelingo-install://" + ID + "/" + id + "/" + nonce)) return
+        val attempt = activeInstall?.takeIf { it.sessionId == id }
+        val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
+        if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            val confirmation = if (Build.VERSION.SDK_INT >= 33)
+                intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+            else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+            }
+            // Only open the system confirmation while the initiating activity is
+            // actively visible; otherwise retain the APK for a new explicit attempt.
+            if (attempt != null && alive(attempt.activity) && attempt.foreground &&
+                !attempt.cancelled.get() && !busy() && confirmation != null &&
+                (attempt.activity.hasWindowFocus() || attempt.progress.window?.decorView?.hasWindowFocus() == true)) {
+                attempt.confirmationStarted = true
+                attempt.progress.dismiss()
+                if (runCatching { attempt.activity.startActivity(confirmation) }.isSuccess) return
+            }
+            abandon(context, id)
+            clearSession(context, id)
+            attempt?.let {
+                finishAttempt(it)
+                if (alive(it.activity) && it.foreground && !it.cancelled.get())
+                    message(it.activity, tr(it.activity, "Systémový instalátor nelze otevřít."))
+            }
             return
         }
-        runCatching {
-            require(apk.isFile && apk.length() in 1L..MAX_APK)
-            val archive = a.packageManager.getPackageArchiveInfo(apk.path, flags())
-                ?: error("APK není čitelná.")
-            val current = installed(a)
-            require(a.packageName == ID && archive.packageName == ID &&
-                code(archive) > code(current) &&
-                signers(archive).isNotEmpty() && signers(archive) == signers(current)) {
-                "Podpis, identita nebo verze APK nesouhlasí."
-            }
-            val uri = FileProvider.getUriForFile(a, a.packageName + ".updates", apk)
-            a.startActivity(Intent(Intent.ACTION_VIEW)
-                .setDataAndType(uri, "application/vnd.android.package-archive")
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-        }.onFailure {
-            message(a, tr(a, "Systémový instalátor nelze otevřít.") + " " + updateError(a, it))
+        clearSession(context, id)
+        // Self-updates can kill the old process before this callback. Keep a
+        // non-sensitive status for the next start, not an assumption of success.
+        prefs.edit().putInt("last_status", status).apply()
+        if (attempt == null) return
+        val a = attempt.activity
+        finishAttempt(attempt)
+        if (!alive(a)) return
+        if (status == PackageInstaller.STATUS_SUCCESS) {
+            Toast.makeText(a, tr(a, "Nainstalováno:") + " " + runCatching { installed(a).versionName }.getOrDefault(""), Toast.LENGTH_LONG).show()
+        } else if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls() && attempt.foreground) {
+            AlertDialog.Builder(a).setTitle(tr(a, "Povolení instalace"))
+                .setMessage(tr(a, "Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu."))
+                .setNegativeButton(tr(a, "Zrušit"), null)
+                .setPositiveButton(tr(a, "Otevřít nastavení")) { _, _ ->
+                    runCatching { a.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + a.packageName))) }
+                        .onFailure { message(a, tr(a, "Systémové nastavení instalace nelze otevřít.")) }
+                }.show()
+        } else if (attempt.foreground) {
+            message(a, tr(a, "Aktualizace nebyla nainstalována:") + " (" + status + ")")
         }
     }
 
@@ -405,5 +516,12 @@ object GameLingoTVUpdater {
                 }, onFailure = { file?.delete(); message(a, tr(a, "Aktualizace nebyla nainstalována:") + " " + updateError(a, it)) })
             }
         }.apply { name = "gamelingo-tv-update-download"; isDaemon = true }.start()
+    }
+}
+
+/** System callback only; non-exported in both generated manifests. */
+class GameLingoInstallReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        GameLingoTVUpdater.installResult(context, intent)
     }
 }

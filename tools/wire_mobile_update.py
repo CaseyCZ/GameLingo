@@ -14,7 +14,6 @@ def patch_mobile_update(folder):
         ('GameLingo-GoogleTV-v', 'GameLingo-Android-v'),
         ('RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running', 'GameLingoLanguages.translationSettingsBusy()'),
         ('GameLingo-TV-Updater', 'GameLingo-Android-Updater'),
-        ('Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování.', 'Povol instalaci z GameLingo v nastavení zařízení. Po návratu bude možné pokračovat bez dalšího stahování.'),
     ):
         if old not in source:
             raise RuntimeError("Shared updater platform anchor changed: " + old)
@@ -42,7 +41,7 @@ def patch_mobile_update(folder):
         raise RuntimeError("Mobile manifest application anchor changed")
     if 'android:name="android.permission.REQUEST_INSTALL_PACKAGES"' not in xml:
         xml = xml.replace("<application", '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>\n    <application', 1)
-    xml = xml.replace("</application>", """    <provider android:name="androidx.core.content.FileProvider"
+    xml = xml.replace("</application>", """    <receiver android:name=".GameLingoInstallReceiver" android:exported="false"/>\n        <provider android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.updates" android:exported="false"
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
