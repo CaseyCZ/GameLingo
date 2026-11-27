@@ -186,7 +186,7 @@ def main():
         "PlayStation registration success")
 
     # Explicit PS4/PS5 type, host and name, also when discovery fails.
-    code=one(code, "        fun hledej() {",
+    code=one(code, "        fun hledej() {\n            hledaniStav.text = t(\"hledam\")\n            nalezenaIp = null",
         '''        val psType = android.widget.Spinner(this).apply {
             adapter = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("PS5", "PS4"))
         }
@@ -206,14 +206,14 @@ def main():
         k2.addView(psType, LinearLayout.LayoutParams(-1, -2))
         k2.addView(psHost, LinearLayout.LayoutParams(-1, -2))
         k2.addView(psName, LinearLayout.LayoutParams(-1, -2))
-        fun hledej() {''', "manual PlayStation host and type")
+        fun hledej() {
+            hledaniStav.text = t("hledam")
+            nalezenaIp = null''', "manual PlayStation host and type")
     code=one(code, "                        nalezenaIp = ps.ip\n",
         '''                        nalezenaIp = ps.ip
-                        if (psHost.text.isBlank()) {
-                            psHost.setText(ps.ip)
-                            psType.setSelection(if (ps.typ == "PS4") 1 else 0)
-                            psName.setText(ps.jmeno)
-                        }
+                        psHost.setText(ps.ip)
+                        psType.setSelection(if (ps.typ == "PS4") 1 else 0)
+                        psName.setText(ps.jmeno)
 ''', "populate manual PlayStation form")
     code=one(code, '''            val selectedPS = nalezenaPS
             val ip = nalezenaIp
@@ -221,6 +221,8 @@ def main():
         '''            val ip = psHost.text.toString().trim().takeIf { android.util.Patterns.IP_ADDRESS.matcher(it).matches() }
             val consoleName = psName.text.toString().trim().ifBlank { if (psType.selectedItemPosition == 1) "PS4" else "PS5" }
             val target = if (psType.selectedItemPosition == 1)''', "use explicit manual PlayStation target")
+    code=one(code, "                        1 -> selectPS(supported.single())",
+        "                        1 -> if (psHost.text.isBlank()) selectPS(supported.single()) else { hledaniStav.text = psHost.text.toString() }", "do not overwrite a manually entered host")
     code=one(code, 'selectedPS?.jmeno ?: "PlayStation", ip)', 'consoleName, ip)', "save explicit console name")
     code=one(code, '            hint = "12345678"\n            isEnabled = lzeParovat',
         '''            hint = GameLingoLanguages.ui(this@MainActivity, "8místný PIN z PlayStation")
@@ -601,6 +603,8 @@ def main():
         source = source[:start] + ps_events + source[end:]
         source = one(source, "    private fun zastav(zprava: String, ukazat: Boolean = true) {",
             "    private fun zastav(zprava: String, ukazat: Boolean = true) {\n        GameLingoPSLoginPIN.clear(this)", "clear login PIN on stop")
+        source = one(source, "            session = null\n            ukonciStareSpojeni()\n            val s = Session(info, logSoubor, false)",
+            "            GameLingoPSLoginPIN.clear(this)\n            session = null\n            ukonciStareSpojeni()\n            val s = Session(info, logSoubor, false)", "clear PIN before new native session")
         source = one(source, "    override fun onDestroy() {",
             "    override fun onDestroy() {\n        GameLingoPSLoginPIN.clear(this)", "clear login PIN on destroy")
         service.write_text(source, encoding="utf-8")
