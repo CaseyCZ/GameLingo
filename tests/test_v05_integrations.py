@@ -1191,6 +1191,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("await self?.processFrame(buffer", model)
         self.assertNotIn("await self?.processFrame(frame", model)
 
+    def test_automatic_zone_preview_and_independent_reset(self):
+        ios = code(IOS/"GLAutomaticZonesView.swift")
+        android = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        self.assertIn('Button("Náhled na TV")', ios)
+        self.assertIn('model.tv.showOCRRegion(rect, visible: true)', ios)
+        self.assertIn('edit(zone.id) { $0.restoreArea() }', ios)
+        self.assertIn('action("Náhled na TV")', android)
+        self.assertIn('GameLingoTVPairing.previewOCRRegion(a,zone.rect)', android)
+        self.assertIn('updateSelected({ it.restoreArea() })', android)
+        self.assertNotIn('entries.clear()', android)
+        self.assertIn('sendSigned(it,ip,InetAddress.getByName(ip),payload,port)', code(TOOLS/"GameLingoTVPairing.kt"))
+
     def test_adaptive_zone_negotiation_and_color_capture(self):
         tv = code(IOS/"PlayCaptionTV.swift")
         receiver = code(TOOLS/"patch_tv_iphone.py")

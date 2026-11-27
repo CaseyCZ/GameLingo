@@ -54,6 +54,14 @@ class GameLingoAutomaticTrackerTest {
         t.observe("A",listOf(b.copy(rect=AutoRect(.22f,.2f,.42f,.3f))),300)
         assertEquals(.22f,t.tracks.single().block.rect.left,.0001f)
     }
+    @Test fun restoreSelectedAreaPreservesIdentityAndEnabledState(){
+        val a=AutoZone("dialogue","Renamed",false,AutoRect(0f,.02f,1f,.18f),false)
+        val b=AutoZone("custom","Menu",true,AutoRect(.1f,.1f,.5f,.3f),false)
+        val restored=listOf(a.restoreArea(),b)
+        assertEquals(a.copy(rect=AutoRect(0f,.65f,1f,1f),centered=true),restored[0])
+        assertEquals(b,restored[1])
+        assertEquals(b.copy(rect=AutoRect(.2f,.2f,.8f,.45f)),b.restoreArea())
+    }
     @Test fun changedTextCannotReuseTranslation(){
         val t=GameLingoAutomaticTracker()
         val r=AutoRect(.2f,.2f,.4f,.3f)

@@ -156,6 +156,57 @@ internal object GameLingoAutomaticConfig {
      * place, like the four-region Standard editor, with one live 16:9 preview.
      * TV uses focusable buttons and seek bars; touch devices can drag a zone.
      */
+    // Standalone TV preview is temporary, independent of capture/translation.
+    private var localPreviewView: View? = null
+    private var localPreviewManager: android.view.WindowManager? = null
+    private val localPreviewHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val clearLocalPreview = Runnable {
+        localPreviewView?.let { v -> runCatching { localPreviewManager?.removeViewImmediate(v) } }
+        localPreviewView=null;localPreviewManager=null
+    }
+    private fun previewOnTV(a: Activity, zone: AutoZone) {
+        if (!editable(a) || !zone.rect.valid()) return
+        if(!GameLingoTVUi.isTV(a)) {
+            GameLingoTVPairing.previewOCRRegion(a,zone.rect)
+            return
+        }
+        if(!android.provider.Settings.canDrawOverlays(a)) {
+            android.widget.Toast.makeText(a,GameLingoLanguages.ui(a,"Nejdříve povol překryv v nastavení TV."),android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        localPreviewHandler.removeCallbacks(clearLocalPreview)
+        clearLocalPreview.run()
+        val c=a.applicationContext
+        val wm=c.getSystemService(android.view.WindowManager::class.java)
+        val view=object: View(c) {
+            private val paint=Paint(Paint.ANTI_ALIAS_FLAG)
+            override fun onDraw(canvas: Canvas) {
+                val r=zone.rect
+                paint.color=0xFF4FB3FF.toInt();paint.style=Paint.Style.STROKE
+                paint.strokeWidth=4*resources.displayMetrics.density
+                canvas.drawRect(r.left*width,r.top*height,r.right*width,r.bottom*height,paint)
+                paint.style=Paint.Style.FILL;paint.textSize=16*resources.displayMetrics.scaledDensity
+                canvas.save()
+                canvas.clipRect(r.left*width,r.top*height,r.right*width,r.bottom*height)
+                canvas.drawText(zone.name,r.left*width+8,r.top*height+paint.textSize+4,paint)
+                canvas.restore()
+            }
+        }
+        val lp=android.view.WindowManager.LayoutParams(-1,-1,android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            android.graphics.PixelFormat.TRANSLUCENT).apply { gravity=android.view.Gravity.TOP or android.view.Gravity.LEFT }
+        try {
+            wm.addView(view,lp);localPreviewView=view;localPreviewManager=wm
+            localPreviewHandler.postDelayed(clearLocalPreview,30000L)
+            a.moveTaskToBack(true)
+        } catch (_: Exception) {
+            clearLocalPreview.run()
+            android.widget.Toast.makeText(a,GameLingoLanguages.ui(a,"Náhled nelze zobrazit"),android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun showZones(a: Activity) {
         if (!editable(a)) return
         val tr: (String) -> String = { GameLingoLanguages.ui(a, it) }
@@ -351,20 +402,13 @@ internal object GameLingoAutomaticConfig {
                     refresh()
                 }.show()
         }
+        editor.addView(action("Náhled na TV") {
+            entries.getOrNull(selected)?.let { previewOnTV(a,it) }
+        })
+        editor.addView(action("Obnovit oblast") {
+            updateSelected({ it.restoreArea() })
+        })
         editor.addView(remove)
-        val reset = action("Obnovit výchozí") {
-            AlertDialog.Builder(a).setMessage(tr("Obnovit výchozí zóny?"))
-                .setNegativeButton(tr("Zrušit"), null)
-                .setPositiveButton(tr("Obnovit")) { _, _ ->
-                    if (GameLingoLanguages.translationSettingsBusy()) return@setPositiveButton
-                    entries.clear()
-                    entries.addAll(initial(a))
-                    save(a, entries)
-                    selected = 0
-                    refresh()
-                }.show()
-        }
-        editor.addView(reset)
 
         refreshTabs = {
             tabs.removeAllViews()
@@ -447,6 +491,9 @@ internal object GameLingoAutomaticConfig {
             })
         }
         refresh()
-        GameLingoTVUi.mountPage(a, dialog, tr("Oblasti překladu"), page, helpTopic = "regions")
+        GameLingoTVUi.mountPage(a, dialog, tr("Oblasti překladu"), page, helpTopic = "regions", onClose = {
+            localPreviewHandler.removeCallbacks(clearLocalPreview)
+            clearLocalPreview.run()
+        })
     }
 }

@@ -81,6 +81,34 @@ object GameLingoTVPairing {
         val packet = signedPacket(ip, payload)
         socket.send(DatagramPacket(packet, packet.size, address, port))
     }
+    /** Explicit editor preview, independent of the active caption sender. */
+    internal fun previewOCRRegion(activity: Activity, rect: AutoRect) {
+        if (!rect.valid() || GameLingoLanguages.translationSettingsBusy()) return
+        val context=activity.applicationContext
+        val store=TvProfily(context)
+        val target=store.posledniId?.let { store.najdi(it) }
+        val ip=target?.ip
+        val secret=ip?.let { token(context,it) }
+        if (target==null || ip==null || secret==null) {
+            Toast.makeText(activity,GameLingoLanguages.ui(activity,"Nejdříve vyber a spáruj TV."),Toast.LENGTH_LONG).show()
+            return
+        }
+        initialize(context)
+        verify(activity,target) { verified ->
+            if(!verified || activity.isFinishing || activity.isDestroyed) {
+                if(!activity.isFinishing && !activity.isDestroyed)
+                    Toast.makeText(activity,GameLingoLanguages.ui(activity,"TV neodpovídá. Zkontroluj domácí síť a přijímač."),Toast.LENGTH_LONG).show()
+                return@verify
+            }
+            Thread {
+                val port=receiverPort(ip)
+                val current=TvProfily(context).let { p -> p.posledniId?.let { p.najdi(it)?.ip } }
+                if(current!=ip || token(context,ip)!=secret || GameLingoLanguages.translationSettingsBusy())return@Thread
+                val payload="PCO1\t1\t${rect.left}\t${rect.top}\t${rect.right}\t${rect.bottom}".toByteArray(Charsets.UTF_8)
+                runCatching { DatagramSocket().use { sendSigned(it,ip,InetAddress.getByName(ip),payload,port) } }
+            }.apply { isDaemon=true;name="gamelingo-zone-preview" }.start()
+        }
+    }
     private val availablePorts = 41989..41993
     private val portLock = Any()
     @Volatile private var lastPortIp = ""

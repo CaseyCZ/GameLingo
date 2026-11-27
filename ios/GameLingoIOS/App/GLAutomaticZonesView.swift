@@ -35,6 +35,7 @@ struct GLAutomaticZonesView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedID: UUID?
     @State private var confirmDelete = false
+    @State private var previewError = false
 
     private var selected: AutomaticOCRZone? {
         model.automaticZones.first { $0.id == selectedID } ?? model.automaticZones.first
@@ -65,7 +66,7 @@ struct GLAutomaticZonesView: View {
                     Button {
                         var zones = model.automaticZones
                         let zone = AutomaticOCRZone(name: GLInterfaceText.localized("Zóna") + " " + String(zones.count + 1),
-                            rect: CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.25))
+                            rect: CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.25), dialogueDefault: false)
                         zones.append(zone)
                         model.updateAutomaticZones(zones)
                         selectedID = zone.id
@@ -102,6 +103,14 @@ struct GLAutomaticZonesView: View {
                             slider("Výška", value: Double(zone.rect.height), range: 0.04...1) { value in
                                 edit(zone.id) { $0.rect.size.height = CGFloat(value); $0.rect.origin.y = min($0.rect.minY, 1 - $0.rect.height); $0.centered = false }
                             }
+                            HStack(spacing: 8) {
+                                Button("Náhled na TV") { showTVPreview(zone.rect) }
+                                    .buttonStyle(.borderedProminent)
+                                Button("Obnovit oblast") {
+                                    edit(zone.id) { $0.restoreArea() }
+                                }.buttonStyle(.bordered)
+                            }
+                            .frame(maxWidth: .infinity)
                             Button("Smazat zónu", role: .destructive) { confirmDelete = true }
                         }
                     }
@@ -120,6 +129,11 @@ struct GLAutomaticZonesView: View {
                 GLHelpButton(title: "Oblasti překladu", explanation: "Vyber zónu a přetáhni její rámeček. Změny se ukládají automaticky.")
             }
         }
+        .alert("Náhled na TV", isPresented: $previewError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Nejdříve vyber a spáruj TV.")
+        }
         .confirmationDialog("Smazat zónu", isPresented: $confirmDelete) {
             Button("Smazat zónu", role: .destructive) {
                 guard let id = selected?.id, !model.isRunning else { return }
@@ -127,6 +141,17 @@ struct GLAutomaticZonesView: View {
                 selectedID = model.automaticZones.first?.id
             }
         }
+    }
+
+    private func showTVPreview(_ rect: CGRect) {
+        guard !model.isRunning, let target = model.devices.chosenTelevision else {
+            previewError = true
+            return
+        }
+        if model.tv.ip != target.ipAddress { model.tv.ip = target.ipAddress }
+        guard model.tv.receiverPaired else { previewError = true; return }
+        model.tv.showOCRRegion(rect, visible: true)
+        // Existing authenticated PCO1 receiver automatically hides the outline.
     }
 
     private func preview(_ zone: AutomaticOCRZone) -> some View {
@@ -184,6 +209,9 @@ struct GLAutomaticZonesView: View {
         guard !model.isRunning else { return }
         var zones = model.automaticZones
         guard let i = zones.firstIndex(where: { $0.id == id }) else { return }
+        if zones[i].dialogueDefault == nil {
+            zones[i].dialogueDefault = zones[i].centered || zones[i].name == "Dialogy"
+        }
         change(&zones[i])
         model.updateAutomaticZones(zones)
     }

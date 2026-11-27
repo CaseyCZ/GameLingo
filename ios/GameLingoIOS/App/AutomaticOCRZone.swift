@@ -9,9 +9,18 @@ struct AutomaticOCRZone: Identifiable, Codable, Equatable, Sendable {
     var enabled = true
     var rect: CGRect
     var centered = false
+    // Optional for compatibility with existing saved zones and profiles.
+    var dialogueDefault: Bool? = nil
+
+    mutating func restoreArea() {
+        let dialogue = dialogueDefault ?? (centered || name == "Dialogy")
+        dialogueDefault = dialogue
+        rect = dialogue ? AutomaticDialogueLayout.searchArea : CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.25)
+        centered = dialogue
+    }
 
     static var initial: [Self] {
-        [.init(name: "Dialogy", rect: AutomaticDialogueLayout.searchArea, centered: true)]
+        [.init(name: "Dialogy", rect: AutomaticDialogueLayout.searchArea, centered: true, dialogueDefault: true)]
     }
 
     var valid: Bool {

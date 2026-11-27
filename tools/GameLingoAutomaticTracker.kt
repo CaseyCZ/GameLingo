@@ -15,7 +15,10 @@ internal data class AutoRect(val left: Float, val top: Float, val right: Float, 
         return union > 0 && i/union >= .35f
     }
 }
-internal data class AutoZone(val id: String, val name: String, val enabled: Boolean, val rect: AutoRect, val centered: Boolean)
+internal data class AutoZone(val id: String, val name: String, val enabled: Boolean, val rect: AutoRect, val centered: Boolean) {
+    fun restoreArea(): AutoZone = if(id=="dialogue") copy(rect=AutoRect(0f,.65f,1f,1f),centered=true)
+        else copy(rect=AutoRect(.2f,.2f,.8f,.45f),centered=false)
+}
 internal data class AutoBlock(val text: String, val rect: AutoRect, val background: Int? = null, val ink: Int? = null) {
     fun output(translated: String): GameLingoZoneBlock {
         // Use the source box for replacement; the old protocol expands tiny labels on encode.
