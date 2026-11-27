@@ -30,6 +30,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.TorchState
 import androidx.camera.view.PreviewView
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
@@ -94,6 +95,8 @@ class GameLingoCameraActivity : ComponentActivity() {
     private var target = "cs"
     private var paused = false
     private var torch = false
+    private var torchPending = false
+    private var torchFailed = false
     private var zoom = 1f
     private var candidate = ""
     private var emptyFrames = 0
@@ -274,16 +277,20 @@ class GameLingoCameraActivity : ComponentActivity() {
         val actions = LinearLayout(this)
         torchButton = button("Svítilna") {
             val c = camera ?: return@button
-            if (!c.cameraInfo.hasFlashUnit()) return@button
-            val desired = !torch
+            if (!c.cameraInfo.hasFlashUnit() || torchPending) return@button
+            val desired = c.cameraInfo.torchState.value != TorchState.ON
+            torchPending = true; torchFailed = false
+            updateTorchButton()
             val future = c.cameraControl.enableTorch(desired)
             future.addListener({
-                if (camera === c && runCatching { future.get(); true }.getOrDefault(false)) {
-                    torch = desired
-                    torchButton.isSelected = torch
+                if (camera === c) {
+                    torchFailed = !runCatching { future.get(); true }.getOrDefault(false)
+                    torch = c.cameraInfo.torchState.value == TorchState.ON
+                    torchPending = false
+                    updateTorchButton()
                 }
             }, ContextCompat.getMainExecutor(this))
-        }
+        }.apply { isEnabled = false }
         pauseButton = button("Pozastavit") {
             paused = !paused
             pauseButton.text = tr(if (paused) "Pokračovat" else "Pozastavit")
@@ -384,6 +391,13 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
     }
 
+    private fun updateTorchButton() {
+        torchButton.isEnabled = camera?.cameraInfo?.hasFlashUnit() == true && !torchPending
+        torchButton.isSelected = torch
+        torchButton.text = tr("Svítilna") + if (torchFailed) " ⚠" else if (torch) " ✓" else ""
+        torchButton.setTextColor(if (torchFailed) Color.YELLOW else if (torch) Color.CYAN else Color.WHITE)
+    }
+
     private fun startCamera() {
         if (running || paused || isFinishing ||
             checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
@@ -409,7 +423,15 @@ class GameLingoCameraActivity : ComponentActivity() {
                 previewStatus.visibility = if (preview.bitmap == null) View.VISIBLE else View.GONE
                 camera = p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, live, use)
                 if (!TvProfily(this).pouzeTelefon) enableTV()
-                torchButton.isEnabled = camera?.cameraInfo?.hasFlashUnit() == true
+                camera?.let { c ->
+                    c.cameraInfo.torchState.observe(this) { value ->
+                        if (camera === c) {
+                            torch = value == TorchState.ON
+                            updateTorchButton()
+                        }
+                    }
+                }
+                updateTorchButton()
             }.onFailure { unavailable() }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -654,6 +676,7 @@ class GameLingoCameraActivity : ComponentActivity() {
         running = false; generation++
         resetTranslation(keepText = keepFrame)
         disableTV()
+        camera?.cameraInfo?.torchState?.removeObservers(this)
         analysis?.clearAnalyzer()
         analysis?.let { provider?.unbind(it) }
         liveUseCase?.let { provider?.unbind(it) }
@@ -661,7 +684,8 @@ class GameLingoCameraActivity : ComponentActivity() {
         livePreview.visibility = View.INVISIBLE
         preview.showBitmap = keepFrame
         analysis = null; camera = null; torch = false
-        torchButton.isEnabled = false; torchButton.isSelected = false
+        torchPending = false; torchFailed = false
+        updateTorchButton()
         translator?.zavri(); translator = null
         if (!keepFrame) preview.bitmap = null
         previewStatus.visibility = if (preview.bitmap == null) View.VISIBLE else View.GONE
