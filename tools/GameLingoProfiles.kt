@@ -102,7 +102,7 @@ object GameLingoProfiles {
         put("phoneTextSize", c.getSharedPreferences("gamelingo", Context.MODE_PRIVATE).getInt("telefonPismo", 1))
         put("gameLanguage", GameLingoLanguages.game(c))
         put("targetLanguage", GameLingoLanguages.target(c))
-        GameLingoOCRConfig.load(c)
+        if (!GameLingoLanguages.translationSettingsBusy()) GameLingoOCRConfig.load(c)
         put("ocrMode", GameLingoOCRConfig.mode)
         put("ocrFilter", GameLingoOCRConfig.filterMenuText)
         put("filterChoiceControls", GameLingoOCRConfig.filterChoiceControls)
@@ -149,7 +149,7 @@ object GameLingoProfiles {
             skip = data.optBoolean("skipOld", GameLingoOCRConfig.skipOld(c)),
             age = data.optInt("maxAge", GameLingoOCRConfig.maxAge(c)))
         settings.pribehovy = data.optBoolean("pribehovy", settings.pribehovy)
-        settings.casPribehuProcenta = data.optInt("cas", settings.casPribehuProcenta)
+        settings.casPribehuProcenta = data.optInt("cas", settings.casPribehuProcenta).coerceIn(CasovaniPribehu.MIN_PROCENT, CasovaniPribehu.MAX_PROCENT)
         settings.prekryvat = data.optBoolean("prekryvat", settings.prekryvat)
         settings.napovedy = data.optBoolean("napovedy", settings.napovedy)
         val phoneSize = data.optInt("phoneTextSize", -1)
@@ -215,7 +215,7 @@ object GameLingoProfiles {
     }
 
     private fun canChangeProfile(activity: Activity): Boolean {
-        if (!RemotePlayService.aktivni) return true
+        if (!GameLingoLanguages.translationSettingsBusy()) return true
         AlertDialog.Builder(activity)
             .setMessage(GameLingoLanguages.ui(activity, "Profil hry změň před spuštěním překladu."))
             .setPositiveButton(GameLingoLanguages.ui(activity, "Rozumím"), null).show()
@@ -223,8 +223,7 @@ object GameLingoProfiles {
     }
 
     fun show(activity: Activity, settings: Nastaveni, onApplied: () -> Unit) {
-        // A paused session still owns its configuration and translation context.
-        if (!canChangeProfile(activity)) return
+        // Saving is read-only for the running translation. Applying/deleting is not.
         val saved = prefs(activity)
         val outer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -244,15 +243,15 @@ object GameLingoProfiles {
             addView(input,LinearLayout.LayoutParams(-1,-2))
         }
         val save=GameLingoVisualKit.cta(activity,GameLingoLanguages.ui(activity, "Uložit profil")) {
-            if(canChangeProfile(activity)) {
-                val name=input.text.toString().trim()
+            run {
+                val entered=input.text.toString().trim()
+                val name=saved.all.keys.firstOrNull { it.equals(entered, ignoreCase=true) } ?: entered
                 if(name.isEmpty()||name.length>64)input.error=GameLingoLanguages.ui(activity, "Zadej název hry (max. 64 znaků)")
                 else {
                     fun persist() {
-                        if(canChangeProfile(activity)) {
-                            saved.edit().putString(name,snapshot(activity,settings).toString()).apply()
-                            dialog.dismiss();show(activity,settings,onApplied)
-                        }
+                        saved.edit().putString(name,snapshot(activity,settings).toString()).apply()
+                        android.widget.Toast.makeText(activity, GameLingoLanguages.ui(activity, "Profil uložen") + ": " + name, android.widget.Toast.LENGTH_SHORT).show()
+                        dialog.dismiss();show(activity,settings,onApplied)
                     }
                     if(saved.contains(name))AlertDialog.Builder(activity).setMessage(GameLingoLanguages.ui(activity, "Přepsat profil") + " „" + name + "“?")
                         .setNegativeButton(GameLingoLanguages.ui(activity, "Zrušit"),null).setPositiveButton(GameLingoLanguages.ui(activity, "Přepsat")){_,_->persist()}.show()
@@ -283,7 +282,7 @@ object GameLingoProfiles {
                 }, LinearLayout.LayoutParams(GameLingoVisualKit.dp(activity,25),GameLingoVisualKit.dp(activity,25)))
             }
             row.addView(title)
-            row.addView(GameLingoVisualKit.detailRow(activity,"character.book.closed.fill",GameLingoLanguages.ui(activity, "Herní slovník"),"") { GameLingoGlossaryUi.edit(activity,name) })
+            row.addView(GameLingoVisualKit.detailRow(activity,"character.book.closed.fill",GameLingoLanguages.ui(activity, "Herní slovník"),"") { if(canChangeProfile(activity)) GameLingoGlossaryUi.edit(activity,name) })
             val actions=LinearLayout(activity).apply{orientation=LinearLayout.HORIZONTAL}
             actions.addView(button(activity, GameLingoLanguages.ui(activity, "Použít")) {
                 if (!canChangeProfile(activity)) return@button

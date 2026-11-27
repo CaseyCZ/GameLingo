@@ -121,6 +121,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(automatic.index("val lines = b.lines.filter"), automatic.index('val text=lines.joinToString'))
         self.assertIn("GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)", automatic)
 
+    def test_profile_save_is_read_only_during_local_gameplay(self):
+        mobile = code(TOOLS/"GameLingoProfiles.kt")
+        tv = code(TOOLS/"GameLingoTVProfiles.kt")
+        self.assertIn("if (!GameLingoLanguages.translationSettingsBusy()) GameLingoOCRConfig.load(c)", mobile)
+        self.assertIn("if (!GameLingoLanguages.translationSettingsBusy()) return true", mobile)
+        self.assertIn("it.equals(entered, ignoreCase=true)", mobile)
+        self.assertIn("it.equals(entered, ignoreCase=true)", tv)
+        save = tv.split("fun saveCurrent(", 1)[1].split("private fun activateGlossary", 1)[0]
+        self.assertIn("if (receiving()) return", save)
+        self.assertNotIn('putString("activeProfile",name)', save)
+        self.assertNotIn("activateGlossary(", save)
+        self.assertIn("if (busy()) return false", tv)
+        self.assertIn("GameLingoLanguages.translationSettingsBusy()", code(TOOLS/"GameLingoGlossaryUi.kt"))
+
     def test_android_remote_tv_caption_style_is_independent_and_signed(self):
         appearance = code(TOOLS/"GameLingoSubtitleAppearance.kt")
         pairing = code(TOOLS/"GameLingoTVPairing.kt")

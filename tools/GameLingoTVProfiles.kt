@@ -11,10 +11,12 @@ import org.json.JSONArray
 object GameLingoTVProfiles {
     private fun store(a: Context) = a.getSharedPreferences("gamelingo_tv_profiles", Context.MODE_PRIVATE)
     private fun all(a: Context) = runCatching { JSONObject(store(a).getString("profiles", "{}") ?: "{}") }.getOrDefault(JSONObject())
-    private fun busy() = RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running
+    private fun busy() = GameLingoLanguages.translationSettingsBusy()
+    // Incoming phone configuration belongs to that phone; never save it as a local TV profile.
+    private fun receiving() = PrijemService.bezi && PrijemService.telefonPripojen()
     private fun array(r: FloatArray) = JSONArray().apply { r.forEach { put(it.toDouble()) } }
     private fun snapshot(a: Activity): JSONObject {
-        OblastTitulku.nacti(a); Volby.nacti(a); GameLingoOCRConfig.load(a)
+        if (!busy()) { OblastTitulku.nacti(a); Volby.nacti(a); GameLingoOCRConfig.load(a) }
         val n = Nastaveni(a)
         val style = a.getSharedPreferences("gamelingo_tv_local_style", Context.MODE_PRIVATE)
         return JSONObject().apply {
@@ -113,23 +115,25 @@ object GameLingoTVProfiles {
         }
     }
     fun saveCurrent(a: Activity, onSaved: () -> Unit = {}) {
-        if (busy()) return
+        if (receiving()) return
         val input = EditText(a).apply {
             hint = GameLingoLanguages.ui(a, "Název hry nebo aplikace"); setSingleLine(true)
             setText(store(a).getString("activeProfile","").orEmpty())
             selectAll()
         }
         fun persist(name: String) {
-            if (busy()) return
+            if (receiving()) return
             val latest=all(a)
             latest.put(name,snapshot(a))
-            store(a).edit().putString("profiles",latest.toString()).putString("activeProfile",name).apply()
+            // Saving does not apply a profile or switch the active glossary mid-session.
+            store(a).edit().putString("profiles",latest.toString()).apply()
             android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil uložen") + ": " + name,android.widget.Toast.LENGTH_SHORT).show()
             onSaved()
         }
         AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Uložit profil")).setView(input).setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null)
             .setPositiveButton(GameLingoLanguages.ui(a, "Uložit")) { _,_ ->
-                val name=input.text.toString().trim().take(64)
+                val entered=input.text.toString().trim().take(64)
+                val name=all(a).keys().asSequence().firstOrNull { it.equals(entered, ignoreCase=true) } ?: entered
                 if (name.isEmpty()) {
                     android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Zadej název profilu."),android.widget.Toast.LENGTH_SHORT).show()
                 } else if (all(a).has(name)) {
@@ -166,7 +170,7 @@ object GameLingoTVProfiles {
         if(openLayout) GameLingoDirectTVLayout.show(a) {}
     }
     fun show(a: Activity) {
-        if (busy()) { AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejdřív zastav překlad a příjem.")).setPositiveButton("OK", null).show(); return }
+        if (receiving()) { AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejdřív zastav překlad a příjem.")).setPositiveButton("OK", null).show(); return }
         val items = all(a)
         val names = items.keys().asSequence().sorted().toList()
         val body=android.widget.LinearLayout(a).apply{orientation=android.widget.LinearLayout.VERTICAL}
@@ -201,7 +205,7 @@ object GameLingoTVProfiles {
                                 editSettings(a,name)
                             } else android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Profil nelze načíst"),android.widget.Toast.LENGTH_SHORT).show()
                         }
-                        4 -> GameLingoGlossaryUi.edit(a,name){page?.dismiss();show(a)}
+                        4 -> if (!busy()) GameLingoGlossaryUi.edit(a,name){page?.dismiss();show(a)}
                         2 -> AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Smazat profil") + " " + name + "?").setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null)
                             .setPositiveButton(GameLingoLanguages.ui(a, "Smazat")){_,_->
                                 if(!busy()) {

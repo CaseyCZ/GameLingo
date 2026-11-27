@@ -10,7 +10,7 @@ import android.widget.Button
 
 internal object GameLingoGlossaryUi {
     private fun stopped(a: Activity): Boolean {
-        if (!RemotePlayService.aktivni && !PrijemService.bezi) return true
+        if (!GameLingoLanguages.translationSettingsBusy()) return true
         AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Nejdřív zastav probíhající překlad."))
             .setPositiveButton("OK", null).show()
         return false
