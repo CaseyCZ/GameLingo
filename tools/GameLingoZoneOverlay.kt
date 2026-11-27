@@ -47,6 +47,7 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT).apply {
                 gravity = Gravity.TOP or Gravity.LEFT
+                // Non-touchable overlay: keep Android's obscuring-opacity limit.
                 alpha = .8f
             }
             if (runCatching { wm.addView(candidate, lp) }.isFailure) return
@@ -73,7 +74,8 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
                     setBackgroundColor(GameLingoTVCaptionStyle.background(context))
                     gravity = Gravity.CENTER
                     maxLines = 4
-                    setPadding(8, 3, 8, 3)
+                    includeFontPadding = false
+                    setPadding(3, 1, 3, 1)
                     isFocusable = false
                     isClickable = false
                 }, LayoutParams(-2,-2))
@@ -91,6 +93,16 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
             packet.blocks.forEachIndexed { index, block ->
                 val child = getChildAt(index) ?: return@forEachIndexed
                 val width = (frameW*block.width).roundToInt().coerceIn(1,w.toInt())
+                if(child is TextView) {
+                    // Scale to the actual video, not the TV's logical density.
+                    val nominal = (frameH * .032f * packet.font).coerceAtLeast(8f)
+                    child.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, nominal)
+                    val textWidth = child.paint.measureText(block.text)
+                    if(textWidth > width - 6 && width > 8) {
+                        child.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,
+                            (nominal * (width-6) / textWidth).coerceAtLeast(nominal * .60f))
+                    }
+                }
                 child.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),
                     View.MeasureSpec.makeMeasureSpec(frameH.roundToInt().coerceAtLeast(1),View.MeasureSpec.AT_MOST))
                 val x = (ox + frameW*block.x-width/2f).roundToInt().coerceIn(0,w.toInt()-width)

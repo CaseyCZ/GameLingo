@@ -80,9 +80,9 @@ struct AutomaticDialogueLayout: Equatable, Sendable {
         ranked.sort { $0.score > $1.score }
         return ranked.prefix(centered ? 1 : 8).map { selected in
             let r = selected.rect
-            let width = min(1.0, max(0.15, Double(r.width) + 0.06))
+            let width = min(1.0, max(centered ? 0.15 : 0.08, Double(r.width) + (centered ? 0.06 : 0.008)))
             let x = min(1 - width / 2, max(width / 2, Double(r.midX)))
-            let bottom = min(0.99, max(0.05, Double(r.maxY)))
+            let bottom = min(1.0, max(0.05, Double(r.maxY)))
             let text = selected.lines.map(\.text).joined(separator: " ")
             return Block(text: text, rect: r, layout: Self(centerX: x, bottomY: bottom, width: width))
         }

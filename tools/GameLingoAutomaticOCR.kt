@@ -71,10 +71,11 @@ internal class GameLingoAutomaticOCR(
         try {
             val zone=enabled[next%enabled.size];next=(next+1)%enabled.size
             val r=zone.rect
-            val x=(r.left*w).toInt().coerceIn(0,w-32)
-            val y=(r.top*h).toInt().coerceIn(0,h-32)
-            val cw=((r.right*w).toInt()-x).coerceIn(32,w-x)
-            val ch=((r.bottom*h).toInt()-y).coerceIn(32,h-y)
+            val x=kotlin.math.ceil(r.left*w).toInt().coerceIn(0,w-1)
+            val y=kotlin.math.ceil(r.top*h).toInt().coerceIn(0,h-1)
+            val cw=(r.right*w).toInt().coerceAtMost(w)-x
+            val ch=(r.bottom*h).toInt().coerceAtMost(h)-y
+            if(cw<16||ch<16){busy.set(false);return}
             val pixels=readPixels(x,y,cw,ch)
             require(pixels.size==cw*ch)
             var hash=GameLingoFrameGate.seed(cw,ch)
@@ -136,7 +137,7 @@ internal class GameLingoAutomaticOCR(
         for(zone in enabled)for(track in tracker.tracks.filter{it.zone==zone.id}) {
             val value=translations[track.id]?:continue
             if(chosen.any{GameLingoAutomaticTracker.same(it.first,track.block)})continue
-            if(chosen.size<32)chosen+=track.block to track.block.output(value)
+            if(chosen.size<32)chosen+=track.block to track.block.output(value,zone.centered)
         }
         val packet=GameLingoZonePacket(aspect,1f,chosen.map{it.second})
         if(packet!=lastPacket||(packet.blocks.isNotEmpty()&&now-publishedAt>=800L)){

@@ -30,6 +30,9 @@ import CoreGraphics
         precondition(AutomaticDialogueLayout.select([hud], centered: false)?.text == "HUD")
         let blocks = AutomaticDialogueLayout.blocks([hud, dialogue, upper], centered: false)
         precondition(blocks.count == 3)
+        let menu = AutomaticDialogueLayout.select([.init(text: "PLAY", rect: CGRect(x: 0.01, y: 0.01, width: 0.05, height: 0.03))], centered: false)!
+        precondition(abs(menu.layout.width - 0.08) < 0.00001)
+        precondition(abs(menu.layout.centerX - 0.04) < 0.00001)
         var tracker = AutomaticBlockTracker()
         let zone = UUID(), other = UUID()
         tracker.observe(zone: zone, blocks: blocks, now: 1)

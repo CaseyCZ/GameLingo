@@ -11,6 +11,16 @@ class GameLingoAutomaticTrackerTest {
         assertFalse(GameLingoYellowOCRFilter.keepsAutomaticDialogue("speed limit",false,ignored))
         assertTrue(GameLingoYellowOCRFilter.keepsAutomaticDialogue("I pressed A to continue.",true,ignored))
     }
+    @Test fun customMenuGeometryAndControllerLabels(){
+        val block=AutoBlock("Play",AutoRect(.01f,.01f,.06f,.04f))
+        val output=block.output("Hrát",false)
+        assertEquals(.08f,output.width,.0001f)
+        assertEquals(.04f,output.x,.0001f)
+        for (label in listOf("LT","RT","LB","R1")) {
+            assertFalse(GameLingoYellowOCRFilter.keepsAutomaticDialogue(label,false,emptySet()))
+        }
+        assertTrue(GameLingoYellowOCRFilter.keepsAutomaticDialogue("PLAY",false,emptySet()))
+    }
     @Test fun automaticMinimumHeightUsesCropAndPreservesDefault(){
         assertTrue(GameLingoYellowOCRFilter.meetsMinimumHeight(0, 0, 0))
         assertFalse(GameLingoYellowOCRFilter.meetsMinimumHeight(9, 500, 2))

@@ -17,10 +17,12 @@ enum OCRIgnoredLines {
 enum YellowOCRFilter {
     private static let prompt = try! NSRegularExpression(pattern: #"(?i)^(?:press|hold|tap) +(?:button +)?(?:A|B|X|Y|LB|RB|LT|RT|L1|L2|L3|R1|R2|R3|START|SELECT|OPTIONS|MENU|\[(?:A|B|X|Y|LB|RB|LT|RT|L1|L2|L3|R1|R2|R3|START|SELECT|OPTIONS|MENU)\])(?: +to +(?:continue|confirm|skip|select|go back))?[.!]?$"#)
 
+    private static let controllerLabels: Set<String> = ["LB", "RB", "LT", "RT", "L1", "L2", "L3", "R1", "R2", "R3"]
     // Only filter complete lines, before grouping into dialogue blocks.
     // The explicit ignored list remains effective even if menu filtering is off.
     static func keepsAutomaticDialogue(_ text: String, filterMenus: Bool, ignored: Set<String>) -> Bool {
         OCRIgnoredLines.keeps(text, entries: ignored) &&
+            !controllerLabels.contains(text.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()) &&
             keeps(text, enabled: filterMenus)
     }
 
