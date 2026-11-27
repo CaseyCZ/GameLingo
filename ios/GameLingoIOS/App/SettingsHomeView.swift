@@ -694,7 +694,9 @@ private struct GameLingoGlossaryEditor: View {
                     .disabled(model.isRunning)
                 Text("Originál | chybný překlad | správný překlad")
                     .font(.caption.bold())
-                Text(verbatim: GLInterfaceText.localized("Save game | Zachránit hru | Uložit hru"))
+                Text("Příklad pravidla (angličtina → čeština)")
+                    .font(.caption.bold())
+                Text(verbatim: "Save game | Zachránit hru | Uložit hru")
                     .font(.caption.monospaced()).foregroundStyle(GLStyle.muted)
                 Text("Jeden řádek = jedno pravidlo. Prostřední část je překlad, který chceš opravit.")
                     .font(.caption).foregroundStyle(GLStyle.muted)
@@ -792,13 +794,13 @@ private struct GameLingoDiagnosticsView: View {
                 GLHeader(title: "Stav")
                 status("Překladová relace", model.isRunning ? (model.frameCount > 0 ? "Přijímá snímky" : "Čeká na snímky") : "Neaktivní")
                 status("Snímky", "\(model.frameCount)")
-                Text(verbatim: GLInterfaceText.localized(model.performanceSummary))
+                Text(verbatim: GLInterfaceText.localizedDiagnostics(model.performanceSummary))
                     .font(.caption2.monospaced()).foregroundStyle(GLStyle.muted)
                     .textSelection(.enabled)
                 status("Google TV", model.tv.receiverConnected ? "Ověřené spojení" : (model.tv.receiverPaired ? "Spárováno · bez spojení" : "Nespárováno"))
-                Text(verbatim: GLInterfaceText.localized(model.tv.receiverStatus)).font(.caption).foregroundStyle(GLStyle.muted)
+                Text(verbatim: GLInterfaceText.localizedStatus(model.tv.receiverStatus)).font(.caption).foregroundStyle(GLStyle.muted)
                 if !model.tv.receiverConnected { Text("Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování.").font(.caption) }
-                Text(verbatim: GLInterfaceText.localized(model.status)).font(.caption).foregroundStyle(GLStyle.muted)
+                Text(verbatim: GLInterfaceText.localizedStatus(model.status)).font(.caption).foregroundStyle(GLStyle.muted)
             }
             GLCard {
                 GLHeader(title: "Poslední překlad")

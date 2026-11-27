@@ -70,6 +70,8 @@ def validate():
         for key, value in strings.items():
             if not key or not isinstance(value, str) or not value.strip() or "\x00" in value:
                 raise ValueError(f"{code}: invalid UI string for {key!r}")
+            if key.count("%@") != value.count("%@"):
+                raise ValueError(f"{code}: status placeholder mismatch for {key!r}")
             if len(key) > 500 or len(value) > 2000:
                 raise ValueError(f"{code}: unexpectedly long UI string: {key[:60]}")
     if any(key != value for key, value in catalogs["cs"].items()):

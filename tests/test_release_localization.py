@@ -315,11 +315,11 @@ class ReleaseLocalizationTests(unittest.TestCase):
             "Obnovení Xbox zrušeno – mění se cache",
         }
         self.assertEqual(required - keys, set())
-        self.assertIn("GLInterfaceText.localized(tv.receiverStatus)", text(IOS / "GameLingoTVSetupScreen.swift"))
-        self.assertIn("GLInterfaceText.localized(tv.message)", text(IOS / "GameLingoTVSetupScreen.swift"))
-        self.assertIn("GLInterfaceText.localized(ps.status)", text(IOS / "PlayStation/GameLingoPlayStationSetup.swift"))
-        self.assertIn("GLInterfaceText.localized(auth.status)", text(IOS / "PlayCaptionIOSApp.swift"))
-        self.assertIn("GLInterfaceText.localized(model.status)", text(IOS / "GameLingoHome.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(tv.receiverStatus)", text(IOS / "GameLingoTVSetupScreen.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(tv.message)", text(IOS / "GameLingoTVSetupScreen.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(ps.status)", text(IOS / "PlayStation/GameLingoPlayStationSetup.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(auth.status)", text(IOS / "PlayCaptionIOSApp.swift"))
+        self.assertIn("GLInterfaceText.localizedStatus(model.status)", text(IOS / "GameLingoHome.swift"))
 
     def test_setup_action_and_diagnostics_dynamic_labels_are_localized(self):
         setup = text(IOS / "GameLingoSetupView.swift")
@@ -330,10 +330,62 @@ class ReleaseLocalizationTests(unittest.TestCase):
         home = text(IOS / "GameLingoHome.swift")
         self.assertIn('Text(LocalizedStringKey(model.isRunning ? "Zastavit překlad" : "Spustit překlad"))', home)
         settings = text(IOS / "SettingsHomeView.swift")
-        for value in ("model.cacheStatus", "model.performanceSummary", "model.tv.receiverStatus", "model.status"):
-            self.assertIn(f"GLInterfaceText.localized({value})", settings)
+        self.assertIn("GLInterfaceText.localized(model.cacheStatus)", settings)
+        self.assertIn("GLInterfaceText.localizedDiagnostics(model.performanceSummary)", settings)
+        for value in ("model.tv.receiverStatus", "model.status"):
+            self.assertIn(f"GLInterfaceText.localizedStatus({value})", settings)
         self.assertIn('contentDescription = GameLingoLanguages.ui(activity, "Nastavení")',
                       text(TOOLS / "GameLingoVisualKit.kt"))
+
+    def test_dynamic_status_templates_exist_in_every_locale(self):
+        shared = ROOT / "shared" / "locales"
+        manifest = json.loads(text(shared / "manifest.json"))
+        helper = text(IOS / "GameLingoAppLanguage.swift")
+        templates = re.findall(STRING, helper.split("private static let statusTemplates = [", 1)[1].split("]", 1)[0])
+        self.assertGreaterEqual(len(templates), 18)
+        for language in manifest["languages"]:
+            catalog = json.loads(text(shared / (language["code"] + ".json")))
+            for template in templates:
+                self.assertEqual(catalog[template].count("%@"), 1, template)
+
+    def test_diagnostic_fields_and_glossary_example(self):
+        keys = set(android_keys())
+        self.assertEqual({
+            "Průměr / P95 (posledních 128 vzorků)",
+            "Dialog čekání snímku",
+            "Dialog OCR",
+            "Dialog čekání po OCR",
+            "Dialog překlad",
+            "Dialog celkem k výstupu",
+            "Herní text čekání snímku",
+            "Herní text OCR",
+            "Herní text překlad",
+            "Herní text celkem k výstupu",
+            "dlouhé čekání ≥ 5 s",
+            "Chyby překladu",
+            "Xbox dekódovaný obraz",
+            "bez nového snímku ≥ 5 s",
+            "čekám na první snímek",
+            "Xbox síť",
+            "nedostupná",
+            "Xbox síť (video)",
+            "ztráta",
+            "paketů",
+            "Paměť",
+            "RSS nedostupná",
+            "teplotní stav",
+            "nominal",
+            "fair",
+            "serious",
+            "critical",
+            "unknown",
+            "Příklad pravidla (angličtina → čeština)",
+        } - keys, set())
+        glossary = text(TOOLS / "GameLingoGlossaryUi.kt")
+        self.assertIn('hint = GameLingoLanguages.ui(a, "Originál | chybný překlad | správný překlad")', glossary)
+        self.assertEqual(glossary.count("Save game | Zachránit hru | Uložit hru"), 1)
+        self.assertNotIn("val header = LinearLayout(activity)", text(TOOLS / "GameLingoSubtitleAppearance.kt"))
+        self.assertIn("GameLingoTVUi.mountPage(", text(TOOLS / "GameLingoSubtitleAppearance.kt"))
 
 if __name__ == "__main__":
     unittest.main()

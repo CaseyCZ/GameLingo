@@ -1429,7 +1429,7 @@ struct XboxAccountView: View {
                 }
             }
             if !auth.status.isEmpty {
-                Text(verbatim: GLInterfaceText.localized(auth.status))
+                Text(verbatim: GLInterfaceText.localizedStatus(auth.status))
                     .font(.caption)
                     .foregroundStyle(GLStyle.muted)
             }
