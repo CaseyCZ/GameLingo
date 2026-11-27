@@ -1296,6 +1296,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('signalInterruption("Xbox ukončil vzdálené hraní", retry: false)', xbox)
         self.assertIn("interruptionSent = true", xbox)
 
+    def test_xbox_recovery_respects_terminal_stop_and_current_generation(self):
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        recovery = code(TOOLS/"xbox_recovery.py")
+        self.assertIn("if xboxReconnectAttempts > 0,", model)
+        self.assertIn("Self.isTransientXboxRecoveryError(networkError.code)", model)
+        policy = model.split("private static func isTransientXboxRecoveryError", 1)[1].split("/// Retry", 1)[0]
+        self.assertIn(".networkConnectionLost", policy)
+        self.assertIn("default:\n            return false", policy)
+        self.assertIn("xboxGeneration != relaceCteni.get()", recovery)
+        self.assertIn("xboxGeneration == relaceCteni.get()", recovery)
+        self.assertIn("automat = false", recovery)
+        self.assertIn("ui.removeCallbacks(hlidacSpojeni)", recovery)
+        self.assertIn("stopSelf()", recovery)
+        self.assertIn("s = protect_xbox_recovery(s)", code(TOOLS/"wire_gamelingo_languages.py"))
+
     def test_point15_receiver_reconnect_keeps_auth_and_session_generation(self):
         ios = code(IOS/"PlayCaptionTV.swift")
         self.assertIn("self.receiverGeneration == generation", ios)

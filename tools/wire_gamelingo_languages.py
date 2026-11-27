@@ -11,6 +11,7 @@ from tv_translation_policy import tv_variant, strip_offline_translator, tv_trans
 from direct_tv_mode import patch_direct_tv
 from wire_mobile_update import patch_mobile_update
 from translation_backpressure import bound_translator, bound_choices
+from xbox_recovery import protect_xbox_recovery
 from automatic_android import install_automatic
 from translation_privacy import protect_cache_writes, restrict_service_log, restrict_provider_transport
 from mobile_offline_translation import install_mobile_translator, finalize_mobile
@@ -698,6 +699,7 @@ def main():
             o[2] <= o[0] || o[3] <= o[1]) return
         val x =''', service.name)
     s = bound_choices(s, folder)
+    s = protect_xbox_recovery(s)
     s = restrict_service_log(s)
     service.write_text(s, encoding="utf8")
     television = tv_variant(root)

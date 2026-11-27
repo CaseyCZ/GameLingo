@@ -748,10 +748,29 @@ final class CaptionAppModel: ObservableObject {
             catch {
                 guard self.sessionRevision == currentSession else { return }
                 let failure = "Xbox Remote Play: \(error.localizedDescription)"
+                // Only resume an already authorized recovery after a transient
+                // network error. Authentication, cancellation and server refusal
+                // remain terminal. The existing two-attempt budget is retained.
+                if xboxReconnectAttempts > 0,
+                   let networkError = error as? URLError,
+                   Self.isTransientXboxRecoveryError(networkError.code) {
+                    scheduleXboxReconnect(console, currentSession: currentSession, reason: failure)
+                    return
+                }
                 stop()
                 self.status = failure
                 write("CHYBA: " + failure)
             }
+        }
+    }
+
+    private static func isTransientXboxRecoveryError(_ code: URLError.Code) -> Bool {
+        switch code {
+        case .timedOut, .cannotFindHost, .cannotConnectToHost, .networkConnectionLost,
+             .dnsLookupFailed, .notConnectedToInternet:
+            return true
+        default:
+            return false
         }
     }
 
