@@ -87,11 +87,9 @@ def redesign_mobile(s: str) -> str:
                 else GameLingoLanguages.ui(this, "Vybrat zařízení"),
                 liveImage
             ) {
-                if (!RemotePlayService.aktivni) android.app.AlertDialog.Builder(this)
-                    .setTitle(GameLingoLanguages.ui(this, "Vybrat zařízení"))
-                    .setItems(arrayOf("Xbox", "PlayStation", GameLingoLanguages.ui(this, "Kamera"))) { _, index ->
-                        selectSource(listOf("Xbox", "PlayStation", "Camera")[index])
-                    }.show()
+                if (!RemotePlayService.aktivni) GameLingoVisualKit.selectSourceOrOutput(this, "Vybrat zařízení",
+                    listOf("Xbox" to "Xbox", "PlayStation" to "PlayStation", "Camera" to "Kamera"),
+                    primaryFamily, ::selectSource)
             }, odsazeni(bottom = 10))
 
             val tvStore = TvProfily(this)
@@ -105,12 +103,12 @@ def redesign_mobile(s: str) -> str:
                 else GameLingoLanguages.ui(this, "Televize uložena · spojení se ověří"),
                 tvStore.pouzeTelefon
             ) {
-                if (!RemotePlayService.aktivni) android.app.AlertDialog.Builder(this)
-                    .setTitle(GameLingoLanguages.ui(this, "Výstup titulků"))
-                    .setItems(arrayOf(GameLingoLanguages.ui(this, "Telefon"), "Google TV / Android TV")) { _, index ->
-                        tvStore.pouzeTelefon = index == 0
-                        if (index == 0) ukazHlavni() else vyberVystupTv()
-                    }.show()
+                if (!RemotePlayService.aktivni) GameLingoVisualKit.selectSourceOrOutput(this, "Výstup titulků",
+                    listOf("Phone" to "Telefon", "TV" to "Google TV / Android TV"),
+                    if (tvStore.pouzeTelefon) "Phone" else "TV") { key ->
+                    tvStore.pouzeTelefon = key == "Phone"
+                    if (key == "Phone") ukazHlavni() else vyberVystupTv()
+                }
             }, odsazeni(bottom = 18))
 
             obsah.addView(GameLingoVisualKit.cta(
@@ -121,11 +119,9 @@ def redesign_mobile(s: str) -> str:
                     if (!tvStore.pouzeTelefon && (savedTv == null || !GameLingoTVPairing.paired(this, savedTv.ip))) vyberVystupTv()
                     else GameLingoCameraActivity.open(this)
                 } else if (nejakaKonzole) prepniPreklad()
-                else android.app.AlertDialog.Builder(this)
-                    .setTitle(GameLingoLanguages.ui(this, "Vybrat zařízení"))
-                    .setItems(arrayOf("Xbox", "PlayStation", GameLingoLanguages.ui(this, "Kamera"))) { _, index ->
-                        selectSource(listOf("Xbox", "PlayStation", "Camera")[index])
-                    }.show()
+                else GameLingoVisualKit.selectSourceOrOutput(this, "Vybrat zařízení",
+                    listOf("Xbox" to "Xbox", "PlayStation" to "PlayStation", "Camera" to "Kamera"),
+                    primaryFamily, ::selectSource)
             }, odsazeni(bottom = 17))
 
             val prvni = vodorovne()

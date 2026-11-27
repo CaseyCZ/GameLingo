@@ -74,6 +74,7 @@ struct GameLingoHome: View {
                 bottomTabs
             }
             .background(GLNeonBackground())
+            .accessibilityHidden(sourcePicker || outputPicker)
             .toolbar(.hidden, for: .navigationBar)
         }
         .tint(GLVisual.cyan)
@@ -92,17 +93,9 @@ struct GameLingoHome: View {
             GameLingoCameraScreen(model: model, devices: devices, receiver: model.tv)
                 .environment(\.locale, Locale(identifier: model.appLanguage.rawValue))
         }
-        .confirmationDialog("Vybrat zařízení", isPresented: $sourcePicker, titleVisibility: .visible) {
-            Button("Xbox") { selectConsoleSource(.xbox) }
-            Button("PlayStation") { selectConsoleSource(.playStation) }
-            Button("Kamera") { cameraSource = true }
-        }
-        .confirmationDialog("Výstup titulků", isPresented: $outputPicker, titleVisibility: .visible) {
-            Button("Telefon") { devices.subtitleOutput = .phone }
-            Button("Google TV") {
-                devices.subtitleOutput = .googleTV
-                devices.prepareTV(model.tv)
-                if !outputActuallyReady { tvSheet = true }
+        .overlay {
+            if sourcePicker || outputPicker {
+                selectionOverlay
             }
         }
         .task { if !model.isRunning && devices.completedSetup { updates.checkAtStartup() } }
@@ -320,6 +313,86 @@ struct GameLingoHome: View {
         return model.tv.receiverConnected &&
             model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines) ==
             selectedTV.ipAddress
+    }
+
+    // Explicitly localized actions follow the app language, not the OS language.
+    private var selectionOverlay: some View {
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.65).ignoresSafeArea()
+                .onTapGesture { sourcePicker = false; outputPicker = false }
+                .accessibilityHidden(true)
+            GLNeonPanel(emphasized: true, radius: 24) {
+                VStack(spacing: 10) {
+                    Text(LocalizedStringKey(sourcePicker ? "Vybrat zařízení" : "Výstup titulků"))
+                        .font(.headline).foregroundStyle(.white)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding(.bottom, 4)
+                    if sourcePicker {
+                        selectionRow("Xbox", icon: "gamecontroller.fill",
+                                     family: .xbox, selected: !cameraSource && devices.chosenConsole?.family == .xbox) {
+                            sourcePicker = false
+                            selectConsoleSource(.xbox)
+                        }
+                        selectionRow("PlayStation", icon: "gamecontroller.fill",
+                                     family: .playStation, selected: !cameraSource && devices.chosenConsole?.family == .playStation) {
+                            sourcePicker = false
+                            selectConsoleSource(.playStation)
+                        }
+                        selectionRow("Kamera", icon: "camera.fill", selected: cameraSource) {
+                            sourcePicker = false
+                            cameraSource = true
+                        }
+                    } else {
+                        selectionRow("Telefon", icon: "smartphone", selected: devices.subtitleOutput == .phone) {
+                            outputPicker = false
+                            devices.subtitleOutput = .phone
+                        }
+                        selectionRow("Google TV", icon: "tv.fill", selected: devices.subtitleOutput == .googleTV) {
+                            outputPicker = false
+                            devices.subtitleOutput = .googleTV
+                            devices.prepareTV(model.tv)
+                            if !outputActuallyReady { tvSheet = true }
+                        }
+                    }
+                    Button {
+                        sourcePicker = false; outputPicker = false
+                    } label: {
+                        Text("Zrušit").font(.subheadline.weight(.semibold))
+                            .foregroundStyle(GLNeon.cyan)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                }.padding(16)
+            }
+            .padding(.horizontal, 16).padding(.bottom, 12)
+            .accessibilityAddTraits(.isModal)
+        }
+    }
+
+    private func selectionRow(_ title: String, icon: String, family: GLConsoleFamily? = nil,
+                              selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                if let family {
+                    GLPlatformBadge(family: family, size: 42)
+                } else {
+                    Image(systemName: icon).font(.title2).foregroundStyle(GLNeon.cyan)
+                        .frame(width: 42, height: 42)
+                }
+                Text(LocalizedStringKey(title)).font(.headline)
+                    .foregroundStyle(.white).frame(maxWidth: .infinity)
+                Image(systemName: selected ? "checkmark.circle.fill" : "chevron.right")
+                    .foregroundStyle(selected ? GLStyle.green : GLNeon.mist)
+                    .frame(width: 24)
+            }
+            .padding(9)
+            .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 15))
+            .overlay(RoundedRectangle(cornerRadius: 15)
+                .strokeBorder(selected ? GLNeon.cyan : GLNeon.edge, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func openSelectedConsole() {

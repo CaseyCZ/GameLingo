@@ -29,6 +29,50 @@ object GameLingoVisualKit {
 
     // Symbol identifiers follow GameLingoVisualSystem.swift and SettingsHomeView.swift.
     // Native vector equivalents; SF Symbols themselves are not Android assets.
+    /** App-localized choice panel shared by the mobile input and output pickers. */
+    fun selectSourceOrOutput(activity: Activity, heading: String, options: List<Pair<String, String>>,
+                             selected: String?, onSelect: (String) -> Unit) {
+        if (activity.isFinishing) return
+        val dialog = android.app.Dialog(activity)
+        val content = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(activity,16), dp(activity,16), dp(activity,16), dp(activity,12))
+            background = card(activity, selected = true)
+        }
+        content.addView(TextView(activity).apply {
+            text = GameLingoLanguages.ui(activity, heading)
+            gravity = Gravity.CENTER
+            textSize = sp(activity,18f)
+            setTextColor(Color.WHITE)
+            setTypeface(null, Typeface.BOLD)
+            setPadding(0,0,0,dp(activity,10))
+        })
+        for ((key, label) in options) {
+            content.addView(deviceCard(activity, key, GameLingoLanguages.ui(activity, label),
+                if (selected == key) GameLingoLanguages.ui(activity, "Vybráno") else "",
+                selected == key) {
+                dialog.dismiss()
+                onSelect(key)
+            }, LinearLayout.LayoutParams(-1,-2).apply { bottomMargin = dp(activity,8) })
+        }
+        content.addView(TextView(activity).apply {
+            text = GameLingoLanguages.ui(activity, "Zrušit")
+            gravity = Gravity.CENTER
+            textSize = sp(activity,16f)
+            setTextColor(cyan)
+            minHeight = dp(activity,44)
+            isFocusable = true
+            isClickable = true
+            setOnClickListener { dialog.dismiss() }
+        })
+        dialog.setContentView(content)
+        dialog.setCanceledOnTouchOutside(true)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.show()
+        dialog.window?.setLayout((activity.resources.displayMetrics.widthPixels - dp(activity,32)).coerceAtLeast(1), -2)
+        dialog.window?.setGravity(Gravity.BOTTOM)
+    }
+
     fun iconName(symbol: String, title: String = ""): String = when {
         title.startsWith("Jazyk") -> "globe"
         title.startsWith("OCR") -> "viewfinder"
