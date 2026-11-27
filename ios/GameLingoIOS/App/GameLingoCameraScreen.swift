@@ -10,6 +10,7 @@ private struct GLCameraBlock: Sendable {
     let rect: CGRect // upright image coordinates, origin at top left
     var angle: Double = 0
     var background: UInt32 = 0
+    var ink: UInt32? = nil
     var lineCount: Int = 1
 }
 
@@ -19,6 +20,7 @@ private struct GLCameraOverlay: Identifiable {
     let text: String
     let angle: Double
     let background: UInt32
+    let ink: UInt32?
     let lineCount: Int
 }
 
@@ -26,7 +28,7 @@ private struct GLCameraOverlay: Identifiable {
 // A small RGB image bounds the per-frame sampling cost.
 private struct GLCameraPalette {
     let pixels: [UInt8]
-    static let size = 128
+    static let size = 256
 
     init?(_ image: CGImage) {
         let n = Self.size
@@ -75,13 +77,45 @@ private struct GLCameraPalette {
               blue: Double(rgb & 255) / 255)
     }
 
-    static func foreground(_ rgb: UInt32) -> Color {
+    static func luminance(_ rgb: UInt32) -> Double {
         func linear(_ v: UInt32) -> Double {
             let x = Double(v) / 255
             return x <= 0.04045 ? x / 12.92 : pow((x + 0.055) / 1.055, 2.4)
         }
-        let luminance = 0.2126 * linear((rgb >> 16) & 255) + 0.7152 * linear((rgb >> 8) & 255) + 0.0722 * linear(rgb & 255)
-        return luminance > 0.179 ? .black : .white
+        return 0.2126 * linear((rgb >> 16) & 255) + 0.7152 * linear((rgb >> 8) & 255) + 0.0722 * linear(rgb & 255)
+    }
+
+    static func foreground(_ rgb: UInt32) -> Color {
+        luminance(rgb) > 0.179 ? .black : .white
+    }
+
+    // Sample repeated high-contrast ink colors inside the text rectangle.
+    // Reject ambiguous or low-contrast estimates instead of copying noise.
+    func ink(for rect: CGRect, background: UInt32) -> UInt32? {
+        let n = Self.size
+        let bg = Self.luminance(background)
+        var bins: [UInt32: (count: Int, r: Int, g: Int, b: Int)] = [:]
+        for row in 0..<8 {
+            for col in 0..<24 {
+                let x = rect.minX + rect.width * (CGFloat(col) + 0.5) / 24
+                let y = rect.minY + rect.height * (CGFloat(row) + 0.5) / 8
+                let px = min(n - 1, max(0, Int(x * CGFloat(n))))
+                let py = min(n - 1, max(0, Int(y * CGFloat(n))))
+                let i = (py * n + px) * 4
+                let r = Int(pixels[i]), g = Int(pixels[i+1]), b = Int(pixels[i+2])
+                let rgb = UInt32(r * 65536 + g * 256 + b)
+                let light = Self.luminance(rgb)
+                guard (max(light, bg) + 0.05) / (min(light, bg) + 0.05) >= 4.5 else { continue }
+                let key = UInt32((r / 32) * 64 + (g / 32) * 8 + b / 32)
+                let old = bins[key] ?? (count: 0, r: 0, g: 0, b: 0)
+                bins[key] = (old.count + 1, old.r + r, old.g + g, old.b + b)
+            }
+        }
+        guard let best = bins.max(by: { $0.value.count < $1.value.count })?.value,
+              best.count >= 8 else { return nil }
+        let rgb = UInt32((best.r / best.count) * 65536 + (best.g / best.count) * 256 + best.b / best.count)
+        let light = Self.luminance(rgb)
+        return (max(light, bg) + 0.05) / (min(light, bg) + 0.05) >= 4.5 ? rgb : nil
     }
 }
 
@@ -223,6 +257,26 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
         }
     }
 
+    // Only split columns when a clear vertical gutter spans all text.
+    private static func columnOrder(_ rows: [VNRecognizedTextObservation]) -> [VNRecognizedTextObservation] {
+        guard rows.count >= 4 else { return rows }
+        let sorted = rows.sorted { $0.boundingBox.minX < $1.boundingBox.minX }
+        var edge = sorted[0].boundingBox.maxX
+        var split = 0
+        var largestGap: CGFloat = 0.045
+        for index in 1..<sorted.count {
+            let gap = sorted[index].boundingBox.minX - edge
+            if index >= 2, sorted.count - index >= 2, gap > largestGap {
+                largestGap = gap; split = index
+            }
+            edge = max(edge, sorted[index].boundingBox.maxX)
+        }
+        guard split > 0 else { return rows }
+        let boundary = sorted[split].boundingBox.minX
+        return columnOrder(rows.filter { $0.boundingBox.minX < boundary }) +
+               columnOrder(rows.filter { $0.boundingBox.minX >= boundary })
+    }
+
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let now = ProcessInfo.processInfo.systemUptime
         let wholeImage = region == CGRect(x: 0, y: 0, width: 1, height: 1)
@@ -250,28 +304,36 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
         request.regionOfInterest = CGRect(x: region.minX, y: 1 - region.maxY, width: region.width, height: region.height)
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up).perform([request])
-            let observations = (request.results ?? []).sorted {
-                $0.boundingBox.midY > $1.boundingBox.midY
+            let rows = (request.results ?? []).sorted {
+                if abs($0.boundingBox.midY - $1.boundingBox.midY) < 0.00001 {
+                    return $0.boundingBox.minX < $1.boundingBox.minX
+                }
+                return $0.boundingBox.midY > $1.boundingBox.midY
             }
+            let observations = wholeImage ? Self.columnOrder(rows) : rows
             var blocks: [GLCameraBlock] = []
             let palette = wholeImage ? GLCameraPalette(cg) : nil
             var remaining = 1200
             for observation in observations.prefix(20) {
-                guard let line = observation.topCandidates(1).first?.string, !line.isEmpty,
-                      remaining > 0 else { continue }
+                guard let recognized = observation.topCandidates(1).first,
+                      !recognized.string.isEmpty, remaining > 0,
+                      !wholeImage || recognized.confidence >= 0.30 else { continue }
+                let line = recognized.string
                 let box = observation.boundingBox
                 let text = wholeImage ? String(line.prefix(remaining)).split(whereSeparator: { $0.isWhitespace }).joined(separator: " ") : String(line.prefix(remaining))
                 remaining -= text.count + 1
                 let rect = CGRect(x: box.minX, y: 1 - box.maxY, width: box.width, height: box.height)
                 let angle = atan2(Double(observation.topLeft.y - observation.topRight.y) * Double(cg.height),
                                   Double(observation.topRight.x - observation.topLeft.x) * Double(cg.width))
+                let background = palette?.background(for: rect) ?? 0
                 var block = GLCameraBlock(text: text, rect: rect, angle: angle,
-                                          background: palette?.background(for: rect) ?? 0)
+                                          background: background, ink: palette?.ink(for: rect, background: background))
                 // Merge adjacent, similarly styled horizontal lines into sentences.
                 // Keep columns, separate colors and tilted lines independent.
                 if wholeImage, let previous = blocks.last,
                    abs(previous.angle) < 0.12, abs(block.angle) < 0.12,
-                   GLCameraPalette.similar(previous.background, block.background) {
+                   GLCameraPalette.similar(previous.background, block.background),
+                   previous.ink == nil || block.ink == nil || GLCameraPalette.similar(previous.ink!, block.ink!) {
                     let lineHeight = previous.rect.height / CGFloat(previous.lineCount)
                     let gap = rect.minY - previous.rect.maxY
                     let overlap = min(rect.maxX, previous.rect.maxX) - max(rect.minX, previous.rect.minX)
@@ -281,7 +343,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                        abs(rect.minX - previous.rect.minX) <= lineHeight * 0.8 {
                         block = GLCameraBlock(text: previous.text + " " + text,
                                               rect: previous.rect.union(rect), background: previous.background,
-                                              lineCount: previous.lineCount + 1)
+                                              ink: previous.ink ?? block.ink, lineCount: previous.lineCount + 1)
                         blocks.removeLast()
                     }
                 }
@@ -293,7 +355,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                     if width > 0, height > 0 {
                         let oriented = CGRect(x: rect.midX - CGFloat(width) / 2, y: rect.midY - CGFloat(height) / 2,
                                               width: CGFloat(width), height: CGFloat(height))
-                        block = GLCameraBlock(text: text, rect: oriented, angle: angle, background: block.background)
+                        block = GLCameraBlock(text: text, rect: oriented, angle: angle, background: block.background, ink: block.ink)
                     }
                 }
                 blocks.append(block)
@@ -411,7 +473,7 @@ private final class GLCameraState: ObservableObject {
         overlays = currentBlocks.enumerated().compactMap { index, block in
             guard let text = overlayCache[block.text], !text.isEmpty else { return nil }
             return GLCameraOverlay(id: index, rect: block.rect, text: text, angle: block.angle,
-                                   background: block.background, lineCount: block.lineCount)
+                                   background: block.background, ink: block.ink, lineCount: block.lineCount)
         }
     }
 
@@ -893,7 +955,7 @@ struct GameLingoCameraScreen: View {
                     ForEach(state.overlays) { overlay in
                         Text(overlay.text)
                             .font(.system(size: max(1, proxy.size.height * overlay.rect.height / CGFloat(overlay.lineCount) * 0.83)))
-                            .foregroundStyle(GLCameraPalette.foreground(overlay.background))
+                            .foregroundStyle(overlay.ink.map { GLCameraPalette.color($0) } ?? GLCameraPalette.foreground(overlay.background))
                             .minimumScaleFactor(0.18)
                             .lineLimit(max(1, overlay.lineCount + 1))
                             .multilineTextAlignment(.leading)
