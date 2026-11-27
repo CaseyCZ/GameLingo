@@ -54,7 +54,18 @@ def main():
         gradle=upstream/"app/build.gradle.kts"
         g=gradle.read_text(encoding="utf8")
         g=one(g,'dependencies {','dependencies {\n    implementation("com.journeyapps:zxing-android-embedded:4.3.0")',"mobile QR scanner dependency")
+        # Standalone camera is compiled only into the mobile APK.
+        g=one(g,'dependencies {','dependencies {\n    implementation("androidx.activity:activity:1.8.2")\n    implementation("androidx.camera:camera-core:1.3.4")\n    implementation("androidx.camera:camera-camera2:1.3.4")\n    implementation("androidx.camera:camera-lifecycle:1.3.4")',"mobile camera dependencies")
         gradle.write_text(g,encoding="utf8")
+        module=Path(__file__).with_name("GameLingoCameraActivity.kt")
+        (folder/module.name).write_text(module.read_text(encoding="utf8"),encoding="utf8")
+        manifest=upstream/"app/src/main/AndroidManifest.xml"
+        m=manifest.read_text(encoding="utf8")
+        if 'android.permission.CAMERA' not in m:
+            m=one(m,'    <application','    <uses-permission android:name="android.permission.CAMERA"/>\n    <application',"mobile camera permission")
+        m=one(m,'    <application','    <uses-feature android:name="android.hardware.camera" android:required="false"/>\n    <application',"optional camera hardware")
+        m=one(m,'    </application>','        <activity android:name=".GameLingoCameraActivity" android:exported="false" android:screenOrientation="portrait"/>\n    </application>',"mobile camera activity")
+        manifest.write_text(m,encoding="utf8")
         code=one(code,'class MainActivity : Activity() {', '''class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
         if (GameLingoQRScanner.result(this, requestCode, resultCode, data)) return
@@ -81,7 +92,8 @@ def main():
                     connectXbox = { ukazPripojeniXbox() },
                     connectPlayStation = { ukazPripojeni() },
                     connectTV = { vyberVystupTv() },
-                    finished = { ukazHlavni() })
+                    finished = { ukazHlavni() },
+                    connectCamera = { GameLingoCameraActivity.open(this) })
             }
         }''',
             "mobile first-run wizard"

@@ -32,6 +32,18 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("(cameraSelected || consoleRegistered) && televisionPaired", setup)
         self.assertIn("GameLingoCameraScreen(model: model)", home)
         self.assertIn("guard !isRunning, verifiedTelevisionOutput", model)
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        first_run = code(TOOLS/"GameLingoFirstRun.kt")
+        wire = code(TOOLS/"wire_android_devices.py")
+        self.assertIn("STRATEGY_KEEP_ONLY_LATEST", android)
+        self.assertIn("Prekladac(this, to, from)", android)
+        self.assertIn("Manifest.permission.CAMERA", android)
+        self.assertNotIn("RECORD_AUDIO", android)
+        self.assertIn("override fun onStop() { releaseCamera();", android)
+        self.assertIn("if (consoleChoice == 2) connectCamera()", first_run)
+        self.assertIn("GameLingoCameraActivity.open(this)", wire)
+        self.assertIn("GameLingoCameraActivity.open(this)", code(TOOLS/"redesign_gamelingo.py"))
+        self.assertIn('android:exported="false"', wire)
 
     def test_reset_defaults_preserves_profiles_and_pairing(self):
         ios_model = code(IOS/"PlayCaptionIOSApp.swift")
