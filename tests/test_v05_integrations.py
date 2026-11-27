@@ -156,10 +156,13 @@ class GameLingoIntegrationContracts(unittest.TestCase):
 
     def test_mode_page_groups_ocr_translation_and_areas(self):
         home = code(IOS/"GameLingoHome.swift")
-        mode = home.split('.sheet(isPresented: $modeSheet)', 1)[1].split('.sheet(isPresented: $appearanceSheet)', 1)[0]
+        sheet = home.split('.sheet(isPresented: $modeSheet)', 1)[1].split('.sheet(isPresented: $appearanceSheet)', 1)[0]
+        self.assertIn("GameLingoTranslationModeView(model: model)", sheet)
+        settings = code(IOS/"SettingsHomeView.swift")
+        mode = settings.split("struct GameLingoTranslationModeView:", 1)[1].split("struct GameLingoLanguageSettingsView:", 1)[0]
         for marker in ("GLTranslationModePicker", "GameLingoOCRSettingsView",
                        "GameLingoTranslationSettingsView", "GLAutomaticZonesView",
-                       "SubtitleSettingsView", "$modeRegionsSheet"):
+                       "SubtitleSettingsView", "$showRegions"):
             self.assertIn(marker, mode)
         android = code(TOOLS/"GameLingoAutomaticConfig.kt")
         mode = android.split("fun mode(a:", 1)[1].split("fun modePicker(", 1)[0]

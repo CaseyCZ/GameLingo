@@ -219,6 +219,37 @@ struct GameLingoSettingsOverview: View {
     }
 }
 
+struct GameLingoTranslationModeView: View {
+    @ObservedObject var model: CaptionAppModel
+    @State private var showRegions = false
+
+    var body: some View {
+        GLScreen(title: "Režim překladu", help:
+            "Standardní režim používá ověřené oblasti. Automatický režim rozpoznává dialogy v aktivních zónách. Režim měň před spuštěním překladu.") {
+            GLTranslationModePicker(model: model, showTitle: false)
+            NavigationLink {
+                GameLingoOCRSettingsView(model: model)
+            } label: {
+                GLDetailRow(icon: "slider.horizontal.3", title: "Pokročilé nastavení OCR", detail: "Citlivost, režim a filtrování textu")
+            }.buttonStyle(.plain)
+            NavigationLink {
+                GameLingoTranslationSettingsView(model: model)
+            } label: {
+                GLDetailRow(icon: "character.book.closed.fill", title: "Překlad", detail: "Časování a aktuálnost titulků")
+            }.buttonStyle(.plain)
+            Button { showRegions = true } label: {
+                GLDetailRow(icon: "rectangle.dashed", title: "Oblasti obrazovky",
+                            detail: model.automaticGameDialogue ? GLInterfaceText.localized("Aktivní zóny:") + " " + String(model.automaticZones.filter(\.enabled).count) : "Standardní oblasti")
+            }.buttonStyle(.plain)
+        }
+        .sheet(isPresented: $showRegions) {
+            if model.automaticGameDialogue {
+                NavigationStack { GLAutomaticZonesView(model: model) }
+            } else { SubtitleSettingsView(model: model) }
+        }
+    }
+}
+
 struct GameLingoLanguageSettingsView: View {
     @ObservedObject var model: CaptionAppModel
 
