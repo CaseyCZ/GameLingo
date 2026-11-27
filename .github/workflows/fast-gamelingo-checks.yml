@@ -1,14 +1,6 @@
 name: GameLingo • quick regression checks
 
 on:
-  push:
-    branches: [feature/ocr-lab]
-    paths:
-      - 'ios/**'
-      - 'tools/**'
-      - 'tests/**'
-      - 'shared/**'
-      - '.github/workflows/fast-gamelingo-checks.yml'
   pull_request:
     branches: [Master]
     paths:

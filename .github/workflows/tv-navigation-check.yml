@@ -1,22 +1,5 @@
 name: Google TV navigation checks
 on:
-  push:
-    branches: [feature/ocr-lab]
-    paths:
-      - 'tools/tv_navigation.py'
-      - 'tools/direct_tv_mode.py'
-      - 'tools/redesign_gamelingo.py'
-      - 'tools/polish_all_screens.py'
-      - 'tools/GameLingoLanguages.kt'
-      - 'tools/GameLingoVisualKit.kt'
-      - 'tools/GameLingoAbout.kt'
-      - 'tools/GameLingoSettings.kt'
-      - 'tools/GameLingoHelp.kt'
-      - 'tools/GameLingoDirectTVLayout.kt'
-      - 'tools/GameLingoTVSettings.kt'
-      - 'tools/GameLingoTVUi.kt'
-      - 'tools/verify_tv_navigation.py'
-      - '.github/workflows/tv-navigation-check.yml'
   workflow_dispatch:
 permissions:
   contents: read

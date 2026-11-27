@@ -1,2 +1,0 @@
--r requirements.txt
-argostranslate>=1.9,<2

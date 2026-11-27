@@ -1,5 +1,0 @@
-.gradle/
-**/build/
-app/src/androidTest/assets/
-results/
-local.properties

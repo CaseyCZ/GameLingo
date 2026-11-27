@@ -1,78 +1,40 @@
-<h1 align="center">🎮 GameLingo</h1>
+# GameLingo
 
-<p align="center"><strong>Hraj. Rozuměj. Užij si celý příběh.</strong></p>
+**Hraj. Rozuměj. Užij si celý příběh.**
 
-<p align="center">
-  Hraješ hru bez českých titulků? GameLingo ti pomůže porozumět dialogům,
-  rozhovorům i důležitým herním textům.<br>
-  Český překlad můžeš sledovat přímo na obrazovce při hraní.
-</p>
+GameLingo překládá herní titulky a texty v reálném čase. Rozpozná text z obrazu (OCR) a zobrazí překlad na telefonu nebo kompatibilní televizi, bez zásahu do hry.
 
-<p align="center">
-  <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>📦 DOSAVADNÍ VYDÁNÍ</strong></a>
-  &nbsp;·&nbsp;
-  <a href="#-co-gamelingo-umí">✨ FUNKCE</a>
-  &nbsp;·&nbsp;
-  <a href="https://github.com/CaseyCZ/GameLingo/issues">💬 NÁPADY A ZPĚTNÁ VAZBA</a>
-</p>
+[**Stáhnout GameLingo**](https://github.com/CaseyCZ/GameLingo/releases) · [Nahlásit chybu nebo navrhnout funkci](https://github.com/CaseyCZ/GameLingo/issues)
 
-<p align="center">🎮 Xbox a PlayStation &nbsp;·&nbsp; 📱 iPhone a Android &nbsp;·&nbsp; 📺 Google TV / Android TV</p>
+## Funkce
 
----
+- Standardní a automatické rozpoznávání textu, nastavitelné oblasti OCR.
+- Překlad dialogů a herních textů do češtiny, slovenštiny a dalších jazyků.
+- Nastavení vzhledu a pozice titulků, herní profily a vlastní slovníky.
+- Párování telefonu a TV, překlad na telefonu nebo přímo na kompatibilní TV.
+- Rozhraní v češtině, slovenštině a angličtině.
 
-## 🌍 Hry bez jazykové bariéry
+## Platformy
 
-Oblíbená hra nemá českou lokalizaci? **GameLingo překládá anglické titulky a texty do češtiny**, aby ti neunikly důležité rozhovory, dějové zvraty ani možnosti, které ti hra nabízí.
+| Platforma | Stav |
+| --- | --- |
+| Xbox Series X/S a Xbox One | Remote Play přes telefon |
+| iPhone | Vývojová IPA, vyžaduje podpis |
+| Android | Vývojová APK |
+| Google TV / Android TV | Vývojová APK, příjem titulků z telefonu a OCR podporovaného obrazu |
+| PlayStation 4/5 | Experimentální integrace, fyzické ověření čeká |
+| PC | Plánované rozšíření |
 
-Hraješ dál jako obvykle. Překlad se zobrazuje samostatně a do samotné hry nemusíš nic instalovat.
+## Jak začít
 
-## ✨ Co GameLingo umí?
+Nainstaluj aplikaci, vyber konzoli nebo režim TV, nastav jazyky a oblasti titulků a spusť překlad. Při výstupu z telefonu na TV spáruj obě zařízení ve stejné důvěryhodné domácí síti.
 
-- 💬 **České titulky při hraní** – sleduj rozhovory a užij si příběh i bez oficiální češtiny.
-- 📝 **Překlad herních textů** – rozuměj zprávám, dopisům, nabídkám a možnostem odpovědí.
-- 📺 **Titulky přímo na televizi** – český překlad přes obraz hry na podporované Google TV / Android TV.
-- 🎯 **Titulky podle tebe** – uprav si polohu, velikost a umístění přeložených textů.
-- 🎨 **Samostatné oblasti** – nastav zvlášť dialogy a překlad herních textů.
-- 🎮 **Profily her** – ulož si vlastní nastavení pro různé hry.
-- 🔗 **Snadné propojení** – telefon a TV spáruješ jednoduchým kódem.
+GameLingo je ve vývoji. Verze 0.5.4 je kandidát, nikoliv potvrzené stabilní vydání. Skutečná kompatibilita závisí na zařízení a zdroji obrazu; chráněný obsah může být pro OCR nepřístupný. Aplikace nepřekládá zvuk ani mikrofon.
 
-## 🎮 Kde můžeš hrát?
+**Soukromí:** OCR probíhá na zařízení; online překlad může odesílat rozpoznaný text externím poskytovatelům. Místní cache lze vypnout a vymazat. Titulky při přenosu na TV nejsou šifrovány. TV neobsahuje offline překladový model. Nepoužívej aplikaci pro citlivý text.
 
-| Platforma | GameLingo |
-| :--- | :--- |
-| **Xbox Series X/S a Xbox One** | Překlad přes iPhone a Android. |
-| **PlayStation 5 a PlayStation 4** | Vývojové implementace pro iPhone, Android a Google TV; fyzické testy čekají. |
-| **iPhone** | Vývojová IPA pro Xbox, PlayStation a výstup na TV; vyžaduje podpis. |
-| **Android telefon** | Vývojová APK pro Xbox a PlayStation; online překlad, lokální cache a mobilní offline záloha Google ML Kit (po stažení modelů přes Wi-Fi; vyžaduje fyzické ověření). |
-| **Google TV / Android TV** | Vývojová APK: přijímač z telefonu nebo vlastní OCR a online překlad, bez offline modelu. |
-| **PC** | Možné rozšíření do budoucna. |
+## Licence
 
-## 🚀 Jak to funguje?
+Open source · [GNU AGPL-3.0](LICENSE) · [Původ projektu](ATTRIBUTION.md) · [Licence třetích stran](THIRD_PARTY_NOTICES.md).
 
-1. **Spustíš hru** na své konzoli.
-2. **Propojíš telefon** a případně televizi s GameLingo.
-3. **Zapneš překlad** a hraješ dál – s českými titulky.
-
-## 💙 GameLingo vzniká
-
-GameLingo je nový projekt s vlastním vzhledem v **modrobílém stylu CaseyCZ**. Navazujeme na funkční základ, který jsme již vyzkoušeli při skutečném hraní, a postupně připravujeme nové aplikace pro telefon i televizi.
-
-**GameLingo je ve vývoji.** Tato vývojová větev připravuje verzi 0.5.2, nástupce dosavadního vydání 0.5.1; není schváleným veřejným vydáním. Viz [řízení vydání](docs/RELEASE_CONTROL.md) a [aktuální stav](docs/STATUS-0.5.md). Dostupné starší instalátory najdeš v Releases. Fyzické testy, bezpečnostní a licenční podmínky zůstávají otevřené.
-
-- [Aktuální stav a podporované funkce](docs/STATUS-0.5.md)
-- [Návod pro testery (iPhone / Android / TV)](docs/USER-GUIDE-0.5.md)
-- [Informace o soukromí – pracovní návrh](docs/PRIVACY-0.5.md)
-
-Pro překlad z telefonu na TV je potřeba kompatibilní překryv a párování v důvěryhodné domácí síti. Nové QR i ruční párování 0.5.2 používá jednorázový 128bitový kód (32 znaků), který se neposílá po síti. Přenos titulků je podepsaný, nikoli šifrovaný. Pro nové párování aktualizuj obě zařízení. TV nemá samostatný offline překladač; OCR a online překlad zůstávají. Chráněné přehrávání (např. Netflix) může být pro OCR nepřístupné; podporu nelze slíbit. Samostatné TV OCR potřebuje systémový souhlas se snímáním. GameLingo nepřekládá zvuk ani mikrofon.
-
-<p align="center">
-  <a href="https://github.com/CaseyCZ/GameLingo/releases"><strong>⬇️ ZOBRAZIT VYDÁNÍ GAMELINGO</strong></a>
-</p>
-
----
-
-### 💬 Máš nápad, co vylepšit?
-
-[**Napiš svůj návrh nebo upozorni na chybu.**](https://github.com/CaseyCZ/GameLingo/issues) Každá zpětná vazba pomáhá GameLingo posouvat dál.
-
-<sub>GameLingo je nezávislý open-source projekt. Navazuje na [PlayCaption](https://github.com/AdamRuzick4/PlayCaption-app). Podrobnosti o původu a licenci najdeš v [ATTRIBUTION.md](ATTRIBUTION.md) a [LICENSE](LICENSE). Projekt není oficiálně spojený se Sony, Microsoftem ani Googlem.</sub>
+GameLingo navazuje na PlayCaption a není oficiální aplikací Microsoftu, Sony ani Googlu.

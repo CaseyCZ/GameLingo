@@ -19,4 +19,4 @@ GameLingo is an independent AGPL-3.0 project. See the accompanying project licen
 
 Xbox, PlayStation, Google TV and other marks belong to their respective owners. GameLingo is not sponsored by or affiliated with those owners.
 
-Online Google GTX, Microsoft Edge and MyMemory services are separate from library licenses. Authorization, attribution and service terms are not established by this notice. See docs/LICENSE-AND-PROVIDER-AUDIT.md. A test build is not a public distribution clearance.
+Online Google GTX, Microsoft Edge and MyMemory services are separate from library licenses. Authorization, attribution and service terms are not established by this notice. See the [historical provider audit](https://github.com/CaseyCZ/GameLingo/blob/0b9e7a3a03a4cab0fa7cf1c9a0def1b2910d2adf/docs/LICENSE-AND-PROVIDER-AUDIT.md). A test build is not a public distribution clearance.
