@@ -97,6 +97,11 @@ def redesign_mobile(s: str) -> str:
                     }.show()
             }, odsazeni(bottom = 17))
 
+            obsah.addView(GameLingoVisualKit.navigationTile(this,
+                "📷", GameLingoLanguages.ui(this, "Překlad kamerou")) {
+                GameLingoCameraActivity.open(this)
+            }, odsazeni(bottom = 12))
+
             val prvni = vodorovne()
             prvni.addView(GameLingoVisualKit.navigationTile(this,
                 "▣", GameLingoLanguages.ui(this, "Oblasti")) { openAreas() },

@@ -9,6 +9,7 @@ GameLingo is an independent AGPL-3.0 project. See the accompanying project licen
 | stasel/WebRTC | iOS | BSD-3-Clause wrapper; WebRTC and third-party notices must be checked against the actual framework; https://github.com/stasel/WebRTC |
 | Stream WebRTC Android 1.3.7 | Android / TV | Apache-2.0 wrapper, underlying WebRTC and third-party licenses; https://github.com/GetStream/webrtc-android |
 | AndroidX Core 1.13.1 | Android / TV | Apache-2.0; resolved dependencies require verification |
+| AndroidX Activity 1.8.2 and CameraX 1.3.4 | Android mobile only | Apache-2.0; https://developer.android.com/jetpack/androidx ; resolved dependencies and notices require verification |
 | ZXing 3.5.3 and JourneyApps 4.3.0 | Android, camera scanner mobile only | Apache-2.0; https://github.com/zxing/zxing ; https://github.com/journeyapps/zxing-android-embedded |
 | JSch 2.28.8 | Android / TV inherited dependency | BSD-family; preserve original JSch/JZlib/jBCrypt notices as applicable |
 | Mbed TLS 2.28.0 / Opus 1.5.2 | iOS native core | Apache-2.0 / BSD-family, exact source licenses and exceptions retained when available |

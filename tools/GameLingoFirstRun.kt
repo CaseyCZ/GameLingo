@@ -28,7 +28,8 @@ object GameLingoFirstRun {
         connectXbox: () -> Unit,
         connectPlayStation: () -> Unit,
         connectTV: () -> Unit,
-        finished: () -> Unit
+        finished: () -> Unit,
+        connectCamera: () -> Unit = {}
     ) {
         if (activity.isFinishing) return
         val cyan = Color.parseColor("#02D6FF")
@@ -101,7 +102,9 @@ object GameLingoFirstRun {
                 ).apply { bottomMargin = px(10) })
         }
 
-        fun consoleRegistered(): Boolean = if (consoleChoice == 0) {
+        fun consoleRegistered(): Boolean = if (consoleChoice == 2) {
+            true // camera does not need a registered console
+        } else if (consoleChoice == 0) {
             XboxUcet.prihlasen(activity) &&
                 !activity.getSharedPreferences("gamelingo_devices", Activity.MODE_PRIVATE)
                     .getString("selectedXboxId", null).isNullOrBlank()
@@ -156,6 +159,7 @@ object GameLingoFirstRun {
             when (open) {
                 1 -> connectXbox()
                 2 -> connectPlayStation()
+                0 -> if (consoleChoice == 2) connectCamera()
             }
         }
         redraw = {
@@ -258,7 +262,12 @@ object GameLingoFirstRun {
                         consoleChoice = 1
                         redraw()
                     }
-                    body.addView(TextView(activity).apply {
+                    item("📷  " + tr("Překlad kamerou"), consoleChoice == 2) {
+                        consoleChoice = 2
+                        tvChoice = 0
+                        redraw()
+                    }
+                    if (consoleChoice != 2) body.addView(TextView(activity).apply {
                         gravity = Gravity.CENTER
                         text = if (consoleRegistered())
                             tr("Vybraná konzole je uložená. Spojení ověříme při spuštění.")
@@ -274,7 +283,7 @@ object GameLingoFirstRun {
                         tvChoice = 1
                         redraw()
                     }
-                    body.addView(TextView(activity).apply {
+                    if (consoleChoice != 2) body.addView(TextView(activity).apply {
                         gravity = Gravity.CENTER
                         text = tr("Uložené zařízení neznamená aktivní Remote Play. Živé spojení a překlad se ověří až při spuštění.")
                         textSize = GameLingoVisualKit.sp(activity, 14f)

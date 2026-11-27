@@ -18,6 +18,41 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_independent_camera_source(self):
+        camera = code(IOS/"GameLingoCameraScreen.swift")
+        home = code(IOS/"GameLingoHome.swift")
+        setup = code(IOS/"GameLingoSetupView.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn("AVCaptureDevice.requestAccess(for: .video)", camera)
+        self.assertIn("alwaysDiscardsLateVideoFrames = true", camera)
+        self.assertIn("request.regionOfInterest", camera)
+        self.assertIn("model.translateCameraText", camera)
+        self.assertIn(".onDisappear { state.stop() }", camera)
+        self.assertNotIn("for: .audio", camera)
+        self.assertIn("(cameraSelected || consoleRegistered) && televisionPaired", setup)
+        self.assertIn("GameLingoCameraScreen(model: model)", home)
+        self.assertIn("guard !isRunning, verifiedTelevisionOutput", model)
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        first_run = code(TOOLS/"GameLingoFirstRun.kt")
+        wire = code(TOOLS/"wire_android_devices.py")
+        self.assertIn("STRATEGY_KEEP_ONLY_LATEST", android)
+        self.assertIn("Prekladac(this, to, from)", android)
+        self.assertIn("Manifest.permission.CAMERA", android)
+        self.assertNotIn("RECORD_AUDIO", android)
+        self.assertIn("override fun onStop() { releaseCamera();", android)
+        self.assertIn("if (consoleChoice == 2) connectCamera()", first_run)
+        self.assertIn("GameLingoCameraActivity.open(this)", wire)
+        self.assertIn("GameLingoCameraActivity.open(this)", code(TOOLS/"redesign_gamelingo.py"))
+        self.assertIn('android:exported="false"', wire)
+        for key in ("Překlad přes původní text", "Jazyk textu", "Šířka oblasti"):
+            self.assertIn(key, camera)
+            self.assertIn(key, android)
+        self.assertIn("lines.count != blocks.count", camera)
+        self.assertIn("lines.size == blocks.size", android)
+        self.assertIn("GameLingoTVPairing.connected(tv.ip)", android)
+        self.assertIn("Propojeni.Vysilac.cameraCaption", android)
+        self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
+
     def test_reset_defaults_preserves_profiles_and_pairing(self):
         ios_model = code(IOS/"PlayCaptionIOSApp.swift")
         reset = ios_model.split("func restoreDefaultSettings() {", 1)[1].split(

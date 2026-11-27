@@ -50,7 +50,7 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSRequiresIPhoneOS: true
-        NSCameraUsageDescription: "Fotoaparát slouží pouze k načtení dočasného párovacího QR kódu z GameLingo TV."
+        NSCameraUsageDescription: "Fotoaparát slouží k živému rozpoznávání textu a načtení párovacího QR kódu GameLingo TV."
         NSLocalNetworkUsageDescription: "Najde GameLingo TV v domácí síti a posílá do ní české titulky."
         UIRequiresPersistentWiFi: true
         UISupportedInterfaceOrientations:
