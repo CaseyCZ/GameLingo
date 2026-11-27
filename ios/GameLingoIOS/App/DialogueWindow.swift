@@ -13,7 +13,7 @@ struct DialogueWindow {
 
     mutating func render(source: String, translation: String, enabled: Bool, now: TimeInterval, previousCount: Int = 1) -> String {
         guard enabled, !translation.isEmpty else { reset(); return translation }
-        let key = source.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ").lowercased()
+        let key = source.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         entries.removeAll { now - $0.time > 12 || now < $0.time }
         if let last = entries.last, last.source == key ||
             (min(last.source.count, key.count) >= 8 && (last.source.hasPrefix(key + " ") || key.hasPrefix(last.source + " "))) {

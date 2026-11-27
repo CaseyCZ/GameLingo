@@ -51,6 +51,10 @@ struct OCRCadenceTests {
         _ = window.render(source: "2", translation: "B", enabled: true, now: 2, previousCount: 2)
         precondition(window.render(source: "3", translation: "C", enabled: true, now: 3, previousCount: 2) == "A\nB\nC")
         precondition(window.render(source: "4", translation: "D", enabled: true, now: 4, previousCount: 1) == "C\nD")
+        window.reset()
+        precondition(window.render(source: "Let us go.", translation: "Pojďme.", enabled: true, now: 1) == "Pojďme.")
+        precondition(window.render(source: "Let US go.", translation: "Pusťte NÁS.", enabled: true, now: 2) == "Pojďme.\nPusťte NÁS.")
+        precondition(window.render(source: "Let  US go.", translation: "Pusťte nás!", enabled: true, now: 3) == "Pojďme.\nPusťte nás!")
         print("OCRCadence: mode order, independent adaptive budget, fallback and yellow filter passed")
     }
 }

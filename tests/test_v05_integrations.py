@@ -102,6 +102,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                     "root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))"):
             self.assertIn(key, android)
 
+    def test_standalone_dialogue_absence_is_time_based(self):
+        capture = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        window = code(TOOLS/"GameLingoDialogueWindow.kt")
+        self.assertIn("if (storyMode) blankFrames >= 2 else dialogueAbsence.observeEmpty(now)", capture)
+        self.assertIn("if (confirmed && blankSince == 0L)", capture)
+        self.assertIn("return now - first >= 800L", window)
+        self.assertGreaterEqual(capture.count("dialogueAbsence.reset()"), 2)
+        self.assertIn("val key = GameLingoDialogueText.normalize(source)", window)
+
     def test_automatic_ocr_filters_ignored_lines_before_grouping(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         model = code(IOS/"PlayCaptionIOSApp.swift")

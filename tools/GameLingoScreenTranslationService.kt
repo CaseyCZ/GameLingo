@@ -159,6 +159,7 @@ class GameLingoScreenTranslationService : Service() {
     private val dialogueStability = StabilitaTextu()
     private var shown = ""
     private var blankFrames = 0
+    private val dialogueAbsence = GameLingoDialogueAbsence()
     private var darkFrames = 0
     private var width = 1280
     private var height = 540
@@ -467,6 +468,7 @@ class GameLingoScreenTranslationService : Service() {
         story.reset(); storyPage = null
         lastAttempt = ""; lastAttemptAt = 0L
         lastTextAt = 0; blankFrames = 0; blankSince = 0
+        dialogueAbsence.reset()
     }
     private fun setSource(value: String) {
         if (source != value) {
@@ -651,7 +653,11 @@ class GameLingoScreenTranslationService : Service() {
         val value = if (storyMode) raw.trim().take(240) else GameLingoDialogueText.normalize(raw)
         val now = SystemClock.elapsedRealtime()
         if (value.isBlank()) {
-            if (++blankFrames >= 2 && blankSince == 0L) {
+            blankFrames++
+            // Fast sampling alone must not turn a momentary OCR dropout into
+            // a new dialogue episode. Match the iOS monotonic 800 ms grace.
+            val confirmed = if (storyMode) blankFrames >= 2 else dialogueAbsence.observeEmpty(now)
+            if (confirmed && blankSince == 0L) {
                 blankSince = now
                 if (storyMode) story.zmizelo(++storySequence,now)
                 else { dialogueStability.reset(); hideAfterSourceGone() }
@@ -664,6 +670,7 @@ class GameLingoScreenTranslationService : Service() {
             return
         }
         blankFrames = 0; blankSince = 0; lastTextAt = now
+        dialogueAbsence.reset()
         if (storyMode) {
             if (value != candidate) {
                 candidate = value

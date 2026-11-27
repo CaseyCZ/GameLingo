@@ -12,7 +12,7 @@ internal class GameLingoDialogueWindow {
                              now: Long, contextKey: String, correction: Boolean = false, previousCount: Int = 1): String {
         if (!enabled || translation.isBlank()) { reset(); return translation }
         if (context != contextKey) { reset(); context = contextKey }
-        val key = source.trim().replace(Regex("\\s+"), " ").lowercase(java.util.Locale.ROOT)
+        val key = GameLingoDialogueText.normalize(source)
         entries.removeAll { now < it.at || now - it.at > 12000L }
         val last = entries.lastOrNull()
         if (last != null && (correction || last.source == key ||
@@ -30,5 +30,21 @@ internal class GameLingoDialogueWindow {
             }
         }
         return (previous.asReversed() + translation).joinToString("\n")
+    }
+}
+
+
+/** Two or more real empty reads spanning 800 ms, not skipped frames.
+ * A readable frame cancels the pending absence; explicit stop resets it. */
+internal class GameLingoDialogueAbsence {
+    private var since: Long? = null
+    fun reset() { since = null }
+    fun observeEmpty(now: Long): Boolean {
+        val first = since
+        if (first == null || now < first) {
+            since = now
+            return false
+        }
+        return now - first >= 800L
     }
 }

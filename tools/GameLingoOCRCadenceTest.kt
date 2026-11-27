@@ -4,6 +4,28 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GameLingoOCRCadenceTest {
+    @Test fun fastEmptyReadsDoNotEndDialoguePrematurely() {
+        val absence = GameLingoDialogueAbsence()
+        assertFalse(absence.observeEmpty(1000))
+        assertFalse(absence.observeEmpty(1100))
+        assertFalse(absence.observeEmpty(1799))
+        assertTrue(absence.observeEmpty(1800))
+        absence.reset()
+        assertFalse(absence.observeEmpty(2000))
+        absence.reset() // readable frame cancels disappearance
+        assertFalse(absence.observeEmpty(2800))
+        assertFalse(absence.observeEmpty(3000))
+        assertTrue(absence.observeEmpty(3600))
+        absence.reset()
+        assertFalse(absence.observeEmpty(5000))
+        assertFalse(absence.observeEmpty(4000)) // clock discontinuity
+    }
+    @Test fun previousDialoguePreservesCaseSensitiveSourceChanges() {
+        val window = GameLingoDialogueWindow()
+        assertEquals("Pojďme.", window.render("Let us go.", "Pojďme.", true, 1000, "A"))
+        assertEquals("Pojďme.\nPusťte NÁS.", window.render("Let US go.", "Pusťte NÁS.", true, 2000, "A"))
+        assertEquals("Pojďme.\nPusťte nás!", window.render("Let  US go.", "Pusťte nás!", true, 3000, "A"))
+    }
     @Test fun previousDialogueCountIsBounded() {
         val window = GameLingoDialogueWindow()
         window.render("1", "A", true, 1000, "A", previousCount = 2)
