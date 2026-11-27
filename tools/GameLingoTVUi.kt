@@ -111,8 +111,8 @@ object GameLingoTVUi {
             }.apply {
                 id = View.generateViewId()
                 gravity = Gravity.CENTER
-                textSize = 16f * tvScale(a)
-                minimumHeight = dp(a, 50)
+                textSize = 16f * menuScale(a)
+                minimumHeight = GameLingoVisualKit.dp(a, 50)
                 setPadding(dp(a, 14), dp(a, 7), dp(a, 14), dp(a, 7))
                 setTextColor(if (index == selected) Color.parseColor("#57EBA3") else Color.WHITE)
                 contentDescription = if (index == selected) "$label, " + GameLingoLanguages.ui(a, "vybráno") else label
@@ -123,7 +123,7 @@ object GameLingoTVUi {
         val scroll = ScrollView(a).apply { addView(rows) }
         body.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
             minOf(dp(a, 430), a.resources.displayMetrics.heightPixels * 55 / 100,
-                dp(a, 63 * labels.size)).coerceAtLeast(dp(a, 54))))
+                GameLingoVisualKit.dp(a, 63 * labels.size)).coerceAtLeast(dp(a, 54))))
         buttons.forEachIndexed { i, button ->
             button.nextFocusUpId = buttons.getOrNull(i-1)?.id ?: back.id
             button.nextFocusDownId = buttons.getOrNull(i+1)?.id ?: button.id
@@ -136,7 +136,11 @@ object GameLingoTVUi {
         dialog.setContentView(body)
         dialog.show()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout((a.resources.displayMetrics.widthPixels * .66f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        val screenWidth = a.resources.displayMetrics.widthPixels
+        val dialogWidth = if (isTV(a)) (screenWidth * .66f).toInt()
+            else minOf((screenWidth - GameLingoVisualKit.dp(a, 32)).coerceAtLeast(1),
+                GameLingoVisualKit.dp(a, 560))
+        dialog.window?.setLayout(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
         applyMenuFocus(a, body)
         (buttons.getOrNull(selected) ?: buttons.firstOrNull() ?: back).requestFocus()
     }
