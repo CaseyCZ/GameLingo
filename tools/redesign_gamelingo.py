@@ -660,8 +660,7 @@ def main():
     before='''        }.filter { it.text.count(Char::isLetter) >= 3 }
             .filter { (it.left + it.right) / 2f / sirka in 0.3f..0.7f }
             .filterNot { jeMenu(it.text) }'''
-    after='''        }.filter { it.text.count(Char::isLetter) >=
-                (if (GameLingoOCRConfig.mode == "street") 2 else 3) }
+    after='''        }.filter { GameLingoDialogueText.readableLine(it.text, GameLingoOCRConfig.mode == "street") }
             .filter { (it.left + it.right) / 2f / sirka in
                 (if (GameLingoOCRConfig.expandSearch &&
                      GameLingoOCRConfig.mode != "classic")

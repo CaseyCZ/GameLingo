@@ -541,15 +541,7 @@ def main():
         Path(__file__).with_name("GameLingoOCRCadenceTest.kt").read_text(encoding="utf8"),encoding="utf8")
     (folder/"GameLingoDialogueText.kt").write_text(
         Path(__file__).with_name("GameLingoDialogueText.kt").read_text(encoding="utf8"),encoding="utf8")
-    # The upstream line grouping previously discarded two-letter subtitles
-    # before the service's street-mode length gate could ever see them.
-    geometry = folder / "VyberTitulku.kt"
-    geometry_text = geometry.read_text(encoding="utf8")
-    geometry_text = once(geometry_text,
-        '}.filter { it.text.count(Char::isLetter) >= 3 }',
-        '}.filter { GameLingoDialogueText.readableLine(it.text, GameLingoOCRConfig.mode == "street") }',
-        geometry.name)
-    geometry.write_text(geometry_text, encoding="utf8")
+    # Dialogue geometry is patched once by redesign_gamelingo.py.
     (unit_dir/"GameLingoDialogueTextTest.kt").write_text(
         Path(__file__).with_name("GameLingoDialogueTextTest.kt").read_text(encoding="utf8"),encoding="utf8")
     (folder/"GameLingoFrameGate.kt").write_text(

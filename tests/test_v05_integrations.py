@@ -113,9 +113,11 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)", automatic)
 
     def test_short_dialogue_geometry_respects_selected_mode(self):
+        redesign = code(TOOLS/"redesign_gamelingo.py")
         wire = code(TOOLS/"wire_gamelingo_languages.py")
-        self.assertIn('geometry = folder / "VyberTitulku.kt"', wire)
-        self.assertIn('GameLingoDialogueText.readableLine(it.text, GameLingoOCRConfig.mode == "street")', wire)
+        self.assertIn('select=base/SRC/"VyberTitulku.kt"', redesign)
+        self.assertIn('GameLingoDialogueText.readableLine(it.text, GameLingoOCRConfig.mode == "street")', redesign)
+        self.assertNotIn('geometry = folder / "VyberTitulku.kt"', wire)
         self.assertIn("fun readableLine", code(TOOLS/"GameLingoDialogueText.kt"))
         self.assertIn("if text == accepted", code(IOS/"CaptionStability.swift"))
 
