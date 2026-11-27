@@ -409,7 +409,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                     torchPending = false
                     updateTorchButton()
                 }
-            }, ContextCompat.getMainExecutor(this))
+            }, ContextCompat.getMainExecutor(this@GameLingoCameraActivity))
             }
         }
         val header = LinearLayout(this).apply {
