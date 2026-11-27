@@ -98,6 +98,23 @@ class ReleaseLocalizationTests(unittest.TestCase):
                 }
                 self.assertEqual(untranslated, set(), "Missing common UI translations")
 
+    def test_phone_output_title_and_license_view(self):
+        home = text(IOS / "GameLingoHome.swift")
+        self.assertIn("name: GLInterfaceText.localized(devices.subtitleOutput.rawValue)", home)
+        self.assertNotIn("name: devices.subtitleOutput.rawValue", home)
+        for language, expected in (("cs", "Telefon"), ("en", "Phone"), ("sk", "Telefón")):
+            entries = json.loads(text(ROOT / "shared" / "locales" / f"{language}.json"))
+            self.assertEqual(entries["Telefon"], expected)
+        settings = text(IOS / "SettingsHomeView.swift")
+        self.assertIn("GameLingoNoticeBlocksView()", settings)
+        self.assertIn("ForEach(blocks.indices", settings)
+        self.assertIn("Text(verbatim: blocks[index])", settings)
+        self.assertIn("offsetBy: 1400", settings)
+        self.assertIn('Button("Zrušit", role: .cancel)', settings)
+        about = text(TOOLS / "GameLingoAbout.kt")
+        self.assertIn("takeIf { it.isNotBlank() }", about)
+        self.assertIn("Licence třetích stran na GitHubu", about)
+
     def test_ios_explicit_dynamic_localization_keys_exist(self):
         keys = set(catalog_keys(IOS / "en.lproj" / "Localizable.strings"))
         for name in ("GameLingoDevicesPanel.swift", "GameLingoXboxScreen.swift",

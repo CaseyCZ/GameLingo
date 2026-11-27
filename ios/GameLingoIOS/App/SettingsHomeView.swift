@@ -158,8 +158,8 @@ struct GameLingoSettingsOverview: View {
             .buttonStyle(.plain)
             .disabled(model.isRunning)
         }
-        .confirmationDialog("Obnovit výchozí nastavení?",
-                            isPresented: $showResetConfirmation, titleVisibility: .visible) {
+        .alert("Obnovit výchozí nastavení?", isPresented: $showResetConfirmation) {
+            Button("Zrušit", role: .cancel) {}
             Button("Obnovit nastavení", role: .destructive) {
                 model.restoreDefaultSettings()
             }
@@ -262,6 +262,58 @@ struct GameLingoLanguageSettingsView: View {
     }
 }
 
+// Keep each text layout bounded so large bundled license files remain readable.
+private struct GameLingoNoticeBlocksView: View {
+    private let blocks: [String]
+
+    init() {
+        guard let url = Bundle.main.url(forResource: "GameLingoNotices", withExtension: "txt"),
+              let contents = try? String(contentsOf: url, encoding: .utf8),
+              !contents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            blocks = []
+            return
+        }
+        var result: [String] = []
+        var start = contents.startIndex
+        while start < contents.endIndex {
+            let limit = contents.index(start, offsetBy: 1400, limitedBy: contents.endIndex) ?? contents.endIndex
+            let end: String.Index
+            if limit < contents.endIndex,
+               let newline = contents[start..<limit].lastIndex(of: "\n") {
+                end = contents.index(after: newline)
+            } else {
+                end = limit
+            }
+            result.append(String(contents[start..<end]))
+            start = end
+        }
+        blocks = result
+    }
+
+    var body: some View {
+        if blocks.isEmpty {
+            GLCard {
+                Text("Licenční soubor není v tomto sestavení dostupný.")
+                    .foregroundStyle(GLNeon.mist)
+            }
+        } else {
+            GLCard {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(blocks.indices, id: \.self) { index in
+                        Text(verbatim: blocks[index])
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct GameLingoLicenseView: View {
     @StateObject private var updates = GameLingoUpdateModel()
     @State private var showNotices = false
@@ -306,23 +358,9 @@ struct GameLingoLicenseView: View {
             NavigationStack {
                 GLScreen(title: "Licence třetích stran", help:
                     "Licenční oznámení jsou součástí aplikace. Pokud soubor chybí, lze zobrazit zveřejněné licence na GitHubu.") {
-                    GLCard {
-                        Text(verbatim: {
-                            guard let url = Bundle.main.url(forResource: "GameLingoNotices", withExtension: "txt"),
-                                  let contents = try? String(contentsOf: url, encoding: .utf8),
-                                  !contents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                                return GLInterfaceText.localized("Licenční soubor není v tomto sestavení dostupný.")
-                            }
-                            return contents
-                        }())
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                    }
                     Link("Licence třetích stran na GitHubu",
                          destination: URL(string: "https://github.com/CaseyCZ/GameLingo/blob/Master/THIRD_PARTY_NOTICES.md")!)
+                    GameLingoNoticeBlocksView()
                 }
 
             }

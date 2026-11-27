@@ -25,6 +25,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("guard !isRunning else { return }", reset)
         self.assertIn("setAutomaticGameDialogue(false)", reset)
         self.assertIn("updateAutomaticZones(AutomaticOCRZone.initial)", reset)
+        self.assertNotIn("appLanguage =", reset)
         for setting in ("ocrMode", "manualOCRBox", "choicesArea",
                         "phoneFontScale", "tvTextColor", "outputWidth"):
             self.assertIn(setting + " =", reset)
@@ -41,6 +42,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("RemotePlayService.aktivni", android_reset)
         self.assertIn("PrijemService.bezi", android_reset)
         self.assertIn("directTVBusy()", android_reset)
+        self.assertNotIn("Nastaveni(a).jazyk =", android_reset)
         self.assertNotIn("GameLingoScreenTranslationService", android_reset)
         for pref in ("gamelingo_automatic", "gamelingo_phone_subtitles",
                      "gamelingo_tv_local_style", "gamelingo_tv_parity"):

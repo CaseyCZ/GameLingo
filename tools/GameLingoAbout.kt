@@ -108,21 +108,21 @@ object GameLingoAbout {
             tr("Licence třetích stran"), tr("Číst bez internetu")) {
             val notices = runCatching {
                 activity.assets.open("GameLingoNotices.txt").bufferedReader(Charsets.UTF_8).use { it.readText() }
-            }.getOrNull()
-            if (tv) {
-                val body = TextView(activity).apply {
+            }.getOrNull()?.takeIf { it.isNotBlank() }
+            val body = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(link("Licence třetích stran na GitHubu",
+                    "https://github.com/CaseyCZ/GameLingo/blob/Master/THIRD_PARTY_NOTICES.md"))
+                addView(TextView(activity).apply {
                     text = notices ?: tr("Licenční soubor není v tomto sestavení dostupný.")
                     textSize = GameLingoVisualKit.sp(activity, 16f)
                     setTextColor(Color.WHITE)
                     isFocusable = true
                     setTextIsSelectable(true)
                     setPadding(pad(12),pad(8),pad(12),pad(8))
-                }
-                GameLingoTVUi.page(activity, tr("Licence třetích stran"), body)
-            } else android.app.AlertDialog.Builder(activity)
-                .setTitle(tr("Licence třetích stran"))
-                .setMessage(notices ?: tr("Licenční soubor není v tomto sestavení dostupný."))
-                .setPositiveButton(tr("Zavřít"), null).show()
+                })
+            }
+            GameLingoTVUi.page(activity, tr("Licence třetích stran"), body)
         }
         val sources = listOf(
             link("GameLingo na GitHubu", "https://github.com/CaseyCZ/GameLingo"),

@@ -81,7 +81,7 @@ final class CaptionAppModel: ObservableObject {
         guard !isRunning else { return }
         setAutomaticGameDialogue(false)
         updateAutomaticZones(AutomaticOCRZone.initial)
-        appLanguage = .systemDefault
+        // Interface language is independent of OCR and translation defaults.
         gameLanguage = .english
         targetLanguage = .systemDefault
         ocrMode = .classic

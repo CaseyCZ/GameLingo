@@ -391,7 +391,7 @@ struct GameLingoHome: View {
             } label: {
                 GameLingoDeviceRow(
                     icon: devices.subtitleOutput == .phone ? "smartphone" : "tv.fill",
-                    name: devices.subtitleOutput.rawValue,
+                    name: GLInterfaceText.localized(devices.subtitleOutput.rawValue),
                     subtitle: "",
                     connected: outputActuallyReady,
                     status: devices.subtitleOutput == .phone ? "Na telefonu" :

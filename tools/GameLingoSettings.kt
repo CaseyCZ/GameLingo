@@ -63,7 +63,7 @@ object GameLingoSettings {
         a.getSharedPreferences("gamelingo_languages",
             android.content.Context.MODE_PRIVATE).edit()
             .remove("game").remove("target").apply()
-        Nastaveni(a).jazyk = GameLingoLanguages.systemApp(a)
+        // Keep the user's selected interface language when resetting OCR.
         GameLingoTVUi.setMenuPercent(a, 100)
         GameLingoOCRConfig.reset(a)
         Volby.nacti(a)
