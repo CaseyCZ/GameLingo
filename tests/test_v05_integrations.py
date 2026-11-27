@@ -89,7 +89,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         android = code(TOOLS/"GameLingoCameraActivity.kt")
         for key in ("GLCameraPalette(cg)", "previous.text +", "previous.rect.union(rect)",
                     "overlay.ink.map { GLCameraPalette.color($0) } ?? GLCameraPalette.foreground(overlay.background)",
-                    ".background(GLCameraPalette.color(overlay.background))",
+                    "GLCameraPalette.color(overlay.background)",
                     ".rotationEffect(.radians(overlay.angle))",
                     "self.overlayCache[$0.text] == nil",
                     "wholeImage ? 0.35 : 0.45",
@@ -100,6 +100,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                     "Color.luminance(overlay.background)", "StaticLayout.Builder.obtain",
                     "canvas.rotate(overlay.angle", "if (region.full) 350L else 450L",
                     "root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))"):
+            self.assertIn(key, android)
+
+    def test_camera_reconstructs_only_supported_smooth_surfaces(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        for key in ("struct GLCameraSurface: Sendable", "func reconstructedSurface(for rect: CGRect",
+                    "(12...100).contains(variation)", "contrast(a) >= 4.5, contrast(b) >= 4.5",
+                    "guard agreement >= 8 else { return nil }", "abs(blocks[index].angle) < 0.06",
+                    "blocks[index].surface = palette.reconstructedSurface", "surface: block.surface",
+                    "if let surface = overlay.surface", "LinearGradient(colors:",
+                    "GLCameraPalette.color(overlay.background)"):
+            self.assertIn(key, ios)
+        for key in ("data class CameraSurface", "fun reconstructedSurface(bitmap: Bitmap",
+                    "distance(a, b) !in 12..100", "contrast(a) < 4.5f || contrast(b) < 4.5f",
+                    "if (agreement < 8) return null", "region.full && kotlin.math.abs(angle) < 3.44f",
+                    "reconstructedSurface(bitmap, rect, background, ink)", "block.ink, block.surface",
+                    "overlay.surface?.let", "android.graphics.LinearGradient(", "paint.shader = null"):
             self.assertIn(key, android)
 
     def test_camera_ink_confidence_and_reading_order(self):
