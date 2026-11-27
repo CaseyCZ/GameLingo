@@ -2120,7 +2120,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(marker,qr)
         self.assertNotIn('"/releases/latest"',qr)
         for marker in ("GameLingoMobileDownloads.show(this)", "Stáhnout aplikaci",
-                       "Spravovat zařízení", "dlazdiceTel.nextFocusDownId=stahnoutMobil.id",
+                       'GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Zařízení"))', "dlazdiceTel.nextFocusDownId=stahnoutMobil.id",
                        "dlazdiceTv.nextFocusDownId=spravaZarizeni.id"):
             self.assertIn(marker,wiring)
 
