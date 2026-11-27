@@ -11,6 +11,14 @@ class GameLingoAutomaticTrackerTest {
         assertFalse(GameLingoYellowOCRFilter.keepsAutomaticDialogue("speed limit",false,ignored))
         assertTrue(GameLingoYellowOCRFilter.keepsAutomaticDialogue("I pressed A to continue.",true,ignored))
     }
+    @Test fun automaticMinimumHeightUsesCropAndPreservesDefault(){
+        assertTrue(GameLingoYellowOCRFilter.meetsMinimumHeight(0, 0, 0))
+        assertFalse(GameLingoYellowOCRFilter.meetsMinimumHeight(9, 500, 2))
+        assertTrue(GameLingoYellowOCRFilter.meetsMinimumHeight(10, 500, 2))
+        assertFalse(GameLingoYellowOCRFilter.meetsMinimumHeight(0, 500, 2))
+        assertTrue(GameLingoYellowOCRFilter.meetsMinimumHeight(10, 500, 1))
+        assertFalse(GameLingoYellowOCRFilter.meetsMinimumHeight(10, 500, 5))
+    }
     @Test fun independentZonesAndStableTracks(){
         val t=GameLingoAutomaticTracker()
         val a=AutoBlock("One",AutoRect(.2f,.2f,.4f,.3f))

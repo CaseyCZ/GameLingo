@@ -121,6 +121,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(automatic.index("val lines = b.lines.filter"), automatic.index('val text=lines.joinToString'))
         self.assertIn("GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)", automatic)
 
+    def test_advanced_ocr_height_and_geometry_parity(self):
+        ui = code(TOOLS/"GameLingoOCRSettings.kt")
+        automatic = code(TOOLS/"GameLingoAutomaticOCR.kt")
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn("GameLingoLanguages.translationSettingsBusy()", ui)
+        reset = ui.split('action("Výchozí nastavení OCR"', 1)[1]
+        self.assertIn("GameLingoOCRConfig.reset(activity)", reset)
+        self.assertNotIn("OblastTitulku.oblast =", reset)
+        self.assertNotIn("setRegion(activity", reset)
+        self.assertIn("meetsMinimumHeight(it.boundingBox?.height() ?: 0, ch, minimumHeight)", automatic)
+        self.assertIn("minimumHeight: minBlueHeight", model)
+        section = pipeline.split("func recognizeAutomaticZone", 1)[1].split("func recognize(", 1)[0]
+        self.assertIn("request.minimumTextHeight", section)
+
     def test_short_dialogue_geometry_respects_selected_mode(self):
         redesign = code(TOOLS/"redesign_gamelingo.py")
         wire = code(TOOLS/"wire_gamelingo_languages.py")

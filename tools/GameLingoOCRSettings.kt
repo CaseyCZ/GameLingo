@@ -25,7 +25,8 @@ object GameLingoOCRSettings {
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
         GameLingoOCRConfig.load(activity)
         OblastTitulku.nacti(activity)
-        val canEdit = !RemotePlayService.aktivni
+        fun editable() = !GameLingoLanguages.translationSettingsBusy()
+        val canEdit = editable()
         val d: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val root = LinearLayout(activity).apply {
@@ -59,7 +60,7 @@ object GameLingoOCRSettings {
                 isFocusable = enabled
                 if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
                 alpha = if (enabled) 1f else 0.5f
-                setOnClickListener { if (enabled) run() }
+                setOnClickListener { if (enabled && editable()) run() }
             }
             card.addView(text(title, 17f, true))
             card.addView(text(detail, 13f).apply {
@@ -92,7 +93,7 @@ object GameLingoOCRSettings {
                 isChecked = active
                 isEnabled = available
                 isFocusable = available && !television
-                setOnCheckedChangeListener { _, value -> if (available) changed(value) }
+                setOnCheckedChangeListener { _, value -> if (available && editable()) changed(value) }
             }
             row.addView(switch)
             if(television) {
@@ -108,7 +109,7 @@ object GameLingoOCRSettings {
             "street" -> "Krátké dialogy · rychlý"
             else -> "Původní · stabilní"
         }
-        action("Režim OCR", title, canEdit) {
+        action("Modrá: režim OCR", title, canEdit) {
             val labels = arrayOf(
                 "Původní · stabilní",
                 "Automatický · vyvážený",
@@ -116,7 +117,8 @@ object GameLingoOCRSettings {
             ).map(::tr).toTypedArray()
             val keys = arrayOf("classic", "automatic", "street")
             if (GameLingoTVUi.isTV(activity)) {
-                GameLingoTVUi.select(activity, tr("Režim OCR"), labels, keys.indexOf(GameLingoOCRConfig.mode)) { index ->
+                GameLingoTVUi.select(activity, tr("Modrá: režim OCR"), labels, keys.indexOf(GameLingoOCRConfig.mode)) { index ->
+                    if (!editable()) return@select
                     GameLingoOCRConfig.setMode(activity, keys[index])
                     dialog.dismiss()
                     showPage(activity, onAreas, advanced)
@@ -124,9 +126,10 @@ object GameLingoOCRSettings {
                 return@action
             }
             AlertDialog.Builder(activity)
-                .setTitle(tr("Režim OCR"))
+                .setTitle(tr("Modrá: režim OCR"))
                 .setSingleChoiceItems(labels, keys.indexOf(GameLingoOCRConfig.mode)) {
                     picker, index ->
+                    if (!editable()) { picker.dismiss(); return@setSingleChoiceItems }
                     GameLingoOCRConfig.setMode(activity, keys[index])
                     picker.dismiss()
                     dialog.dismiss()
@@ -138,6 +141,7 @@ object GameLingoOCRSettings {
         val yellowModeIndex = yellowModes.indexOf(GameLingoOCRConfig.yellowOCRMode).coerceAtLeast(0)
         action("Žlutá: režim OCR", yellowLabels[yellowModeIndex], canEdit) {
             fun save(index: Int) {
+                if (!editable()) return
                 GameLingoOCRConfig.setYellowOCRMode(activity, yellowModes[index])
                 dialog.dismiss(); showPage(activity, onAreas, advanced)
             }
@@ -174,6 +178,7 @@ object GameLingoOCRSettings {
                 android.app.AlertDialog.Builder(activity).setTitle("$label: " + tr("Ignorované řádky"))
                     .setView(input).setNegativeButton(tr("Zrušit"), null)
                     .setPositiveButton(tr("Uložit")) { _, _ ->
+                        if (!editable()) return@setPositiveButton
                         GameLingoOCRConfig.setIgnoredLines(activity, yellow, input.text.toString())
                         dialog.dismiss(); showPage(activity, onAreas, advanced)
                     }.show()
@@ -182,6 +187,7 @@ object GameLingoOCRSettings {
         action("Modrá: minimální výška textu", if (GameLingoOCRConfig.minBlueHeight == 0) "Automaticky" else "${GameLingoOCRConfig.minBlueHeight} %", canEdit) {
             val labels = arrayOf(tr("Automaticky"), "1 %", "2 %", "3 %", "4 %", "5 %")
             fun save(index: Int) {
+                if (!editable()) return
                 GameLingoOCRConfig.setMinBlueHeight(activity, index)
                 dialog.dismiss(); showPage(activity, onAreas, advanced)
             }
@@ -193,6 +199,7 @@ object GameLingoOCRSettings {
         action("Žlutá: minimální výška textu", if (GameLingoOCRConfig.minYellowHeight == 0) "Automaticky" else "${GameLingoOCRConfig.minYellowHeight} %", canEdit) {
             val labels = arrayOf(tr("Automaticky"), "1 %", "2 %", "3 %", "4 %", "5 %")
             fun save(index: Int) {
+                if (!editable()) return
                 GameLingoOCRConfig.setMinYellowHeight(activity, index)
                 dialog.dismiss(); showPage(activity, onAreas, advanced)
             }
@@ -213,6 +220,7 @@ object GameLingoOCRSettings {
             GameLingoOCRConfig.setMinYellowHeight(activity, 0)
             dialog.dismiss(); showPage(activity, onAreas, advanced)
         }
+            add(text("Pouze přesná shoda celého řádku, bez ohledu na velikost písmen.", 13f))
         }
         toggle("Rozšířit hledání",
             "Při automatickém režimu zahrne širší část obrazu.",
@@ -234,6 +242,7 @@ object GameLingoOCRSettings {
                 canEdit && !OblastTitulku.rucne) {
                 GameLingoTVUi.select(activity,tr("Výchozí oblast"),GameLingoOCRConfig.regionLabels.map(::tr).toTypedArray(),
                     GameLingoOCRConfig.regionKeys.indexOf(GameLingoOCRConfig.region(activity))) { i ->
+                    if (!editable()) return@select
                     GameLingoOCRConfig.setRegion(activity,GameLingoOCRConfig.regionKeys[i])
                     dialog.dismiss();showPage(activity,onAreas,advanced)
                 }
@@ -247,11 +256,8 @@ object GameLingoOCRSettings {
         action("Výchozí nastavení OCR",
             "Obnovit původní režim, filtrování a automatické čtení.",
             canEdit) {
+            // Match iOS: OCR defaults do not overwrite the user's screen geometry.
             GameLingoOCRConfig.reset(activity)
-            GameLingoOCRConfig.setRegion(activity,"legacy")
-            OblastTitulku.rucne = false
-            OblastTitulku.oblast = OblastTitulku.VYCHOZI.copyOf()
-            OblastTitulku.uloz(activity)
             dialog.dismiss()
             showPage(activity, onAreas, advanced)
         }

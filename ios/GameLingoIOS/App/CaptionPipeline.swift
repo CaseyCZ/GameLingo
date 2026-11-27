@@ -159,7 +159,7 @@ actor CaptionPipeline {
     /// No OCR of pixels outside the selected zone and no unbounded task queue.
     func recognizeAutomaticZone(_ buffer: CVPixelBuffer, zones: [AutomaticOCRZone],
                                 gameLanguage: GLGameLanguage, filterMenus: Bool = true,
-                                ignoredLines: String = "") -> AutomaticZoneReading? {
+                                ignoredLines: String = "", minimumHeight: Int = 0) -> AutomaticZoneReading? {
         let ignored = OCRIgnoredLines.entries(ignoredLines)
         let enabled = zones.filter { $0.enabled && $0.valid }
         guard !enabled.isEmpty else { return nil }
@@ -187,6 +187,7 @@ actor CaptionPipeline {
             request.recognitionLevel = .accurate
             request.recognitionLanguages = [gameLanguage.visionIdentifier]
             request.usesLanguageCorrection = true
+            if minimumHeight > 0 { request.minimumTextHeight = Float(min(5, minimumHeight)) / 100 }
             do {
                 try VNImageRequestHandler(ciImage: local, options: [:]).perform([request])
                 lane.gate.recordSuccessfulRead(fingerprint, now: now)

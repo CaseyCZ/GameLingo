@@ -90,12 +90,14 @@ internal class GameLingoAutomaticOCR(
                     if(!alive()||!task.isSuccessful)return@addOnCompleteListener
                     val ignored = GameLingoOCRConfig.ignoredBlueEntries
                     val filterMenus = GameLingoOCRConfig.filterMenuText
+                    val minimumHeight = GameLingoOCRConfig.minBlueHeight
                     val blocks=task.result.textBlocks.mapNotNull { b ->
                         // Filter individual OCR lines before joining them, not the
                         // combined block: an ignored HUD label can share a block
                         // with genuine dialogue.
                         val lines = b.lines.filter {
-                            GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored)
+                            GameLingoYellowOCRFilter.keepsAutomaticDialogue(it.text, filterMenus, ignored) &&
+                                GameLingoYellowOCRFilter.meetsMinimumHeight(it.boundingBox?.height() ?: 0, ch, minimumHeight)
                         }
                         if (lines.isEmpty()) return@mapNotNull null
                         val box = if (lines.size == b.lines.size) b.boundingBox else {
