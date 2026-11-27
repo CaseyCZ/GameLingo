@@ -61,19 +61,22 @@ struct GameLingoTVSetupScreen: View {
                                     HStack(spacing: 12) {
                                         GLPlatformBadge(family: nil,
                                                         isTelevision: true, size: 46)
+                                            .frame(width: 72, alignment: .leading)
                                         VStack(alignment: .center, spacing: 3) {
                                             Text(record.name).font(.headline)
                                             Text(record.ipAddress)
                                                 .font(.caption.monospaced())
                                                 .foregroundStyle(GLStyle.muted)
                                         }
-                                        Spacer()
-                                        if selectedTelevision?.id == record.id {
-                                            Text(LocalizedStringKey(tv.receiverConnected ? "Připojeno" : "Vybraná"))
-                                                .font(.caption.weight(.semibold))
-                                                .foregroundStyle(tv.receiverConnected
-                                                                 ? GLStyle.green : GLNeon.cyan)
-                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .multilineTextAlignment(.center)
+                                        Text(LocalizedStringKey(tv.receiverConnected ? "Připojeno" : "Vybraná"))
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(tv.receiverConnected ? GLStyle.green : GLNeon.cyan)
+                                            .multilineTextAlignment(.trailing)
+                                            .opacity(selectedTelevision?.id == record.id ? 1 : 0)
+                                            .frame(width: 72, alignment: .trailing)
+                                            .accessibilityHidden(selectedTelevision?.id != record.id)
                                     }
                                     .padding(10)
                                     .background(GLNeon.panel,
@@ -201,11 +204,13 @@ private struct GameLingoTVPairingPanel: View {
                                             .font(.caption.monospaced())
                                             .foregroundStyle(GLNeon.mist)
                                     }
-                                    Spacer()
+                                    .frame(maxWidth: .infinity)
+                                    .multilineTextAlignment(.center)
                                     Image(systemName: selectedIP == device.ip
                                           ? "checkmark.circle.fill" : "chevron.right")
                                         .foregroundStyle(selectedIP == device.ip
                                                          ? GLStyle.green : GLNeon.mist)
+                                        .frame(width: 47, alignment: .trailing)
                                 }
                                 .padding(12)
                                 .background(GLNeon.panel,
@@ -245,6 +250,7 @@ private struct GameLingoTVPairingPanel: View {
                         .font(.system(size: 26))
                         .foregroundStyle(tv.receiverConnected
                                          ? GLStyle.green : GLNeon.cyan)
+                        .frame(width: 32, alignment: .leading)
                     VStack(alignment: .center, spacing: 3) {
                         Text(LocalizedStringKey(tv.receiverConnected ? "Přijímač připojen" :
                              tv.receiverPaired ? "Spárováno, čekám na TV" :
@@ -256,7 +262,9 @@ private struct GameLingoTVPairingPanel: View {
                                 .foregroundStyle(GLNeon.mist)
                         }
                     }
-                    Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    Color.clear.frame(width: 32, height: 1).accessibilityHidden(true)
                 }
                 GLPrimaryButton(title: "Načíst QR kód z TV", systemImage: "qrcode.viewfinder",
                                 disabled: isRunning) {

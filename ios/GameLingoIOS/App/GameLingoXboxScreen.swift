@@ -33,7 +33,9 @@ struct GameLingoXboxScreen: View {
                                     .font(.caption)
                                     .foregroundStyle(GLNeon.mist)
                             }
-                            Spacer()
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                            Color.clear.frame(width: 62, height: 1).accessibilityHidden(true)
                         }
                         .padding(15)
                     }
@@ -81,16 +83,12 @@ struct GameLingoXboxScreen: View {
                                                 .font(.caption)
                                                 .foregroundStyle(GLStyle.muted)
                                         }
-                                        Spacer()
-                                        if selectedXboxID == console.id {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .font(.title2)
-                                                .foregroundStyle(GLStyle.green)
-                                        } else {
-                                            Image(systemName: "circle")
-                                                .font(.title2)
-                                                .foregroundStyle(GLStyle.muted)
-                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .multilineTextAlignment(.center)
+                                        Image(systemName: selectedXboxID == console.id ? "checkmark.circle.fill" : "circle")
+                                            .font(.title2)
+                                            .foregroundStyle(selectedXboxID == console.id ? GLStyle.green : GLStyle.muted)
+                                            .frame(width: 44, alignment: .trailing)
                                     }
                                     .padding(13)
                                     .background(GLNeon.panel,

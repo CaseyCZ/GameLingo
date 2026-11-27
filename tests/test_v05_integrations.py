@@ -177,6 +177,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn("onStandardAreas =", source)
             self.assertIn("onLanguage =", source)
 
+    def test_pairing_cards_have_balanced_side_rails(self):
+        for name, markers in (
+            ("GameLingoSetupView.swift", (57, 32, 42)),
+            ("GameLingoTVSetupScreen.swift", (72, 47)),
+            ("GameLingoXboxScreen.swift", (44,)),
+            ("PlayStation/GameLingoPlayStationSetup.swift", (46, 44)),
+        ):
+            with self.subTest(screen=name):
+                source = code(IOS/name)
+                for width in markers:
+                    self.assertIn(f".frame(width: {width}, alignment: .trailing)", source)
+                self.assertIn(".frame(maxWidth: .infinity)", source)
+                self.assertIn(".multilineTextAlignment(.center)", source)
+        device_center = code(TOOLS/"GameLingoDeviceCenter.kt")
+        self.assertEqual(device_center.count("LinearLayout.LayoutParams(railSize, railSize)"), 2)
+        self.assertIn('android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.CENTER)', device_center)
+
     def test_centered_shared_menu_components(self):
         android = code(TOOLS/"GameLingoVisualKit.kt")
         tv = code(TOOLS/"GameLingoTVUi.kt")

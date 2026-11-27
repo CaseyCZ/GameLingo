@@ -178,14 +178,11 @@ struct GameLingoSetupView: View {
                                 .font(.caption)
                                 .foregroundStyle(GLNeon.mist)
                         }
-                        Spacer()
-                        if chosenFamily == family {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(GLStyle.green)
-                        } else {
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(GLStyle.muted)
-                        }
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+                        Image(systemName: chosenFamily == family ? "checkmark.circle.fill" : "chevron.right")
+                            .foregroundStyle(chosenFamily == family ? GLStyle.green : GLStyle.muted)
+                            .frame(width: 57, alignment: .trailing)
                     }
                     .padding(14)
                     .background(LinearGradient(
@@ -210,12 +207,15 @@ struct GameLingoSetupView: View {
                             HStack {
                                 Image(systemName: record.family.icon)
                                     .foregroundStyle(GLStyle.blue)
+                                    .frame(width: 32, alignment: .leading)
                                 Text(record.name).foregroundStyle(.white)
-                                Spacer()
-                                if devices.preferredConsoleID == record.id {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(GLStyle.green)
-                                }
+                                    .frame(maxWidth: .infinity)
+                                    .multilineTextAlignment(.center)
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(GLStyle.green)
+                                    .opacity(devices.preferredConsoleID == record.id ? 1 : 0)
+                                    .frame(width: 32, alignment: .trailing)
+                                    .accessibilityHidden(devices.preferredConsoleID != record.id)
                             }
                         }
                         .buttonStyle(.plain)
@@ -264,13 +264,16 @@ struct GameLingoSetupView: View {
                         Image(systemName: output == .phone ? "smartphone" : "tv.fill")
                             .font(.title2)
                             .foregroundStyle(GLStyle.blue)
+                            .frame(width: 42, alignment: .leading)
                         Text(LocalizedStringKey(output.rawValue))
                             .font(.headline).foregroundStyle(.white)
-                        Spacer()
-                        if devices.subtitleOutput == output {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(GLStyle.green)
-                        }
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(GLStyle.green)
+                            .opacity(devices.subtitleOutput == output ? 1 : 0)
+                            .frame(width: 42, alignment: .trailing)
+                            .accessibilityHidden(devices.subtitleOutput != output)
                     }
                     .padding(20)
                     .background(GLStyle.surface, in: RoundedRectangle(cornerRadius: 18))

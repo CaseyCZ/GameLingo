@@ -178,7 +178,11 @@ object GameLingoDeviceCenter {
                 header.addView(label(c, GameLingoLanguages.ui(c, "Konzole a zařízení"), 25f),
                     LinearLayout.LayoutParams(0,
                         ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                header.addView(GameLingoHelp.button(c, "console"), GameLingoHelp.layout(c))
+                header.addView(android.widget.FrameLayout(c).apply {
+                    addView(GameLingoHelp.button(c, "console"),
+                        android.widget.FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+                }, LinearLayout.LayoutParams(GameLingoVisualKit.dp(c, 48),
+                    GameLingoVisualKit.dp(c, 48)))
                 root.addView(header)
             }
         }

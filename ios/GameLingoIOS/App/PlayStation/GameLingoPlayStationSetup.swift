@@ -65,7 +65,9 @@ private struct GameLingoPSConnectionView: View {
                                     .font(.caption)
                                     .foregroundStyle(GLNeon.mist)
                             }
-                            Spacer()
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                            Color.clear.frame(width: 65, height: 1).accessibilityHidden(true)
                         }
                         .padding(15)
                     }
@@ -94,11 +96,13 @@ private struct GameLingoPSConnectionView: View {
                                         GLPlatformBadge(family: .playStation, size: 46)
                                         Text(console.nickname.isEmpty ? "PlayStation" : console.nickname)
                                             .foregroundStyle(.white)
-                                        Spacer()
-                                        if selectedRegistration?.id == console.id {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundStyle(GLStyle.green)
-                                        }
+                                            .frame(maxWidth: .infinity)
+                                            .multilineTextAlignment(.center)
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(GLStyle.green)
+                                            .opacity(selectedRegistration?.id == console.id ? 1 : 0)
+                                            .frame(width: 46, alignment: .trailing)
+                                            .accessibilityHidden(selectedRegistration?.id != console.id)
                                     }
                                     .padding(13)
                                     .background(GLNeon.panel,
@@ -123,9 +127,11 @@ private struct GameLingoPSConnectionView: View {
                                     HStack {
                                         GLPlatformBadge(family: .playStation, size: 44)
                                         Text(console.name)
-                                        Spacer()
+                                            .frame(maxWidth: .infinity)
+                                            .multilineTextAlignment(.center)
                                         Text(console.isPS5 ? "PS5" : "PS4")
                                             .font(.caption)
+                                            .frame(width: 44, alignment: .trailing)
                                     }
                                     .foregroundStyle(.white)
                                     .padding(12)
