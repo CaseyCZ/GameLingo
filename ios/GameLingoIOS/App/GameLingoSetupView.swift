@@ -165,7 +165,7 @@ struct GameLingoSetupView: View {
 
     private var consoleStep: some View {
         VStack(spacing: 13) {
-            Text("Vybrat zdroj").font(.headline)
+            Text("Vybrat zařízení").font(.headline)
             ForEach(GLConsoleFamily.allCases) { family in
                 Button {
                     cameraSelected = false

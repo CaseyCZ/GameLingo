@@ -1046,6 +1046,7 @@ object GameLingoLanguages {
         out["Vybrat konzoli "] = "Select console "
         out["Vybrat konzoli:"] = "Select console:"
         out["Vybrat profil"] = "Choose profile"
+        out["Vybrat zařízení"] = "Select device"
         out["Vybrat zdroj"] = "Select source"
         out["Vydání se nepodařilo ověřit · stránka všech vydání"] = "Could not verify release · all releases page"
         out["Vygeneruj nový PIN a ověř připojení k místní síti."] = "Generate a new PIN and check the local network connection."
@@ -1149,10 +1150,10 @@ object GameLingoLanguages {
         out["Zatím žádná"] = "None yet"
         out["Zatím žádná TV"] = "No TV yet"
         out["Zatím žádné profily"] = "No profiles yet"
-        out["Zatím žádné překlady."] = "No translations yet."
     }
 
     private fun fill_en_6(out: MutableMap<String, String>) {
+        out["Zatím žádné překlady."] = "No translations yet."
         out["Zatím žádný překlad ve volitelné historii."] = "No translation in optional history yet."
         out["Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR."] = "No translations in the optional history yet. Use Test OCR for a live preview."
         out["Zatím žádný spárovaný telefon."] = "No paired phones yet."
@@ -2298,6 +2299,7 @@ object GameLingoLanguages {
         out["Vybrat konzoli "] = "Vybrať konzolu "
         out["Vybrat konzoli:"] = "Vybrať konzolu:"
         out["Vybrat profil"] = "Vybrať profil"
+        out["Vybrat zařízení"] = "Vybrať zariadenie"
         out["Vybrat zdroj"] = "Vybrať zdroj"
         out["Vydání se nepodařilo ověřit · stránka všech vydání"] = "Vydanie sa nepodarilo overiť · stránka všetkých vydaní"
         out["Vygeneruj nový PIN a ověř připojení k místní síti."] = "Vygeneruj nový PIN a over pripojenie k miestnej sieti."
@@ -2401,10 +2403,10 @@ object GameLingoLanguages {
         out["Zatím žádná"] = "Zatiaľ žiadna"
         out["Zatím žádná TV"] = "Zatiaľ žiadna TV"
         out["Zatím žádné profily"] = "Zatiaľ žiadne profily"
-        out["Zatím žádné překlady."] = "Zatiaľ žiadne preklady."
     }
 
     private fun fill_sk_6(out: MutableMap<String, String>) {
+        out["Zatím žádné překlady."] = "Zatiaľ žiadne preklady."
         out["Zatím žádný překlad ve volitelné historii."] = "Zatiaľ žiadny preklad vo voliteľnej histórii."
         out["Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR."] = "Zatiaľ žiadny preklad vo voliteľnej histórii. Na živý náhľad použi Test OCR."
         out["Zatím žádný spárovaný telefon."] = "Zatiaľ žiadny spárovaný telefón."

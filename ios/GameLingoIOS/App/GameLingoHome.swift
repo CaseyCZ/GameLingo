@@ -92,7 +92,7 @@ struct GameLingoHome: View {
             GameLingoCameraScreen(model: model, devices: devices, receiver: model.tv)
                 .environment(\.locale, Locale(identifier: model.appLanguage.rawValue))
         }
-        .confirmationDialog("Vybrat zdroj", isPresented: $sourcePicker, titleVisibility: .visible) {
+        .confirmationDialog("Vybrat zařízení", isPresented: $sourcePicker, titleVisibility: .visible) {
             Button("Xbox") { selectConsoleSource(.xbox) }
             Button("PlayStation") { selectConsoleSource(.playStation) }
             Button("Kamera") { cameraSource = true }
@@ -293,7 +293,7 @@ struct GameLingoHome: View {
     }
 
     private var activeConsoleName: String {
-        cameraSource ? GLInterfaceText.localized("Kamera") : (devices.chosenConsole?.name ?? GLInterfaceText.localized("Vybrat zdroj"))
+        cameraSource ? GLInterfaceText.localized("Kamera") : (devices.chosenConsole?.name ?? GLInterfaceText.localized("Vybrat zařízení"))
     }
 
     private var activeConsoleStatus: String {

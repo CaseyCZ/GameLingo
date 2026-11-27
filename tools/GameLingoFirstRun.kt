@@ -256,7 +256,7 @@ object GameLingoFirstRun {
                 }
                 2 -> {
                     body.addView(TextView(activity).apply {
-                        text = tr("Vybrat zdroj"); gravity = Gravity.CENTER; setTextColor(Color.WHITE)
+                        text = tr("Vybrat zařízení"); gravity = Gravity.CENTER; setTextColor(Color.WHITE)
                         textSize = GameLingoVisualKit.sp(activity, 17f); typeface = Typeface.DEFAULT_BOLD
                     })
                     item("🎮  Xbox Remote Play", consoleChoice == 0) {

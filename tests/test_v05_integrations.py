@@ -56,6 +56,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("connectCamera", first_run)
         self.assertNotIn("connectCamera", wire)
         self.assertNotIn("cameraAfterSetup", home)
+        for source_ui in (home, setup, first_run, code(TOOLS/"redesign_gamelingo.py")):
+            self.assertIn("Vybrat zařízení", source_ui)
+        self.assertEqual(json.loads(code(ROOT/"shared/locales/en.json"))["Vybrat zařízení"], "Select device")
         self.assertNotIn('GLPrimaryButton(title: "Překlad kamerou"', home)
         self.assertNotIn('GLPrimaryButton(title: "Překlad kamerou"', setup)
         self.assertIn("GLPlatformBadge(family: nil, size: 57, isCamera: true)", setup)

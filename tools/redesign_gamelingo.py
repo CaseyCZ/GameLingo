@@ -77,18 +77,18 @@ def redesign_mobile(s: str) -> str:
                 "Camera" -> GameLingoLanguages.ui(this, "Kamera")
                 "Xbox" -> "Xbox"
                 "PlayStation" -> psSelected?.name ?: "PlayStation"
-                else -> GameLingoLanguages.ui(this, "Vybrat zdroj")
+                else -> GameLingoLanguages.ui(this, "Vybrat zařízení")
             }
             obsah.addView(GameLingoVisualKit.deviceCard(
                 this, primaryFamily, primaryName,
                 if (cameraSource) GameLingoLanguages.ui(this, "Připraveno ke spuštění")
                 else if (liveImage) GameLingoLanguages.ui(this, "Snímání aktivní")
                 else if (nejakaKonzole) GameLingoLanguages.ui(this, "Nastaveno · spojení ověřím při spuštění")
-                else GameLingoLanguages.ui(this, "Vybrat zdroj"),
+                else GameLingoLanguages.ui(this, "Vybrat zařízení"),
                 liveImage
             ) {
                 if (!RemotePlayService.aktivni) android.app.AlertDialog.Builder(this)
-                    .setTitle(GameLingoLanguages.ui(this, "Vybrat zdroj"))
+                    .setTitle(GameLingoLanguages.ui(this, "Vybrat zařízení"))
                     .setItems(arrayOf("Xbox", "PlayStation", GameLingoLanguages.ui(this, "Kamera"))) { _, index ->
                         selectSource(listOf("Xbox", "PlayStation", "Camera")[index])
                     }.show()
@@ -122,9 +122,9 @@ def redesign_mobile(s: str) -> str:
                     else GameLingoCameraActivity.open(this)
                 } else if (nejakaKonzole) prepniPreklad()
                 else android.app.AlertDialog.Builder(this)
-                    .setTitle(GameLingoLanguages.ui(this, "Kterou konzoli používáš?"))
-                    .setItems(arrayOf("PlayStation 5 / 4", "Xbox Series / One")) { _, vyber ->
-                        if (vyber == 0) ukazPripojeni() else ukazPripojeniXbox()
+                    .setTitle(GameLingoLanguages.ui(this, "Vybrat zařízení"))
+                    .setItems(arrayOf("Xbox", "PlayStation", GameLingoLanguages.ui(this, "Kamera"))) { _, index ->
+                        selectSource(listOf("Xbox", "PlayStation", "Camera")[index])
                     }.show()
             }, odsazeni(bottom = 17))
 
