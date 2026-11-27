@@ -1772,6 +1772,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                      '"none"', '"dark"', '"translucent"'):
             self.assertIn(item,style)
 
+    def test_ios_update_offer_uses_game_lingo_design(self):
+        home = code(IOS/"GameLingoHome.swift")
+        updates = code(IOS/"GameLingoUpdates.swift")
+        self.assertNotIn('.alert("Nová verze GameLingo"', home)
+        self.assertIn("GameLingoUpdateOffer(version: updates.available", home)
+        self.assertIn("accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer)", home)
+        self.assertIn("guard !model.isRunning, !updates.busy", home)
+        self.assertIn("GLNeonPanel(emphasized: true, radius: 24)", updates)
+        self.assertIn('GLPrimaryButton(title: "Stáhnout IPA"', updates)
+        self.assertIn(".accessibilityAddTraits(.isModal)", updates)
+
     def test_ios_update_ui_localization(self):
         import re
         updater = code(IOS/"GameLingoUpdates.swift")

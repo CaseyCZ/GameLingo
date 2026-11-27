@@ -75,7 +75,7 @@ struct GameLingoHome: View {
                 bottomTabs
             }
             .background(GLNeonBackground())
-            .accessibilityHidden(sourcePicker || outputPicker)
+            .accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer)
             .toolbar(.hidden, for: .navigationBar)
         }
         .tint(GLVisual.cyan)
@@ -95,7 +95,16 @@ struct GameLingoHome: View {
                 .environment(\.locale, Locale(identifier: model.appLanguage.rawValue))
         }
         .overlay {
-            if sourcePicker || outputPicker {
+            if showUpdateOffer {
+                GameLingoUpdateOffer(version: updates.available ?? "", onLater: {
+                    showUpdateOffer = false
+                }, onDownload: {
+                    showUpdateOffer = false
+                    guard !model.isRunning, !updates.busy, updates.available != nil else { return }
+                    tab = .about
+                    updates.download()
+                })
+            } else if sourcePicker || outputPicker {
                 selectionOverlay
             }
         }
@@ -105,17 +114,8 @@ struct GameLingoHome: View {
             if !open && !model.isRunning { updates.checkAtStartup(); offerUpdateIfReady() }
         }
         .onChange(of: model.isRunning) { _, running in
-            if !running && devices.completedSetup { updates.checkAtStartup(); offerUpdateIfReady() }
-        }
-        .alert("Nová verze GameLingo", isPresented: $showUpdateOffer) {
-            Button("Stáhnout IPA") {
-                tab = .about
-                updates.download()
-            }
-            Button("Později", role: .cancel) {}
-        } message: {
-            Text(verbatim: GLInterfaceText.localized("Nová verze:") + " " + (updates.available ?? "") +
-                "\n" + GLInterfaceText.localized("Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem."))
+            if running { showUpdateOffer = false }
+            else if devices.completedSetup { updates.checkAtStartup(); offerUpdateIfReady() }
         }
         .onAppear {
             devices.refreshXbox(model.xbox.consoles)

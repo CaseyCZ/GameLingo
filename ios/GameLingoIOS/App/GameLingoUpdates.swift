@@ -241,19 +241,78 @@ final class GameLingoUpdateModel: ObservableObject {
     func cancel() { task?.cancel() }
 }
 
+/// Same card, gradient and typography as the GameLingo device selector.
+struct GameLingoUpdateOffer: View {
+    let version: String
+    let onLater: () -> Void
+    let onDownload: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.72).ignoresSafeArea()
+                .accessibilityHidden(true)
+            ScrollView {
+                GLNeonPanel(emphasized: true, radius: 24) {
+                    VStack(spacing: 16) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 42, weight: .medium))
+                            .foregroundStyle(GLStyle.gradient)
+                            .accessibilityHidden(true)
+                        Text("Nová verze GameLingo")
+                            .font(.title3.bold())
+                            .foregroundStyle(.white)
+                            .accessibilityAddTraits(.isHeader)
+                        VStack(spacing: 6) {
+                            Text("Nová verze:")
+                                .font(.caption)
+                                .foregroundStyle(GLNeon.mist)
+                            Text(verbatim: version)
+                                .font(.title2.bold().monospacedDigit())
+                                .foregroundStyle(GLNeon.cyan)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(12)
+                        .background(GLStyle.surface, in: RoundedRectangle(cornerRadius: 14))
+                        Text("Nepodepsaná IPA: instalaci a podpis provádíš vlastním nástrojem.")
+                            .font(.footnote)
+                            .foregroundStyle(GLNeon.mist)
+                            .fixedSize(horizontal: false, vertical: true)
+                        GLPrimaryButton(title: "Stáhnout IPA", systemImage: "arrow.down.circle", disabled: false, action: onDownload)
+                        Button(action: onLater) {
+                            Text("Později")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(GLNeon.cyan)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(20)
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(4)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(maxWidth: 400)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(24)
+            .accessibilityAddTraits(.isModal)
+            .accessibilityAction(.escape, onLater)
+        }
+    }
+}
+
 struct GameLingoUpdatePanel: View {
     @ObservedObject var updates: GameLingoUpdateModel
     var running: Bool = false
     var body: some View {
         GLCard {
             GLHeader(title: "Aktualizace")
-            Button("Zkontrolovat aktualizace") { updates.check() }
-                .disabled(updates.busy || running)
+            GLPrimaryButton(title: "Zkontrolovat aktualizace", systemImage: "arrow.clockwise", disabled: updates.busy || running) { updates.check() }
             if let version = updates.available {
                 Text(verbatim: GLInterfaceText.localized("Nová verze:") + " " + version).font(.headline)
                 if !updates.notes.isEmpty { Text(updates.notes).font(.caption) }
-                Button("Stáhnout IPA") { updates.download() }
-                    .disabled(updates.busy || running)
+                GLPrimaryButton(title: "Stáhnout IPA", systemImage: "arrow.down.circle", disabled: updates.busy || running) { updates.download() }
             }
             if updates.busy {
                 ProgressView(value: updates.progress)
