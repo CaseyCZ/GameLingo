@@ -699,6 +699,8 @@ private final class GLCameraState: ObservableObject {
     private var currentBlocks: [GLCameraBlock] = []
     private var overlayMode = true
     private var retryAt: TimeInterval = 0
+    // Full-image failures must not block unrelated visible text.
+    private var blockRetryAt: [String: TimeInterval] = [:]
     private var lastTVSentAt: TimeInterval = 0
     private var running = false
     private var tvOutput = false
@@ -756,6 +758,7 @@ private final class GLCameraState: ObservableObject {
         revision += 1
         translationRequest += 1
         previousVisible.removeAll(); eligibleVisible.removeAll()
+        blockRetryAt.removeAll()
         task?.cancel(); task = nil
         candidate = ""; emptyFrames = 0; lastTranslated = ""; translation = ""; recognizedText = ""; translating = false
         translatedLines = []; currentBlocks = []; overlays = []; translationFailed = false
@@ -858,6 +861,7 @@ private final class GLCameraState: ObservableObject {
         eligibleVisible = previousVisible.isEmpty ? visible : visible.intersection(previousVisible)
         let sceneChanged = !previousVisible.isEmpty && visible.isDisjoint(with: previousVisible)
         previousVisible = visible
+        blockRetryAt = blockRetryAt.filter { visible.contains($0.key) && $0.value > ProcessInfo.processInfo.systemUptime }
         if sceneChanged {
             translationRequest += 1
             task?.cancel(); task = nil; translating = false; retryAt = 0
@@ -874,11 +878,13 @@ private final class GLCameraState: ObservableObject {
             translationRequest += 1
             task?.cancel(); task = nil; translating = false; retryAt = 0
             overlayCache.removeAll(); cacheOrder.removeAll(); overlaySource = source
+            blockRetryAt.removeAll()
         }
         publishVisibleBlocks()
         guard task == nil, ProcessInfo.processInfo.systemUptime >= retryAt,
               let model = self.model,
-              let block = blocks.first(where: { eligibleVisible.contains($0.text) && overlayCache[$0.text] == nil }) else { return }
+              let block = blocks.first(where: { eligibleVisible.contains($0.text) && overlayCache[$0.text] == nil &&
+                  (blockRetryAt[$0.text] ?? 0) <= ProcessInfo.processInfo.systemUptime }) else { return }
         translating = true
         let current = revision, request = translationRequest
         task = Task { [weak self] in
@@ -889,24 +895,41 @@ private final class GLCameraState: ObservableObject {
                 }
             }
             var next: String? = block.text
+            var consecutiveFailures = 0
+            // Each visible string gets at most one attempt in this drain.
+            var attempted = Set<String>()
             while let original = next {
+                attempted.insert(original)
                 guard !Task.isCancelled, self.revision == current, self.translationRequest == request,
                       self.running, !self.paused else { return }
                 let result = await model.translateCameraText(original, source: source, target: target)
                 guard !Task.isCancelled, self.revision == current, self.translationRequest == request,
                       self.running, !self.paused else { return }
                 if let result, !result.isEmpty {
+                    consecutiveFailures = 0
+                    self.blockRetryAt.removeValue(forKey: original)
                     if self.previousVisible.contains(original) {
                         self.rememberOverlay(original, result)
                         self.translationFailed = false
                         self.publishVisibleBlocks()
                     }
                 } else {
+                    consecutiveFailures += 1
                     self.translationFailed = true
-                    self.retryAt = ProcessInfo.processInfo.systemUptime + 2
-                    return
+                    if self.previousVisible.contains(original) {
+                        self.blockRetryAt[original] = ProcessInfo.processInfo.systemUptime + 5
+                    }
+                    // A general provider outage still uses bounded backoff.
+                    if consecutiveFailures >= 2 {
+                        self.retryAt = ProcessInfo.processInfo.systemUptime + 2
+                        return
+                    }
                 }
-                next = self.currentBlocks.first(where: { self.eligibleVisible.contains($0.text) && self.overlayCache[$0.text] == nil })?.text
+                next = self.currentBlocks.first(where: {
+                    self.eligibleVisible.contains($0.text) && self.overlayCache[$0.text] == nil &&
+                    !attempted.contains($0.text) &&
+                    (self.blockRetryAt[$0.text] ?? 0) <= ProcessInfo.processInfo.systemUptime
+                })?.text
             }
         }
     }

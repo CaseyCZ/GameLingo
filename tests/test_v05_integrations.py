@@ -102,6 +102,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                     "root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))"):
             self.assertIn(key, android)
 
+    def test_camera_full_image_failure_does_not_block_other_blocks(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        for source in (ios, android):
+            self.assertIn("blockRetryAt", source)
+            self.assertIn("consecutiveFailures >= 2", source)
+            self.assertIn("attempted", source)
+        self.assertIn("!attempted.contains($0.text)", ios)
+        self.assertIn("it.text !in attempted", android)
+        self.assertIn("self.blockRetryAt[original] = ProcessInfo.processInfo.systemUptime + 5", ios)
+        self.assertIn("blockRetryAt[original] = SystemClock.elapsedRealtime() + 5000L", android)
+        self.assertIn("blockRetryAt.removeAll()", ios)
+        self.assertIn("blockRetryAt.clear()", android)
+
     def test_camera_reconstructs_only_supported_smooth_surfaces(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")

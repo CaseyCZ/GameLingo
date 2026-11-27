@@ -334,6 +334,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     private var lastTVSent = 0L
     private var translating = false
     private var retryAt = 0L
+    private val blockRetryAt = HashMap<String, Long>()
     private lateinit var preview: CameraFrame
     private lateinit var output: TextView
     private lateinit var outputViewport: ScrollView
@@ -976,6 +977,8 @@ class GameLingoCameraActivity : ComponentActivity() {
         eligibleVisible = if (previousVisible.isEmpty()) visible else visible.intersect(previousVisible)
         val sceneChanged = previousVisible.isNotEmpty() && visible.intersect(previousVisible).isEmpty()
         previousVisible = visible
+        val now = SystemClock.elapsedRealtime()
+        blockRetryAt.entries.removeAll { it.key !in visible || it.value <= now }
         if (sceneChanged) {
             // Invalidate callbacks, including any old provider request.
             translationRequest++
@@ -988,7 +991,8 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
         publishVisibleBlocks()
         if (translating || SystemClock.elapsedRealtime() < retryAt ||
-            blocks.none { it.text in eligibleVisible && it.text !in overlayCache }) return
+            blocks.none { it.text in eligibleVisible && it.text !in overlayCache &&
+                (blockRetryAt[it.text] ?: 0L) <= SystemClock.elapsedRealtime() }) return
         val token = generation
         val current = configRevision
         val request = ++translationRequest
@@ -998,31 +1002,44 @@ class GameLingoCameraActivity : ComponentActivity() {
             if (!valid()) return
             if (overlaySource != from) {
                 overlayCache.clear(); overlaySource = from
+                blockRetryAt.clear()
                 publishVisibleBlocks()
             }
             if (translatorSource != from) {
                 translator?.zavri(); translator = null; translatorSource = from
             }
             val engine = translator ?: Prekladac(this, target, from).also { translator = it }
+            var consecutiveFailures = 0
+            val attempted = HashSet<String>()
             fun next() {
                 if (!valid()) return
-                val original = currentBlocks.firstOrNull { it.text in eligibleVisible && it.text !in overlayCache }?.text
+                val original = currentBlocks.firstOrNull { it.text in eligibleVisible && it.text !in overlayCache &&
+                    it.text !in attempted && (blockRetryAt[it.text] ?: 0L) <= SystemClock.elapsedRealtime() }?.text
                 if (original == null) { translating = false; return }
+                attempted.add(original)
+                fun failed() {
+                    if (!valid()) return
+                    consecutiveFailures++
+                    if (original in previousVisible) blockRetryAt[original] = SystemClock.elapsedRealtime() + 5000L
+                    if (consecutiveFailures >= 2) {
+                        translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L
+                    } else output.post { next() }
+                }
                 engine.preloz(original, { result ->
                     if (!valid()) return@preloz
                     if (result.isBlank()) {
-                        translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L
+                        failed()
                         return@preloz
                     }
+                    consecutiveFailures = 0
+                    blockRetryAt.remove(original)
                     if (original in previousVisible) {
                         rememberOverlay(original, result)
                         publishVisibleBlocks()
                     }
                     // Avoid recursively invoking synchronous cache hits.
                     output.post { next() }
-                }, {
-                    if (valid()) { translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L }
-                })
+                }, { failed() })
             }
             next()
         }
@@ -1058,6 +1075,7 @@ class GameLingoCameraActivity : ComponentActivity() {
         configRevision++
         translationRequest++
         previousVisible = emptySet(); eligibleVisible = emptySet()
+        blockRetryAt.clear()
         stableFrames = 0; previousOCR = ""
         overlayCache.clear(); overlaySource = null
         candidate = ""; emptyFrames = 0; lastTranslated = ""; translating = false; retryAt = 0L
