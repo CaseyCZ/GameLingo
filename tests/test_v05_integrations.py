@@ -763,7 +763,9 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(step,first_run)
         self.assertIn('Vyber zařízení',code(ROOT/"shared/mobile-ui.json"))
         self.assertIn('AES/GCM/NoPadding',psstore)
-        self.assertIn('setSingleChoiceItems',multi)
+        self.assertIn('renderXboxRows()',multi)
+        self.assertIn('xboxListGeneration',multi)
+        self.assertIn('XboxUcet.ulozKonzoli(this, x.id, x.jmeno)',multi)
         self.assertIn('if (predvybrany >= 0)',multi)
         self.assertIn('zvolXbox(nalezene[predvybrany])',multi)
         self.assertIn('tv_dashboard',patches)
@@ -2005,6 +2007,14 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             self.assertIn(marker,home)
         self.assertIn("Active phone reception stays in the background",wiring)
         self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
+
+    def test_mobile_tv_manual_pairing_and_forget_without_delete(self):
+        center = code(TOOLS/"GameLingoDeviceCenter.kt")
+        self.assertIn('TvProfil("manual:" + ip', center)
+        self.assertIn('android.util.Patterns.IP_ADDRESS.matcher(ip).matches()', center)
+        unpair = center.split("pinSupported && option == 4", 1)[1].split("} else {", 1)[0]
+        self.assertIn("GameLingoTVPairing.forget(c, tv.ip)", unpair)
+        self.assertNotIn("tvStore.odeber", unpair)
 
     def test_mobile_and_tv_device_rename_share_actions(self):
         center = code(TOOLS/"GameLingoDeviceCenter.kt")

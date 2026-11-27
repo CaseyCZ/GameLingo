@@ -14,11 +14,18 @@ def main():
         raise RuntimeError("Xbox selection anchor changed; refuse unsafe patch")
     start=source.index(start_text)
     end=source.index(end_text,start)+len(end_text)
-    replacement='''                    val nalezene = seznam.getOrNull().orEmpty()
+    replacement='''                    val prefs = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
+                    val hidden = prefs.getStringSet("hiddenXboxIds", emptySet()).orEmpty()
+                    val nalezene = seznam.getOrNull().orEmpty().filterNot { it.id in hidden }
+                    xboxRows.removeAllViews()
                     fun zvolXbox(x: XboxSpojeni.Konzole) {
+                        if (RemotePlayService.aktivni) {
+                            hledaniStav.text = GameLingoLanguages.ui(this, "Nejdřív zastav překlad.")
+                            return
+                        }
                         xboxNalezena = x
-                        getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
-                            .edit().putString("selectedXboxId", x.id).apply()
+                        prefs.edit().putString("selectedXboxId", x.id).putBoolean("cameraSourceSelected", false).apply()
+                        XboxUcet.ulozKonzoli(this, x.id, x.jmeno)
                         hledaniStav.text = "✔ " + x.jmeno
                         hledaniStav.setTextColor(Color.parseColor("#35E57D"))
                     }
@@ -34,30 +41,43 @@ def main():
                             hledaniStav.text = "Xbox nenalezen"
                             hledaniStav.setTextColor(Color.parseColor("#FF8A8A"))
                         }
-                        nalezene.size == 1 -> zvolXbox(nalezene.single())
                         else -> {
-                            val savedId = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
-                                .getString("selectedXboxId", null)
-                            val jmena = nalezene.map { it.jmeno }.toTypedArray()
+                            val savedId = prefs.getString("selectedXboxId", null)
                             val predvybrany = nalezene.indexOfFirst { it.id == savedId }
-                            if (predvybrany >= 0) {
-                                // The user already chose this device in the central
-                                // library. Respect it instead of asking every time.
-                                zvolXbox(nalezene[predvybrany])
-                            } else {
-                                hledaniStav.text = "Vyber Xbox (" + nalezene.size + ")"
-                                android.app.AlertDialog.Builder(this)
-                                    .setTitle("Vyber konzoli")
-                                    .setSingleChoiceItems(jmena, -1) { dialog, index ->
-                                        zvolXbox(nalezene[index])
-                                        dialog.dismiss()
-                                    }
-                                    .setNegativeButton("Zrušit", null)
-                                    .show()
+                            hledaniStav.text = GameLingoLanguages.ui(this, "Nalezeno:") + " " + nalezene.size
+                            fun renderXboxRows() {
+                                xboxRows.removeAllViews()
+                                for (x in nalezene) {
+                                    val selected = xboxNalezena?.id == x.id
+                                    val state = x.stav.ifBlank { "Stav konzole není známý" }
+                                    xboxRows.addView(GameLingoVisualKit.detailRow(this, "gamecontroller",
+                                        (if (selected) "✓ " else "") + x.jmeno,
+                                        GameLingoLanguages.ui(this, state)) {
+                                        zvolXbox(x)
+                                        renderXboxRows()
+                                    })
+                                }
                             }
+                            if (predvybrany >= 0) zvolXbox(nalezene[predvybrany])
+                            renderXboxRows()
                         }
                     }'''
-    path.write_text(source[:start]+replacement+source[end:],encoding="utf-8")
+    source=source[:start]+replacement+source[end:]
+    anchor='        fun hledej() {\n            xboxNalezena = null'
+    if source.count(anchor)!=1:
+        raise RuntimeError("Xbox list layout anchor changed")
+    source=source.replace(anchor,'''        val xboxRows = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        k2.addView(xboxRows)
+        var xboxListGeneration = 0L
+        fun hledej() {
+            xboxRows.removeAllViews()
+            val generation = ++xboxListGeneration
+            xboxNalezena = null''',1)
+    anchor='                    if (obrazovka != "xbox") return@runOnUiThread\n                    val prefs'
+    if source.count(anchor)!=1:
+        raise RuntimeError("Xbox discovery callback anchor changed")
+    source=source.replace(anchor,'                    if (obrazovka != "xbox" || generation != xboxListGeneration || isFinishing || isDestroyed) return@runOnUiThread\n                    val prefs',1)
+    path.write_text(source,encoding="utf-8")
     print("Android GameLingo: all Xbox consoles selectable")
 
 if __name__=="__main__":

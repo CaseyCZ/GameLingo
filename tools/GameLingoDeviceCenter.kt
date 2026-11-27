@@ -396,9 +396,41 @@ object GameLingoDeviceCenter {
                 onTV()
             })
         }
-        val mobile = (c.resources.configuration.uiMode and
-            android.content.res.Configuration.UI_MODE_TYPE_MASK) !=
-            android.content.res.Configuration.UI_MODE_TYPE_TELEVISION
+        val mobile = !tenFoot
+        if (mobile) add(tvPanel, line(c, GameLingoLanguages.ui(c, "IP adresa televize"),
+            GameLingoLanguages.ui(c, "Přidat televizor")) {
+            if (RemotePlayService.aktivni) {
+                AlertDialog.Builder(c).setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
+                    .setPositiveButton("OK", null).show()
+            } else {
+                val input = android.widget.EditText(c).apply {
+                    hint = GameLingoLanguages.ui(c, "IP adresa televize")
+                    inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
+                    setSingleLine()
+                }
+                val dialog = AlertDialog.Builder(c)
+                    .setTitle(GameLingoLanguages.ui(c, "Přidat televizor"))
+                    .setView(input)
+                    .setPositiveButton(GameLingoLanguages.ui(c, "Pokračovat"), null)
+                    .setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"), null).create()
+                dialog.show()
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    val ip = input.text.toString().trim()
+                    if (!android.util.Patterns.IP_ADDRESS.matcher(ip).matches()) {
+                        input.error = GameLingoLanguages.ui(c, "IP adresa televize")
+                    } else if (!RemotePlayService.aktivni) {
+                        val existing = tvStore.seznam().firstOrNull { it.ip == ip && !it.platforma.jenZobrazovac }
+                        val candidate = existing ?: TvProfil("manual:" + ip, "Google TV", ip, TvPlatforma.ANDROID_TV)
+                        dialog.dismiss()
+                        GameLingoTVPairing.show(c, candidate) {
+                            if (existing == null) tvStore.zapamatuj(candidate.id, candidate.jmeno, candidate.ip, candidate.platforma)
+                            onDismiss()
+                            onUpdated()
+                        }
+                    }
+                }
+            }
+        })
         if (mobile) add(root, line(c, GameLingoLanguages.ui(c, "Načíst QR kód z TV"), GameLingoLanguages.ui(c, "Párování v domácí síti")) {
             if (RemotePlayService.aktivni) {
                 AlertDialog.Builder(c).setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))
@@ -427,7 +459,8 @@ object GameLingoDeviceCenter {
                           tvStore.posledniId == tv.id) {
                 chooseDevice(c, tv.jmeno, if (pinSupported)
                         arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Spárovat kódem z TV"),
-                            GameLingoLanguages.ui(c, "Ověřit spojení"), GameLingoLanguages.ui(c, "Odebrat"))
+                            GameLingoLanguages.ui(c, "Ověřit spojení"), GameLingoLanguages.ui(c, "Odebrat"),
+                            GameLingoLanguages.ui(c, "Zrušit párování"))
                         else arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Odebrat"))) { option ->
                         if (RemotePlayService.aktivni) {
                             AlertDialog.Builder(c)
@@ -452,6 +485,18 @@ object GameLingoDeviceCenter {
                                         else GameLingoLanguages.ui(c, "TV neodpovídá. Ověř IP, připojení a případně zadej nový kód."))
                                     .setPositiveButton("OK", null).show()
                             }
+                        } else if (pinSupported && option == 4) {
+                            AlertDialog.Builder(c)
+                                .setTitle(GameLingoLanguages.ui(c, "Zrušit párování TV?"))
+                                .setMessage(GameLingoLanguages.ui(c, "Přístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači."))
+                                .setPositiveButton(GameLingoLanguages.ui(c, "Zrušit párování")) { _, _ ->
+                                    if (!RemotePlayService.aktivni) {
+                                        GameLingoTVPairing.forget(c, tv.ip)
+                                        onDismiss()
+                                        onUpdated()
+                                    }
+                                }
+                                .setNegativeButton(GameLingoLanguages.ui(c, "Zrušit"), null).show()
                         } else {
                             AlertDialog.Builder(c)
                                 .setMessage(GameLingoLanguages.ui(c, "Odebrat") + " " + tv.jmeno + " " + GameLingoLanguages.ui(c, "z tohoto zařízení?") +
