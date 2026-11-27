@@ -663,6 +663,16 @@ def main():
         '            GameLingoTranslationHistory.append("Volby", context.source, context.target, volby.joinToString("\\n"), prelozene.joinToString("\\n"))\n'
         '            Propojeni.Vysilac.nastavVolby(prelozene, volbyVybrana)', service.name)
     # P2.4: local postprocessing, provider cache and raw choice map stay clean.
+    # Story replies bypass ukazCesky; apply rules once per successful story line,
+    # after provider/name correction and before rebuilding the speaker prefix.
+    s=once(s, "        val vysledky = arrayOfNulls<String>(repliky.size)",
+        "        val vysledky = arrayOfNulls<String>(repliky.size)\n        val storyGlossaryContext = if (pribeh) translationContext() else null", service.name)
+    s=once(s, "                vysledky[i] = if (jmeno != null) \"$jmeno: $opraveno\" else opraveno",
+        '''                if (storyGlossaryContext != null && currentTranslation(storyGlossaryContext)) {
+                    opraveno = GameLingoGlossaryStore.apply(this, veta, opraveno,
+                        storyGlossaryContext.source, storyGlossaryContext.target)
+                }
+                vysledky[i] = if (jmeno != null) "$jmeno: $opraveno" else opraveno''', service.name)
     for name in ("GameLingoGlossary.kt", "GameLingoGlossaryStore.kt", "GameLingoGlossaryUi.kt", "GameLingoDialogueWindow.kt"):
         (folder/name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"),encoding="utf8")
     (unit_dir/"GameLingoGlossaryTest.kt").write_text(

@@ -1561,6 +1561,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoHistoryUi.show", code(TOOLS/"GameLingoSettings.kt"))
         self.assertIn("GameLingoHistoryUi.show", code(TOOLS/"GameLingoTVUi.kt"))
 
+    def test_story_glossary_is_postprocessed_once_and_editor_has_saved_pair_feedback(self):
+        wire = code(TOOLS/"wire_gamelingo_languages.py")
+        ui = code(TOOLS/"GameLingoGlossaryUi.kt")
+        self.assertIn("val storyGlossaryContext = if (pribeh) translationContext() else null", wire)
+        self.assertIn("currentTranslation(storyGlossaryContext)", wire)
+        self.assertIn("GameLingoGlossaryStore.apply(this, veta, opraveno,", wire)
+        self.assertIn("Změny se uloží až tlačítkem Uložit slovník.", ui)
+        self.assertIn('GameLingoLanguages.ui(a, "Uložit slovník")', ui)
+        self.assertIn("InputFilter.LengthFilter(25_000)", ui)
+
     def test_p2_4_glossary_is_profile_local_and_post_translation(self):
         model = code(IOS/"PlayCaptionIOSApp.swift")
         profile = code(IOS/"SettingsHomeView.swift")

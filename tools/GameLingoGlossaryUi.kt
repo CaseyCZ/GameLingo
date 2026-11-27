@@ -24,6 +24,9 @@ internal object GameLingoGlossaryUi {
         val pair = TextView(a).apply { gravity = android.view.Gravity.CENTER; text = GameLingoLanguages.ui(a, "Jazyky slovníku") + ": $source → $target" }
         body.addView(pair)
         body.addView(TextView(a).apply {
+            text = GameLingoLanguages.ui(a, "Pro jiné jazyky změň jazyk hry a překladu, poté použij nový slovník. Změna páru nahradí předchozí slovník tohoto profilu.")
+        })
+        body.addView(TextView(a).apply {
             gravity = android.view.Gravity.CENTER
             text = GameLingoLanguages.ui(a, "Max. 50 řádků: originál | chybný překlad | správný překlad. Prázdný prostředek opraví jen celý přesný originál. Rozlišuje velikost písmen.")
         })
@@ -33,6 +36,9 @@ internal object GameLingoGlossaryUi {
             minLines = 4
             maxLines = 9
             setSingleLine(false)
+            typeface = android.graphics.Typeface.MONOSPACE
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            filters = arrayOf(android.text.InputFilter.LengthFilter(25_000))
         }
         body.addView(input)
         body.addView(TextView(a).apply {
@@ -40,12 +46,19 @@ internal object GameLingoGlossaryUi {
                 "Save game | Zachránit hru | Uložit hru"
             gravity = android.view.Gravity.CENTER
         })
+        body.addView(TextView(a).apply {
+            text = GameLingoLanguages.ui(a, "Jeden řádek = jedno pravidlo. Prostřední část je překlad, který chceš opravit.")
+        })
+        val status = TextView(a)
+        body.addView(status)
         body.addView(Button(a).apply {
             text = GameLingoLanguages.ui(a, "Nový slovník pro aktuální jazyky")
             setOnClickListener {
+                if (!stopped(a)) return@setOnClickListener
                 source = GameLingoLanguages.game(a); target = GameLingoLanguages.target(a)
                 pair.text = GameLingoLanguages.ui(a, "Jazyky slovníku") + ": $source → $target"
                 input.setText("")
+                status.text = GameLingoLanguages.ui(a, "Změny se uloží až tlačítkem Uložit slovník.")
             }
         })
         val error = TextView(a)
@@ -53,11 +66,14 @@ internal object GameLingoGlossaryUi {
         run {
             var page:android.app.Dialog?=null
             GameLingoTVUi.controlFocus(a,input)
-            body.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Uložit"),primary=true) {
+            body.addView(GameLingoTVUi.action(a,GameLingoLanguages.ui(a, "Uložit slovník"),primary=true) {
                 if(stopped(a)) {
                     if(!GameLingoGlossaryStore.save(a,name,source,target,input.text.toString()))
                         error.text=GameLingoLanguages.ui(a, "Neplatný formát, duplicita originálu nebo překročený limit.")
-                    else {page?.dismiss();onSaved()}
+                    else {
+                        android.widget.Toast.makeText(a, GameLingoLanguages.ui(a, "Slovník uložen. Použij tento profil před hraním."), android.widget.Toast.LENGTH_LONG).show()
+                        page?.dismiss();onSaved()
+                    }
                 }
             })
             page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a, "Herní slovník") + " · " + name,body,helpTopic="glossary")
