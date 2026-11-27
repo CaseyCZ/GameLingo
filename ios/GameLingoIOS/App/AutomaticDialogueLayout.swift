@@ -37,6 +37,8 @@ struct AutomaticDialogueLayout: Equatable, Sendable {
         let text: String
         let rect: CGRect
         let layout: AutomaticDialogueLayout
+        var background: UInt32? = nil
+        var ink: UInt32? = nil
     }
 
     static func select(_ lines: [Line], centered: Bool = true) -> (text: String, layout: Self)? {

@@ -42,6 +42,8 @@ final class CaptionAppModel: ObservableObject {
         let text: String
         let layout: AutomaticDialogueLayout
         let rect: CGRect
+        var background: UInt32? = nil
+        var ink: UInt32? = nil
     }
     @Published private(set) var automaticOutputs: [AutomaticOutput] = []
     private var automaticTracker = AutomaticBlockTracker()
@@ -1086,7 +1088,8 @@ final class CaptionAppModel: ObservableObject {
                     AutomaticBlockTracker.overlaps($0.rect, track.block.rect)
                 }) { continue }
                 ordered.append(.init(id: track.id, zone: zone.id, text: text,
-                                     layout: track.block.layout, rect: track.block.rect))
+                                     layout: track.block.layout, rect: track.block.rect,
+                                     background: track.block.background, ink: track.block.ink))
             }
         }
         let next = Array(ordered.prefix(32))
@@ -1095,7 +1098,7 @@ final class CaptionAppModel: ObservableObject {
         devices.prepareTV(tv)
         guard verifiedTelevisionOutput else { return }
         if tv.receiverSupportsZones {
-            let key = automaticOutputs.map { "\($0.id)|\($0.text)|\($0.layout.centerX)|\($0.layout.bottomY)|\($0.layout.width)" }.joined(separator: ";")
+            let key = automaticOutputs.map { "\($0.id)|\($0.text)|\($0.rect)|\($0.background ?? 0)|\($0.ink ?? 0)" }.joined(separator: ";")
             if automaticLastTV != nil {
                 tv.sendSubtitle("", duration: 0)
                 automaticLastTV = nil
