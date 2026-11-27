@@ -148,19 +148,27 @@ private struct GLCameraPalette {
             return UInt32(pixels[i]) * 65536 + UInt32(pixels[i+1]) * 256 + UInt32(pixels[i+2])
         }
         func distance(_ a: UInt32, _ b: UInt32) -> Int {
-            [16, 8, 0].map { abs(Int((a >> $0) & 255) - Int((b >> $0) & 255)) }.max() ?? 0
+            Self.channelDistance(a, b)
         }
         func median(_ values: [UInt32]) -> UInt32 {
-            [16, 8, 0].reduce(UInt32(0)) { result, shift in
-                let channel = values.map { ($0 >> shift) & 255 }.sorted()
-                return result | (channel[channel.count / 2] << shift)
+            var result: UInt32 = 0
+            for shift in [16, 8, 0] {
+                let channel: [UInt32] = values.map { ($0 >> shift) & 255 }.sorted()
+                let mid = channel[channel.count / 2]
+                result |= mid << shift
             }
+            return result
         }
         func blend(_ a: UInt32, _ b: UInt32, _ t: Double) -> UInt32 {
-            [16, 8, 0].reduce(UInt32(0)) { result, shift in
-                let x = Double((a >> shift) & 255), y = Double((b >> shift) & 255)
-                return result | (UInt32((x + (y - x) * t).rounded()) << shift)
+            var result: UInt32 = 0
+            for shift in [16, 8, 0] {
+                let x = Double((a >> shift) & 255)
+                let y = Double((b >> shift) & 255)
+                let mixed = x + (y - x) * t
+                let channel = UInt32(mixed.rounded())
+                result |= channel << shift
             }
+            return result
         }
         let ts = (0..<12).map { (CGFloat($0) + 0.5) / 12 }
         let left = ts.map { sample(rect.minX + rect.width * 0.04, rect.minY + rect.height * $0) }
@@ -201,8 +209,7 @@ private struct GLCameraPalette {
         guard w >= 24, h >= 10, h / max(1, lineCount) >= 8 else { return (nil, 0) }
         var source = [UInt32](repeating: 0, count: w * h)
         func distance(_ a: UInt32, _ b: UInt32) -> Int {
-            max(abs(Int((a >> 16) & 255) - Int((b >> 16) & 255)),
-                max(abs(Int((a >> 8) & 255) - Int((b >> 8) & 255)), abs(Int(a & 255) - Int(b & 255))))
+            Self.channelDistance(a, b)
         }
         for y in 0..<h { for x in 0..<w {
             let px = min(n - 1, x0 + Int((CGFloat(x) + 0.5) * rect.width * CGFloat(n) / CGFloat(w)))
@@ -263,8 +270,21 @@ private struct GLCameraPalette {
         return (GLCameraTexture(width:w,height:h,bytes:bytes),weight)
     }
 
+    static func channelDistance(_ a: UInt32, _ b: UInt32) -> Int {
+        let redA = Int((a >> 16) & 255)
+        let redB = Int((b >> 16) & 255)
+        let greenA = Int((a >> 8) & 255)
+        let greenB = Int((b >> 8) & 255)
+        let blueA = Int(a & 255)
+        let blueB = Int(b & 255)
+        let red = abs(redA - redB)
+        let green = abs(greenA - greenB)
+        let blue = abs(blueA - blueB)
+        return max(red, max(green, blue))
+    }
+
     static func similar(_ a: UInt32, _ b: UInt32) -> Bool {
-        [16, 8, 0].allSatisfy { shift in abs(Int((a >> shift) & 255) - Int((b >> shift) & 255)) <= 40 }
+        channelDistance(a, b) <= 40
     }
 
     static func compatibleInk(_ first: UInt32?, _ second: UInt32?) -> Bool {
