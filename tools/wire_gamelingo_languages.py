@@ -275,7 +275,7 @@ def main():
         ("private fun myMemory(text: String, target: String, source: String): String? {", "myMemory", "target, source"),
     ):
         raw_signature = signature.replace("fun " + name + "(", "fun " + name + "Raw(", 1)
-        wrapper = signature + "\n        val protected = GameLingoControllerSymbols(text)\n        return " + name + "Raw(protected.input, " + args + ")?.let { protected.restore(it) }\n    }\n\n    " + raw_signature
+        wrapper = signature + "\n        val shield = GameLingoControllerSymbols(text)\n        return " + name + "Raw(shield.input, " + args + ")?.let { shield.restore(it) }\n    }\n\n    " + raw_signature
         t = once(t, signature, wrapper, translator.name)
     translator.write_text(t, encoding="utf8")
 

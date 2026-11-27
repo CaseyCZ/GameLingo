@@ -27,11 +27,11 @@ class GameLingoDialogueTextTest {
     }
     @Test fun controllerSymbolsSurviveTranslationOrFailSafely() {
         val original = "Press [A] then [R2] △ and [A]."
-        val protected = GameLingoControllerSymbols(original)
-        assertEquals(original, protected.restore(protected.input))
-        assertEquals("Stiskni [A] then [R2] △ and [A].", protected.restore(protected.input.replace("Press","Stiskni")))
-        assertNull(protected.restore(protected.input.replace("GLBUTTON0TOKEN","")))
-        assertNull(protected.restore(protected.input + " GLBUTTON0TOKEN"))
+        val shield = GameLingoControllerSymbols(original)
+        assertEquals(original, shield.restore(shield.input))
+        assertEquals("Stiskni [A] then [R2] △ and [A].", shield.restore(shield.input.replace("Press","Stiskni")))
+        assertNull(shield.restore(shield.input.replace("GLBUTTON0TOKEN","")))
+        assertNull(shield.restore(shield.input + " GLBUTTON0TOKEN"))
         assertTrue(GameLingoControllerSymbols.valid(original, "Stiskni [A] a [R2] △ [A]."))
         assertFalse(GameLingoControllerSymbols.valid(original, "Stiskni [B] a [R2] △ [A]."))
         assertEquals("A car, X rays", GameLingoControllerSymbols("A car, X rays").input)

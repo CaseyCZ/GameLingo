@@ -41,9 +41,9 @@ def install_mobile_translator(t, folder):
                               cacheResult: Boolean, hotovo: (String) -> Unit, chyba: (String) -> Unit) {
         if (!currentPair(source, target)) { chyba("Změna jazyka nebo relace"); return }
         val languageRevision = GameLingoLanguages.revision
-        val protected = GameLingoControllerSymbols(vstup)
-        offline.translate(protected.input, source, target) { raw ->
-            val result = raw?.let { protected.restore(it) }
+        val shield = GameLingoControllerSymbols(vstup)
+        offline.translate(shield.input, source, target) { raw ->
+            val result = raw?.let { shield.restore(it) }
             if (!currentPair(source, target) || GameLingoLanguages.revision != languageRevision) {
                 chyba("Změna jazyka nebo relace")
             } else if (result.isNullOrBlank()) {
