@@ -603,7 +603,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                 }
                 // Keep a smaller fallback frame; native PreviewView still displays full live video.
                 val longest = maxOf(bitmap.width, bitmap.height)
-                val fallback = if (longest > 720) Bitmap.createScaledBitmap(bitmap,
+                val fallback = if (region.full && longest > 720) Bitmap.createScaledBitmap(bitmap,
                     (bitmap.width * 720 / longest).coerceAtLeast(1),
                     (bitmap.height * 720 / longest).coerceAtLeast(1), true) else bitmap
                 val previous = preview.bitmap
@@ -789,11 +789,9 @@ class GameLingoCameraActivity : ComponentActivity() {
     }
 
     private fun matchesCurrent(text: String): Boolean {
-        if (candidate == text) return true
-        fun words(value: String) = value.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }.toSet()
-        val old = words(text)
-        val now = words(candidate)
-        return old.isNotEmpty() && old.intersect(now).size * 2 >= maxOf(old.size, now.size)
+        // Do not accept a translation for changed words or numbers.
+        fun normalized(value: String) = value.trim().replace(Regex("\\s+"), " ")
+        return normalized(candidate) == normalized(text)
     }
 
     private fun resetTranslation(keepText: Boolean = false) {
