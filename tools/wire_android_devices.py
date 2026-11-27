@@ -638,8 +638,8 @@ def main():
             "    private fun zastav(zprava: String, ukazat: Boolean = true) {\n        GameLingoPSLoginPIN.clear(this)", "clear login PIN on stop")
         source = one(source, "            session = null\n            ukonciStareSpojeni()\n            val s = Session(info, logSoubor, false)",
             "            GameLingoPSLoginPIN.clear(this)\n            session = null\n            ukonciStareSpojeni()\n            val s = Session(info, logSoubor, false)", "clear PIN before new native session")
-        source = one(source, "    override fun onDestroy() {",
-            "    override fun onDestroy() {\n        GameLingoPSLoginPIN.clear(this)", "clear login PIN on destroy")
+        source = one(source, "        zanikla = true\n        ui.removeCallbacks(pribehHlidac)",
+            "        zanikla = true\n        GameLingoPSLoginPIN.clear(this)\n        ui.removeCallbacks(pribehHlidac)", "clear login PIN on destroy")
         service.write_text(source, encoding="utf-8")
 
     if mobile_dashboard:
