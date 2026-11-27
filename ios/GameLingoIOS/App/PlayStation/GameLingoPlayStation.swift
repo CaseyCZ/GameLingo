@@ -95,13 +95,17 @@ final class GameLingoPlayStation: ObservableObject {
         )
         session = remote
 
+        // Defer initial delivery until the subscription is stored. A
+        // synchronous native setup failure must not reenter stop() during sink.
         remote.$state
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 guard let self, revision == self.sessionRevision else { return }
                 switch state {
                 case .connecting:
                     self.status = "Připojuji PlayStation…"
                 case .connected:
+                    self.needsLoginPIN = false
                     self.status = "PlayStation připojen"
                 case .loginPINRequired:
                     self.needsLoginPIN = true
@@ -110,16 +114,24 @@ final class GameLingoPlayStation: ObservableObject {
                     self.status = "PlayStation: " + message
                     self.isRunning = false
                     self.needsLoginPIN = false
-                    self.onEnded?(message)
+                    self.streamingConsoleID = nil
+                    let ended = self.onEnded
+                    self.onEnded = nil
+                    ended?(message)
                 }
             }
             .store(in: &subscriptions)
     }
 
     func submitLoginPIN(_ pin: String) {
-        guard pin.allSatisfy(\.isNumber), !pin.isEmpty else { return }
-        session?.submitLoginPIN(pin)
-        needsLoginPIN = false
+        guard needsLoginPIN, let session else { return }
+        // A successful native call only submits the PIN; connection remains
+        // unconfirmed until Chiaki reports connected. Re-present on rejection.
+        if session.submitLoginPIN(pin) {
+            needsLoginPIN = false
+        } else {
+            needsLoginPIN = true
+        }
     }
 
     func stop() {

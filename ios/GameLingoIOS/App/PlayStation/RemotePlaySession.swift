@@ -195,8 +195,13 @@ final class RemotePlaySession: ObservableObject {
         completion?()
     }
 
-    func submitLoginPIN(_ pin: String) {
-        pin.withCString { _ = tp_play_session_set_login_pin(session, $0) }
+    @discardableResult
+    func submitLoginPIN(_ pin: String) -> Bool {
+        guard !isStopped, let session,
+              case .loginPINRequired = state,
+              !pin.isEmpty, pin.utf8.count <= 16,
+              pin.utf8.allSatisfy({ $0 >= 48 && $0 <= 57 }) else { return false }
+        return pin.withCString { tp_play_session_set_login_pin(session, $0) == 0 }
     }
 
     func requestVideoRefresh() {
@@ -509,6 +514,9 @@ final class RemotePlaySession: ObservableObject {
     }
 
     fileprivate func receiveEvent(type: Int32, value: Int32, message: String?) {
+        // Native callbacks may already be queued when stop() is called.
+        guard !isStopped else { return }
+        if case .ended = state { return }
         switch type {
         case 1000:
             if let stage = ConnectionStage(rawValue: value), case .connecting = state {

@@ -499,6 +499,24 @@ def main():
             "HledacPS.hledej(1500, primaIp = udaje.ipKonzole).any { it.typ == \"PS5\" && it.stav == \"zapnutá\" }",
             "HledacPS.hledej(1500, primaIp = udaje.ipKonzole).any { it.ip == udaje.ipKonzole && it.typ == udaje.consoleType && it.stav == \"zapnutá\" }",
             "selected console switch availability")
+        # Scope PS4/PS5 delayed work to the native session that scheduled it.
+        # The existing event guard alone cannot protect delayed warmups.
+        start = source.index("    private fun onUdalost(udalost: Event) {")
+        end = source.index("    /** Ukončit všechna spojení", start)
+        ps_events = source[start:end]
+        ps_events = one(ps_events,
+            '                hlidaniPs5.pripojeno(session)',
+            '                val connectedSession = session ?: return\n                val connectedGeneration = relaceCteni.get()\n                hlidaniPs5.pripojeno(session)',
+            "PS session identity for delayed tasks")
+        ps_events = one(ps_events,
+            '                ui.postDelayed({ if (session != null) runCatching { AutoStart.uspech(this) } }, 60_000)',
+            '                ui.postDelayed({\n                    if (session === connectedSession && connectedGeneration == relaceCteni.get() && bezi)\n                        runCatching { AutoStart.uspech(this) }\n                }, 60_000)',
+            "PS delayed success belongs to current session")
+        ps_events = one(ps_events,
+            '                ui.postDelayed({ zahrejCtecku() }, 1500)',
+            '                ui.postDelayed({\n                    if (session === connectedSession && connectedGeneration == relaceCteni.get() && bezi) zahrejCtecku()\n                }, 1500)',
+            "PS delayed OCR warmup belongs to current session")
+        source = source[:start] + ps_events + source[end:]
         service.write_text(source, encoding="utf-8")
 
     if mobile_dashboard:

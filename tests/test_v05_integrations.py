@@ -645,6 +645,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn('TVSelectionView(tv: model.tv)',home)
         self.assertNotIn('TVSelectionView(tv: model.tv)',setup)
 
+    def test_playstation_terminal_session_and_delayed_callbacks_are_guarded(self):
+        core = code(IOS/"PlayStation/RemotePlaySession.swift")
+        ps = code(IOS/"PlayStation/GameLingoPlayStation.swift")
+        wire = code(TOOLS/"wire_android_devices.py")
+        self.assertIn("guard !isStopped else { return }", core)
+        self.assertIn("if case .ended = state { return }", core)
+        self.assertIn("case .loginPINRequired = state", core)
+        self.assertIn("tp_play_session_set_login_pin(session, $0) == 0", core)
+        self.assertIn(".receive(on: DispatchQueue.main)", ps)
+        self.assertIn("if session.submitLoginPIN(pin)", ps)
+        self.assertIn("self.onEnded = nil", ps)
+        self.assertIn("val connectedSession = session ?: return", wire)
+        self.assertGreaterEqual(wire.count("session === connectedSession && connectedGeneration == relaceCteni.get() && bezi"), 2)
+
     def test_actual_playstation_not_placeholder(self):
         ps=code(IOS/"PlayStation/GameLingoPlayStation.swift")
         core=code(IOS/"PlayStation/RemotePlaySession.swift")
