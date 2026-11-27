@@ -2006,6 +2006,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Active phone reception stays in the background",wiring)
         self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
 
+    def test_mobile_and_tv_device_rename_share_actions(self):
+        center = code(TOOLS/"GameLingoDeviceCenter.kt")
+        self.assertNotIn('if(tenFoot) arrayOf(GameLingoLanguages.ui(c, "Použít")', center)
+        self.assertIn('rename(c,"ps",ps.ip,ps.name)', center)
+        self.assertIn('rename(c,"xbox",xbox.id,xbox.jmeno)', center)
+        wiring = code(TOOLS/"wire_android_devices.py")
+        self.assertIn("bytes.size != 8", wiring)
+        self.assertIn("android.util.Base64.encodeToString(bytes", wiring)
+
     def test_android_playstation_registration_and_login_pin(self):
         wiring = code(TOOLS/"wire_android_devices.py")
         prompt = code(TOOLS/"GameLingoPSLoginPIN.kt")

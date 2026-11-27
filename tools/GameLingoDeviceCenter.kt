@@ -264,7 +264,7 @@ object GameLingoDeviceCenter {
                 for (ps in saved) {
                     add(consoles, line(c, consoleName(c,"ps",ps.ip,ps.name), ps.type + " · " + ps.ip,
                                       ps.selected) {
-                        chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name), if(tenFoot) arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Odebrat"), GameLingoLanguages.ui(c, "Přejmenovat")) else arrayOf(GameLingoLanguages.ui(c, "Použít"),GameLingoLanguages.ui(c, "Odebrat"))) { option ->
+                        chooseDevice(c, consoleName(c,"ps",ps.ip,ps.name), arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Odebrat"), GameLingoLanguages.ui(c, "Přejmenovat"))) { option ->
                                 if(option==2) { if(!RemotePlayService.aktivni)rename(c,"ps",ps.ip,ps.name){onDismiss();onUpdated()};return@chooseDevice }
                                 if (option == 0) {
                                     if (RemotePlayService.aktivni) {
@@ -319,7 +319,7 @@ object GameLingoDeviceCenter {
                     list.filterNot { it.id in hiddenXboxIds }.forEach { xbox ->
                         add(consoles, line(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), "Xbox Series / One",
                                           selectedID == xbox.id) {
-                            chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), if(tenFoot) arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Připojit"), GameLingoLanguages.ui(c, "Odebrat"), GameLingoLanguages.ui(c, "Přejmenovat")) else arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Připojit"), GameLingoLanguages.ui(c, "Odebrat"))) { option ->
+                            chooseDevice(c, consoleName(c,"xbox",xbox.id,xbox.jmeno), arrayOf(GameLingoLanguages.ui(c, "Použít"), GameLingoLanguages.ui(c, "Připojit"), GameLingoLanguages.ui(c, "Odebrat"), GameLingoLanguages.ui(c, "Přejmenovat"))) { option ->
                                     if (RemotePlayService.aktivni) {
                                         AlertDialog.Builder(c)
                                             .setMessage(GameLingoLanguages.ui(c, "Nejdřív zastav probíhající překlad."))

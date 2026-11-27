@@ -185,6 +185,39 @@ def main():
                                 AutoStart.nastavZapnuto(this, true)''',
         "PlayStation registration success")
 
+    # Advanced account-ID fallback, equivalent to iOS; no passwords or tokens.
+    code=one(code, "        sloupec.addView(k1, odsazeni(bottom = 12))\n\n        // 2) hledání PS5",
+        '''        k1.addView(tlacitko(GameLingoLanguages.ui(this, "ID účtu (Base64)"), 16f) {
+            val input = EditText(this).apply {
+                hint = GameLingoLanguages.ui(this@MainActivity, "Base64 ID účtu")
+                isSaveEnabled = false
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                setSingleLine()
+            }
+            val dlg = android.app.AlertDialog.Builder(this)
+                .setTitle(GameLingoLanguages.ui(this, "ID účtu (Base64)"))
+                .setView(input)
+                .setPositiveButton(GameLingoLanguages.ui(this, "Ověřit účet"), null)
+                .setNegativeButton(GameLingoLanguages.ui(this, "Zrušit"), null)
+                .create()
+            dlg.show()
+            dlg.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val bytes = runCatching { android.util.Base64.decode(input.text.toString().trim(), android.util.Base64.DEFAULT) }.getOrNull()
+                if (bytes == null || bytes.size != 8) {
+                    input.error = GameLingoLanguages.ui(this, "Base64 ID účtu")
+                } else {
+                    zastavServer()
+                    udaje.accountId = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                    input.text.clear()
+                    dlg.dismiss()
+                    ukazPripojeni()
+                }
+            }
+        }, obal(top = 8))
+        sloupec.addView(k1, odsazeni(bottom = 12))
+
+        // 2) hledání PS5''', "manual PlayStation account ID")
+
     # Explicit PS4/PS5 type, host and name, also when discovery fails.
     code=one(code, "        fun hledej() {\n            hledaniStav.text = t(\"hledam\")\n            nalezenaIp = null",
         '''        val psType = android.widget.Spinner(this).apply {
