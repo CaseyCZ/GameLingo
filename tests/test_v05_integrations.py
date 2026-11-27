@@ -2008,6 +2008,21 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Active phone reception stays in the background",wiring)
         self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
 
+    def test_mobile_onboarding_resume_and_real_source_selection(self):
+        first = code(TOOLS/"GameLingoFirstRun.kt")
+        wiring = code(TOOLS/"wire_android_devices.py")
+        home = code(TOOLS/"redesign_gamelingo.py")
+        center = code(TOOLS/"GameLingoDeviceCenter.kt")
+        self.assertIn('savedChoices.getInt("step", 0)', first)
+        self.assertIn("activeDialog?.isShowing", first)
+        self.assertIn("resume incomplete onboarding on dashboard", wiring)
+        self.assertIn("store.zapamatujVyber(candidate.id)", first)
+        self.assertIn("RemotePlayService.preferXbox(this)", home)
+        self.assertIn('RemotePlayService.prepni(this, primaryFamily == "Xbox")', home)
+        self.assertIn("RemotePlayService.prepni(c, false)", center)
+        self.assertIn("RemotePlayService.prepni(c, true)", center)
+        self.assertIn("translationLanguageEditable", code(TOOLS/"GameLingoLanguages.kt"))
+
     def test_mobile_tv_manual_pairing_and_forget_without_delete(self):
         center = code(TOOLS/"GameLingoDeviceCenter.kt")
         self.assertIn('TvProfil("manual:" + ip', center)

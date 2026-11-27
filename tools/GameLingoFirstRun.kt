@@ -19,6 +19,7 @@ import android.widget.TextView
 object GameLingoFirstRun {
     private const val PREFS = "gamelingo_onboarding"
     private const val COMPLETE = "completed"
+    private var activeDialog: Dialog? = null
 
     fun completed(activity: Activity): Boolean = activity.getSharedPreferences(
         PREFS, Activity.MODE_PRIVATE).getBoolean(COMPLETE, false)
@@ -30,18 +31,20 @@ object GameLingoFirstRun {
         connectTV: () -> Unit,
         finished: () -> Unit
     ) {
-        if (activity.isFinishing) return
+        if (activity.isFinishing || activity.isDestroyed || activeDialog?.isShowing == true) return
         val cyan = Color.parseColor("#02D6FF")
         val muted = Color.parseColor("#92A4C7")
         val px: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
-        var step = 0
         val savedChoices = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
+        var step = savedChoices.getInt("step", 0).coerceIn(0, GameLingoUIContract.setupSteps.lastIndex)
         var consoleChoice = savedChoices.getInt("console", -1)
         var tvChoice = savedChoices.getInt("output", 0)
         // Full-screen onboarding belongs to GameLingo, not to an upstream
         // PlayCaption popup floating above the old landing page.
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        activeDialog = dialog
+        dialog.setOnDismissListener { if (activeDialog === dialog) activeDialog = null }
 
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -132,14 +135,36 @@ object GameLingoFirstRun {
             } else if (selected != null) {
                 GameLingoTVPairing.show(activity, selected) { redraw() }
             } else {
-                // Device discovery is a separate existing native flow. The
-                // welcome wizard remains incomplete until the PIN succeeds.
-                savedChoices.edit()
-                    .putInt("console", consoleChoice)
-                    .putInt("output", tvChoice).apply()
-                dialog.dismiss()
-                finished()
-                connectTV()
+                val options = arrayOf(tr("Načíst QR kód z TV"), tr("IP adresa televize"))
+                fun pair(ip: String, pin: String = "") {
+                    val existing = store.seznam().firstOrNull { it.ip == ip && !it.platforma.jenZobrazovac }
+                    val candidate = existing ?: TvProfil("manual:" + ip, "Google TV", ip, TvPlatforma.ANDROID_TV)
+                    GameLingoTVPairing.show(activity, candidate, initialPin = pin) {
+                        if (existing == null) store.zapamatuj(candidate.id, candidate.jmeno, candidate.ip, candidate.platforma)
+                        store.zapamatujVyber(candidate.id)
+                        redraw()
+                    }
+                }
+                android.app.AlertDialog.Builder(activity).setTitle(tr("Spárovat TV"))
+                    .setItems(options) { _, index ->
+                        if (index == 0) GameLingoQRScanner.scan(activity) { qr -> pair(qr.ip, qr.pin) }
+                        else {
+                            val input = android.widget.EditText(activity).apply {
+                                hint = tr("IP adresa televize")
+                                inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
+                                setSingleLine()
+                            }
+                            val address = android.app.AlertDialog.Builder(activity).setTitle(tr("IP adresa televize"))
+                                .setView(input).setPositiveButton(tr("Pokračovat"), null)
+                                .setNegativeButton(tr("Zrušit"), null).create()
+                            address.show()
+                            address.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                                val ip = input.text.toString().trim()
+                                if (!android.util.Patterns.IP_ADDRESS.matcher(ip).matches()) input.error = tr("IP adresa televize")
+                                else { address.dismiss(); pair(ip) }
+                            }
+                        }
+                    }.setNegativeButton(tr("Zrušit"), null).show()
             }
         }
 
@@ -147,14 +172,18 @@ object GameLingoFirstRun {
         // console was registered, nor mark onboarding complete prematurely.
         fun finish(open: Int = 0) {
             val edit = savedChoices.edit().putBoolean(COMPLETE, open == 0)
+                .putInt("step", if (open == 0) 0 else step)
             if (consoleChoice >= 0) edit.putInt("console", consoleChoice)
             if (tvChoice >= 0) {
                 edit.putInt("output", tvChoice)
                 TvProfily(activity).pouzeTelefon = tvChoice == 0
             }
             edit.apply()
-            if (open == 0) activity.getSharedPreferences("gamelingo_devices", Activity.MODE_PRIVATE)
-                .edit().putBoolean("cameraSourceSelected", consoleChoice == 2).apply()
+            if (open == 0) {
+                activity.getSharedPreferences("gamelingo_devices", Activity.MODE_PRIVATE)
+                    .edit().putBoolean("cameraSourceSelected", consoleChoice == 2).apply()
+                if (consoleChoice in 0..1 && consoleRegistered()) RemotePlayService.prepni(activity, consoleChoice == 0)
+            }
             dialog.dismiss()
             finished()
             when (open) {
@@ -164,6 +193,7 @@ object GameLingoFirstRun {
             }
         }
         redraw = {
+            savedChoices.edit().putInt("step", step).putInt("console", consoleChoice).putInt("output", tvChoice).apply()
             body.removeAllViews()
             footer.removeAllViews()
             progress.removeAllViews()
@@ -311,10 +341,7 @@ object GameLingoFirstRun {
             // Skipping is offered on every step. The completed flag only
             // means the welcome flow was dismissed, never "console paired".
             item(tr("Nastavit později"), false) {
-                activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
-                    .edit().putBoolean(COMPLETE, true).apply()
-                dialog.dismiss()
-                finished()
+                finish()
             }
             back.visibility = if (step > 0) android.view.View.VISIBLE else android.view.View.INVISIBLE
             back.setOnClickListener { if (step > 0) { step--; redraw() } }

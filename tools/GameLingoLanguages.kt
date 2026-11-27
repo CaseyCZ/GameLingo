@@ -2702,8 +2702,16 @@ object GameLingoLanguages {
 
     enum class Kind { APP, GAME, TARGET }
 
+    private fun translationLanguageEditable(activity: Activity): Boolean {
+        if (!RemotePlayService.aktivni && !PrijemService.bezi) return true
+        AlertDialog.Builder(activity).setMessage(ui(activity, "Nejdřív zastav překlad."))
+            .setPositiveButton("OK", null).show()
+        return false
+    }
+
     /** Same one-field selection behavior as the iOS SwiftUI pickers. */
     fun choose(activity: Activity, kind: Kind, onChanged: () -> Unit = {}) {
+        if (kind != Kind.APP && !translationLanguageEditable(activity)) return
         val choices = when (kind) {
             Kind.APP -> appLanguages
             Kind.GAME -> gameLanguages
@@ -2721,6 +2729,7 @@ object GameLingoLanguages {
         }
         val index = choices.indexOfFirst { it.code == current }.coerceAtLeast(0)
         fun applyChoice(choice: Int) {
+            if (kind != Kind.APP && !translationLanguageEditable(activity)) return
             val selected = choices[choice].code
             when (kind) {
                 Kind.APP -> Nastaveni(activity).jazyk = selected
@@ -2806,6 +2815,7 @@ object GameLingoLanguages {
                 isFocusable = true
             }
             current.setOnClickListener {
+                if (languages !== appLanguages && !translationLanguageEditable(activity)) return@setOnClickListener
                 val selectedIndex = languages.indexOfFirst {
                     it.code == selected()
                 }.coerceAtLeast(0)
@@ -2813,6 +2823,7 @@ object GameLingoLanguages {
                     .setTitle(title)
                     .setSingleChoiceItems(languages.map { it.title }.toTypedArray(),
                         selectedIndex) { picker, index ->
+                        if (languages !== appLanguages && !translationLanguageEditable(activity)) { picker.dismiss(); return@setSingleChoiceItems }
                         onSelect(languages[index].code)
                         current.text = languages[index].title + "    ▾"
                         picker.dismiss()

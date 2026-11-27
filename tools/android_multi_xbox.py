@@ -26,6 +26,7 @@ def main():
                         xboxNalezena = x
                         prefs.edit().putString("selectedXboxId", x.id).putBoolean("cameraSourceSelected", false).apply()
                         XboxUcet.ulozKonzoli(this, x.id, x.jmeno)
+                        RemotePlayService.prepni(this, true)
                         hledaniStav.text = "✔ " + x.jmeno
                         hledaniStav.setTextColor(Color.parseColor("#35E57D"))
                     }

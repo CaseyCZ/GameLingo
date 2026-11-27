@@ -83,19 +83,19 @@ def main():
             '''        prevezmiAccountId(intent)
         // No delayed upstream splash callback may replace the onboarding page.
         if (nast.jazyk == null) nast.jazyk = GameLingoLanguages.systemApp(this)
-        ukazHlavni()
-        if (telefon && !GameLingoFirstRun.completed(this)) {
-            ui.post {
-                if (isFinishing || isDestroyed) return@post
-                GameLingoFirstRun.show(this,
-                    connectXbox = { ukazPripojeniXbox() },
-                    connectPlayStation = { ukazPripojeni() },
-                    connectTV = { vyberVystupTv() },
-                    finished = { ukazHlavni() })
-            }
-        }''',
+        ukazHlavni()''',
             "mobile first-run wizard"
         )
+        code=one(code, "    private fun ukazHlavni() {",
+            '''    private fun ukazHlavni() {
+        if (telefon && !GameLingoFirstRun.completed(this)) ui.post {
+            if (isFinishing || isDestroyed || obrazovka != "hlavni") return@post
+            GameLingoFirstRun.show(this,
+                connectXbox = { ukazPripojeniXbox() },
+                connectPlayStation = { ukazPripojeni() },
+                connectTV = { vyberVystupTv() },
+                finished = { ukazHlavni() })
+        }''', "resume incomplete onboarding on dashboard")
         # The native dashboard supplies the same central device action to both
         # the fourth home tile and fifth-row navigation, without string patches.
         if 'fun openDevices() {' not in code or 'GameLingoDeviceCenter.content(this,' not in code:
@@ -269,7 +269,7 @@ def main():
     code=one(code, '}.apply { isEnabled = lzeParovat; alpha = if (lzeParovat) 1f else 0.5f }, obal(top = 10))',
         '}, obal(top = 10))', "show account validation on pairing action")
     code=one(code, "                            if (ok) {\n                                if (ip != null)",
-        "                            if (ok) {\n                                pin.text.clear()\n                                if (ip != null)", "clear one-time PIN")
+        "                            if (ok) {\n                                pin.text.clear()\n                                RemotePlayService.prepni(this, false)\n                                getSharedPreferences(\"gamelingo_devices\", MODE_PRIVATE).edit().putBoolean(\"cameraSourceSelected\", false).apply()\n                                if (ip != null)", "clear one-time PIN")
 
     if mobile_dashboard or tv_dashboard:
         # The Android TV pairing code may select 41990-41993, but the

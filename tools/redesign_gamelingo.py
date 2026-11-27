@@ -31,13 +31,7 @@ def redesign_mobile(s: str) -> str:
             fun openDevices() { openTab(2) }
             fun openSettings() { openTab(3) }
             fun editAreas() {
-                if (nejakaKonzole)
-                    startActivity(Intent(this, TelefonActivity::class.java).putExtra("gamelingo_editor_only", true))
-                else android.app.AlertDialog.Builder(this)
-                    .setMessage(GameLingoLanguages.ui(this, "Nejprve vyber a připoj konzoli."))
-                    .setPositiveButton("Xbox") { _, _ -> ukazPripojeniXbox() }
-                    .setNeutralButton("PlayStation") { _, _ -> ukazPripojeni() }
-                    .setNegativeButton(android.R.string.cancel, null).show()
+                startActivity(Intent(this, TelefonActivity::class.java).putExtra("gamelingo_editor_only", true))
             }
             fun openAreas() { openTab(1) }
 
@@ -50,8 +44,12 @@ def redesign_mobile(s: str) -> str:
                 sourcePrefs.edit().putBoolean("cameraSourceSelected", family == "Camera").apply()
                 when (family) {
                     "Camera" -> ukazHlavni()
-                    "Xbox" -> ukazPripojeniXbox()
-                    "PlayStation" -> ukazPripojeni()
+                    "Xbox" -> if (XboxUcet.konzole(this) != null && XboxUcet.prihlasen(this)) {
+                        RemotePlayService.prepni(this, true); ukazHlavni()
+                    } else ukazPripojeniXbox()
+                    "PlayStation" -> if (udaje.sparovano) {
+                        RemotePlayService.prepni(this, false); ukazHlavni()
+                    } else ukazPripojeni()
                     else -> openDevices()
                 }
             }
@@ -61,21 +59,21 @@ def redesign_mobile(s: str) -> str:
 
             val psSelected = GameLingoPlayStationConsoles.list(this)
                 .firstOrNull { it.selected }
-            val selectedXbox = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
-                .getString("selectedXboxId", null)
+            val preferXboxSource = RemotePlayService.preferXbox(this)
+            val savedXbox = XboxUcet.konzole(this)
             val liveImage = RemotePlayService.aktivni &&
                 RemotePlayService.prehledSpojeni().uroven == UrovenSpojeni.OK
             val primaryFamily = when {
                 cameraSource -> "Camera"
-                selectedXbox != null -> "Xbox"
-                psSelected != null -> "PlayStation"
-                xbox != null -> "Xbox"
+                preferXboxSource && savedXbox != null -> "Xbox"
+                !preferXboxSource && udaje.sparovano -> "PlayStation"
+                savedXbox != null -> "Xbox"
                 udaje.sparovano -> "PlayStation"
                 else -> "GameLingo"
             }
             val primaryName = when (primaryFamily) {
                 "Camera" -> GameLingoLanguages.ui(this, "Kamera")
-                "Xbox" -> "Xbox"
+                "Xbox" -> savedXbox?.second ?: "Xbox"
                 "PlayStation" -> psSelected?.name ?: "PlayStation"
                 else -> GameLingoLanguages.ui(this, "Vybrat zařízení")
             }
@@ -118,7 +116,10 @@ def redesign_mobile(s: str) -> str:
                 if (cameraSource && !RemotePlayService.aktivni) {
                     if (!tvStore.pouzeTelefon && (savedTv == null || !GameLingoTVPairing.paired(this, savedTv.ip))) vyberVystupTv()
                     else GameLingoCameraActivity.open(this)
-                } else if (nejakaKonzole) prepniPreklad()
+                } else if (nejakaKonzole) {
+                    if (!RemotePlayService.aktivni) RemotePlayService.prepni(this, primaryFamily == "Xbox")
+                    prepniPreklad()
+                }
                 else GameLingoVisualKit.selectSourceOrOutput(this, "Vybrat zařízení",
                     listOf("Xbox" to "Xbox", "PlayStation" to "PlayStation", "Camera" to "Kamera"),
                     primaryFamily, ::selectSource)
