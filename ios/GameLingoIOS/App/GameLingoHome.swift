@@ -318,7 +318,10 @@ struct GameLingoHome: View {
             GLNeonPanel(emphasized: true, radius: 24) {
                 VStack(spacing: 10) {
                     HStack {
-                        Color.clear.frame(width: 44, height: 44).accessibilityHidden(true)
+                        GLBackButton { sourcePicker = false; outputPicker = false }
+                            .labelStyle(.iconOnly)
+                            .frame(width: 44, height: 44)
+                            .foregroundStyle(GLNeon.cyan)
                         Text(LocalizedStringKey(sourcePicker ? "Vybrat zařízení" : "Výstup titulků"))
                             .font(.headline).foregroundStyle(.white)
                             .accessibilityAddTraits(.isHeader)
