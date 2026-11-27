@@ -117,6 +117,9 @@ class GameLingoCameraActivity : ComponentActivity() {
     @Volatile private var configRevision = 0
     @Volatile private var running = false
     private var lastSample = 0L // analysis worker only
+    @Volatile private var analysisCost = 0L
+    @Volatile private var stableFrames = 0
+    private var previousOCR = "" // main thread
     private var provider: ProcessCameraProvider? = null
     private var analysis: ImageAnalysis? = null
     private var liveUseCase: Preview? = null
@@ -138,6 +141,9 @@ class GameLingoCameraActivity : ComponentActivity() {
     private var translatedText = ""
     private var translatedLines = emptyList<String>()
     private val overlayCache = LinkedHashMap<String, String>()
+    private var translationRequest = 0
+    private var previousVisible = emptySet<String>()
+    private var eligibleVisible = emptySet<String>()
     private var overlaySource: String? = null
     private var currentBlocks = emptyList<CameraBlock>()
     private var overlayEnabled = true
@@ -532,7 +538,8 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun analyze(frame: ImageProxy, token: Int) {
         val now = SystemClock.elapsedRealtime()
-        val sampleInterval = if (region.full) 350L else 450L
+        val base = if (region.full) 350L else 450L
+        val sampleInterval = if (region.full) maxOf(base, analysisCost * 5 / 4, if (stableFrames >= 3) 550L else base).coerceAtMost(700L) else base
         if (!running || token != generation || now - lastSample < sampleInterval || !ocrBusy.compareAndSet(false, true)) {
             frame.close(); return
         }
@@ -552,16 +559,12 @@ class GameLingoCameraActivity : ComponentActivity() {
             val cropped = if (left == 0 && top == 0 && right == bitmap.width && bottom == bitmap.height) bitmap
                 else Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top)
             recognizer.process(InputImage.fromBitmap(cropped, 0)).addOnCompleteListener { task ->
-                ocrBusy.set(false)
+                analysisCost = (analysisCost * 7 + (SystemClock.elapsedRealtime() - now) * 3) / 10
                 if (cropped !== bitmap) cropped.recycle()
                 if (!running || token != generation || current != configRevision || isFinishing) {
-                    bitmap.recycle(); return@addOnCompleteListener
+                    bitmap.recycle(); ocrBusy.set(false); return@addOnCompleteListener
                 }
-                val previous = preview.bitmap
-                preview.bitmap = bitmap
-                if (previous == null || previous.width != bitmap.width || previous.height != bitmap.height) updatePreviewHeight()
-                previewStatus.visibility = View.GONE
-                preview.invalidate()
+                try {
                 val blocks = mutableListOf<CameraBlock>()
                 var remaining = 1200
                 if (task.isSuccessful) {
@@ -590,7 +593,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                     }
                     if (region.full) {
                         for (block in task.result.textBlocks.take(20)) {
-                            addBlock(block.text.replace("\n", " "), block.boundingBox, block.cornerPoints, block.lines.size)
+                            addBlock(block.text.trim().replace(Regex("\\s+"), " "), block.boundingBox, block.cornerPoints, block.lines.size)
                         }
                     } else {
                         for (line in task.result.textBlocks.flatMap { it.lines }.take(20)) {
@@ -598,7 +601,22 @@ class GameLingoCameraActivity : ComponentActivity() {
                         }
                     }
                 }
+                // Keep a smaller fallback frame; native PreviewView still displays full live video.
+                val longest = maxOf(bitmap.width, bitmap.height)
+                val fallback = if (longest > 720) Bitmap.createScaledBitmap(bitmap,
+                    (bitmap.width * 720 / longest).coerceAtLeast(1),
+                    (bitmap.height * 720 / longest).coerceAtLeast(1), true) else bitmap
+                val previous = preview.bitmap
+                preview.bitmap = fallback
+                if (fallback !== bitmap) bitmap.recycle()
+                if (previous == null || previous.width != fallback.width || previous.height != fallback.height) updatePreviewHeight()
+                previewStatus.visibility = View.GONE
+                preview.invalidate()
+                val signature = blocks.joinToString("\n") { it.text }
+                stableFrames = if (signature.isNotBlank() && signature == previousOCR) (stableFrames + 1).coerceAtMost(3) else 0
+                previousOCR = signature
                 receive(blocks)
+                } finally { ocrBusy.set(false) }
             }
         } catch (_: Exception) {
             ocrBusy.set(false)
@@ -616,7 +634,9 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun rememberOverlay(original: String, translated: String) {
         if (translated.isBlank()) return
-        if (overlayCache.size >= 256 && original !in overlayCache) overlayCache.clear()
+        if (overlayCache.size >= 256 && original !in overlayCache) {
+            overlayCache.keys.firstOrNull()?.let { overlayCache.remove(it) }
+        }
         overlayCache[original] = translated
     }
 
@@ -624,6 +644,10 @@ class GameLingoCameraActivity : ComponentActivity() {
         val text = blocks.joinToString("\n") { it.text }
         currentBlocks = blocks
         candidate = text
+        if (region.full && overlayEnabled) {
+            receiveFullImage(text, blocks)
+            return
+        }
         if (text.isBlank()) {
             updateOverlays()
             emptyFrames++
@@ -671,64 +695,97 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
         val engine = translator ?: Prekladac(this, to, from).also { translator = it }
         fun valid() = token == generation && current == configRevision && running && !isFinishing
-        fun finishResult(result: String, lines: List<String>, complete: Boolean = true) {
-            if (!valid()) return
-            if (complete) translating = false
-            if (!matchesCurrent(text) || result.isBlank()) return
+        engine.preloz(text, { result ->
+            if (!valid()) return@preloz
+            translating = false
+            if (!matchesCurrent(text) || result.isBlank()) return@preloz
             lastTranslated = text
             translatedText = result
-            translatedLines = lines
-            if (region.full && overlayEnabled && lines.size == blocks.size) {
-                blocks.zip(lines).forEach { (block, line) -> rememberOverlay(block.text, line) }
-            }
             if (output.text.toString() != result) output.text = result
-            updateOverlays()
             publishTV(force = true)
-        }
-        engine.preloz(text, { translated ->
-            if (!valid()) return@preloz
-            if (!matchesCurrent(text) || translated.isBlank()) {
-                translating = false
-                return@preloz
-            }
-            val result = translated
-            val lines = result.split("\n")
-            if (!region.full || !overlayEnabled || (blocks.size == 1 && lines.size == blocks.size)) {
-                finishResult(result, lines)
-            } else {
-                // Only place a translation on a source line when alignment is known.
-                finishResult(result, emptyList(), complete = false)
-                val mapped = mutableListOf<String>()
-                fun next(index: Int) {
-                    if (!valid()) return
-                    if (!matchesCurrent(text)) { translating = false; return }
-                    if (index == blocks.size) { finishResult(result, mapped.toList()); return }
-                    val original = blocks[index].text
-                    val cached = overlayCache[original]
-                    if (cached != null) {
-                        mapped.add(cached)
-                        next(index + 1)
-                        return
-                    }
-                    engine.preloz(original, { item ->
-                        if (!valid()) return@preloz
-                        if (item.isBlank()) finishResult(result, emptyList())
-                        else {
-                            mapped.add(item)
-                            rememberOverlay(original, item)
-                            updateOverlays()
-                            next(index + 1)
-                        }
-                    }, { finishResult(result, emptyList()) })
-                }
-                next(0)
-            }
         }, {
-            if (token == generation && current == configRevision) {
+            if (valid()) {
                 translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L
                 output.text = tr("Překlad selhal.")
             }
         })
+    }
+
+    private fun receiveFullImage(text: String, blocks: List<CameraBlock>) {
+        val visible = blocks.map { it.text }.toSet()
+        eligibleVisible = if (previousVisible.isEmpty()) visible else visible.intersect(previousVisible)
+        val sceneChanged = previousVisible.isNotEmpty() && visible.intersect(previousVisible).isEmpty()
+        previousVisible = visible
+        if (sceneChanged) {
+            // Invalidate callbacks, including any old provider request.
+            translationRequest++
+            translator?.zavri(); translator = null
+            translating = false; retryAt = 0L; eligibleVisible = visible
+        }
+        if (text.isBlank()) {
+            publishVisibleBlocks()
+            return
+        }
+        publishVisibleBlocks()
+        if (translating || SystemClock.elapsedRealtime() < retryAt ||
+            blocks.none { it.text in eligibleVisible && it.text !in overlayCache }) return
+        val token = generation
+        val current = configRevision
+        val request = ++translationRequest
+        translating = true
+        fun valid() = token == generation && current == configRevision && request == translationRequest && running && !isFinishing
+        fun translateBlocks(from: String) {
+            if (!valid()) return
+            if (overlaySource != from) {
+                overlayCache.clear(); overlaySource = from
+                publishVisibleBlocks()
+            }
+            if (translatorSource != from) {
+                translator?.zavri(); translator = null; translatorSource = from
+            }
+            val engine = translator ?: Prekladac(this, target, from).also { translator = it }
+            fun next() {
+                if (!valid()) return
+                val original = currentBlocks.firstOrNull { it.text in eligibleVisible && it.text !in overlayCache }?.text
+                if (original == null) { translating = false; return }
+                engine.preloz(original, { result ->
+                    if (!valid()) return@preloz
+                    if (result.isBlank()) {
+                        translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L
+                        return@preloz
+                    }
+                    if (original in previousVisible) {
+                        rememberOverlay(original, result)
+                        publishVisibleBlocks()
+                    }
+                    // Avoid recursively invoking synchronous cache hits.
+                    output.post { next() }
+                }, {
+                    if (valid()) { translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L }
+                })
+            }
+            next()
+        }
+        if (source == "auto") {
+            languageIdentifier.identifyLanguage(text).addOnCompleteListener { result ->
+                if (!valid()) return@addOnCompleteListener
+                val detected = if (result.isSuccessful) result.result else null
+                val from = detected?.takeIf { code -> GameLingoLanguages.targetLanguages.any { it.code == code } }
+                    ?: overlaySource ?: GameLingoLanguages.game(this)
+                translateBlocks(from)
+            }
+        } else translateBlocks(source)
+    }
+
+    private fun publishVisibleBlocks() {
+        updateOverlays()
+        val result = currentBlocks.mapNotNull { overlayCache[it.text] }.joinToString("\n")
+        val changed = translatedText != result
+        translatedText = result
+        val display = result.ifBlank { candidate }
+        if (output.text.toString() != display) output.text = display
+        if (result.isBlank()) { if (changed) clearTV() }
+        else publishTV(force = changed)
     }
 
     private fun matchesCurrent(text: String): Boolean {
@@ -741,6 +798,9 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun resetTranslation(keepText: Boolean = false) {
         configRevision++
+        translationRequest++
+        previousVisible = emptySet(); eligibleVisible = emptySet()
+        stableFrames = 0; previousOCR = ""
         overlayCache.clear(); overlaySource = null
         candidate = ""; emptyFrames = 0; lastTranslated = ""; translating = false; retryAt = 0L
         if (!keepText) {
