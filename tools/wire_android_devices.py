@@ -294,6 +294,21 @@ def main():
             '                                    if (repeatDialogue || repeatChoices) prenos.vysledek(relace, null)',
             "report actual repeats only")
         if mobile_dashboard:
+            # Camera caption refresh uses the existing authenticated sender,
+            # but never overrides an active console or receiver session.
+            sender = one(sender, '        fun stopGameData() = synchronized(zamek) {',
+                '''        fun cameraCaption(value: String, duration: Long) = synchronized(zamek) {
+            val ip = cilIp ?: return@synchronized
+            if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized
+            if (value.isNotEmpty() && !GameLingoTVPairing.connected(ip)) return@synchronized
+            text = value; doba = duration.coerceIn(0L, 6000L); napoveda = ""; barvy = null
+            captionDeadline = if (value.isEmpty()) 0L else android.os.SystemClock.elapsedRealtime() + doba
+            cislo++
+            posliTed()
+        }
+
+        fun stopGameData() = synchronized(zamek) {''',
+                "authenticated mobile camera caption refresh")
             # PCV1 already accepts these optional fields on GameLingo TV.
             # Keep the legacy yellow ROI, selected item and text positions unchanged.
             module = Path(__file__).with_name("GameLingoOrangeOutput.kt")

@@ -279,7 +279,7 @@ object GameLingoFirstRun {
                         tvChoice = 0
                         redraw()
                     }
-                    if (consoleChoice != 2) item("📺  Google TV / Android TV", tvChoice == 1) {
+                    item("📺  Google TV / Android TV", tvChoice == 1) {
                         tvChoice = 1
                         redraw()
                     }

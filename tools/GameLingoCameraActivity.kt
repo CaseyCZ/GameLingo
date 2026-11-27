@@ -50,13 +50,19 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
     }
 
+    private data class CameraBlock(val text: String, val rect: RectF)
+    private data class CameraOverlay(val text: String, val rect: RectF)
+
     private data class Region(val full: Boolean = true, val centerY: Float = .78f,
-                              val height: Float = .24f) {
+                              val height: Float = .24f, val centerX: Float = .5f,
+                              val width: Float = .9f) {
         fun rect(): RectF {
             if (full) return RectF(0f, 0f, 1f, 1f)
             val h = height.coerceIn(.08f, .8f)
             val y = (centerY - h / 2).coerceIn(0f, 1f - h)
-            return RectF(.05f, y, .95f, y + h)
+            val w = width.coerceIn(.15f, .95f)
+            val x = (centerX - w / 2).coerceIn(0f, 1f - w)
+            return RectF(x, y, x + w, y + h)
         }
     }
 
@@ -80,6 +86,15 @@ class GameLingoCameraActivity : ComponentActivity() {
     private var candidate = ""
     private var confirmations = 0
     private var lastTranslated = ""
+    private var translatedText = ""
+    private var translatedLines = emptyList<String>()
+    private var currentBlocks = emptyList<CameraBlock>()
+    private var overlayEnabled = true
+    private var tvTarget: TvProfil? = null
+    private var tvEnabled = false
+    private var tvProbing = false
+    private var tvGeneration = 0
+    private var lastTVSent = 0L
     private var translating = false
     private var retryAt = 0L
     private lateinit var preview: CameraFrame
@@ -87,6 +102,8 @@ class GameLingoCameraActivity : ComponentActivity() {
     private lateinit var pauseButton: Button
     private lateinit var torchButton: Button
     private lateinit var modeButton: Button
+    private lateinit var overlayButton: Button
+    private var tvButton: Button? = null
     private lateinit var regionControls: LinearLayout
     private lateinit var languageButton: Button
     private fun tr(text: String) = GameLingoLanguages.ui(this, text)
@@ -135,14 +152,24 @@ class GameLingoCameraActivity : ComponentActivity() {
             updateRegion(region.copy(full = !region.full))
             modeButton.text = tr(if (region.full) "Celý obraz" else "Vybraná oblast")
             regionControls.visibility = if (region.full) View.GONE else View.VISIBLE
+            overlayButton.visibility = if (region.full) View.VISIBLE else View.GONE
         }
         root.addView(modeButton)
+        overlayButton = button("Překlad přes původní text") {
+            overlayEnabled = !overlayEnabled
+            overlayButton.text = (if (overlayEnabled) "✓  " else "") + tr("Překlad přes původní text")
+            resetTranslation()
+        }
+        overlayButton.text = "✓  " + tr("Překlad přes původní text")
+        root.addView(overlayButton)
         preview = CameraFrame(this)
         root.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(320)))
         regionControls = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             visibility = View.GONE
+            addView(row("Vodorovná pozice oblasti", 100, 50) { updateRegion(region.copy(centerX = it / 100f)) })
             addView(row("Pozice oblasti", 100, 78) { updateRegion(region.copy(centerY = it / 100f)) })
+            addView(row("Šířka oblasti", 80, 75) { updateRegion(region.copy(width = .15f + it / 100f)) })
             addView(row("Velikost oblasti", 72, 16) { updateRegion(region.copy(height = .08f + it / 100f)) })
         }
         root.addView(regionControls)
@@ -178,6 +205,12 @@ class GameLingoCameraActivity : ComponentActivity() {
         actions.addView(torchButton, LinearLayout.LayoutParams(0, px(48), 1f))
         actions.addView(pauseButton, LinearLayout.LayoutParams(0, px(48), 1f))
         root.addView(actions)
+        selectedTV()?.let {
+            tvButton = button("Překlady na TV") {
+                if (tvEnabled) disableTV() else enableTV()
+            }
+            root.addView(tvButton)
+        }
         root.addView(TextView(this).apply {
             text = tr("Online překlad může odesílat rozpoznaný text externím poskytovatelům.")
             setTextColor(Color.parseColor("#92A4C7")); textSize = 12f
@@ -193,10 +226,10 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun chooseLanguages() {
         android.app.AlertDialog.Builder(this).setTitle(tr("Jazyky"))
-            .setItems(arrayOf(tr("Jazyk hry"), tr("Cílový jazyk"))) { _, which ->
+            .setItems(arrayOf(tr("Jazyk textu"), tr("Cílový jazyk"))) { _, which ->
                 val options = if (which == 0) GameLingoLanguages.gameLanguages else GameLingoLanguages.targetLanguages
                 android.app.AlertDialog.Builder(this)
-                    .setTitle(tr(if (which == 0) "Jazyk hry" else "Cílový jazyk"))
+                    .setTitle(tr(if (which == 0) "Jazyk textu" else "Cílový jazyk"))
                     .setItems(options.map { it.title }.toTypedArray()) { _, index ->
                         if (which == 0) source = options[index].code else target = options[index].code
                         updateLanguages()
@@ -288,8 +321,22 @@ class GameLingoCameraActivity : ComponentActivity() {
                 }
                 preview.bitmap = bitmap
                 preview.invalidate()
-                if (task.isSuccessful) receive(task.result.text.take(1200))
-                else receive("")
+                val blocks = mutableListOf<CameraBlock>()
+                var remaining = 1200
+                if (task.isSuccessful) {
+                    for (line in task.result.textBlocks.flatMap { it.lines }.take(20)) {
+                        val box = line.boundingBox ?: continue
+                        if (line.text.isBlank() || remaining <= 0) continue
+                        val text = line.text.take(remaining)
+                        remaining -= text.length + 1
+                        blocks.add(CameraBlock(text, RectF(
+                            (left + box.left).toFloat() / bitmap.width,
+                            (top + box.top).toFloat() / bitmap.height,
+                            (left + box.right).toFloat() / bitmap.width,
+                            (top + box.bottom).toFloat() / bitmap.height)))
+                    }
+                }
+                receive(blocks)
             }
         } catch (_: Exception) {
             ocrBusy.set(false)
@@ -298,34 +345,86 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
     }
 
-    private fun receive(text: String) {
+    private fun updateOverlays() {
+        val overlay = region.full && overlayEnabled && translatedLines.size == currentBlocks.size &&
+            translatedLines.isNotEmpty()
+        preview.overlays = if (overlay) currentBlocks.zip(translatedLines).map { (block, text) ->
+            CameraOverlay(text, block.rect)
+        } else emptyList()
+        output.visibility = if (overlay) View.GONE else View.VISIBLE
+        preview.invalidate()
+    }
+
+    private fun receive(blocks: List<CameraBlock>) {
+        val text = blocks.joinToString("\n") { it.text }
+        currentBlocks = blocks
         if (text == candidate) confirmations = min(2, confirmations + 1)
         else { candidate = text; confirmations = 1 }
         if (confirmations < 2) return
         if (text.isBlank()) {
-            if (output.text.isNotEmpty() || translating) {
+            if (translatedText.isNotEmpty() || translating) {
                 resetTranslation(); translator?.zavri(); translator = null
             }
             return
         }
-        if (text == lastTranslated || translating || SystemClock.elapsedRealtime() < retryAt) return
+        if (text == lastTranslated) {
+            updateOverlays(); publishTV(); return
+        }
+        if (translatedText.isNotEmpty()) {
+            translatedText = ""; translatedLines = emptyList(); lastTranslated = ""
+            output.text = ""; updateOverlays(); clearTV()
+        }
+        if (translating || SystemClock.elapsedRealtime() < retryAt) return
         val current = configRevision
         val token = generation
         val from = source
         val to = target
         val engine = translator ?: Prekladac(this, to, from).also { translator = it }
         translating = true
+        fun valid() = token == generation && current == configRevision && running && !isFinishing
+        fun finishResult(result: String, lines: List<String>) {
+            if (!valid()) return
+            translating = false
+            if (candidate != text || result.isBlank()) return
+            lastTranslated = text
+            translatedText = result
+            translatedLines = lines
+            output.text = result
+            updateOverlays()
+            publishTV(force = true)
+        }
         engine.preloz(text, { translated ->
-            if (token == generation && current == configRevision && running) {
+            if (!valid()) return@preloz
+            if (candidate != text || translated.isBlank()) {
                 translating = false
-                if (candidate == text && translated.isNotBlank()) {
-                    lastTranslated = text
-                    output.text = GameLingoGlossaryStore.apply(this, text, translated, from, to)
+                return@preloz
+            }
+            val result = GameLingoGlossaryStore.apply(this, text, translated, from, to)
+            val lines = result.split("\n")
+            if (!region.full || !overlayEnabled || lines.size == blocks.size) {
+                finishResult(result, lines)
+            } else {
+                // Only place a translation on a source line when alignment is known.
+                val mapped = mutableListOf<String>()
+                fun next(index: Int) {
+                    if (!valid()) return
+                    if (candidate != text) { translating = false; return }
+                    if (index == blocks.size) { finishResult(result, mapped.toList()); return }
+                    val original = blocks[index].text
+                    engine.preloz(original, { item ->
+                        if (!valid()) return@preloz
+                        if (item.isBlank()) finishResult(result, emptyList())
+                        else {
+                            mapped.add(GameLingoGlossaryStore.apply(this, original, item, from, to))
+                            next(index + 1)
+                        }
+                    }, { finishResult(result, emptyList()) })
                 }
+                next(0)
             }
         }, {
             if (token == generation && current == configRevision) {
-                translating = false; retryAt = SystemClock.elapsedRealtime() + 1500L
+                translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L
             }
         })
     }
@@ -333,12 +432,72 @@ class GameLingoCameraActivity : ComponentActivity() {
     private fun resetTranslation(keepText: Boolean = false) {
         configRevision++
         candidate = ""; confirmations = 0; lastTranslated = ""; translating = false; retryAt = 0L
-        if (!keepText) output.text = ""
+        if (!keepText) {
+            translatedText = ""; translatedLines = emptyList(); currentBlocks = emptyList()
+            output.text = ""; updateOverlays()
+        }
+        clearTV()
+    }
+
+    private fun selectedTV(): TvProfil? {
+        val store = TvProfily(this)
+        if (store.pouzeTelefon) return null
+        val tv = store.posledniId?.let { store.najdi(it) } ?: return null
+        return tv.takeIf { GameLingoTVPairing.paired(this, it.ip) }
+    }
+
+    private fun enableTV() {
+        if (!running) return
+        val tv = selectedTV() ?: return
+        tvTarget = tv; tvEnabled = true; tvGeneration++; lastTVSent = 0
+        tvButton?.text = "✓  " + tr("Překlady na TV")
+        publishTV(force = true)
+    }
+
+    private fun disableTV() {
+        clearTV()
+        tvGeneration++; tvEnabled = false; tvProbing = false; tvTarget = null
+        tvButton?.text = tr("Překlady na TV")
+    }
+
+    private fun clearTV() {
+        val tv = tvTarget ?: return
+        if (!RemotePlayService.aktivni && Propojeni.Vysilac.cilIp == tv.ip) {
+            Propojeni.Vysilac.cameraCaption("", 0)
+        }
+        lastTVSent = 0L
+    }
+
+    private fun publishTV(force: Boolean = false) {
+        val tv = tvTarget ?: return
+        if (!tvEnabled || !running || RemotePlayService.aktivni || PrijemService.bezi) return
+        if (selectedTV()?.ip != tv.ip) { disableTV(); return }
+        val now = SystemClock.elapsedRealtime()
+        if (!GameLingoTVPairing.connected(tv.ip)) {
+            if (tvProbing) return
+            tvProbing = true
+            val token = tvGeneration
+            GameLingoTVPairing.verify(this, tv) { ok ->
+                if (token != tvGeneration || !tvEnabled || !running) return@verify
+                tvProbing = false
+                if (ok) publishTV(force = true)
+                else {
+                    disableTV()
+                    Toast.makeText(this, tr("TV neodpovídá. Zkontroluj domácí síť a přijímač."), Toast.LENGTH_LONG).show()
+                }
+            }
+            return
+        }
+        if (translatedText.isBlank() || (!force && now - lastTVSent < 4000L)) return
+        Propojeni.Vysilac.nastavCil(tv.ip, tv.jmeno)
+        Propojeni.Vysilac.cameraCaption(translatedText, 6000)
+        lastTVSent = now
     }
 
     private fun releaseCamera(keepFrame: Boolean = false) {
         running = false; generation++
         resetTranslation(keepText = keepFrame)
+        disableTV()
         analysis?.clearAnalyzer()
         analysis?.let { provider?.unbind(it) }
         analysis = null; camera = null; torch = false
@@ -354,6 +513,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     private class CameraFrame(context: android.content.Context) : View(context) {
         var bitmap: Bitmap? = null
         var region = Region()
+        var overlays = emptyList<CameraOverlay>()
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         override fun onDraw(canvas: Canvas) {
             canvas.drawColor(Color.BLACK)
@@ -362,6 +522,25 @@ class GameLingoCameraActivity : ComponentActivity() {
             val w = image.width * scale; val h = image.height * scale
             val x = (width - w) / 2; val y = (height - h) / 2
             canvas.drawBitmap(image, null, RectF(x, y, x + w, y + h), paint)
+            if (region.full) {
+                for (overlay in overlays) {
+                    val r = overlay.rect
+                    val box = RectF(x + r.left * w, y + r.top * h, x + r.right * w, y + r.bottom * h)
+                    if (box.width() <= 0 || box.height() <= 0) continue
+                    paint.color = GameLingoPhoneSubtitleStyle.backgroundColor(
+                        GameLingoPhoneSubtitleStyle.background(context))
+                    if (paint.color == Color.TRANSPARENT) paint.color = Color.argb(224, 0, 0, 0)
+                    canvas.drawRect(box, paint)
+                    paint.color = GameLingoPhoneSubtitleStyle.textColor(GameLingoPhoneSubtitleStyle.color(context))
+                    paint.textSize = (box.height() * .8f * GameLingoPhoneSubtitleStyle.scale(context)).coerceAtLeast(8f)
+                    val measured = paint.measureText(overlay.text)
+                    if (measured > box.width()) paint.textSize *= box.width() / measured
+                    canvas.save()
+                    canvas.clipRect(box)
+                    canvas.drawText(overlay.text, box.left, box.centerY() - (paint.ascent() + paint.descent()) / 2, paint)
+                    canvas.restore()
+                }
+            }
             if (!region.full) {
                 val r = region.rect()
                 paint.style = Paint.Style.STROKE

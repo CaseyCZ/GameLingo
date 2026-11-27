@@ -44,6 +44,14 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoCameraActivity.open(this)", wire)
         self.assertIn("GameLingoCameraActivity.open(this)", code(TOOLS/"redesign_gamelingo.py"))
         self.assertIn('android:exported="false"', wire)
+        for key in ("Překlad přes původní text", "Jazyk textu", "Šířka oblasti"):
+            self.assertIn(key, camera)
+            self.assertIn(key, android)
+        self.assertIn("lines.count != blocks.count", camera)
+        self.assertIn("lines.size == blocks.size", android)
+        self.assertIn("GameLingoTVPairing.connected(tv.ip)", android)
+        self.assertIn("Propojeni.Vysilac.cameraCaption", android)
+        self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
 
     def test_reset_defaults_preserves_profiles_and_pairing(self):
         ios_model = code(IOS/"PlayCaptionIOSApp.swift")
