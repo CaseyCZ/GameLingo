@@ -102,6 +102,13 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                     "root.addView(outputViewport, LinearLayout.LayoutParams(-1, px(108)))"):
             self.assertIn(key, android)
 
+    def test_short_dialogue_geometry_respects_selected_mode(self):
+        wire = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn('geometry = folder / "VyberTitulku.kt"', wire)
+        self.assertIn('GameLingoDialogueText.readableLine(it.text, GameLingoOCRConfig.mode == "street")', wire)
+        self.assertIn("fun readableLine", code(TOOLS/"GameLingoDialogueText.kt"))
+        self.assertIn("if text == accepted", code(IOS/"CaptionStability.swift"))
+
     def test_camera_full_image_failure_does_not_block_other_blocks(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")

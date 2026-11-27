@@ -27,6 +27,16 @@ struct CaptionStabilityTests {
         precondition(state.observe("We have to get", now: 7) == .hold)
         precondition(state.observe("We have to get back", now: 7.4) == .hold)
         precondition(state.observe("We have to get back home", now: 7.9) == .accept("We have to get back home"))
+        // Case changes and distinct short words cannot silently disappear.
+        state.reset()
+        precondition(state.observe("No", now: 8) == .accept("No"))
+        precondition(state.observe("Now", now: 8.2) == .accept("Now"))
+        precondition(state.observe("No!", now: 8.4) == .accept("No!"))
+        precondition(state.observe("No?", now: 8.6) == .accept("No?"))
+        precondition(state.observe("NO?", now: 8.8) == .accept("NO?"))
+        precondition(state.observe("Let us go.", now: 9) == .accept("Let us go."))
+        precondition(state.observe("Let US go.", now: 9.2) == .accept("Let US go."))
+        precondition(state.observe("Let  US\n go.", now: 9.4) == .hold)
         var game = GameTextStability()
         let document = ["Long document"]
         precondition(game.permits(document, previous: [], now: 0))

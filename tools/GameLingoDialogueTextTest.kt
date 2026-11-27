@@ -15,6 +15,16 @@ class GameLingoDialogueTextTest {
         assertEquals(values, values.map(GameLingoDialogueText::normalize))
         assertEquals(values.size, values.map(GameLingoDialogueText::normalize).toSet().size)
     }
+    @Test fun shortDialogueModeRetainsTwoLetterLinesWithoutAdmittingNoise() {
+        for (text in listOf("Go!", "No", "OK?", "Ja", "Не")) {
+            assertTrue(text, GameLingoDialogueText.readableLine(text, true))
+            assertFalse(text, GameLingoDialogueText.readableLine(text, false))
+        }
+        for (text in listOf("A", "X!", "123", "?", " ")) {
+            assertFalse(text, GameLingoDialogueText.readableLine(text, true))
+        }
+        assertTrue(GameLingoDialogueText.readableLine("Run!", false))
+    }
     @Test fun existingInputBoundIsPreserved() {
         assertEquals("", GameLingoDialogueText.normalize(" \n\t "))
         assertEquals(240, GameLingoDialogueText.normalize("x".repeat(400)).length)

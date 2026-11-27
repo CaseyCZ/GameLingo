@@ -16,10 +16,17 @@ struct CaptionStability {
         text.lowercased().split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
     }
 
+    // Compare word boundaries for growth/shrinkage, not arbitrary character
+    // prefixes ("No" and "Now" are distinct short replies).
+    private static func prefix(_ shorter: String, of longer: String) -> Bool {
+        let x = normalized(shorter), y = normalized(longer)
+        guard !x.isEmpty, y.hasPrefix(x), y.count > x.count else { return false }
+        guard let next = y.dropFirst(x.count).first else { return false }
+        return next.isWhitespace || next.isPunctuation
+    }
+
     private static func related(_ a: String, _ b: String) -> Bool {
-        let x = normalized(a), y = normalized(b)
-        guard !x.isEmpty, !y.isEmpty else { return false }
-        return x.hasPrefix(y) || y.hasPrefix(x)
+        prefix(a, of: b) || prefix(b, of: a)
     }
 
     mutating func observe(_ raw: String, now: TimeInterval, retry: Bool = false) -> Decision {
@@ -35,13 +42,13 @@ struct CaptionStability {
             return .clear
         }
         missingSince = nil
-        if Self.normalized(text) == Self.normalized(accepted) {
+        if text == accepted {
             candidate = nil
             candidateSince = nil
             return retry ? .accept(accepted) : .hold
         }
         let complete = text.last.map { ".!?…\"'”’".contains($0) } ?? false
-        let shrink = !accepted.isEmpty && Self.normalized(accepted).hasPrefix(Self.normalized(text))
+        let shrink = Self.prefix(text, of: accepted)
         let growing = Self.related(accepted, text) || candidate.map { Self.related($0, text) } == true
         // Very short replies must not wait for a second read just because they
         // have no punctuation. Longer unfinished sentences and shrinkage do.
