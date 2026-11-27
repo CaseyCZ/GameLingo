@@ -96,6 +96,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("overlayCache.size >= 256", android)
         self.assertIn("if (overlaySource != from)", android)
 
+    def test_camera_torch_is_icon_only_in_header(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        self.assertIn("ToolbarItem(placement: .topBarTrailing)", ios)
+        self.assertIn('.accessibilityLabel("Svítilna")', ios)
+        self.assertNotIn('Label("Svítilna",', ios)
+        self.assertIn("torchButton = ImageButton(this)", android)
+        self.assertIn('contentDescription = tr("Svítilna")', android)
+        self.assertIn("addView(torchButton, LinearLayout.LayoutParams(px(48), px(48)))", android)
+        self.assertNotIn("actions.addView(torchButton", android)
+
     def test_camera_torch_state_and_lifecycle(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")
