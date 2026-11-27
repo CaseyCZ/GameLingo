@@ -758,7 +758,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('onTV',manager)
         first_run=code(TOOLS/"GameLingoFirstRun.kt")
         self.assertIn('GameLingoFirstRun.show',patches)
-        for step in ('Nastavit později', 'connectPlayStation()', 'connectTV()',
+        for step in ('Nastavit později', 'connectPlayStation()', 'GameLingoQRScanner.scan(activity)',
                      'GameLingoUIContract.setupSteps[step]'):
             self.assertIn(step,first_run)
         self.assertIn('Vyber zařízení',code(ROOT/"shared/mobile-ui.json"))

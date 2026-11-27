@@ -130,7 +130,7 @@ object GameLingoFirstRun {
             val selected = store.posledniId?.let { store.najdi(it) }
             if (selected != null && selected.platforma.jenZobrazovac) {
                 android.app.AlertDialog.Builder(activity)
-                    .setMessage(tr("Vybraná televize nepodporuje šestimístné párování GameLingo TV. Pro tento výstup vyber Android TV nebo telefon."))
+                    .setMessage(tr("Vyber nebo spáruj televizi"))
                     .setPositiveButton("OK", null).show()
             } else if (selected != null) {
                 GameLingoTVPairing.show(activity, selected) { redraw() }
@@ -145,7 +145,7 @@ object GameLingoFirstRun {
                         redraw()
                     }
                 }
-                android.app.AlertDialog.Builder(activity).setTitle(tr("Spárovat TV"))
+                android.app.AlertDialog.Builder(activity).setTitle(tr("Párování televize"))
                     .setItems(options) { _, index ->
                         if (index == 0) GameLingoQRScanner.scan(activity) { qr -> pair(qr.ip, qr.pin) }
                         else {
@@ -182,7 +182,7 @@ object GameLingoFirstRun {
             if (open == 0) {
                 activity.getSharedPreferences("gamelingo_devices", Activity.MODE_PRIVATE)
                     .edit().putBoolean("cameraSourceSelected", consoleChoice == 2).apply()
-                if (consoleChoice in 0..1 && consoleRegistered()) RemotePlayService.prepni(activity, consoleChoice == 0)
+                if (consoleChoice in 0..1 && consoleRegistered() && !RemotePlayService.aktivni) RemotePlayService.prepni(activity, consoleChoice == 0)
             }
             dialog.dismiss()
             finished()

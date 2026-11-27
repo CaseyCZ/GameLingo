@@ -2702,8 +2702,13 @@ object GameLingoLanguages {
 
     enum class Kind { APP, GAME, TARGET }
 
+    // The TV build supplies its local capture state; mobile has no TV-only class.
+    internal var directTVBusy: () -> Boolean = { false }
+    internal fun translationSettingsBusy(): Boolean =
+        RemotePlayService.aktivni || (PrijemService.bezi && PrijemService.telefonPripojen()) || directTVBusy()
+
     private fun translationLanguageEditable(activity: Activity): Boolean {
-        if (!RemotePlayService.aktivni && !PrijemService.bezi) return true
+        if (!translationSettingsBusy()) return true
         AlertDialog.Builder(activity).setMessage(ui(activity, "Nejdřív zastav překlad."))
             .setPositiveButton("OK", null).show()
         return false

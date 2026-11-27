@@ -386,7 +386,7 @@ class ReleaseLocalizationTests(unittest.TestCase):
         wire = text(TOOLS / "wire_android_devices.py")
         brand = text(TOOLS / "brand_android.py")
         self.assertIn('if (nast.jazyk == null) nast.jazyk = GameLingoLanguages.systemApp(this)', wire)
-        self.assertIn('ukazHlavni()\n        if (telefon && !GameLingoFirstRun.completed(this))', wire)
+        self.assertIn('if (telefon && !GameLingoFirstRun.completed(this)) ui.post', wire)
         self.assertIn('Legacy PlayCaption welcome is still reachable', wire)
         self.assertIn('android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"', brand)
         self.assertIn("v.substringBefore('-')", text(TOOLS / "GameLingoHelp.kt"))

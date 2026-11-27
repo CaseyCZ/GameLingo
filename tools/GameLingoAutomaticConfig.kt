@@ -49,7 +49,7 @@ internal object GameLingoAutomaticConfig {
     }
     fun label(c: Context)=GameLingoLanguages.ui(c, if(enabled(c)) "Automatický" else "Standardní")
     private fun editable(a: Activity): Boolean {
-        if (!RemotePlayService.aktivni && !PrijemService.bezi) return true
+        if (!GameLingoLanguages.translationSettingsBusy()) return true
         AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a,"Nejdřív zastav překlad.")).setPositiveButton("OK",null).show()
         return false
     }
@@ -227,7 +227,7 @@ internal object GameLingoAutomaticConfig {
         lateinit var preview: View
 
         fun updateSelected(change: (AutoZone) -> AutoZone, rerender: Boolean = true) {
-            if (selected !in entries.indices || RemotePlayService.aktivni || PrijemService.bezi) return
+            if (selected !in entries.indices || GameLingoLanguages.translationSettingsBusy()) return
             val updated = change(entries[selected])
             if (!updated.rect.valid()) return
             entries[selected] = updated
@@ -344,7 +344,7 @@ internal object GameLingoAutomaticConfig {
             AlertDialog.Builder(a).setMessage(tr("Smazat zónu") + "?")
                 .setNegativeButton(tr("Zrušit"), null)
                 .setPositiveButton(tr("Smazat zónu")) { _, _ ->
-                    if (RemotePlayService.aktivni || PrijemService.bezi) return@setPositiveButton
+                    if (GameLingoLanguages.translationSettingsBusy()) return@setPositiveButton
                     entries.removeAt(selected)
                     save(a, entries)
                     selected = if (entries.isEmpty()) -1 else selected.coerceAtMost(entries.lastIndex)
@@ -356,7 +356,7 @@ internal object GameLingoAutomaticConfig {
             AlertDialog.Builder(a).setMessage(tr("Obnovit výchozí zóny?"))
                 .setNegativeButton(tr("Zrušit"), null)
                 .setPositiveButton(tr("Obnovit")) { _, _ ->
-                    if (RemotePlayService.aktivni || PrijemService.bezi) return@setPositiveButton
+                    if (GameLingoLanguages.translationSettingsBusy()) return@setPositiveButton
                     entries.clear()
                     entries.addAll(initial(a))
                     save(a, entries)
@@ -378,7 +378,7 @@ internal object GameLingoAutomaticConfig {
             }
             if (entries.size < 10) {
                 val add = action("＋ " + tr("Přidat zónu")) {
-                    if (RemotePlayService.aktivni || PrijemService.bezi) return@action
+                    if (GameLingoLanguages.translationSettingsBusy()) return@action
                     val next = AutoZone(UUID.randomUUID().toString(), tr("Zóna") + " " + (entries.size + 1),
                         true, AutoRect(.2f, .2f, .8f, .45f), false)
                     entries.add(next)
