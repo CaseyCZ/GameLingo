@@ -20,7 +20,7 @@ def main():
         raise SystemExit("Usage: wire_android_devices.py <upstream>")
     upstream=Path(sys.argv[1])
     folder=upstream/SRC
-    for name in ("GameLingoDeviceCenter.kt","GameLingoPlayStationConsoles.kt","GameLingoFirstRun.kt","GameLingoAbout.kt","GameLingoNavigation.kt","GameLingoUIContract.kt","GameLingoVisualKit.kt","GameLingoLanguages.kt","GameLingoTVUi.kt","GameLingoTVPairing.kt"):
+    for name in ("GameLingoDeviceCenter.kt","GameLingoPlayStationConsoles.kt","GameLingoFirstRun.kt","GameLingoAbout.kt","GameLingoNavigation.kt","GameLingoUIContract.kt","GameLingoVisualKit.kt","GameLingoLanguages.kt","GameLingoTVUi.kt","GameLingoTVPairing.kt","GameLingoPSLoginPIN.kt"):
         original=Path(__file__).with_name(name)
         (folder/name).write_text(original.read_text(encoding="utf-8"),encoding="utf-8")
 
@@ -184,6 +184,57 @@ def main():
                                         selectedPS?.jmeno ?: "PlayStation", ip)
                                 AutoStart.nastavZapnuto(this, true)''',
         "PlayStation registration success")
+
+    # Explicit PS4/PS5 type, host and name, also when discovery fails.
+    code=one(code, "        fun hledej() {",
+        '''        val psType = android.widget.Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, listOf("PS5", "PS4"))
+        }
+        val psHost = EditText(this).apply {
+            hint = GameLingoLanguages.ui(this@MainActivity, "IP adresa konzole")
+            setSingleLine()
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            setTextColor(Color.WHITE)
+            setHintTextColor(TEXT2)
+        }
+        val psName = EditText(this).apply {
+            hint = GameLingoLanguages.ui(this@MainActivity, "Název konzole")
+            setSingleLine()
+            setTextColor(Color.WHITE)
+            setHintTextColor(TEXT2)
+        }
+        k2.addView(psType, LinearLayout.LayoutParams(-1, -2))
+        k2.addView(psHost, LinearLayout.LayoutParams(-1, -2))
+        k2.addView(psName, LinearLayout.LayoutParams(-1, -2))
+        fun hledej() {''', "manual PlayStation host and type")
+    code=one(code, "                        nalezenaIp = ps.ip\n",
+        '''                        nalezenaIp = ps.ip
+                        if (psHost.text.isBlank()) {
+                            psHost.setText(ps.ip)
+                            psType.setSelection(if (ps.typ == "PS4") 1 else 0)
+                            psName.setText(ps.jmeno)
+                        }
+''', "populate manual PlayStation form")
+    code=one(code, '''            val selectedPS = nalezenaPS
+            val ip = nalezenaIp
+            val target = if (selectedPS?.typ == "PS4")''',
+        '''            val ip = psHost.text.toString().trim().takeIf { android.util.Patterns.IP_ADDRESS.matcher(it).matches() }
+            val consoleName = psName.text.toString().trim().ifBlank { if (psType.selectedItemPosition == 1) "PS4" else "PS5" }
+            val target = if (psType.selectedItemPosition == 1)''', "use explicit manual PlayStation target")
+    code=one(code, 'selectedPS?.jmeno ?: "PlayStation", ip)', 'consoleName, ip)', "save explicit console name")
+    code=one(code, '            hint = "12345678"\n            isEnabled = lzeParovat',
+        '''            hint = GameLingoLanguages.ui(this@MainActivity, "8místný PIN z PlayStation")
+            filters = arrayOf(android.text.InputFilter.LengthFilter(8))
+            isSaveEnabled = false
+            isEnabled = true''', "visible registration PIN")
+    code=one(code, 'k3.addView(pin, LinearLayout.LayoutParams(dp(320), ViewGroup.LayoutParams.WRAP_CONTENT)',
+        'k3.addView(pin, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)', "responsive registration PIN")
+    code=one(code, 'val cislo = pin.text.toString().filter { it.isDigit() }',
+        "val cislo = pin.text.toString().filter { it in '0'..'9' }", "ASCII registration PIN")
+    code=one(code, '}.apply { isEnabled = lzeParovat; alpha = if (lzeParovat) 1f else 0.5f }, obal(top = 10))',
+        '}, obal(top = 10))', "show account validation on pairing action")
+    code=one(code, "                            if (ok) {\n                                if (ip != null)",
+        "                            if (ok) {\n                                pin.text.clear()\n                                if (ip != null)", "clear one-time PIN")
 
     if mobile_dashboard or tv_dashboard:
         # The Android TV pairing code may select 41990-41993, but the
@@ -516,7 +567,42 @@ def main():
             '                ui.postDelayed({ zahrejCtecku() }, 1500)',
             '                ui.postDelayed({\n                    if (session === connectedSession && connectedGeneration == relaceCteni.get() && bezi) zahrejCtecku()\n                }, 1500)',
             "PS delayed OCR warmup belongs to current session")
+        ps_events = one(ps_events,
+            '''            is LoginPinRequestEvent -> {
+                automat = false
+                val duvod = "PS5 chce PIN pro přihlášení – zatím nepodporováno ✘"
+                zastav(duvod)
+                obrazStav.ukonciChybou(duvod)
+                stopSelf()
+            }''',
+            '''            is LoginPinRequestEvent -> {
+                val requesting = session ?: return
+                stav = GameLingoLanguages.ui(this, "Zadej přihlašovací PIN PlayStation")
+                GameLingoPSLoginPIN.request(this,
+                    submit = { pin ->
+                        if (session === requesting && !zanikla) {
+                            runCatching { requesting.setLoginPin(pin) }.onFailure {
+                                automat = false
+                                zastav(GameLingoLanguages.ui(this, "PlayStation odpojen"))
+                                stopSelf()
+                            }
+                        }
+                    },
+                    cancel = {
+                        if (session === requesting && !zanikla) {
+                            automat = false
+                            zastav(GameLingoLanguages.ui(this, "PlayStation odpojen"))
+                            stopSelf()
+                        }
+                    })
+            }''', "support native PlayStation login PIN")
+        ps_events = one(ps_events, "                val connectedSession = session ?: return",
+            "                GameLingoPSLoginPIN.clear(this)\n                val connectedSession = session ?: return", "clear login PIN after connection")
         source = source[:start] + ps_events + source[end:]
+        source = one(source, "    private fun zastav(zprava: String, ukazat: Boolean = true) {",
+            "    private fun zastav(zprava: String, ukazat: Boolean = true) {\n        GameLingoPSLoginPIN.clear(this)", "clear login PIN on stop")
+        source = one(source, "    override fun onDestroy() {",
+            "    override fun onDestroy() {\n        GameLingoPSLoginPIN.clear(this)", "clear login PIN on destroy")
         service.write_text(source, encoding="utf-8")
 
     if mobile_dashboard:
@@ -579,6 +665,10 @@ def main():
             '        if (!editorOnly) obal.addView(TextView(this).apply {\n            text = "▣  Oblasti na obrazovce · "', "hide legacy TV control in editor")
         phone_code = one(phone_code, "        obal.addView(LgDevModeView(this) {",
             "        if (!editorOnly) obal.addView(LgDevModeView(this) {", "hide legacy LG setup in editor")
+        phone_code = one(phone_code, "        if (editorOnly) return\n        ui.removeCallbacks(obnova)",
+            "        if (editorOnly) return\n        GameLingoPSLoginPIN.resume(this)\n        ui.removeCallbacks(obnova)", "login PIN on phone player")
+        phone_code = one(phone_code, "    override fun onPause() {",
+            "    override fun onPause() {\n        GameLingoPSLoginPIN.pause(this)", "dismiss PIN prompt on phone pause")
         phone.write_text(phone_code, encoding="utf8")
 
     # Remove the remaining legacy welcome paths on both variants, including
@@ -592,6 +682,10 @@ def main():
     code = code[:start] + code[end:]
     if "ukazBetu()" in code:
         raise RuntimeError("Legacy PlayCaption welcome is still reachable")
+    code = one(code, "    override fun onResume() {",
+        "    override fun onResume() {\n        GameLingoPSLoginPIN.resume(this)", "login PIN on main activity")
+    code = one(code, "    override fun onPause() {",
+        "    override fun onPause() {\n        GameLingoPSLoginPIN.pause(this)", "dismiss PIN prompt on main pause")
     mainFile.write_text(code,encoding="utf-8")
 
     profiles=folder/"TvProfily.kt"

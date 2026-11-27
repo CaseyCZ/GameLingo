@@ -2006,6 +2006,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Active phone reception stays in the background",wiring)
         self.assertNotIn("Přidat PlayStation a spárovat osmimístným PINem",home)
 
+    def test_android_playstation_registration_and_login_pin(self):
+        wiring = code(TOOLS/"wire_android_devices.py")
+        prompt = code(TOOLS/"GameLingoPSLoginPIN.kt")
+        for marker in ("psHost", "psType", "psName", "consoleName, ip",
+                       "requesting.setLoginPin(pin)", "session === requesting",
+                       "GameLingoPSLoginPIN.resume(this)", "GameLingoPSLoginPIN.pause(this)",
+                       "GameLingoPSLoginPIN.clear(this)"):
+            self.assertIn(marker, wiring)
+        self.assertIn("InputFilter.LengthFilter(4)", prompt)
+        self.assertIn("isSaveEnabled = false", prompt)
+        self.assertIn("pending !== request", prompt)
+        self.assertIn("field?.text?.clear()", prompt)
+
     def test_mobile_console_uses_shared_timing_and_ocr_presets(self):
         settings = code(TOOLS/"GameLingoSettings.kt")
         ocr = code(TOOLS/"GameLingoOCRSettings.kt")
