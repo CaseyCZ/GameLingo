@@ -1370,6 +1370,21 @@ final class CaptionAppModel: ObservableObject {
         status = "Zastaveno"
     }
 
+    // Camera has its own capture lifetime and does not create a Remote Play session.
+    func translateCameraText(_ original: String, source: GLGameLanguage,
+                             target: GLTargetLanguage) async -> String? {
+        guard !isRunning, !cacheChanging else { return nil }
+        guard case .success(let translated) = await pipeline.translate(original, from: source, to: target),
+              !Task.isCancelled, !isRunning else { return nil }
+        return glossaryTranslation(original: original, translated: translated,
+                                   source: source.rawValue, target: target.rawValue)
+    }
+
+    func sendCameraSubtitle(_ text: String) {
+        guard !isRunning, verifiedTelevisionOutput else { return }
+        tv.sendSubtitle(text, duration: text.isEmpty ? 0 : 6000)
+    }
+
     func shareLogs() -> String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         return (["GameLingo iOS \(version)", isRunning ? "Relace aktivní" : "Relace neaktivní", performanceSummary] + logLines).joined(separator: "\n")

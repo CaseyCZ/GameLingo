@@ -18,6 +18,21 @@ def code(path):
     return path.read_text(encoding="utf-8")
 
 class GameLingoIntegrationContracts(unittest.TestCase):
+    def test_independent_camera_source(self):
+        camera = code(IOS/"GameLingoCameraScreen.swift")
+        home = code(IOS/"GameLingoHome.swift")
+        setup = code(IOS/"GameLingoSetupView.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn("AVCaptureDevice.requestAccess(for: .video)", camera)
+        self.assertIn("alwaysDiscardsLateVideoFrames = true", camera)
+        self.assertIn("request.regionOfInterest", camera)
+        self.assertIn("model.translateCameraText", camera)
+        self.assertIn(".onDisappear { state.stop() }", camera)
+        self.assertNotIn("for: .audio", camera)
+        self.assertIn("(cameraSelected || consoleRegistered) && televisionPaired", setup)
+        self.assertIn("GameLingoCameraScreen(model: model)", home)
+        self.assertIn("guard !isRunning, verifiedTelevisionOutput", model)
+
     def test_reset_defaults_preserves_profiles_and_pairing(self):
         ios_model = code(IOS/"PlayCaptionIOSApp.swift")
         reset = ios_model.split("func restoreDefaultSettings() {", 1)[1].split(

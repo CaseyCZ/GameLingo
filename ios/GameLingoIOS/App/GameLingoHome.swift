@@ -27,6 +27,8 @@ struct GameLingoHome: View {
     @State private var playStationSheet = false
     @State private var tvSheet = false
     @State private var setupSheet = false
+    @State private var cameraSheet = false
+    @State private var cameraAfterSetup = false
     @State private var regionsSheet = false
     @State private var profilesSheet = false
     @State private var settingsSheet = false
@@ -80,9 +82,20 @@ struct GameLingoHome: View {
                 .environmentObject(model)
         }
         .sheet(isPresented: $tvSheet) { tvScreen }
-        .sheet(isPresented: $setupSheet) {
-            GameLingoSetupView(devices: devices, onFinished: {})
+        .sheet(isPresented: $setupSheet, onDismiss: {
+            if cameraAfterSetup {
+                cameraAfterSetup = false
+                cameraSheet = true
+            }
+        }) {
+            GameLingoSetupView(devices: devices, onFinished: {}, onCameraSelected: {
+                cameraAfterSetup = true
+            })
                 .environmentObject(model)
+        }
+        .fullScreenCover(isPresented: $cameraSheet) {
+            GameLingoCameraScreen(model: model)
+                .environment(\.locale, Locale(identifier: model.appLanguage.rawValue))
         }
         .task { if !model.isRunning && devices.completedSetup { updates.checkAtStartup() } }
         .onChange(of: updates.available) { _, _ in offerUpdateIfReady() }
@@ -378,6 +391,10 @@ struct GameLingoHome: View {
             }
             .buttonStyle(.plain)
             actionButton
+            GLPrimaryButton(title: "Překlad kamerou", systemImage: "camera.fill",
+                            disabled: model.isRunning || model.cacheChanging) {
+                cameraSheet = true
+            }
             LazyVGrid(columns: [GridItem(.flexible()),
                                 GridItem(.flexible())], spacing: 9) {
                 tile("Oblasti", icon: "rectangle.dashed") { regionsSheet = true }

@@ -48,6 +48,7 @@
 "Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu." = "Vyrovnávacia pamäť ukladá originály aj preklady na tomto zariadení. Je oddelená od voliteľnej histórie. Vypnutie môže zvýšiť počet online požiadaviek a obmedziť preklady bez internetu.";
 "Cache vypnuta; uložené překlady lze vymazat zvlášť." = "Cache vypnutá; uložené preklady možno vymazať zvlášť.";
 "Cache zapnuta." = "Cache zapnutá.";
+"Celý obraz" = "Celý obraz";
 "Chiaki / TP Play" = "Chiaki / TP Play";
 "Chyba OCR" = "Chyba OCR";
 "Chyba OCR:" = "Chyba OCR:";
@@ -101,6 +102,7 @@
 "Filtry dialogů jsou nezávislé na herních textech." = "Filtre dialógov sú nezávislé od herných textov.";
 "Filtry herních textů neovlivňují dialogy." = "Filtre herných textov neovplyvňujú dialógy.";
 "Foreground služba:" = "Služba v popredí:";
+"Fotoaparát není dostupný." = "Fotoaparát nie je dostupný.";
 "Fotoaparát není dostupný. Použij ruční PIN." = "Fotoaparát nie je dostupný. Použi ručný PIN.";
 "Francouzština" = "Francúzština";
 "GameLingo" = "GameLingo";
@@ -420,6 +422,7 @@
 "Odpárování se nepodařilo uložit." = "Zrušenie párovania sa nepodarilo uložiť.";
 "Odstranit" = "Odstrániť";
 "Offline překlad na telefonu využívá Google ML Kit. Jazykové modely se stahují přes Wi-Fi." = "Offline preklad v telefóne využíva Google ML Kit. Jazykové modely sa sťahujú cez Wi-Fi.";
+"Online překlad může odesílat rozpoznaný text externím poskytovatelům." = "Online preklad môže odosielať rozpoznaný text externým poskytovateľom.";
 "Operace se nezdařila. Zkus ji znovu." = "Operácia sa nepodarila. Skús ju znova.";
 "Oranžová" = "Oranžová";
 "Oranžová je výstup překladu ze žluté oblasti. Při hraní se aktuální přeložený text při změně polohy ihned přesune. Písmo můžeš měnit nezávisle na běžných titulcích." = "Oranžová je výstup prekladu zo žltej oblasti. Pri presune sa posledný preložený text hneď premiestni. Veľkosť písma je nezávislá od bežných titulkov.";
@@ -516,6 +519,7 @@
 "Pozastavit" = "Pozastaviť";
 "Pozastavit / pokračovat" = "Pozastaviť / pokračovať";
 "Později" = "Neskôr";
+"Pozice oblasti" = "Poloha oblasti";
 "Počet" = "Počet";
 "Počet předchozích replik" = "Počet predchádzajúcich replík";
 "Pro Xbox se přihlašuješ svým účtem Microsoft a povolíš vzdálené funkce. Pro PS5/PS4 použij Remote Play a údaje svého účtu PlayStation. Párovací PIN z konzole se liší od hesla. Do hry ani do konzole se nic neinstaluje." = "Pre Xbox sa prihlás účtom Microsoft a povoľ vzdialené funkcie. Pre PS5/PS4 použi Remote Play a údaje účtu PlayStation. Párovací PIN konzoly sa líši od hesla. Do hry ani konzoly sa nič neinštaluje.";
@@ -563,6 +567,7 @@
 "Překlad herních textů" = "Preklad herných textov";
 "Překlad je aktivní. Aktualizaci spusť po zastavení." = "Preklad je aktívny. Aktualizáciu spusti po zastavení.";
 "Překlad je spuštěný." = "Preklad je spustený.";
+"Překlad kamerou" = "Preklad kamerou";
 "Překlad mluvených dialogů" = "Preklad hovorených dialógov";
 "Překlad na telefonu" = "Preklad na telefóne";
 "Překlad právě běží. Pro změnu nebo odebrání konzole ho nejprve zastav." = "Preklad práve beží. Pred zmenou alebo odobratím konzoly ho zastav.";
@@ -605,6 +610,7 @@
 "Přetáhni vybraný rámeček." = "Presuň vybraný rámček.";
 "Přetáhni vybraný rámeček. Ostatní oblasti zůstanou na svém místě." = "Presuň vybraný rámček. Ostatné oblasti zostanú na mieste.";
 "Při automatickém režimu zahrne širší část obrazu." = "Pri automatickom režime zahrnie širšiu časť obrazu.";
+"Přiblížení" = "Priblíženie";
 "Přidat" = "Pridať";
 "Přidat PS5 / PS4" = "Pridať PS5 / PS4";
 "Přidat PlayStation" = "Pridať PlayStation";
@@ -782,6 +788,7 @@
 "Stáhnout novou verzi" = "Stiahnuť novú verziu";
 "Střed – doporučeno" = "Stred – odporúčané";
 "Svislá pozice" = "Zvislá poloha";
+"Svítilna" = "Svietidlo";
 "Systém ukončil snímání" = "Systém ukončil snímanie";
 "Systémové nastavení instalace nelze otevřít." = "Systémové nastavenia inštalácie nemožno otvoriť.";
 "Systémový instalátor nelze otevřít." = "Systémový inštalátor nemožno otvoriť.";
@@ -896,6 +903,7 @@
 "Velikost" = "Veľkosť";
 "Velikost IPA nesouhlasí." = "Veľkosť IPA nesúhlasí.";
 "Velikost a poloha titulků" = "Veľkosť a poloha titulkov";
+"Velikost oblasti" = "Veľkosť oblasti";
 "Velikost písma" = "Veľkosť písma";
 "Velikost písma TV" = "Veľkosť písma TV";
 "Velikost písma:" = "Veľkosť písma:";
@@ -956,6 +964,7 @@
 "Vybraná" = "Vybraná";
 "Vybraná konzole" = "Vybraná konzola";
 "Vybraná konzole je uložená. Spojení ověříme při spuštění." = "Vybraná konzola je uložená. Spojenie overíme pri spustení.";
+"Vybraná oblast" = "Vybraná oblasť";
 "Vybraná televize nepodporuje šestimístné párování GameLingo TV. Pro tento výstup vyber Android TV nebo telefon." = "Vybraný televízor nepodporuje šesťmiestne párovanie GameLingo TV. Pre tento výstup vyber Android TV alebo telefón.";
 "Vybraný Xbox je uložený" = "Vybraný Xbox je uložený";
 "Vybrat konzoli" = "Vybrať konzolu";

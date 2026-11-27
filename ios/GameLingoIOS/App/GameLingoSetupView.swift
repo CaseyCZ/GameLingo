@@ -8,11 +8,13 @@ struct GameLingoSetupView: View {
 
     @State private var step = 0
     @State private var chosenFamily: GLConsoleFamily?
+    @State private var cameraSelected = false
     @State private var showXbox = false
     @State private var showTV = false
     @State private var showPlayStation = false
 
     let onFinished: () -> Void
+    var onCameraSelected: () -> Void = {}
 
     private var consoleRegistered: Bool {
         guard let selected = devices.chosenConsole else { return false }
@@ -30,7 +32,7 @@ struct GameLingoSetupView: View {
     }
 
     private var canFinish: Bool {
-        consoleRegistered && televisionPaired
+        (cameraSelected || consoleRegistered) && televisionPaired
     }
 
     private func finishSetup() {
@@ -38,6 +40,7 @@ struct GameLingoSetupView: View {
         // connected. The dashboard still checks Xbox/PS and TV readiness.
         devices.completedSetup = true
         onFinished()
+        if cameraSelected { onCameraSelected() }
         dismiss()
     }
 
@@ -162,6 +165,7 @@ struct GameLingoSetupView: View {
         VStack(spacing: 13) {
             ForEach(GLConsoleFamily.allCases) { family in
                 Button {
+                    cameraSelected = false
                     chosenFamily = family
                     if family == .xbox { showXbox = true }
                     else { showPlayStation = true }
@@ -195,12 +199,21 @@ struct GameLingoSetupView: View {
                 }
                 .buttonStyle(.plain)
             }
+            GLPrimaryButton(title: "Překlad kamerou", systemImage: cameraSelected ? "checkmark.circle.fill" : "camera.fill") {
+                cameraSelected = true
+                chosenFamily = nil
+                devices.subtitleOutput = .phone
+            }
             if !devices.consoles.isEmpty {
                 GLCard {
                     GLHeader(title: "Moje konzole", help:
                         "Můžeš si uložit více Xboxů i PlayStationů. Při spuštění vybereš konkrétní zařízení. Uložená adresa ještě neznamená úspěšné spárování; vždy se kontroluje skutečné Remote Play spojení.")
                     ForEach(devices.consoles) { record in
-                        Button { devices.selectConsole(record.id) } label: {
+                        Button {
+                            cameraSelected = false
+                            chosenFamily = record.family
+                            devices.selectConsole(record.id)
+                        } label: {
                             HStack {
                                 Image(systemName: record.family.icon)
                                     .foregroundStyle(GLStyle.blue)

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - Master
+      - feature/camera-0.5.6
     paths:
       - "ios/**"
       - "tools/**"
