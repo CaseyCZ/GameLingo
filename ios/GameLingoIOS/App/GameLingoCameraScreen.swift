@@ -472,6 +472,46 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                columnOrder(rows.filter { $0.boundingBox.minX >= boundary })
     }
 
+    // One optional retry on a weak skewed line. OCR runs on the rectified crop,
+    // but the original observation remains the sole source of overlay geometry.
+    private func rectifiedText(_ observation: VNRecognizedTextObservation,
+                               original: VNRecognizedText, image: CIImage,
+                               request: VNRecognizeTextRequest) -> VNRecognizedText? {
+        guard original.confidence < 0.75 else { return nil }
+        let points = [observation.topLeft, observation.topRight, observation.bottomRight, observation.bottomLeft]
+        guard points.allSatisfy({ $0.x >= 0 && $0.x <= 1 && $0.y >= 0 && $0.y <= 1 }) else { return nil }
+        let w = image.extent.width, h = image.extent.height
+        let p = points.map { CGPoint(x: $0.x * w + image.extent.minX, y: $0.y * h + image.extent.minY) }
+        let top = hypot(p[1].x-p[0].x,p[1].y-p[0].y)
+        let bottom = hypot(p[2].x-p[3].x,p[2].y-p[3].y)
+        let left = hypot(p[3].x-p[0].x,p[3].y-p[0].y)
+        let right = hypot(p[2].x-p[1].x,p[2].y-p[1].y)
+        guard min(top,bottom) >= 36, min(left,right) >= 12,
+              max(top,bottom) <= w, max(left,right) <= h,
+              abs(atan2(p[1].y-p[0].y,p[1].x-p[0].x)) > 0.10 ||
+              abs(top-bottom)/max(top,bottom) > 0.10 ||
+              abs(left-right)/max(left,right) > 0.10 else { return nil }
+        guard let filter = CIFilter(name: "CIPerspectiveCorrection") else { return nil }
+        filter.setValue(image, forKey: kCIInputImageKey)
+        for (key, point) in zip(["inputTopLeft","inputTopRight","inputBottomRight","inputBottomLeft"], p) {
+            filter.setValue(CIVector(cgPoint: point), forKey: key)
+        }
+        guard let corrected = filter.outputImage, corrected.extent.width.isFinite, corrected.extent.height.isFinite,
+              corrected.extent.width >= 24, corrected.extent.height >= 8,
+              corrected.extent.width <= 1600, corrected.extent.height <= 512,
+              let crop = context.createCGImage(corrected, from: corrected.extent) else { return nil }
+        let retry = VNRecognizeTextRequest()
+        retry.recognitionLevel = .accurate
+        retry.recognitionLanguages = request.recognitionLanguages
+        retry.automaticallyDetectsLanguage = request.automaticallyDetectsLanguage
+        retry.usesLanguageCorrection = request.usesLanguageCorrection
+        guard (try? VNImageRequestHandler(cgImage: crop, orientation: .up).perform([retry])) != nil,
+              let results = retry.results, results.count == 1,
+              let best = results.first?.topCandidates(1).first, !best.string.isEmpty,
+              best.confidence >= max(0.50, original.confidence + 0.08) else { return nil }
+        return best
+    }
+
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let now = ProcessInfo.processInfo.systemUptime
         let wholeImage = region == CGRect(x: 0, y: 0, width: 1, height: 1)
@@ -509,10 +549,18 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
             var blocks: [GLCameraBlock] = []
             let palette = wholeImage ? GLCameraPalette(cg) : nil
             var remaining = 1200
+            var attemptedRectification = false
             for observation in observations.prefix(20) {
-                guard let recognized = observation.topCandidates(1).first,
-                      !recognized.string.isEmpty, remaining > 0,
-                      !wholeImage || recognized.confidence >= 0.30 else { continue }
+                guard var recognized = observation.topCandidates(1).first,
+                      !recognized.string.isEmpty, remaining > 0 else { continue }
+                if wholeImage && !attemptedRectification && recognized.confidence < 0.75 &&
+                    ProcessInfo.processInfo.systemUptime - now < 0.20 {
+                    attemptedRectification = true
+                    if let refined = rectifiedText(observation, original: recognized, image: image, request: request) {
+                        recognized = refined
+                    }
+                }
+                guard !wholeImage || recognized.confidence >= 0.30 else { continue }
                 let line = recognized.string
                 let box = observation.boundingBox
                 let text = wholeImage ? String(line.prefix(remaining)).split(whereSeparator: { $0.isWhitespace }).joined(separator: " ") : String(line.prefix(remaining))
@@ -547,9 +595,11 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                     // bounding box and project the flat translation to those corners.
                     let points = [observation.topLeft, observation.topRight, observation.bottomRight, observation.bottomLeft]
                         .map { CGPoint(x: $0.x, y: 1 - $0.y) }
-                    if points.allSatisfy({ $0.x >= 0 && $0.x <= 1 && $0.y >= 0 && $0.y <= 1 }) {
-                        block.quad = GLCameraQuad(points: points)
-                        block.angle = 0
+                    let quad = GLCameraQuad(points: points)
+                    if points.allSatisfy({ $0.x >= 0 && $0.x <= 1 && $0.y >= 0 && $0.y <= 1 }),
+                       quad.projection(size: CGSize(width: rect.width * CGFloat(cg.width),
+                                                    height: rect.height * CGFloat(cg.height)), rect: rect) != nil {
+                        block.quad = quad
                     }
                 }
                 if wholeImage && block.quad == nil && block.lineCount == 1 && abs(angle) >= 0.12 {
