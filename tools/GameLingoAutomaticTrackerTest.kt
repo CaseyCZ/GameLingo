@@ -44,6 +44,16 @@ class GameLingoAutomaticTrackerTest {
         assertEquals(1,t.tracks.size);assertEquals("B",t.tracks.single().zone)
         t.expire(5300);assertTrue(t.tracks.isEmpty())
     }
+    @Test fun smallPositionAndColorChangesDoNotFlicker(){
+        val t=GameLingoAutomaticTracker()
+        val a=AutoBlock("Play",AutoRect(.2f,.2f,.4f,.3f),0xffcc00,0)
+        val b=a.copy(rect=AutoRect(.201f,.2f,.401f,.3f),background=0xfbc900)
+        t.observe("A",listOf(a),100)
+        t.observe("A",listOf(b),200)
+        assertEquals(a,t.tracks.single().block)
+        t.observe("A",listOf(b.copy(rect=AutoRect(.22f,.2f,.42f,.3f))),300)
+        assertEquals(.22f,t.tracks.single().block.rect.left,.0001f)
+    }
     @Test fun changedTextCannotReuseTranslation(){
         val t=GameLingoAutomaticTracker()
         val r=AutoRect(.2f,.2f,.4f,.3f)

@@ -137,7 +137,7 @@ internal class GameLingoAutomaticOCR(
         val l=box.left.coerceIn(0,w-1);val r=(box.right-1).coerceIn(l,w-1)
         val t=box.top.coerceIn(0,h-1);val b=(box.bottom-1).coerceIn(t,h-1)
         fun sample(x:Int,y:Int)=pixels[y*w+x] and 0xffffff
-        fun key(c:Int)=((c shr 19 and 31) shr 2)*64+((c shr 11 and 31) shr 2)*8+((c shr 3 and 31) shr 2)
+        fun key(c:Int)=((c shr 21) and 7)*64+((c shr 13) and 7)*8+((c shr 5) and 7)
         val edges=ArrayList<Int>(48)
         for(i in 0 until 12){
             val x=l+(r-l)*i/11;val y=t+(b-t)*i/11
@@ -145,7 +145,7 @@ internal class GameLingoAutomaticOCR(
         }
         fun dominant(colors:List<Int>):Int? {
             val group=colors.groupBy(::key).values.maxByOrNull{it.size} ?: return null
-            if(group.size<colors.size/4)return null
+            if(group.size<maxOf(3,colors.size/4))return null
             return (group.map{it shr 16 and 255}.average().toInt() shl 16) or
                 (group.map{it shr 8 and 255}.average().toInt() shl 8) or group.map{it and 255}.average().toInt()
         }

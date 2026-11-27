@@ -53,7 +53,8 @@ internal class GameLingoZoneOverlay(private val context: Context, private val wm
                 PixelFormat.TRANSLUCENT).apply {
                 gravity = Gravity.TOP or Gravity.LEFT
                 // Touch devices keep the obscuring-opacity limit; TV remote focus is unaffected.
-                alpha = if(context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN)) .8f else 1f
+                alpha = if(context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK) &&
+                    !context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN)) 1f else .8f
             }
             if (runCatching { wm.addView(candidate, lp) }.isFailure) return
             root = candidate

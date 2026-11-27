@@ -39,6 +39,13 @@ import CoreGraphics
         precondition(styled.background == 0xffff00 && styled.ink == 0)
         var tracker = AutomaticBlockTracker()
         let zone = UUID(), other = UUID()
+        var stability = AutomaticBlockTracker()
+        stability.observe(zone: zone, blocks: [styled], now: 1)
+        var jittered = AutomaticDialogueLayout.Block(text: styled.text, rect: styled.rect.offsetBy(dx: 0.001, dy: 0), layout: styled.layout)
+        jittered.background = 0xfbfb00
+        jittered.ink = 0
+        stability.observe(zone: zone, blocks: [jittered], now: 2)
+        precondition(stability.tracks.first?.block == styled)
         tracker.observe(zone: zone, blocks: blocks, now: 1)
         let ids = Set(tracker.tracks.map(\.id))
         tracker.observe(zone: zone, blocks: blocks, now: 2)
