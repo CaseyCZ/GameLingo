@@ -66,10 +66,12 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
     }
 
+    private data class CameraSurface(val start: Int, val end: Int, val horizontal: Boolean)
     private data class CameraBlock(val text: String, val rect: RectF, val angle: Float = 0f,
-                                   val background: Int = Color.BLACK, val lineCount: Int = 1, val ink: Int? = null)
+                                   val background: Int = Color.BLACK, val lineCount: Int = 1, val ink: Int? = null,
+                                   val surface: CameraSurface? = null)
     private data class CameraOverlay(val text: String, val rect: RectF, val angle: Float,
-                                     val background: Int, val lineCount: Int, val ink: Int?)
+                                     val background: Int, val lineCount: Int, val ink: Int?, val surface: CameraSurface?)
 
     // Preserve an observed ink color only when repeated samples provide readable contrast.
     private fun sampleInk(bitmap: Bitmap, rect: RectF, background: Int): Int? {
@@ -113,6 +115,54 @@ class GameLingoCameraActivity : ComponentActivity() {
         val boundary = sorted[split].rect.left
         return columnOrder(blocks.filter { it.rect.left < boundary }) +
             columnOrder(blocks.filter { it.rect.left >= boundary })
+    }
+
+    // Approximate smooth backgrounds only when four edges support the ramp.
+    // Bound work to 48 samples and avoid extrapolating into neighboring text.
+    private fun reconstructedSurface(bitmap: Bitmap, rect: RectF, background: Int, ink: Int?): CameraSurface? {
+        if (rect.width() <= .015f || rect.height() <= .015f ||
+            rect.left < 0f || rect.top < 0f || rect.right > 1f || rect.bottom > 1f) return null
+        fun sample(x: Float, y: Float): Int = bitmap.getPixel(
+            (x * bitmap.width).toInt().coerceIn(0, bitmap.width - 1),
+            (y * bitmap.height).toInt().coerceIn(0, bitmap.height - 1))
+        fun distance(a: Int, b: Int): Int = maxOf(
+            kotlin.math.abs(Color.red(a) - Color.red(b)),
+            kotlin.math.abs(Color.green(a) - Color.green(b)),
+            kotlin.math.abs(Color.blue(a) - Color.blue(b)))
+        fun median(values: List<Int>): Int {
+            fun channel(extract: (Int) -> Int) = values.map(extract).sorted()[values.size / 2]
+            return Color.rgb(channel { Color.red(it) }, channel { Color.green(it) }, channel { Color.blue(it) })
+        }
+        fun blend(a: Int, b: Int, t: Float): Int {
+            fun mix(x: Int, y: Int) = (x + (y - x) * t + .5f).toInt()
+            return Color.rgb(mix(Color.red(a), Color.red(b)), mix(Color.green(a), Color.green(b)),
+                mix(Color.blue(a), Color.blue(b)))
+        }
+        val ts = (0 until 12).map { (it + .5f) / 12 }
+        val left = ts.map { sample(rect.left + rect.width() * .04f, rect.top + rect.height() * it) }
+        val right = ts.map { sample(rect.right - rect.width() * .04f, rect.top + rect.height() * it) }
+        val top = ts.map { sample(rect.left + rect.width() * it, rect.top + rect.height() * .08f) }
+        val bottom = ts.map { sample(rect.left + rect.width() * it, rect.bottom - rect.height() * .08f) }
+        val foreground = ink ?: if (Color.luminance(background) > .179f) Color.BLACK else Color.WHITE
+        fun contrast(color: Int): Float {
+            val a = Color.luminance(color); val b = Color.luminance(foreground)
+            return (maxOf(a, b) + .05f) / (minOf(a, b) + .05f)
+        }
+        fun candidate(first: List<Int>, last: List<Int>, crossA: List<Int>, crossB: List<Int>,
+                      horizontal: Boolean): CameraSurface? {
+            val a = median(first); val b = median(last)
+            if (distance(a, b) !in 12..100 ||
+                first.count { distance(it, a) <= 22 } < 9 ||
+                last.count { distance(it, b) <= 22 } < 9 ||
+                contrast(a) < 4.5f || contrast(b) < 4.5f) return null
+            val agreement = ts.indices.count { i ->
+                val expected = blend(a, b, ts[i])
+                distance(crossA[i], expected) <= 35 && distance(crossB[i], expected) <= 35
+            }
+            if (agreement < 8) return null
+            return CameraSurface(a, b, horizontal)
+        }
+        return candidate(top, bottom, left, right, false) ?: candidate(left, right, top, bottom, true)
     }
 
     private fun sampleBackground(bitmap: Bitmap, rect: RectF): Int {
@@ -626,6 +676,8 @@ class GameLingoCameraActivity : ComponentActivity() {
                                 (corners[1].x - corners[0].x).toDouble())).toFloat() else 0f
                         val background = if (region.full) runCatching { sampleBackground(bitmap, rect) }.getOrDefault(Color.BLACK) else Color.BLACK
                         val ink = if (region.full) runCatching { sampleInk(bitmap, rect, background) }.getOrNull() else null
+                        val surface = if (region.full && kotlin.math.abs(angle) < 3.44f)
+                            runCatching { reconstructedSurface(bitmap, rect, background, ink) }.getOrNull() else null
                         if (region.full && corners != null && corners.size >= 4) {
                             val width = kotlin.math.hypot((corners[1].x - corners[0].x).toDouble(),
                                 (corners[1].y - corners[0].y).toDouble()).toFloat() / bitmap.width
@@ -634,7 +686,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                             val cx = rect.centerX(); val cy = rect.centerY()
                             if (width > 0f && height > 0f) rect.set(cx - width / 2, cy - height / 2, cx + width / 2, cy + height / 2)
                         }
-                        blocks.add(CameraBlock(text, rect, angle, background, lineCount.coerceAtLeast(1), ink))
+                        blocks.add(CameraBlock(text, rect, angle, background, lineCount.coerceAtLeast(1), ink, surface))
                     }
                     if (region.full) {
                         for (block in task.result.textBlocks.take(20)) {
@@ -676,7 +728,7 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun updateOverlays() {
         preview.overlays = if (region.full && overlayEnabled) currentBlocks.mapNotNull { block ->
-            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect, block.angle, block.background, block.lineCount, block.ink) }
+            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect, block.angle, block.background, block.lineCount, block.ink, block.surface) }
         } else emptyList()
         preview.invalidate()
     }
@@ -1037,7 +1089,15 @@ class GameLingoCameraActivity : ComponentActivity() {
                     canvas.rotate(overlay.angle, box.centerX(), box.centerY())
                     canvas.clipRect(box)
                     paint.color = overlay.background
+                    overlay.surface?.let { surface ->
+                        paint.shader = android.graphics.LinearGradient(
+                            box.left, box.top,
+                            if (surface.horizontal) box.right else box.left,
+                            if (surface.horizontal) box.top else box.bottom,
+                            surface.start, surface.end, android.graphics.Shader.TileMode.CLAMP)
+                    }
                     canvas.drawRect(box, paint)
+                    paint.shader = null
                     val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                         color = overlay.ink ?: (if (Color.luminance(overlay.background) > .179f) Color.BLACK else Color.WHITE)
                         textSize = (box.height() / overlay.lineCount * .83f).coerceAtLeast(1f)
