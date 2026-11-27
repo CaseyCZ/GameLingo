@@ -297,6 +297,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("overlayCache.size >= 256", android)
         self.assertIn("if (overlaySource != from)", android)
 
+    def test_camera_navigation_zoom_and_empty_text_parity(self):
+        ios = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        self.assertIn('contentDescription = tr("Zpět")', android)
+        self.assertIn('setOnClickListener { finish() }', android)
+        self.assertIn('(width / .9f).toInt()', android)
+        self.assertIn('if (!prefs.contains("target"))', android)
+        self.assertIn("c.cameraControl.setZoomRatio(zoom.coerceIn", android)
+        self.assertIn("self.applyZoom()", ios)
+        self.assertIn("requestedZoom", ios)
+        self.assertIn("translating || output.text.isNotEmpty()", android)
+        self.assertIn("c.cameraControl.enableTorch(false)", android)
+        self.assertIn("runCatching { c.cameraControl.enableTorch(desired) }", android)
+
     def test_camera_torch_is_icon_only_in_header(self):
         ios = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")

@@ -402,6 +402,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
             self.session.startRunning()
             if self.session.isRunning {
                 self.configureAutomaticFocus()
+                self.applyZoom()
                 self.ready(self.session)
             }
             else { self.analysisQueue.async { self.running = false }; self.failure() }
@@ -442,11 +443,18 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
         }
     }
 
+    // Session-queue state, retained across pause/resume and initial configuration.
+    private var requestedZoom: CGFloat = 1
+    private func applyZoom() {
+        guard let device = self.device, (try? device.lockForConfiguration()) != nil else { return }
+        defer { device.unlockForConfiguration() }
+        device.videoZoomFactor = min(max(1, requestedZoom), min(4, device.activeFormat.videoMaxZoomFactor))
+    }
+
     func zoom(_ value: CGFloat) {
         queue.async {
-            guard let device = self.device, (try? device.lockForConfiguration()) != nil else { return }
-            device.videoZoomFactor = min(max(1, value), min(4, device.activeFormat.videoMaxZoomFactor))
-            device.unlockForConfiguration()
+            self.requestedZoom = value.isFinite ? value : 1
+            self.applyZoom()
         }
     }
 

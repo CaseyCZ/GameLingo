@@ -360,6 +360,7 @@ class GameLingoCameraActivity : ComponentActivity() {
         region = Region(prefs.getBoolean("full", true), coordinate("centerY", .78f),
             coordinate("height", .24f), coordinate("centerX", .5f), coordinate("width", .9f))
         overlayEnabled = prefs.getBoolean("overlay", true)
+        if (!prefs.contains("target")) prefs.edit().putString("target", target).apply()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(px(16), px(12), px(16), px(16))
@@ -402,7 +403,11 @@ class GameLingoCameraActivity : ComponentActivity() {
             val desired = c.cameraInfo.torchState.value != TorchState.ON
             torchPending = true; torchFailed = false
             updateTorchButton()
-            val future = c.cameraControl.enableTorch(desired)
+            val future = runCatching { c.cameraControl.enableTorch(desired) }.getOrElse {
+                torchPending = false; torchFailed = true
+                updateTorchButton()
+                return@setOnClickListener
+            }
             future.addListener({
                 if (camera === c) {
                     torchFailed = !runCatching { future.get(); true }.getOrDefault(false)
@@ -415,7 +420,14 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
         val header = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
-            addView(View(this@GameLingoCameraActivity), LinearLayout.LayoutParams(px(48), px(48)))
+            addView(TextView(this@GameLingoCameraActivity).apply {
+                text = "‹"; textSize = 32f; gravity = Gravity.CENTER
+                setTextColor(Color.WHITE)
+                contentDescription = tr("Zpět")
+                background = GameLingoVisualKit.card(this@GameLingoCameraActivity)
+                isFocusable = true
+                setOnClickListener { finish() }
+            }, LinearLayout.LayoutParams(px(48), px(48)))
             addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             addView(torchButton, LinearLayout.LayoutParams(px(48), px(48)))
             addView(GameLingoHelp.button(this@GameLingoCameraActivity,"camera"),
@@ -573,7 +585,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     private fun updatePreviewHeight() {
         val width = previewContainer.width.takeIf { it > 0 } ?: (resources.displayMetrics.widthPixels - px(56)).coerceAtLeast(1)
         val aspect = 16f / 9f
-        val height = if (region.full) (width * aspect).toInt() else px(340)
+        val height = if (region.full) (width * aspect).toInt() else (width / .9f).toInt()
         val params = previewContainer.layoutParams
         if (params.height != height) {
             params.height = height
@@ -705,6 +717,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                 // Restore continuous AF (when supported) and automatic metering;
                 // never lock the focus distance for live OCR.
                 camera?.cameraControl?.cancelFocusAndMetering()
+                camera?.let { c -> c.cameraControl.setZoomRatio(zoom.coerceIn(1f, c.cameraInfo.zoomState.value?.maxZoomRatio?.coerceAtLeast(1f) ?: 1f)) }
                 if (!TvProfily(this).pouzeTelefon) enableTV()
                 camera?.let { c ->
                     c.cameraInfo.torchState.observe(this) { value ->
@@ -912,7 +925,7 @@ class GameLingoCameraActivity : ComponentActivity() {
         if (text.isBlank()) {
             updateOverlays()
             emptyFrames++
-            if (emptyFrames >= 2 && (translatedText.isNotEmpty() || translating)) {
+            if (emptyFrames >= 2 && (translatedText.isNotEmpty() || translating || output.text.isNotEmpty())) {
                 resetTranslation(); translator?.zavri(); translator = null
             }
             return
@@ -959,7 +972,12 @@ class GameLingoCameraActivity : ComponentActivity() {
         engine.preloz(text, { result ->
             if (!valid()) return@preloz
             translating = false
-            if (!matchesCurrent(text) || result.isBlank()) return@preloz
+            if (!matchesCurrent(text)) return@preloz
+            if (result.isBlank()) {
+                retryAt = SystemClock.elapsedRealtime() + 2000L
+                output.text = tr("Překlad selhal.")
+                return@preloz
+            }
             lastTranslated = text
             translatedText = result
             if (output.text.toString() != result) output.text = result
@@ -1150,6 +1168,7 @@ class GameLingoCameraActivity : ComponentActivity() {
         resetTranslation(keepText = keepFrame)
         disableTV()
         camera?.cameraInfo?.torchState?.removeObservers(this)
+        camera?.let { c -> if (c.cameraInfo.hasFlashUnit()) runCatching { c.cameraControl.enableTorch(false) } }
         analysis?.clearAnalyzer()
         analysis?.let { provider?.unbind(it) }
         liveUseCase?.let { provider?.unbind(it) }
