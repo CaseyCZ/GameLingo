@@ -113,14 +113,27 @@ object GameLingoAbout {
                 orientation = LinearLayout.VERTICAL
                 addView(link("Licence třetích stran na GitHubu",
                     "https://github.com/CaseyCZ/GameLingo/blob/Master/THIRD_PARTY_NOTICES.md"))
-                addView(TextView(activity).apply {
-                    text = notices ?: tr("Licenční soubor není v tomto sestavení dostupný.")
-                    textSize = GameLingoVisualKit.sp(activity, 16f)
-                    setTextColor(Color.WHITE)
-                    isFocusable = true
-                    setTextIsSelectable(true)
-                    setPadding(pad(12),pad(8),pad(12),pad(8))
-                })
+                val content = notices ?: tr("Licenční soubor není v tomto sestavení dostupný.")
+                // Bound individual text layouts without truncating the bundled legal text.
+                var start = 0
+                while (start < content.length) {
+                    var end = minOf(start + 1400, content.length)
+                    if (end < content.length) {
+                        val newline = content.lastIndexOf('\n', end - 1)
+                        if (newline >= start) end = newline + 1
+                        else if (Character.isHighSurrogate(content[end - 1])) end--
+                    }
+                    val block = content.substring(start, end)
+                    addView(TextView(activity).apply {
+                        text = block
+                        textSize = GameLingoVisualKit.sp(activity, 14f)
+                        setTextColor(Color.WHITE)
+                        isFocusable = true
+                        setTextIsSelectable(true)
+                        setPadding(pad(12),pad(2),pad(12),pad(2))
+                    })
+                    start = end
+                }
             }
             GameLingoTVUi.page(activity, tr("Licence třetích stran"), body, helpTopic = "about")
         }
@@ -148,6 +161,7 @@ object GameLingoAbout {
             sources.forEach { page.addView(it, LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=pad(9) }) }
         }
 
+        page.addView(link("Historie vydání", "https://github.com/CaseyCZ/GameLingo/releases"))
         return page
     }
 

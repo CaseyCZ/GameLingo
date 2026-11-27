@@ -12,7 +12,7 @@ def patch_mobile_update(folder):
         ('cz.caseycz.gamelingo.tv', 'cz.caseycz.gamelingo.mobile'),
         ('GameLingo-TV-update.json', 'GameLingo-Android-update.json'),
         ('GameLingo-GoogleTV-v', 'GameLingo-Android-v'),
-        ('RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running', 'RemotePlayService.aktivni'),
+        ('RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running', 'GameLingoLanguages.translationSettingsBusy()'),
         ('GameLingo-TV-Updater', 'GameLingo-Android-Updater'),
         ('Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování.', 'Povol instalaci z GameLingo v nastavení zařízení. Po návratu bude možné pokračovat bez dalšího stahování.'),
     ):
@@ -26,7 +26,7 @@ def patch_mobile_update(folder):
     update_anchor = '        val licensePanel = if (tv) page else LinearLayout(activity).apply {'
     if about_text.count(update_anchor) != 1:
         raise RuntimeError("Mobile About update anchor changed")
-    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoVisualKit.deviceCard(activity, "TV", GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace"), GameLingoLanguages.ui(activity, "Stáhnout novou verzi"), false) {
+    about_text = about_text.replace(update_anchor, '''        page.addView(GameLingoTVUi.action(activity, GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")) {
             GameLingoTVUpdater.show(activity)
         })
 ''' + update_anchor, 1)

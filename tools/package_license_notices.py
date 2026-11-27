@@ -86,6 +86,9 @@ def verify(path, platform):
             raise RuntimeError("Missing required license content")
         if not manifest["files"] or len(manifest["sources"]) != 2:
             raise RuntimeError("Missing source license inventory")
+        for name in ("LICENSE", "ATTRIBUTION.md", "THIRD_PARTY_NOTICES.md"):
+            if "===== GameLingo/" + name + " =====" not in notices:
+                raise RuntimeError("Missing bundled project notice: " + name)
         print("Bundled license inventory verified:", platform, len(manifest["files"]), "source notice files")
 
 if __name__ == "__main__":

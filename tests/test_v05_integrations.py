@@ -1797,6 +1797,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for script in ("wire_mobile_update.py", "direct_tv_mode.py"):
             self.assertIn('GameLingoLanguages.ui(activity, "Zkontrolovat aktualizace")', code(TOOLS/script))
 
+    def test_about_notices_and_update_installation_guards(self):
+        about = code(TOOLS/"GameLingoAbout.kt")
+        updater = code(TOOLS/"GameLingoTVUpdater.kt")
+        mobile = code(TOOLS/"wire_mobile_update.py")
+        packaging = code(TOOLS/"package_license_notices.py")
+        self.assertIn("while (start < content.length)", about)
+        self.assertIn("content.substring(start, end)", about)
+        self.assertIn('link("Historie vydání"', about)
+        for name in ("show", "install", "confirmInstall", "download"):
+            body = updater.split("fun " + name + "(", 1)[1].split("\n", 4)
+            self.assertIn("if (busy())", "\n".join(body[:4]))
+        self.assertIn("GameLingoLanguages.translationSettingsBusy()", mobile)
+        self.assertIn("Missing bundled project notice:", packaging)
+
     def test_tv_updater_requires_signed_newer_apk_and_system_consent(self):
         updater = code(TOOLS/"GameLingoTVUpdater.kt")
         wiring = code(TOOLS/"direct_tv_mode.py")

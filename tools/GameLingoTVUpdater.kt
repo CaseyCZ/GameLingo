@@ -195,6 +195,7 @@ object GameLingoTVUpdater {
 
     fun show(a: Activity) {
         if (!alive(a)) return
+        if (busy()) { message(a, tr(a, "Nejdříve zastav překlad.")); return }
         if (!working.compareAndSet(false, true)) { message(a, tr(a, "Kontrola již probíhá. Zkus to znovu.")); return }
         val status = AlertDialog.Builder(a).setTitle(tr(a, "Aktualizace GameLingo"))
             .setMessage(tr(a, "Kontroluji vydání na GitHubu…")).setNegativeButton(tr(a, "Zrušit"), null).show()
@@ -225,6 +226,7 @@ object GameLingoTVUpdater {
     /** Resume the verified download after Android's unknown-app-source permission screen. */
     private fun install(a: Activity, apk: File) {
         if (!alive(a)) return
+        if (busy()) { message(a, tr(a, "Nejdříve zastav překlad.")); return }
         if (Build.VERSION.SDK_INT >= 26 && !a.packageManager.canRequestPackageInstalls()) {
             AlertDialog.Builder(a).setTitle(tr(a, "Povolení instalace"))
                 .setMessage(tr(a, "Povol instalaci z GameLingo v nastavení TV. Po návratu bude možné pokračovat bez dalšího stahování."))
@@ -272,6 +274,7 @@ object GameLingoTVUpdater {
     /** The system package installer handles process shutdown; no invisible receiver lock. */
     private fun confirmInstall(a: Activity, apk: File) {
         if (!alive(a)) return
+        if (busy()) { message(a, tr(a, "Nejdříve zastav překlad.")); return }
         runCatching {
             require(apk.isFile && apk.length() in 1L..MAX_APK)
             val archive = a.packageManager.getPackageArchiveInfo(apk.path, flags())
@@ -293,6 +296,7 @@ object GameLingoTVUpdater {
 
     private fun download(a: Activity, next: Update) {
         if (!alive(a)) return
+        if (busy()) { message(a, tr(a, "Nejdříve zastav překlad.")); return }
         if (!working.compareAndSet(false, true)) { message(a, tr(a, "Jiná aktualizace již probíhá.")); return }
         val cancelled = AtomicBoolean(false)
         val progress = AlertDialog.Builder(a).setTitle(tr(a, "Stahování aktualizace"))
