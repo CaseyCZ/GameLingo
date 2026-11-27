@@ -1792,7 +1792,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         updates = code(IOS/"GameLingoUpdates.swift")
         self.assertNotIn('.alert("Nová verze GameLingo"', home)
         self.assertIn("GameLingoUpdateOffer(version: updates.available", home)
-        self.assertIn("accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer)", home)
+        self.assertIn("accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer || addDevicePicker)", home)
         self.assertIn("guard !model.isRunning, !updates.busy", home)
         self.assertIn("GLNeonPanel(emphasized: true, radius: 24)", updates)
         self.assertIn('GLPrimaryButton(title: "Stáhnout IPA"', updates)
@@ -2320,6 +2320,16 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                        'GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Zařízení"))', "dlazdiceTel.nextFocusDownId=stahnoutMobil.id",
                        "dlazdiceTv.nextFocusDownId=spravaZarizeni.id"):
             self.assertIn(marker,wiring)
+
+    def test_add_device_uses_shared_branded_picker(self):
+        home = code(IOS/"GameLingoHome.swift")
+        panel = code(IOS/"GameLingoDevicesPanel.swift")
+        android = code(TOOLS/"GameLingoDeviceCenter.kt")
+        self.assertNotIn('.confirmationDialog("Přidat zařízení"', panel)
+        self.assertIn("onAddDevice()", panel)
+        self.assertIn("if addDevicePicker", home)
+        self.assertIn("onAddDevice: { addDevicePicker = true }", home)
+        self.assertIn('GameLingoVisualKit.selectSourceOrOutput(c, "Přidat zařízení"', android)
 
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")

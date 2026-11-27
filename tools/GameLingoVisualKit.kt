@@ -42,7 +42,7 @@ object GameLingoVisualKit {
         val headingView = heading(activity, GameLingoLanguages.ui(activity, heading))
         val back = GameLingoTVUi.action(activity,GameLingoLanguages.ui(activity,"Zpět")) { dialog.dismiss() }
         content.addView(GameLingoTVUi.header(activity, headingView, back,
-            GameLingoHelp.button(activity, if (heading == "Výstup titulků") "pairing" else "home")))
+            GameLingoHelp.button(activity, if (heading == "Výstup titulků") "pairing" else if (heading == "Přidat zařízení") "console" else "home")))
         for ((key, label) in options) {
             content.addView(deviceCard(activity, key, GameLingoLanguages.ui(activity, label),
                 if (selected == key) GameLingoLanguages.ui(activity, "Vybráno") else "",
