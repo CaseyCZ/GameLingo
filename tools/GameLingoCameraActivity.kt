@@ -17,6 +17,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
@@ -27,6 +28,8 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.view.PreviewView
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
@@ -46,6 +49,8 @@ class GameLingoCameraActivity : ComponentActivity() {
                     "Nejdříve zastav překlad z konzole nebo telefonu."), Toast.LENGTH_LONG).show()
                 return
             }
+            activity.getSharedPreferences("gamelingo_devices", Activity.MODE_PRIVATE)
+                .edit().putBoolean("cameraSourceSelected", true).apply()
             activity.startActivity(Intent(activity, GameLingoCameraActivity::class.java))
         }
     }
@@ -76,6 +81,8 @@ class GameLingoCameraActivity : ComponentActivity() {
     private var lastSample = 0L // analysis worker only
     private var provider: ProcessCameraProvider? = null
     private var analysis: ImageAnalysis? = null
+    private var liveUseCase: Preview? = null
+    private lateinit var livePreview: PreviewView
     private var camera: Camera? = null
     private var translator: Prekladac? = null
     private var source = "en"
@@ -84,7 +91,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     private var torch = false
     private var zoom = 1f
     private var candidate = ""
-    private var confirmations = 0
+    private var emptyFrames = 0
     private var lastTranslated = ""
     private var translatedText = ""
     private var translatedLines = emptyList<String>()
@@ -103,7 +110,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     private lateinit var torchButton: Button
     private lateinit var modeButton: Button
     private lateinit var overlayButton: Button
-    private var tvButton: Button? = null
+    private var tvButton: TextView? = null
     private lateinit var regionControls: LinearLayout
     private lateinit var languageButton: Button
     private fun tr(text: String) = GameLingoLanguages.ui(this, text)
@@ -148,6 +155,11 @@ class GameLingoCameraActivity : ComponentActivity() {
         languageButton = button("Jazyky") { chooseLanguages() }
         updateLanguages()
         root.addView(languageButton)
+        tvButton = TextView(this).apply {
+            text = if (TvProfily(this@GameLingoCameraActivity).pouzeTelefon) tr("Telefon") else "Google TV / Android TV"
+            gravity = Gravity.CENTER; setTextColor(Color.WHITE)
+        }
+        root.addView(tvButton)
         modeButton = button("Celý obraz") {
             updateRegion(region.copy(full = !region.full))
             modeButton.text = tr(if (region.full) "Celý obraz" else "Vybraná oblast")
@@ -162,8 +174,16 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
         overlayButton.text = "✓  " + tr("Překlad přes původní text")
         root.addView(overlayButton)
+        livePreview = PreviewView(this).apply {
+            scaleType = PreviewView.ScaleType.FIT_CENTER
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        }
         preview = CameraFrame(this)
-        root.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(320)))
+        root.addView(FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
+            addView(livePreview, FrameLayout.LayoutParams(-1, -1))
+            addView(preview, FrameLayout.LayoutParams(-1, -1))
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(300)))
         regionControls = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             visibility = View.GONE
@@ -205,12 +225,6 @@ class GameLingoCameraActivity : ComponentActivity() {
         actions.addView(torchButton, LinearLayout.LayoutParams(0, px(48), 1f))
         actions.addView(pauseButton, LinearLayout.LayoutParams(0, px(48), 1f))
         root.addView(actions)
-        selectedTV()?.let {
-            tvButton = button("Překlady na TV") {
-                if (tvEnabled) disableTV() else enableTV()
-            }
-            root.addView(tvButton)
-        }
         root.addView(TextView(this).apply {
             text = tr("Online překlad může odesílat rozpoznaný text externím poskytovatelům.")
             setTextColor(Color.parseColor("#92A4C7")); textSize = 12f
@@ -287,7 +301,13 @@ class GameLingoCameraActivity : ComponentActivity() {
                     .build()
                 analysis = use
                 use.setAnalyzer(worker) { frame -> analyze(frame, token) }
-                camera = p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, use)
+                val live = Preview.Builder().setTargetResolution(Size(1280, 720)).build()
+                live.setSurfaceProvider(livePreview.surfaceProvider)
+                liveUseCase = live
+                preview.showBitmap = false
+                livePreview.visibility = View.VISIBLE
+                camera = p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, live, use)
+                if (!TvProfily(this).pouzeTelefon) enableTV()
                 torchButton.isEnabled = camera?.cameraInfo?.hasFlashUnit() == true
             }.onFailure { unavailable() }
         }, ContextCompat.getMainExecutor(this))
@@ -346,7 +366,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     }
 
     private fun updateOverlays() {
-        val overlay = region.full && overlayEnabled && translatedLines.size == currentBlocks.size &&
+        val overlay = region.full && overlayEnabled && candidate == lastTranslated && translatedLines.size == currentBlocks.size &&
             translatedLines.isNotEmpty()
         preview.overlays = if (overlay) currentBlocks.zip(translatedLines).map { (block, text) ->
             CameraOverlay(text, block.rect)
@@ -358,22 +378,24 @@ class GameLingoCameraActivity : ComponentActivity() {
     private fun receive(blocks: List<CameraBlock>) {
         val text = blocks.joinToString("\n") { it.text }
         currentBlocks = blocks
-        if (text == candidate) confirmations = min(2, confirmations + 1)
-        else { candidate = text; confirmations = 1 }
-        if (confirmations < 2) return
+        candidate = text
         if (text.isBlank()) {
-            if (translatedText.isNotEmpty() || translating) {
+            emptyFrames++
+            if (emptyFrames >= 2 && (translatedText.isNotEmpty() || translating)) {
                 resetTranslation(); translator?.zavri(); translator = null
             }
             return
         }
+        emptyFrames = 0
         if (text == lastTranslated) {
             updateOverlays(); publishTV(); return
         }
-        if (translatedText.isNotEmpty()) {
+        if (lastTranslated.isNotEmpty() && !matchesCurrent(lastTranslated)) {
             translatedText = ""; translatedLines = emptyList(); lastTranslated = ""
-            output.text = ""; updateOverlays(); clearTV()
+            clearTV()
         }
+        updateOverlays()
+        if (translatedText.isEmpty()) output.text = text
         if (translating || SystemClock.elapsedRealtime() < retryAt) return
         val current = configRevision
         val token = generation
@@ -382,10 +404,10 @@ class GameLingoCameraActivity : ComponentActivity() {
         val engine = translator ?: Prekladac(this, to, from).also { translator = it }
         translating = true
         fun valid() = token == generation && current == configRevision && running && !isFinishing
-        fun finishResult(result: String, lines: List<String>) {
+        fun finishResult(result: String, lines: List<String>, complete: Boolean = true) {
             if (!valid()) return
-            translating = false
-            if (candidate != text || result.isBlank()) return
+            if (complete) translating = false
+            if (!matchesCurrent(text) || result.isBlank()) return
             lastTranslated = text
             translatedText = result
             translatedLines = lines
@@ -395,7 +417,7 @@ class GameLingoCameraActivity : ComponentActivity() {
         }
         engine.preloz(text, { translated ->
             if (!valid()) return@preloz
-            if (candidate != text || translated.isBlank()) {
+            if (!matchesCurrent(text) || translated.isBlank()) {
                 translating = false
                 return@preloz
             }
@@ -405,10 +427,11 @@ class GameLingoCameraActivity : ComponentActivity() {
                 finishResult(result, lines)
             } else {
                 // Only place a translation on a source line when alignment is known.
+                finishResult(result, emptyList(), complete = false)
                 val mapped = mutableListOf<String>()
                 fun next(index: Int) {
                     if (!valid()) return
-                    if (candidate != text) { translating = false; return }
+                    if (!matchesCurrent(text)) { translating = false; return }
                     if (index == blocks.size) { finishResult(result, mapped.toList()); return }
                     val original = blocks[index].text
                     engine.preloz(original, { item ->
@@ -425,13 +448,22 @@ class GameLingoCameraActivity : ComponentActivity() {
         }, {
             if (token == generation && current == configRevision) {
                 translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L
+                output.text = tr("Překlad selhal.")
             }
         })
     }
 
+    private fun matchesCurrent(text: String): Boolean {
+        if (candidate == text) return true
+        fun words(value: String) = value.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }.toSet()
+        val old = words(text)
+        val now = words(candidate)
+        return old.isNotEmpty() && old.intersect(now).size * 2 >= maxOf(old.size, now.size)
+    }
+
     private fun resetTranslation(keepText: Boolean = false) {
         configRevision++
-        candidate = ""; confirmations = 0; lastTranslated = ""; translating = false; retryAt = 0L
+        candidate = ""; emptyFrames = 0; lastTranslated = ""; translating = false; retryAt = 0L
         if (!keepText) {
             translatedText = ""; translatedLines = emptyList(); currentBlocks = emptyList()
             output.text = ""; updateOverlays()
@@ -448,16 +480,19 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun enableTV() {
         if (!running) return
-        val tv = selectedTV() ?: return
+        val tv = selectedTV() ?: run {
+            tvButton?.text = tr("Vyber nebo spáruj televizi")
+            return
+        }
         tvTarget = tv; tvEnabled = true; tvGeneration++; lastTVSent = 0
-        tvButton?.text = "✓  " + tr("Překlady na TV")
+        tvButton?.text = "Google TV / Android TV · " + tr("Připojuji…")
         publishTV(force = true)
     }
 
     private fun disableTV() {
         clearTV()
         tvGeneration++; tvEnabled = false; tvProbing = false; tvTarget = null
-        tvButton?.text = tr("Překlady na TV")
+        tvButton?.text = if (TvProfily(this).pouzeTelefon) tr("Telefon") else tr("Spárovat")
     }
 
     private fun clearTV() {
@@ -488,6 +523,7 @@ class GameLingoCameraActivity : ComponentActivity() {
             }
             return
         }
+        tvButton?.text = tr("TV připojena")
         if (translatedText.isBlank() || (!force && now - lastTVSent < 4000L)) return
         Propojeni.Vysilac.nastavCil(tv.ip, tv.jmeno)
         Propojeni.Vysilac.cameraCaption(translatedText, 6000)
@@ -500,10 +536,15 @@ class GameLingoCameraActivity : ComponentActivity() {
         disableTV()
         analysis?.clearAnalyzer()
         analysis?.let { provider?.unbind(it) }
+        liveUseCase?.let { provider?.unbind(it) }
+        liveUseCase = null
+        livePreview.visibility = View.INVISIBLE
+        preview.showBitmap = keepFrame
         analysis = null; camera = null; torch = false
         torchButton.isEnabled = false; torchButton.isSelected = false
         translator?.zavri(); translator = null
-        if (!keepFrame) { preview.bitmap = null; preview.invalidate() }
+        if (!keepFrame) preview.bitmap = null
+        preview.invalidate()
     }
 
     override fun onStop() { releaseCamera(); super.onStop() }
@@ -512,16 +553,16 @@ class GameLingoCameraActivity : ComponentActivity() {
     /** The OCR and drawn rectangle share precisely the same upright bitmap. */
     private class CameraFrame(context: android.content.Context) : View(context) {
         var bitmap: Bitmap? = null
+        var showBitmap = false
         var region = Region()
         var overlays = emptyList<CameraOverlay>()
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         override fun onDraw(canvas: Canvas) {
-            canvas.drawColor(Color.BLACK)
             val image = bitmap ?: return
             val scale = min(width.toFloat() / image.width, height.toFloat() / image.height)
             val w = image.width * scale; val h = image.height * scale
             val x = (width - w) / 2; val y = (height - h) / 2
-            canvas.drawBitmap(image, null, RectF(x, y, x + w, y + h), paint)
+            if (showBitmap) canvas.drawBitmap(image, null, RectF(x, y, x + w, y + h), paint)
             if (region.full) {
                 for (overlay in overlays) {
                     val r = overlay.rect

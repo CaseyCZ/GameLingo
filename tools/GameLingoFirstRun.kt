@@ -154,6 +154,8 @@ object GameLingoFirstRun {
                 TvProfily(activity).pouzeTelefon = tvChoice == 0
             }
             edit.apply()
+            if (open == 0) activity.getSharedPreferences("gamelingo_devices", Activity.MODE_PRIVATE)
+                .edit().putBoolean("cameraSourceSelected", consoleChoice == 2).apply()
             dialog.dismiss()
             finished()
             when (open) {

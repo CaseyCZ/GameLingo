@@ -265,7 +265,7 @@ object GameLingoVisualKit {
                 dp(context, 2), dp(context, 10))
         }
 
-    fun hero(activity: Activity): View {
+    fun hero(activity: Activity, selectSource: ((String) -> Unit)? = null): View {
         fun caption(label: String, size: Float, color: Int,
                     strong: Boolean = false) = TextView(activity).apply {
             text = label
@@ -299,31 +299,27 @@ object GameLingoVisualKit {
             LinearLayout.LayoutParams(dp(activity,36),dp(activity,36)))
         panel.addView(top)
 
-        // Same two platform badges as GameLingoHome.swift on iPhone.
-        val consoles = LinearLayout(activity).apply {
+        val sources = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(activity, 14), 0, 0)
+            setPadding(0, dp(activity, 12), 0, 0)
         }
-        consoles.addView(platformEmblem(activity, "Xbox"),
-            LinearLayout.LayoutParams(dp(activity, 44), dp(activity, 44)).apply {
-                rightMargin = dp(activity, 8)
-            })
-        consoles.addView(caption("Xbox", 14f, Color.WHITE, true),
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        consoles.addView(TextView(activity).apply {
-            text = "│"
-            textSize = sp(activity, 24f)
-            setTextColor(Color.parseColor("#554078"))
-            gravity = Gravity.CENTER
-        }, LinearLayout.LayoutParams(dp(activity, 25), dp(activity, 44)))
-        consoles.addView(platformEmblem(activity, "PlayStation"),
-            LinearLayout.LayoutParams(dp(activity, 44), dp(activity, 44)).apply {
-                rightMargin = dp(activity, 8)
-            })
-        consoles.addView(caption("PlayStation", 14f, Color.WHITE, true),
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        panel.addView(consoles)
+        val families = if (selectSource == null) listOf("Xbox", "PlayStation") else listOf("Xbox", "PlayStation", "Camera")
+        for (family in families) {
+            val label = if (family == "Camera") GameLingoLanguages.ui(activity, "Kamera") else family
+            val column = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                addView(platformEmblem(activity, family), LinearLayout.LayoutParams(dp(activity, 42), dp(activity, 42)))
+                addView(caption(label, 12f, Color.WHITE, true))
+                if (selectSource != null) {
+                    isFocusable = true
+                    setOnClickListener { selectSource.invoke(family) }
+                }
+            }
+            sources.addView(column, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        panel.addView(sources)
         return panel
     }
 
@@ -395,6 +391,7 @@ object GameLingoVisualKit {
                 setImageResource(when {
                     xbox -> R.drawable.gamelingo_xbox
                     playStation -> R.drawable.gamelingo_playstation
+                    family == "Camera" -> android.R.drawable.ic_menu_camera
                     else -> android.R.drawable.ic_menu_slideshow
                 })
                 setColorFilter(Color.WHITE)

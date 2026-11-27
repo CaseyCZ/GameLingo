@@ -55,7 +55,7 @@ def main():
         g=gradle.read_text(encoding="utf8")
         g=one(g,'dependencies {','dependencies {\n    implementation("com.journeyapps:zxing-android-embedded:4.3.0")',"mobile QR scanner dependency")
         # Standalone camera is compiled only into the mobile APK.
-        g=one(g,'dependencies {','dependencies {\n    implementation("androidx.activity:activity:1.8.2")\n    implementation("androidx.camera:camera-core:1.3.4")\n    implementation("androidx.camera:camera-camera2:1.3.4")\n    implementation("androidx.camera:camera-lifecycle:1.3.4")',"mobile camera dependencies")
+        g=one(g,'dependencies {','dependencies {\n    implementation("androidx.activity:activity:1.8.2")\n    implementation("androidx.camera:camera-core:1.3.4")\n    implementation("androidx.camera:camera-camera2:1.3.4")\n    implementation("androidx.camera:camera-lifecycle:1.3.4")\n    implementation("androidx.camera:camera-view:1.3.4")',"mobile camera dependencies")
         gradle.write_text(g,encoding="utf8")
         module=Path(__file__).with_name("GameLingoCameraActivity.kt")
         (folder/module.name).write_text(module.read_text(encoding="utf8"),encoding="utf8")

@@ -245,6 +245,7 @@ object GameLingoLanguages {
         out["Jiná aktualizace již probíhá."] = "Another update is already running."
         out["Kam zobrazit titulky"] = "Where to show subtitles"
         out["Kam zobrazit titulky?"] = "Where to show subtitles?"
+        out["Kamera"] = "Camera"
         out["Kontrola aktualizace se nezdařila. Zkontroluj internet a zkus to znovu."] = "Update check failed. Check your internet connection and try again."
         out["Kontrola již probíhá. Zkus to znovu."] = "An update check is already running. Try again."
         out["Kontrola nastavení"] = "Review settings"
@@ -417,10 +418,10 @@ object GameLingoLanguages {
         out["Náhled nelze zobrazit"] = "Could not display preview"
         out["Náhled oblastí · zmizí za 30 s"] = "Region preview · disappears in 30 s"
         out["Náhled obrazovky"] = "Screen preview"
-        out["Nápověda"] = "Help"
     }
 
     private fun fill_en_2(out: MutableMap<String, String>) {
+        out["Nápověda"] = "Help"
         out["Nápověda a úkoly"] = "Hints and objectives"
         out["Nápověda a úkoly v herním obraze"] = "Hints and objectives in the game image"
         out["Nápověda: "] = "Help: "
@@ -600,10 +601,10 @@ object GameLingoLanguages {
         out["Profily her a aplikací"] = "Game and app profiles"
         out["První nastavení"] = "First-time setup"
         out["První spuštění"] = "First launch"
-        out["Průhledné"] = "Translucent"
     }
 
     private fun fill_en_3(out: MutableMap<String, String>) {
+        out["Průhledné"] = "Translucent"
         out["Průměr / P95 (posledních 128 vzorků)"] = "Average / P95 (last 128 samples)"
         out["Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních."] = "The wizard will not appear again. You can add consoles and TVs in Devices."
         out["Párovací PIN"] = "Pairing PIN"
@@ -783,10 +784,10 @@ object GameLingoLanguages {
         out["Sleduj živý stav překladu"] = "Watch live translation status"
         out["Slovenština"] = "Slovak"
         out["Slovník opravuje vlastní výrazy a jména pro zvolenou jazykovou dvojici. Před úpravou zastav překlad."] = "The glossary corrects custom terms and names for the selected language pair. Stop translation before editing."
-        out["Slovník uložen. Použij tento profil před hraním."] = "Glossary saved. Use this profile before playing."
     }
 
     private fun fill_en_4(out: MutableMap<String, String>) {
+        out["Slovník uložen. Použij tento profil před hraním."] = "Glossary saved. Use this profile before playing."
         out["Slovník, historie a diagnostika"] = "Glossary, history and diagnostics"
         out["Služba snímání neodpověděla"] = "Capture service did not respond"
         out["Smazat"] = "Delete"
@@ -966,10 +967,10 @@ object GameLingoLanguages {
         out["Upravit profil"] = "Edit profile"
         out["Upravit rozložení"] = "Edit layout"
         out["Upravit zónu"] = "Edit zone"
-        out["Uvolněn"] = "Released"
     }
 
     private fun fill_en_5(out: MutableMap<String, String>) {
+        out["Uvolněn"] = "Released"
         out["Už jsi přihlášený. Načti konzole."] = "You are already signed in. Load your consoles."
         out["V běžném režimu bez překrývání originálu; nemění příběhovou frontu."] = "In normal mode without covering the original; does not change the story queue."
         out["V mobilní aplikaci otevři Zařízení a naskenuj QR kód."] = "Open Devices in the mobile app and scan the QR code."
@@ -1045,6 +1046,7 @@ object GameLingoLanguages {
         out["Vybrat konzoli "] = "Select console "
         out["Vybrat konzoli:"] = "Select console:"
         out["Vybrat profil"] = "Choose profile"
+        out["Vybrat zdroj"] = "Select source"
         out["Vydání se nepodařilo ověřit · stránka všech vydání"] = "Could not verify release · all releases page"
         out["Vygeneruj nový PIN a ověř připojení k místní síti."] = "Generate a new PIN and check the local network connection."
         out["Vyhledat"] = "Search"
@@ -1148,11 +1150,11 @@ object GameLingoLanguages {
         out["Zatím žádná TV"] = "No TV yet"
         out["Zatím žádné profily"] = "No profiles yet"
         out["Zatím žádné překlady."] = "No translations yet."
-        out["Zatím žádný překlad ve volitelné historii."] = "No translation in optional history yet."
-        out["Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR."] = "No translations in the optional history yet. Use Test OCR for a live preview."
     }
 
     private fun fill_en_6(out: MutableMap<String, String>) {
+        out["Zatím žádný překlad ve volitelné historii."] = "No translation in optional history yet."
+        out["Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR."] = "No translations in the optional history yet. Use Test OCR for a live preview."
         out["Zatím žádný spárovaný telefon."] = "No paired phones yet."
         out["Zatím žádný telefon."] = "No phones yet."
         out["Zavřít"] = "Close"
@@ -1495,6 +1497,7 @@ object GameLingoLanguages {
         out["Jiná aktualizace již probíhá."] = "Iná aktualizácia už prebieha."
         out["Kam zobrazit titulky"] = "Kde zobraziť titulky"
         out["Kam zobrazit titulky?"] = "Kde zobraziť titulky?"
+        out["Kamera"] = "Kamera"
         out["Kontrola aktualizace se nezdařila. Zkontroluj internet a zkus to znovu."] = "Kontrola aktualizácie zlyhala. Skontroluj internet a skús to znova."
         out["Kontrola již probíhá. Zkus to znovu."] = "Kontrola už prebieha. Skús to znova."
         out["Kontrola nastavení"] = "Kontrola nastavení"
@@ -1667,10 +1670,10 @@ object GameLingoLanguages {
         out["Náhled nelze zobrazit"] = "Náhľad nemožno zobraziť"
         out["Náhled oblastí · zmizí za 30 s"] = "Náhľad oblastí · zmizne za 30 s"
         out["Náhled obrazovky"] = "Náhľad obrazovky"
-        out["Nápověda"] = "Pomoc"
     }
 
     private fun fill_sk_2(out: MutableMap<String, String>) {
+        out["Nápověda"] = "Pomoc"
         out["Nápověda a úkoly"] = "Pomoc a úlohy"
         out["Nápověda a úkoly v herním obraze"] = "Pomoc a úlohy v hernom obraze"
         out["Nápověda: "] = "Pomoc: "
@@ -1850,10 +1853,10 @@ object GameLingoLanguages {
         out["Profily her a aplikací"] = "Profily hier a aplikácií"
         out["První nastavení"] = "Prvé nastavenie"
         out["První spuštění"] = "Prvé spustenie"
-        out["Průhledné"] = "Priehľadné"
     }
 
     private fun fill_sk_3(out: MutableMap<String, String>) {
+        out["Průhledné"] = "Priehľadné"
         out["Průměr / P95 (posledních 128 vzorků)"] = "Priemer / P95 (posledných 128 vzoriek)"
         out["Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních."] = "Sprievodca sa už nezobrazí. Konzoly a TV môžeš pridať v Zariadeniach."
         out["Párovací PIN"] = "Párovací PIN"
@@ -2033,10 +2036,10 @@ object GameLingoLanguages {
         out["Sleduj živý stav překladu"] = "Sleduj živý stav prekladu"
         out["Slovenština"] = "Slovenčina"
         out["Slovník opravuje vlastní výrazy a jména pro zvolenou jazykovou dvojici. Před úpravou zastav překlad."] = "Slovník opravuje vlastné výrazy a mená pre zvolenú jazykovú dvojicu. Pred úpravou zastav preklad."
-        out["Slovník uložen. Použij tento profil před hraním."] = "Slovník uložený. Použi tento profil pred hraním."
     }
 
     private fun fill_sk_4(out: MutableMap<String, String>) {
+        out["Slovník uložen. Použij tento profil před hraním."] = "Slovník uložený. Použi tento profil pred hraním."
         out["Slovník, historie a diagnostika"] = "Slovník, história a diagnostika"
         out["Služba snímání neodpověděla"] = "Služba snímania neodpovedala"
         out["Smazat"] = "Odstrániť"
@@ -2216,10 +2219,10 @@ object GameLingoLanguages {
         out["Upravit profil"] = "Upraviť profil"
         out["Upravit rozložení"] = "Upraviť rozloženie"
         out["Upravit zónu"] = "Upraviť zónu"
-        out["Uvolněn"] = "Uvoľnený"
     }
 
     private fun fill_sk_5(out: MutableMap<String, String>) {
+        out["Uvolněn"] = "Uvoľnený"
         out["Už jsi přihlášený. Načti konzole."] = "Už si prihlásený. Načítaj konzoly."
         out["V běžném režimu bez překrývání originálu; nemění příběhovou frontu."] = "V bežnom režime bez prekrývania originálu; nemení príbehový rad."
         out["V mobilní aplikaci otevři Zařízení a naskenuj QR kód."] = "V mobilnej aplikácii otvor Zariadenia a naskenuj QR kód."
@@ -2295,6 +2298,7 @@ object GameLingoLanguages {
         out["Vybrat konzoli "] = "Vybrať konzolu "
         out["Vybrat konzoli:"] = "Vybrať konzolu:"
         out["Vybrat profil"] = "Vybrať profil"
+        out["Vybrat zdroj"] = "Vybrať zdroj"
         out["Vydání se nepodařilo ověřit · stránka všech vydání"] = "Vydanie sa nepodarilo overiť · stránka všetkých vydaní"
         out["Vygeneruj nový PIN a ověř připojení k místní síti."] = "Vygeneruj nový PIN a over pripojenie k miestnej sieti."
         out["Vyhledat"] = "Vyhľadať"
@@ -2398,11 +2402,11 @@ object GameLingoLanguages {
         out["Zatím žádná TV"] = "Zatiaľ žiadna TV"
         out["Zatím žádné profily"] = "Zatiaľ žiadne profily"
         out["Zatím žádné překlady."] = "Zatiaľ žiadne preklady."
-        out["Zatím žádný překlad ve volitelné historii."] = "Zatiaľ žiadny preklad vo voliteľnej histórii."
-        out["Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR."] = "Zatiaľ žiadny preklad vo voliteľnej histórii. Na živý náhľad použi Test OCR."
     }
 
     private fun fill_sk_6(out: MutableMap<String, String>) {
+        out["Zatím žádný překlad ve volitelné historii."] = "Zatiaľ žiadny preklad vo voliteľnej histórii."
+        out["Zatím žádný překlad ve volitelné historii. Pro živý náhled použij Test OCR."] = "Zatiaľ žiadny preklad vo voliteľnej histórii. Na živý náhľad použi Test OCR."
         out["Zatím žádný spárovaný telefon."] = "Zatiaľ žiadny spárovaný telefón."
         out["Zatím žádný telefon."] = "Zatiaľ žiadny telefón."
         out["Zavřít"] = "Zavrieť"

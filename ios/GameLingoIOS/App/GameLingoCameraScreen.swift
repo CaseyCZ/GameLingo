@@ -17,8 +17,9 @@ private struct GLCameraOverlay: Identifiable {
 
 /// Camera-only source, with a single capture queue and no audio or recording.
 private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
-    private let session = AVCaptureSession()
-    private let queue = DispatchQueue(label: "cz.caseycz.gamelingo.camera")
+    let session = AVCaptureSession()
+    private let queue = DispatchQueue(label: "cz.caseycz.gamelingo.camera.session")
+    private let analysisQueue = DispatchQueue(label: "cz.caseycz.gamelingo.camera.ocr", qos: .userInitiated)
     private let context = CIContext()
     private var device: AVCaptureDevice?
     private var running = false
@@ -35,7 +36,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
     }
 
     func configure(language: String, region: CGRect, revision: Int) {
-        queue.async {
+        analysisQueue.async {
             self.language = language
             self.region = region
             self.revision = revision
@@ -44,7 +45,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
 
     func start() {
         queue.async {
-            guard !self.running else { return }
+            guard !self.session.isRunning else { return }
             if self.device == nil {
                 guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
                       let input = try? AVCaptureDeviceInput(device: device) else { self.failure(); return }
@@ -58,7 +59,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 if self.session.canSetSessionPreset(.hd1280x720) { self.session.sessionPreset = .hd1280x720 }
                 self.session.addInput(input)
                 self.session.addOutput(output)
-                output.setSampleBufferDelegate(self, queue: self.queue)
+                output.setSampleBufferDelegate(self, queue: self.analysisQueue)
                 if let connection = output.connection(with: .video), connection.isVideoOrientationSupported {
                     connection.videoOrientation = .portrait
                 }
@@ -71,16 +72,15 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                     device.unlockForConfiguration()
                 } catch { /* retain camera defaults */ }
             }
-            self.running = true
-            self.lastRead = 0
+            self.analysisQueue.async { self.running = true; self.lastRead = 0 }
             self.session.startRunning()
-            if !self.session.isRunning { self.running = false; self.failure() }
+            if !self.session.isRunning { self.analysisQueue.async { self.running = false }; self.failure() }
         }
     }
 
     func stop() {
         queue.async {
-            self.running = false
+            self.analysisQueue.async { self.running = false }
             if let device = self.device, device.hasTorch, (try? device.lockForConfiguration()) != nil {
                 if device.isTorchModeSupported(.off) { device.torchMode = .off }
                 device.unlockForConfiguration()
@@ -116,12 +116,12 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
         let image = CIImage(cvPixelBuffer: buffer)
         guard let cg = context.createCGImage(image, from: image.extent) else { return }
         let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
+        request.recognitionLevel = .fast
         request.recognitionLanguages = [language]
         request.usesLanguageCorrection = true
         request.regionOfInterest = CGRect(x: region.minX, y: 1 - region.maxY, width: region.width, height: region.height)
         do {
-            try VNImageRequestHandler(cgImage: cg, orientation: .up).perform([request])
+            try VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up).perform([request])
             let observations = (request.results ?? []).sorted {
                 $0.boundingBox.midY > $1.boundingBox.midY
             }
@@ -146,6 +146,9 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
 @MainActor
 private final class GLCameraState: ObservableObject {
     @Published var image: UIImage?
+    @Published var previewSession: AVCaptureSession?
+    @Published var recognizedText = ""
+    @Published var translating = false
     @Published var translation = ""
     @Published var overlays: [GLCameraOverlay] = []
     @Published var translationFailed = false
@@ -157,7 +160,7 @@ private final class GLCameraState: ObservableObject {
     private var revision = 0
     private var lifetime = 0
     private var candidate = ""
-    private var confirmations = 0
+    private var emptyFrames = 0
     private var lastTranslated = ""
     private var translatedLines: [String] = []
     private var currentBlocks: [GLCameraBlock] = []
@@ -194,6 +197,7 @@ private final class GLCameraState: ObservableObject {
             }
         })
         self.capture = capture
+        self.previewSession = capture.session
         applyConfiguration()
         capture.start()
     }
@@ -211,14 +215,14 @@ private final class GLCameraState: ObservableObject {
     private func resetTranslation() {
         revision += 1
         task?.cancel(); task = nil
-        candidate = ""; confirmations = 0; lastTranslated = ""; translation = ""
+        candidate = ""; emptyFrames = 0; lastTranslated = ""; translation = ""; recognizedText = ""; translating = false
         translatedLines = []; currentBlocks = []; overlays = []; translationFailed = false
         retryAt = 0; lastTVSentAt = 0
         if tvOutput { model?.sendCameraSubtitle("") }
     }
 
     private func updateOverlays() {
-        guard overlayMode, currentBlocks.count == translatedLines.count else { overlays = []; return }
+        guard overlayMode, candidate == lastTranslated, currentBlocks.count == translatedLines.count else { overlays = []; return }
         overlays = zip(currentBlocks, translatedLines).enumerated().map { index, pair in
             GLCameraOverlay(id: index, rect: pair.0.rect, text: pair.1)
         }
@@ -237,59 +241,75 @@ private final class GLCameraState: ObservableObject {
         self.image = image
         let text = blocks.map(\.text).joined(separator: "\n")
         currentBlocks = blocks
-        if text == candidate { confirmations = min(2, confirmations + 1) }
-        else { candidate = text; confirmations = 1 }
-        guard confirmations >= 2 else { return }
+        candidate = text
+        recognizedText = text
         if text.isEmpty {
-            if !translation.isEmpty || task != nil { resetTranslation(); applyConfiguration() }
+            emptyFrames += 1
+            if emptyFrames >= 2 && (!translation.isEmpty || task != nil) {
+                resetTranslation(); applyConfiguration()
+            }
             return
         }
+        emptyFrames = 0
         if text == lastTranslated {
             updateOverlays()
             publishTV()
             return
         }
-        // Never display a translation over a different, confirmed source.
-        if !translation.isEmpty {
-            translation = ""; overlays = []; translatedLines = []; lastTranslated = ""
+        // Preview is independent of OCR. Translate the first readable frame;
+        // minor recognition jitter must not prevent a subtitle from appearing.
+        overlays = []
+        if !lastTranslated.isEmpty && !matchesCurrent(lastTranslated) {
+            translation = ""; lastTranslated = ""; translatedLines = []
             publishTV(force: true)
         }
         guard task == nil, ProcessInfo.processInfo.systemUptime >= retryAt else { return }
+        translating = true
         let current = revision
         let source = source, target = target
         let wantsOverlay = overlayMode
         task = Task { [weak self] in
             guard let self, let model = self.model else { return }
-            defer { if self.revision == current { self.task = nil } }
+            defer { if self.revision == current { self.task = nil; self.translating = false } }
             let result = await model.translateCameraText(text, source: source, target: target)
             guard !Task.isCancelled, self.revision == current, self.running,
-                  !self.paused, self.candidate == text else { return }
+                  !self.paused, self.matchesCurrent(text) else { return }
             guard let result, !result.isEmpty else {
                 self.translationFailed = true
                 self.retryAt = ProcessInfo.processInfo.systemUptime + 2
                 return
             }
+            self.lastTranslated = text
+            self.translation = result
+            self.translationFailed = false
+            self.translatedLines = []
+            self.updateOverlays()
+            self.publishTV(force: true)
             var lines = result.components(separatedBy: "\n")
             if wantsOverlay && lines.count != blocks.count {
                 // Do not align a provider's merged or split lines to the wrong text.
                 // Reuse the same cached translator for individual OCR blocks.
                 lines = []
                 for block in blocks {
-                    guard !Task.isCancelled, self.revision == current, self.candidate == text else { return }
+                    guard !Task.isCancelled, self.revision == current, self.matchesCurrent(text) else { return }
                     guard let line = await model.translateCameraText(block.text, source: source, target: target),
                           !line.isEmpty else { lines = []; break }
                     lines.append(line)
                 }
             }
             guard !Task.isCancelled, self.revision == current, self.running,
-                  !self.paused, self.candidate == text else { return }
-            self.lastTranslated = text
-            self.translation = result
-            self.translationFailed = false
+                  !self.paused, self.matchesCurrent(text) else { return }
             self.translatedLines = lines
             self.updateOverlays()
             self.publishTV(force: true)
         }
+    }
+
+    private func matchesCurrent(_ text: String) -> Bool {
+        if candidate == text { return true }
+        let previous = Set(text.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }))
+        let current = Set(candidate.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }))
+        return !previous.isEmpty && previous.intersection(current).count * 2 >= max(previous.count, current.count)
     }
 
     func setTV(_ enabled: Bool) {
@@ -323,7 +343,7 @@ private final class GLCameraState: ObservableObject {
         lifetime += 1
         resetTranslation()
         capture?.stop(); capture = nil
-        image = nil; torchOn = false
+        previewSession = nil; image = nil; torchOn = false
     }
 }
 
@@ -342,7 +362,8 @@ struct GameLingoCameraScreen: View {
     @State private var regionWidth = 0.9
     @State private var regionHeight = 0.24
     @State private var zoom = 1.0
-    @State private var tvOutput = false
+    @ObservedObject var devices: GameLingoDevices
+    @ObservedObject var receiver: PlayCaptionTV
 
     private var region: CGRect {
         if fullImage { return CGRect(x: 0, y: 0, width: 1, height: 1) }
@@ -353,10 +374,10 @@ struct GameLingoCameraScreen: View {
     }
 
     private var tvReady: Bool {
-        guard model.devices.subtitleOutput == .googleTV,
-              let tv = model.devices.chosenTelevision else { return false }
-        return model.tv.receiverPaired && model.tv.receiverConnected &&
-            model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines) == tv.ipAddress
+        guard devices.subtitleOutput == .googleTV,
+              let tv = devices.chosenTelevision else { return false }
+        return receiver.receiverPaired && receiver.receiverConnected &&
+            receiver.ip.trimmingCharacters(in: .whitespacesAndNewlines) == tv.ipAddress
     }
 
     var body: some View {
@@ -376,7 +397,14 @@ struct GameLingoCameraScreen: View {
                         Text("Celý obraz").tag(true)
                         Text("Vybraná oblast").tag(false)
                     }.pickerStyle(.segmented)
-                    preview
+                    HStack {
+                        Image(systemName: devices.subtitleOutput == .phone ? "smartphone" : "tv.fill")
+                        Text(LocalizedStringKey(devices.subtitleOutput.rawValue))
+                        if devices.subtitleOutput == .googleTV {
+                            Text(LocalizedStringKey(tvReady ? "TV připojena" : "Spárovat")).foregroundStyle(tvReady ? GLStyle.green : .orange)
+                        }
+                    }.font(.caption)
+                    preview.frame(height: 300)
                     if fullImage {
                         Toggle("Překlad přes původní text", isOn: $overlayEnabled)
                     } else {
@@ -388,6 +416,10 @@ struct GameLingoCameraScreen: View {
                         }
                     }
                     if state.translationFailed { Text("Překlad selhal.").foregroundStyle(.orange) }
+                    if state.translating { ProgressView().tint(GLNeon.cyan) }
+                    if state.translation.isEmpty && !state.recognizedText.isEmpty {
+                        Text(state.recognizedText).font(.caption).foregroundStyle(GLStyle.muted).lineLimit(3)
+                    }
                     if !fullImage || !overlayEnabled || state.overlays.isEmpty {
                     Text(state.translation).font(.system(size: 20 * model.phoneFontScale, weight: .semibold))
                         .foregroundStyle(model.phoneTextColor.color)
@@ -410,7 +442,6 @@ struct GameLingoCameraScreen: View {
                             Label(state.paused ? "Pokračovat" : "Pozastavit", systemImage: state.paused ? "play.fill" : "pause.fill")
                         }.disabled(state.unavailable)
                     }
-                    if tvReady { Toggle("Překlady na TV", isOn: $tvOutput) }
                     if state.unavailable { Text("Fotoaparát není dostupný.").foregroundStyle(.orange) }
                     Text("Online překlad může odesílat rozpoznaný text externím poskytovatelům.")
                         .font(.caption).foregroundStyle(GLStyle.muted)
@@ -424,6 +455,7 @@ struct GameLingoCameraScreen: View {
         }
         .task {
             source = model.gameLanguage; target = model.targetLanguage
+            state.setTV(tvReady)
             await state.start(model: model, source: source, target: target, region: region, overlay: fullImage && overlayEnabled)
         }
         .onChange(of: source) { _, _ in update() }
@@ -435,8 +467,7 @@ struct GameLingoCameraScreen: View {
         .onChange(of: overlayEnabled) { _, _ in update() }
         .onChange(of: regionHeight) { _, _ in update() }
         .onChange(of: zoom) { _, value in state.zoom(value) }
-        .onChange(of: tvOutput) { _, value in state.setTV(value && tvReady) }
-        .onChange(of: tvReady) { _, value in if !value { tvOutput = false; state.setTV(false) } }
+        .onChange(of: tvReady) { _, value in state.setTV(value) }
         .onChange(of: phase) { _, value in if value == .background { state.stop(); dismiss() } }
         .onDisappear { state.stop() }
         .preferredColorScheme(.dark)
@@ -456,10 +487,14 @@ struct GameLingoCameraScreen: View {
 
     private var preview: some View {
         let aspect = state.image.map { $0.size.width / max(1, $0.size.height) } ?? 0.5625
-        return GeometryReader { proxy in
+        return GeometryReader { container in
+            let width = min(container.size.width, container.size.height * aspect)
+            let height = width / aspect
+            GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 Color.black
-                if let image = state.image { Image(uiImage: image).resizable().scaledToFit() }
+                if state.paused, let image = state.image { Image(uiImage: image).resizable().scaledToFit() }
+                else if let session = state.previewSession { GLLiveCameraPreview(session: session) }
                 if fullImage && overlayEnabled {
                     ForEach(state.overlays) { overlay in
                         Text(overlay.text)
@@ -480,6 +515,25 @@ struct GameLingoCameraScreen: View {
                         .offset(x: proxy.size.width * region.minX, y: proxy.size.height * region.minY)
                 }
             }
-        }.aspectRatio(aspect, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 14))
+            }.frame(width: width, height: height)
+                .position(x: container.size.width / 2, y: container.size.height / 2)
+        }.background(.black).clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
+
+private struct GLLiveCameraPreview: UIViewRepresentable {
+    let session: AVCaptureSession
+    final class PreviewView: UIView {
+        override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
+        var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+    }
+    func makeUIView(context: Context) -> PreviewView { PreviewView() }
+    func updateUIView(_ view: PreviewView, context: Context) {
+        view.previewLayer.videoGravity = .resizeAspect
+        if view.previewLayer.session !== session { view.previewLayer.session = session }
+        if let connection = view.previewLayer.connection, connection.isVideoOrientationSupported {
+            connection.videoOrientation = .portrait
+        }
+    }
+}
+

@@ -29,6 +29,8 @@ struct GameLingoHome: View {
     @State private var setupSheet = false
     @State private var cameraSheet = false
     @State private var cameraAfterSetup = false
+    @AppStorage("gamelingo.cameraSourceSelected") private var cameraSource = false
+    @State private var sourcePicker = false
     @State private var regionsSheet = false
     @State private var profilesSheet = false
     @State private var settingsSheet = false
@@ -89,13 +91,19 @@ struct GameLingoHome: View {
             }
         }) {
             GameLingoSetupView(devices: devices, onFinished: {}, onCameraSelected: {
+                cameraSource = true
                 cameraAfterSetup = true
             })
                 .environmentObject(model)
         }
         .fullScreenCover(isPresented: $cameraSheet) {
-            GameLingoCameraScreen(model: model)
+            GameLingoCameraScreen(model: model, devices: devices, receiver: model.tv)
                 .environment(\.locale, Locale(identifier: model.appLanguage.rawValue))
+        }
+        .confirmationDialog("Vybrat zdroj", isPresented: $sourcePicker, titleVisibility: .visible) {
+            Button("Xbox") { selectConsoleSource(.xbox) }
+            Button("PlayStation") { selectConsoleSource(.playStation) }
+            Button("Překlad kamerou") { cameraSource = true }
         }
         .task { if !model.isRunning && devices.completedSetup { updates.checkAtStartup() } }
         .onChange(of: updates.available) { _, _ in offerUpdateIfReady() }
@@ -254,27 +262,30 @@ struct GameLingoHome: View {
                         .frame(width: 34, height: 34)
                 }
                 HStack(spacing: 8) {
-                    VStack(alignment: .center, spacing: 6) {
-                        GLPlatformBadge(family: .xbox, size: 42)
-                        Text("Xbox")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                    }
+                    Button { if !model.isRunning { selectConsoleSource(.xbox) } } label: {
+                        VStack(alignment: .center, spacing: 6) {
+                            GLPlatformBadge(family: .xbox, size: 42)
+                            Text("Xbox").font(.subheadline.bold()).lineLimit(1).minimumScaleFactor(0.7)
+                        }.foregroundStyle(!cameraSource && devices.chosenConsole?.family == .xbox ? GLNeon.cyan : .white)
+                    }.buttonStyle(.plain)
                     .frame(maxWidth: .infinity, alignment: .center)
                     Rectangle()
                         .fill(GLNeon.edge)
                         .frame(width: 1, height: 58)
-                    VStack(alignment: .center, spacing: 6) {
-                        GLPlatformBadge(family: .playStation, size: 42)
-                        Text("PlayStation")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                    }
+                    Button { if !model.isRunning { selectConsoleSource(.playStation) } } label: {
+                        VStack(alignment: .center, spacing: 6) {
+                            GLPlatformBadge(family: .playStation, size: 42)
+                            Text("PlayStation").font(.subheadline.bold()).lineLimit(1).minimumScaleFactor(0.7)
+                        }.foregroundStyle(!cameraSource && devices.chosenConsole?.family == .playStation ? GLNeon.cyan : .white)
+                    }.buttonStyle(.plain)
                     .frame(maxWidth: .infinity, alignment: .center)
+                    Rectangle().fill(GLNeon.edge).frame(width: 1, height: 58)
+                    Button { if !model.isRunning { cameraSource = true } } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: "camera.fill").font(.system(size: 25)).frame(width: 42, height: 42)
+                            Text("Kamera").font(.subheadline.bold()).lineLimit(1)
+                        }.foregroundStyle(cameraSource ? GLNeon.cyan : .white)
+                    }.buttonStyle(.plain).frame(maxWidth: .infinity)
                 }
             }
             .padding(12)
@@ -282,7 +293,7 @@ struct GameLingoHome: View {
     }
 
     private var activeConsoleName: String {
-        devices.chosenConsole?.name ?? GLInterfaceText.localized("Vybrat konzoli")
+        cameraSource ? GLInterfaceText.localized("Kamera") : (devices.chosenConsole?.name ?? GLInterfaceText.localized("Vybrat zdroj"))
     }
 
     private var activeConsoleStatus: String {
@@ -295,6 +306,7 @@ struct GameLingoHome: View {
     }
 
     private var consoleActuallyReady: Bool {
+        if cameraSource { return true }
         guard let choice = devices.chosenConsole else { return false }
         if choice.family == .xbox {
             return model.xbox.signedIn && devices.activeXbox(from: model.xbox) != nil
@@ -311,16 +323,25 @@ struct GameLingoHome: View {
     }
 
     private func openSelectedConsole() {
-        switch devices.chosenConsole?.family {
-        case .xbox: xboxSheet = true
-        case .playStation: playStationSheet = true
-        case nil: setupSheet = true
-        }
+        if !model.isRunning { sourcePicker = true }
+    }
+
+    private func selectConsoleSource(_ family: GLConsoleFamily) {
+        cameraSource = false
+        if devices.chosenConsole?.family != family,
+           let record = devices.consoles.first(where: { $0.family == family }) { devices.selectConsole(record.id) }
+        if family == .xbox { xboxSheet = true } else { playStationSheet = true }
     }
 
     private func startCurrentSource() {
         guard !model.isRunning else {
             model.stop()
+            return
+        }
+        if cameraSource {
+            devices.prepareTV(model.tv)
+            if devices.subtitleOutput == .googleTV && !outputActuallyReady { tvSheet = true; return }
+            cameraSheet = true
             return
         }
         guard let record = devices.chosenConsole else {
@@ -366,12 +387,12 @@ struct GameLingoHome: View {
             }
             Button { openSelectedConsole() } label: {
                 GameLingoDeviceRow(
-                    icon: devices.chosenConsole?.family.icon ?? "gamecontroller",
+                    icon: cameraSource ? "camera.fill" : (devices.chosenConsole?.family.icon ?? "gamecontroller"),
                     name: activeConsoleName,
-                    subtitle: devices.chosenConsole?.family.rawValue ?? "Konzole",
+                    subtitle: cameraSource ? "" : (devices.chosenConsole?.family.rawValue ?? "Konzole"),
                     connected: model.isRunning && model.frameCount > 0,
                     status: activeConsoleStatus,
-                    family: devices.chosenConsole?.family
+                    family: cameraSource ? nil : devices.chosenConsole?.family
                 )
             }
             .buttonStyle(.plain)
@@ -391,10 +412,6 @@ struct GameLingoHome: View {
             }
             .buttonStyle(.plain)
             actionButton
-            GLPrimaryButton(title: "Překlad kamerou", systemImage: "camera.fill",
-                            disabled: model.isRunning || model.cacheChanging) {
-                cameraSheet = true
-            }
             LazyVGrid(columns: [GridItem(.flexible()),
                                 GridItem(.flexible())], spacing: 9) {
                 tile("Oblasti", icon: "rectangle.dashed") { regionsSheet = true }
@@ -480,6 +497,7 @@ struct GameLingoHome: View {
             .shadow(color: GLNeon.purple.opacity(0.35), radius: 16, y: 7)
         }
         .buttonStyle(.plain)
+        .disabled(cameraSource && model.cacheChanging)
         .accessibilityHint(model.isRunning
                            ? "Ukončit aktuální Remote Play a překlad"
                            : "Spustit překlad z vybrané konzole")
@@ -507,7 +525,7 @@ struct GameLingoHome: View {
                                          ? GLStyle.green : .white)
                     Text(verbatim: GLInterfaceText.localized(model.isRunning
                          ? "Sleduj živý stav překladu"
-                         : "Překlad se spustí až po ověření konzole a výstupu."))
+                         : (cameraSource ? "Překlad kamerou" : "Překlad se spustí až po ověření konzole a výstupu.")))
                         .font(.caption)
                         .foregroundStyle(GLNeon.mist)
                         .fixedSize(horizontal: false, vertical: true)

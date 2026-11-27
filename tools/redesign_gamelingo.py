@@ -43,7 +43,19 @@ def redesign_mobile(s: str) -> str:
 
             obsah.addView(GameLingoVisualKit.brandHeader(this) { openSettings() },
                 odsazeni(bottom = 14))
-            obsah.addView(GameLingoVisualKit.hero(this), odsazeni(bottom = 18))
+            val sourcePrefs = getSharedPreferences("gamelingo_devices", MODE_PRIVATE)
+            val cameraSource = sourcePrefs.getBoolean("cameraSourceSelected", false)
+            fun selectSource(family: String) {
+                if (RemotePlayService.aktivni) return
+                sourcePrefs.edit().putBoolean("cameraSourceSelected", family == "Camera").apply()
+                when (family) {
+                    "Camera" -> ukazHlavni()
+                    "Xbox" -> ukazPripojeniXbox()
+                    "PlayStation" -> ukazPripojeni()
+                    else -> openDevices()
+                }
+            }
+            obsah.addView(GameLingoVisualKit.hero(this, ::selectSource), odsazeni(bottom = 18))
             obsah.addView(GameLingoVisualKit.deviceSection(this) { openDevices() },
                 odsazeni(bottom = 5))
 
@@ -54,6 +66,7 @@ def redesign_mobile(s: str) -> str:
             val liveImage = RemotePlayService.aktivni &&
                 RemotePlayService.prehledSpojeni().uroven == UrovenSpojeni.OK
             val primaryFamily = when {
+                cameraSource -> "Camera"
                 selectedXbox != null -> "Xbox"
                 psSelected != null -> "PlayStation"
                 xbox != null -> "Xbox"
@@ -61,17 +74,25 @@ def redesign_mobile(s: str) -> str:
                 else -> "GameLingo"
             }
             val primaryName = when (primaryFamily) {
+                "Camera" -> GameLingoLanguages.ui(this, "Překlad kamerou")
                 "Xbox" -> "Xbox"
                 "PlayStation" -> psSelected?.name ?: "PlayStation"
                 else -> GameLingoLanguages.ui(this, "Vybrat konzoli")
             }
             obsah.addView(GameLingoVisualKit.deviceCard(
                 this, primaryFamily, primaryName,
-                if (liveImage) GameLingoLanguages.ui(this, "Snímání aktivní")
+                if (cameraSource) GameLingoLanguages.ui(this, "Připraveno ke spuštění")
+                else if (liveImage) GameLingoLanguages.ui(this, "Snímání aktivní")
                 else if (nejakaKonzole) GameLingoLanguages.ui(this, "Nastaveno · spojení ověřím při spuštění")
                 else GameLingoLanguages.ui(this, "Přidat Xbox nebo PlayStation"),
                 liveImage
-            ) { openDevices() }, odsazeni(bottom = 10))
+            ) {
+                if (!RemotePlayService.aktivni) android.app.AlertDialog.Builder(this)
+                    .setTitle(GameLingoLanguages.ui(this, "Vybrat zdroj"))
+                    .setItems(arrayOf("Xbox", "PlayStation", GameLingoLanguages.ui(this, "Překlad kamerou"))) { _, index ->
+                        selectSource(listOf("Xbox", "PlayStation", "Camera")[index])
+                    }.show()
+            }, odsazeni(bottom = 10))
 
             val tvStore = TvProfily(this)
             val savedTv = tvStore.posledniId?.let { tvStore.najdi(it) }
@@ -89,18 +110,16 @@ def redesign_mobile(s: str) -> str:
                 this,
                 if (RemotePlayService.aktivni) GameLingoLanguages.ui(this, "Zastavit překlad") else GameLingoLanguages.ui(this, "Spustit překlad")
             ) {
-                if (nejakaKonzole) prepniPreklad()
+                if (cameraSource && !RemotePlayService.aktivni) {
+                    if (!tvStore.pouzeTelefon && (savedTv == null || !GameLingoTVPairing.paired(this, savedTv.ip))) vyberVystupTv()
+                    else GameLingoCameraActivity.open(this)
+                } else if (nejakaKonzole) prepniPreklad()
                 else android.app.AlertDialog.Builder(this)
                     .setTitle(GameLingoLanguages.ui(this, "Kterou konzoli používáš?"))
                     .setItems(arrayOf("PlayStation 5 / 4", "Xbox Series / One")) { _, vyber ->
                         if (vyber == 0) ukazPripojeni() else ukazPripojeniXbox()
                     }.show()
             }, odsazeni(bottom = 17))
-
-            obsah.addView(GameLingoVisualKit.navigationTile(this,
-                "📷", GameLingoLanguages.ui(this, "Překlad kamerou")) {
-                GameLingoCameraActivity.open(this)
-            }, odsazeni(bottom = 12))
 
             val prvni = vodorovne()
             prvni.addView(GameLingoVisualKit.navigationTile(this,
@@ -129,12 +148,15 @@ def redesign_mobile(s: str) -> str:
                 else if (RemotePlayService.aktivni && !tvStore.pouzeTelefon)
                     GameLingoLanguages.ui(this, "Remote Play běží · TV spojení neověřeno")
                 else if (RemotePlayService.aktivni) GameLingoLanguages.ui(this, "Připojuji / načítám snímky")
-                else if (!nejakaKonzole) GameLingoLanguages.ui(this, "Nejprve připoj konzoli")
+                else if (cameraSource && tvStore.pouzeTelefon) GameLingoLanguages.ui(this, "Připraveno ke spuštění")
+                else if (!nejakaKonzole && !cameraSource) GameLingoLanguages.ui(this, "Nejprve připoj konzoli")
                 else if (!tvStore.pouzeTelefon && savedTv == null)
                     GameLingoLanguages.ui(this, "Vyber nebo spáruj televizi")
+                else if (cameraSource) GameLingoLanguages.ui(this, "Televize uložena · spojení se ověří")
                 else GameLingoLanguages.ui(this, "Konzole je nastavená · připojení neověřeno"),
                 if (liveImage && tvStore.pouzeTelefon)
                     GameLingoLanguages.ui(this, "Video snímky se přijímají, titulky zpracovává OCR.")
+                else if (cameraSource) GameLingoLanguages.ui(this, "Překlad kamerou")
                 else if (!tvStore.pouzeTelefon)
                     GameLingoLanguages.ui(this, "Uložený televizor nepotvrzuje živé přijetí titulků.")
                 else GameLingoLanguages.ui(this, "Uložené zařízení samo o sobě nepotvrzuje živé spojení."),
