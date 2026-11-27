@@ -237,6 +237,11 @@ private struct GLCameraPalette {
         // Only use texture restoration if donors actually vary.
         let donors = source.indices.filter { !mask[$0] }.map { source[$0] }
         guard let first=donors.first, donors.filter({distance($0,first)>24}).count >= donors.count/5 else { return (nil,weight) }
+        let inkLight = Self.luminance(ink)
+        guard donors.allSatisfy({ color in
+            let light = Self.luminance(color)
+            return (max(light,inkLight)+0.05)/(min(light,inkLight)+0.05) >= 4.5
+        }) else { return (nil,weight) }
         var output=source
         for y in 0..<h { for x in 0..<w where mask[y*w+x] {
             var found: UInt32?
@@ -476,7 +481,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
     // but the original observation remains the sole source of overlay geometry.
     private func rectifiedText(_ observation: VNRecognizedTextObservation,
                                original: VNRecognizedText, image: CIImage,
-                               request: VNRecognizeTextRequest) -> VNRecognizedText? {
+                               request: VNRecognizeTextRequest, attempted: inout Bool) -> VNRecognizedText? {
         guard original.confidence < 0.75 else { return nil }
         let points = [observation.topLeft, observation.topRight, observation.bottomRight, observation.bottomLeft]
         guard points.allSatisfy({ $0.x >= 0 && $0.x <= 1 && $0.y >= 0 && $0.y <= 1 }) else { return nil }
@@ -492,6 +497,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
               abs(top-bottom)/max(top,bottom) > 0.10 ||
               abs(left-right)/max(left,right) > 0.10 else { return nil }
         guard let filter = CIFilter(name: "CIPerspectiveCorrection") else { return nil }
+        attempted = true
         filter.setValue(image, forKey: kCIInputImageKey)
         for (key, point) in zip(["inputTopLeft","inputTopRight","inputBottomRight","inputBottomLeft"], p) {
             filter.setValue(CIVector(cgPoint: point), forKey: key)
@@ -555,8 +561,8 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                       !recognized.string.isEmpty, remaining > 0 else { continue }
                 if wholeImage && !attemptedRectification && recognized.confidence < 0.75 &&
                     ProcessInfo.processInfo.systemUptime - now < 0.20 {
-                    attemptedRectification = true
-                    if let refined = rectifiedText(observation, original: recognized, image: image, request: request) {
+                    if let refined = rectifiedText(observation, original: recognized, image: image, request: request,
+                                                   attempted: &attemptedRectification) {
                         recognized = refined
                     }
                 }
