@@ -84,6 +84,27 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Propojeni.Vysilac.cameraCaption", android)
         self.assertIn("if (RemotePlayService.aktivni || PrijemService.bezi) return@synchronized", wire)
 
+    def test_camera_language_selection_is_independent(self):
+        camera = code(IOS/"GameLingoCameraScreen.swift")
+        android = code(TOOLS/"GameLingoCameraActivity.kt")
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn('Text("Automaticky").tag("auto")', camera)
+        self.assertIn("NLLanguageRecognizer()", camera)
+        self.assertIn("request.supportedRecognitionLanguages()", camera)
+        self.assertIn("request.automaticallyDetectsLanguage", camera)
+        self.assertIn("GLTargetLanguage.allCases", camera)
+        self.assertIn("sourceCode: source.rawValue", pipeline)
+        self.assertIn("GLTargetLanguage(rawValue: sourceCode)", pipeline)
+        self.assertIn("pipeline.translate(original, sourceCode: source, to: target)", model)
+        self.assertIn("LanguageIdentification.getClient()", android)
+        self.assertIn("languageIdentifier.identifyLanguage(text)", android)
+        self.assertIn("languageIdentifier.close()", android)
+        self.assertIn("cameraLanguages", android)
+        self.assertIn("translatorSource != from", android)
+        self.assertIn("updatePreviewHeight()", android)
+        self.assertNotIn("preview.frame(height: 340)", camera)
+
     def test_camera_region_editor_uses_direct_manipulation(self):
         camera = code(IOS/"GameLingoCameraScreen.swift")
         android = code(TOOLS/"GameLingoCameraActivity.kt")

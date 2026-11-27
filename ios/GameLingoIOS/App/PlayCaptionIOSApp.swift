@@ -1371,13 +1371,12 @@ final class CaptionAppModel: ObservableObject {
     }
 
     // Camera has its own capture lifetime and does not create a Remote Play session.
-    func translateCameraText(_ original: String, source: GLGameLanguage,
+    func translateCameraText(_ original: String, source: String,
                              target: GLTargetLanguage) async -> String? {
         guard !isRunning, !cacheChanging else { return nil }
-        guard case .success(let translated) = await pipeline.translate(original, from: source, to: target),
+        guard case .success(let translated) = await pipeline.translate(original, sourceCode: source, to: target),
               !Task.isCancelled, !isRunning else { return nil }
-        return glossaryTranslation(original: original, translated: translated,
-                                   source: source.rawValue, target: target.rawValue)
+        return translated
     }
 
     func sendCameraSubtitle(_ text: String) {

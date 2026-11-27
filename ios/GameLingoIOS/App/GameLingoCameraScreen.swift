@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import Vision
+import NaturalLanguage
 import CoreImage
 import UIKit
 
@@ -24,7 +25,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
     private var device: AVCaptureDevice?
     private var running = false
     private var lastRead: TimeInterval = 0
-    private var language = "en-US"
+    private var language = "auto"
     private var region = CGRect(x: 0, y: 0, width: 1, height: 1)
     private var revision = 0
     private let frame: @Sendable (UIImage, [GLCameraBlock], Int) -> Void
@@ -120,9 +121,17 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
         let image = CIImage(cvPixelBuffer: buffer)
         guard let cg = context.createCGImage(image, from: image.extent) else { return }
         let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .fast
-        request.recognitionLanguages = [language]
-        request.usesLanguageCorrection = true
+        request.recognitionLevel = .accurate
+        // Vision's supported OCR languages vary with the OS and revision.
+        // Unsupported explicit languages must not make the OCR request fail.
+        let supported = (try? request.supportedRecognitionLanguages()) ?? ["en-US"]
+        let wanted = language == "auto" ? ["en", "cs", "sk", "pl", "de", "fr", "es", "it", "pt"] : [language]
+        let matches = wanted.compactMap { code in
+            supported.first { $0.split(separator: "-").first.map(String.init) == code }
+        }
+        request.recognitionLanguages = matches.isEmpty ? Array(supported.prefix(1)) : matches
+        request.automaticallyDetectsLanguage = language == "auto"
+        request.usesLanguageCorrection = language != "auto" && !matches.isEmpty
         request.regionOfInterest = CGRect(x: region.minX, y: 1 - region.maxY, width: region.width, height: region.height)
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up).perform([request])
@@ -173,12 +182,12 @@ private final class GLCameraState: ObservableObject {
     private var lastTVSentAt: TimeInterval = 0
     private var running = false
     private var tvOutput = false
-    private var source: GLGameLanguage = .english
+    private var source = "auto"
     private var target: GLTargetLanguage = .czech
     private var region = CGRect(x: 0, y: 0, width: 1, height: 1)
     private weak var model: CaptionAppModel?
 
-    func start(model: CaptionAppModel, source: GLGameLanguage, target: GLTargetLanguage, region: CGRect, overlay: Bool) async {
+    func start(model: CaptionAppModel, source: String, target: GLTargetLanguage, region: CGRect, overlay: Bool) async {
         guard !running, !model.isRunning else { return }
         unavailable = false; paused = false
         self.model = model
@@ -211,7 +220,7 @@ private final class GLCameraState: ObservableObject {
         capture.start()
     }
 
-    func configure(source: GLGameLanguage, target: GLTargetLanguage, region: CGRect, overlay: Bool) {
+    func configure(source: String, target: GLTargetLanguage, region: CGRect, overlay: Bool) {
         guard self.source != source || self.target != target || self.region != region || self.overlayMode != overlay else { return }
         self.source = source; self.target = target; self.region = region; self.overlayMode = overlay
         resetTranslation()
@@ -219,7 +228,7 @@ private final class GLCameraState: ObservableObject {
     }
 
     private func applyConfiguration() {
-        capture?.configure(language: source.visionIdentifier, region: region, revision: revision)
+        capture?.configure(language: source, region: region, revision: revision)
     }
 
     private func resetTranslation() {
@@ -276,7 +285,7 @@ private final class GLCameraState: ObservableObject {
         guard task == nil, ProcessInfo.processInfo.systemUptime >= retryAt else { return }
         translating = true
         let current = revision
-        let source = source, target = target
+        let source = resolvedSource(text), target = target
         let wantsOverlay = overlayMode
         task = Task { [weak self] in
             guard let self, let model = self.model else { return }
@@ -313,6 +322,20 @@ private final class GLCameraState: ObservableObject {
             self.updateOverlays()
             self.publishTV(force: true)
         }
+    }
+
+    // Restrict local language identification to the camera's supported
+    // translation languages. Short/ambiguous strings use the game preference.
+    private func resolvedSource(_ text: String) -> String {
+        if source != "auto" { return source }
+        let recognizer = NLLanguageRecognizer()
+        recognizer.languageConstraints = GLTargetLanguage.allCases.map { NLLanguage(rawValue: $0.rawValue) }
+        recognizer.processString(text)
+        if let result = recognizer.languageHypotheses(withMaximum: 1).first,
+           result.value >= 0.45, GLTargetLanguage(rawValue: result.key.rawValue) != nil {
+            return result.key.rawValue
+        }
+        return model?.gameLanguage.rawValue ?? "en"
     }
 
     private func matchesCurrent(_ text: String) -> Bool {
@@ -363,8 +386,9 @@ struct GameLingoCameraScreen: View {
     @StateObject private var state = GLCameraState()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var phase
-    @State private var source: GLGameLanguage = .english
-    @State private var target: GLTargetLanguage = .czech
+    @AppStorage("gamelingo.camera.source") private var source = "auto"
+    @AppStorage("gamelingo.camera.target") private var target: GLTargetLanguage = .czech
+    @AppStorage("gamelingo.camera.languagesInitialized") private var languagesInitialized = false
     @AppStorage("gamelingo.camera.fullImage") private var fullImage = true
     @AppStorage("gamelingo.camera.overlay") private var overlayEnabled = true
     @AppStorage("gamelingo.camera.regionX") private var regionX = 0.05
@@ -410,7 +434,8 @@ struct GameLingoCameraScreen: View {
                 VStack(spacing: 12) {
                     HStack {
                         Picker("Jazyk textu", selection: $source) {
-                            ForEach(GLGameLanguage.allCases) { Text(LocalizedStringKey($0.title)).tag($0) }
+                            Text("Automaticky").tag("auto")
+                            ForEach(GLTargetLanguage.allCases) { Text(LocalizedStringKey($0.title)).tag($0.rawValue) }
                         }
                         Image(systemName: "arrow.right")
                         Picker("Cílový jazyk", selection: $target) {
@@ -435,7 +460,7 @@ struct GameLingoCameraScreen: View {
                                 Spacer()
                                 if !fullImage { Text("Vybraná oblast").font(.caption).foregroundStyle(.yellow) }
                             }
-                            preview.frame(height: 340)
+                            preview.aspectRatio(fullImage ? (state.image.map { $0.size.width / max(1, $0.size.height) } ?? 9.0 / 16.0) : 0.9, contentMode: .fit)
                             if !fullImage {
                                 Text("Vyber oblast, potom uprav její polohu a velikost v náhledu.")
                                     .font(.caption).foregroundStyle(GLNeon.mist)
@@ -452,7 +477,7 @@ struct GameLingoCameraScreen: View {
                     if state.translation.isEmpty && !state.recognizedText.isEmpty {
                         Text(state.recognizedText).font(.caption).foregroundStyle(GLStyle.muted).lineLimit(3)
                     }
-                    if !fullImage || !overlayEnabled || state.overlays.isEmpty {
+                    if (!fullImage || !overlayEnabled || state.overlays.isEmpty) && !state.translation.isEmpty {
                     Text(state.translation).font(.system(size: 20 * model.phoneFontScale, weight: .semibold))
                         .foregroundStyle(model.phoneTextColor.color)
                         .frame(maxWidth: .infinity, minHeight: 50)
@@ -486,7 +511,9 @@ struct GameLingoCameraScreen: View {
             .toolbar { ToolbarItem(placement: .topBarLeading) { GLBackButton { state.stop(); dismiss() } } }
         }
         .task {
-            source = model.gameLanguage; target = model.targetLanguage
+            if !languagesInitialized {
+                source = "auto"; target = model.targetLanguage; languagesInitialized = true
+            }
             state.setTV(tvReady)
             await state.start(model: model, source: source, target: target, region: region, overlay: fullImage && overlayEnabled)
         }

@@ -33,6 +33,7 @@ import androidx.camera.core.Preview
 import androidx.camera.view.PreviewView
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import com.google.mlkit.nl.languageid.LanguageIdentification
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -74,6 +75,7 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private val worker = Executors.newSingleThreadExecutor()
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private val languageIdentifier = LanguageIdentification.getClient()
     private val ocrBusy = AtomicBoolean(false)
     @Volatile private var region = Region()
     @Volatile private var generation = 0
@@ -86,7 +88,9 @@ class GameLingoCameraActivity : ComponentActivity() {
     private lateinit var livePreview: PreviewView
     private var camera: Camera? = null
     private var translator: Prekladac? = null
-    private var source = "en"
+    private var source = "auto"
+    private var translatorSource: String? = null
+    private val cameraLanguages get() = listOf(GameLingoLanguages.Language("auto", tr("Automaticky"))) + GameLingoLanguages.targetLanguages
     private var target = "cs"
     private var paused = false
     private var torch = false
@@ -112,6 +116,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     private lateinit var fullButton: Button
     private lateinit var areaButton: Button
     private lateinit var previewStatus: TextView
+    private lateinit var previewContainer: FrameLayout
     private lateinit var overlayButton: Button
     private var tvButton: TextView? = null
     private lateinit var regionControls: LinearLayout
@@ -121,9 +126,9 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        source = GameLingoLanguages.game(this)
-        target = GameLingoLanguages.target(this)
         val prefs = getSharedPreferences("gamelingo_camera", MODE_PRIVATE)
+        source = prefs.getString("source", "auto")?.takeIf { code -> cameraLanguages.any { it.code == code } } ?: "auto"
+        target = prefs.getString("target", GameLingoLanguages.target(this))?.takeIf { code -> GameLingoLanguages.targetLanguages.any { it.code == code } } ?: GameLingoLanguages.target(this)
         fun coordinate(key: String, fallback: Float) = prefs.getFloat(key, fallback).takeIf { it.isFinite() } ?: fallback
         region = Region(prefs.getBoolean("full", true), coordinate("centerY", .78f),
             coordinate("height", .24f), coordinate("centerX", .5f), coordinate("width", .9f))
@@ -208,12 +213,16 @@ class GameLingoCameraActivity : ComponentActivity() {
             setBackgroundColor(Color.argb(150, 0, 0, 0))
             setPadding(px(8), px(5), px(8), px(5))
         }
-        previewCard.addView(FrameLayout(this).apply {
+        previewContainer = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
             addView(livePreview, FrameLayout.LayoutParams(-1, -1))
             addView(preview, FrameLayout.LayoutParams(-1, -1))
             addView(previewStatus, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(340)))
+        }
+        previewCard.addView(previewContainer, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, px(340)))
+        previewContainer.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+            if (right - left != oldRight - oldLeft) updatePreviewHeight()
+        }
         // The native preview runs independently of recognition. If it has
         // not begun streaming yet, show the latest analyzed image instead.
         livePreview.previewStreamState.observe(this) { stream ->
@@ -274,18 +283,19 @@ class GameLingoCameraActivity : ComponentActivity() {
     }
 
     private fun updateLanguages() {
-        languageButton.text = GameLingoLanguages.name(GameLingoLanguages.gameLanguages, source) +
+        languageButton.text = GameLingoLanguages.name(cameraLanguages, source) +
             " → " + GameLingoLanguages.name(GameLingoLanguages.targetLanguages, target)
     }
 
     private fun chooseLanguages() {
         android.app.AlertDialog.Builder(this).setTitle(tr("Jazyky"))
             .setItems(arrayOf(tr("Jazyk textu"), tr("Cílový jazyk"))) { _, which ->
-                val options = if (which == 0) GameLingoLanguages.gameLanguages else GameLingoLanguages.targetLanguages
+                val options = if (which == 0) cameraLanguages else GameLingoLanguages.targetLanguages
                 android.app.AlertDialog.Builder(this)
                     .setTitle(tr(if (which == 0) "Jazyk textu" else "Cílový jazyk"))
                     .setItems(options.map { it.title }.toTypedArray()) { _, index ->
                         if (which == 0) source = options[index].code else target = options[index].code
+                        getSharedPreferences("gamelingo_camera", MODE_PRIVATE).edit().putString("source", source).putString("target", target).apply()
                         updateLanguages()
                         resetTranslation()
                         translator?.zavri(); translator = null
@@ -293,7 +303,19 @@ class GameLingoCameraActivity : ComponentActivity() {
             }.show()
     }
 
+    private fun updatePreviewHeight() {
+        val width = previewContainer.width.takeIf { it > 0 } ?: (resources.displayMetrics.widthPixels - px(56)).coerceAtLeast(1)
+        val aspect = preview.bitmap?.let { it.height.toFloat() / it.width } ?: 16f / 9f
+        val height = if (region.full) (width * aspect).toInt() else px(340)
+        val params = previewContainer.layoutParams
+        if (params.height != height) {
+            params.height = height
+            previewContainer.layoutParams = params
+        }
+    }
+
     private fun updateMode() {
+        updatePreviewHeight()
         fullButton.background = GameLingoVisualKit.card(this, selected = region.full)
         areaButton.background = GameLingoVisualKit.card(this, selected = !region.full)
         fullButton.isSelected = region.full
@@ -395,7 +417,9 @@ class GameLingoCameraActivity : ComponentActivity() {
                 if (!running || token != generation || current != configRevision || isFinishing) {
                     bitmap.recycle(); return@addOnCompleteListener
                 }
+                val previous = preview.bitmap
                 preview.bitmap = bitmap
+                if (previous == null || previous.width != bitmap.width || previous.height != bitmap.height) updatePreviewHeight()
                 previewStatus.visibility = View.GONE
                 preview.invalidate()
                 val blocks = mutableListOf<CameraBlock>()
@@ -428,7 +452,7 @@ class GameLingoCameraActivity : ComponentActivity() {
         preview.overlays = if (overlay) currentBlocks.zip(translatedLines).map { (block, text) ->
             CameraOverlay(text, block.rect)
         } else emptyList()
-        output.visibility = if (overlay) View.GONE else View.VISIBLE
+        output.visibility = if (overlay || output.text.isNullOrBlank()) View.GONE else View.VISIBLE
         preview.invalidate()
     }
 
@@ -452,14 +476,31 @@ class GameLingoCameraActivity : ComponentActivity() {
             clearTV()
         }
         updateOverlays()
-        if (translatedText.isEmpty()) output.text = text
+        if (translatedText.isEmpty()) { output.text = text; output.visibility = View.VISIBLE }
         if (translating || SystemClock.elapsedRealtime() < retryAt) return
         val current = configRevision
         val token = generation
-        val from = source
-        val to = target
-        val engine = translator ?: Prekladac(this, to, from).also { translator = it }
         translating = true
+        fun valid() = token == generation && current == configRevision && running && !isFinishing
+        if (source == "auto") {
+            languageIdentifier.identifyLanguage(text).addOnCompleteListener { result ->
+                if (!valid()) return@addOnCompleteListener
+                if (!matchesCurrent(text)) { translating = false; return@addOnCompleteListener }
+                val detected = if (result.isSuccessful) result.result else null
+                val from = detected?.takeIf { code -> GameLingoLanguages.targetLanguages.any { it.code == code } }
+                    ?: GameLingoLanguages.game(this)
+                translateRecognized(text, blocks, from, token, current)
+            }
+        } else translateRecognized(text, blocks, source, token, current)
+    }
+
+    private fun translateRecognized(text: String, blocks: List<CameraBlock>, from: String, token: Int, current: Int) {
+        val to = target
+        if (translatorSource != from) {
+            translator?.zavri(); translator = null
+            translatorSource = from
+        }
+        val engine = translator ?: Prekladac(this, to, from).also { translator = it }
         fun valid() = token == generation && current == configRevision && running && !isFinishing
         fun finishResult(result: String, lines: List<String>, complete: Boolean = true) {
             if (!valid()) return
@@ -478,7 +519,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                 translating = false
                 return@preloz
             }
-            val result = GameLingoGlossaryStore.apply(this, text, translated, from, to)
+            val result = translated
             val lines = result.split("\n")
             if (!region.full || !overlayEnabled || lines.size == blocks.size) {
                 finishResult(result, lines)
@@ -495,7 +536,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                         if (!valid()) return@preloz
                         if (item.isBlank()) finishResult(result, emptyList())
                         else {
-                            mapped.add(GameLingoGlossaryStore.apply(this, original, item, from, to))
+                            mapped.add(item)
                             next(index + 1)
                         }
                     }, { finishResult(result, emptyList()) })
@@ -506,6 +547,7 @@ class GameLingoCameraActivity : ComponentActivity() {
             if (token == generation && current == configRevision) {
                 translating = false; retryAt = SystemClock.elapsedRealtime() + 2000L
                 output.text = tr("Překlad selhal.")
+                output.visibility = View.VISIBLE
             }
         })
     }
@@ -606,7 +648,7 @@ class GameLingoCameraActivity : ComponentActivity() {
     }
 
     override fun onStop() { releaseCamera(); super.onStop() }
-    override fun onDestroy() { recognizer.close(); worker.shutdown(); super.onDestroy() }
+    override fun onDestroy() { recognizer.close(); languageIdentifier.close(); worker.shutdown(); super.onDestroy() }
 
     /** The editor uses the same normalized upright frame as OCR. */
     private class CameraFrame(context: android.content.Context) : View(context) {

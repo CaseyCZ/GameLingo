@@ -418,16 +418,23 @@ actor CaptionPipeline {
     func translate(_ original: String,
                    from source: GLGameLanguage = .english,
                    to target: GLTargetLanguage = .czech) async -> Result<String, GLTranslationFailure> {
+        await translate(original, sourceCode: source.rawValue, to: target)
+    }
+
+    // Camera source languages are independent of the game OCR selector.
+    func translate(_ original: String, sourceCode: String,
+                   to target: GLTargetLanguage) async -> Result<String, GLTranslationFailure> {
+        guard GLTargetLanguage(rawValue: sourceCode) != nil else { return .failure(.invalidRequest) }
         guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .failure(.emptyInput)
         }
         if Task.isCancelled { return .failure(.cancelled) }
-        if source.rawValue == target.rawValue { return .success(original) }
+        if sourceCode == target.rawValue { return .success(original) }
         // Cache hits do not consume a provider probe. Prefer Google results.
         let cacheRevision = await translationCache.revision()
         let engines = ["google-gtx-v1", "microsoft-edge-v1", "mymemory-v1"]
         for engine in engines {
-            if let cached = await translationCache.lookup(engine: engine, source: source.rawValue,
+            if let cached = await translationCache.lookup(engine: engine, source: sourceCode,
                 target: target.rawValue, original: original) { return .success(cached) }
         }
         var lastFailure: GLTranslationFailure = .providerUnavailable
@@ -439,7 +446,7 @@ actor CaptionPipeline {
             guard let ticket = providerBreakers[engine, default: TranslationCircuitBreaker()]
                 .acquire(now: now) else { continue }
             let outcome = await requestTranslation(engine: engine, original: original,
-                source: source.rawValue, target: target.rawValue)
+                source: sourceCode, target: target.rawValue)
             let success: Bool?
             switch outcome {
             case .success: success = true
@@ -450,7 +457,7 @@ actor CaptionPipeline {
                 .complete(ticket, success: success, now: ProcessInfo.processInfo.systemUptime)
             switch outcome {
             case .success(let translated):
-                await translationCache.remember(engine: engine, source: source.rawValue,
+                await translationCache.remember(engine: engine, source: sourceCode,
                     target: target.rawValue, original: original, result: translated, revision: cacheRevision)
                 return outcome
             case .failure(.cancelled): return outcome
