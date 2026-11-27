@@ -1,4 +1,4 @@
-name: GameLingo • audit 0.5 build and regression checks
+name: GameLingo · Build & Test
 
 on:
   push:
@@ -11,12 +11,23 @@ on:
       - "tests/**"
       - "shared/**"
       - ".github/workflows/audit-0.5-ci.yml"
-      - ".github/workflows/build-gamelingo.yml"
-      - ".github/workflows/fast-gamelingo-checks.yml"
+  pull_request:
+    branches: [Master]
+    paths:
+      - "ios/**"
+      - "tools/**"
+      - "tests/**"
+      - "shared/**"
+      - ".github/workflows/audit-0.5-ci.yml"
   workflow_dispatch:
+    inputs:
+      require_permanent_signing:
+        description: Require published Android signing certificates
+        type: boolean
+        default: false
 
-# Only the newest Master candidate needs a full native build. Older edits
-# must not consume parallel macOS/Android minutes or publish stale artifacts.
+# Preserve the original workflow identity and versionCode run-number sequence.
+# PRs run only read-only regression checks; trusted branch builds package apps.
 concurrency:
   group: gamelingo-audit-${{ github.ref }}
   cancel-in-progress: true
@@ -26,7 +37,8 @@ permissions:
 
 jobs:
   run_link:
-    name: Publish current build link
+    name: Record current build link
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       statuses: write
@@ -41,20 +53,480 @@ jobs:
             -f description="GameLingo candidate build started"
 
   quick:
-    uses: ./.github/workflows/fast-gamelingo-checks.yml
-  native:
+    name: Regression checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python integration contracts
+        run: python3 -m unittest discover -s tests -p 'test_v05_integrations.py' -v
+      - name: Release localization contracts
+        run: python3 -m unittest discover -s tests -p 'test_release_localization.py' -v
+      - name: Test dynamic UI status localization
+        run: |
+          swiftc ios/GameLingoIOS/App/GameLingoAppLanguage.swift tests/InterfaceStatusTests.swift -o "$RUNNER_TEMP/interface-status-tests"
+          "$RUNNER_TEMP/interface-status-tests"
+      - name: Python tooling syntax
+        run: python3 -m compileall -q tools tests
+      - name: Run latest-frame mailbox tests
+        run: |
+          swiftc ios/GameLingoIOS/App/LatestFrameMailbox.swift tests/LatestFrameMailboxTests.swift -o "$RUNNER_TEMP/latest-frame-tests"
+          "$RUNNER_TEMP/latest-frame-tests"
+      - name: Test explicit translation outcomes
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationOutcome.swift tests/TranslationOutcomeTests.swift -o "$RUNNER_TEMP/translation-outcome-tests"
+          "$RUNNER_TEMP/translation-outcome-tests"
+      - name: Test dialogue and game text stabilization
+        run: |
+          swiftc ios/GameLingoIOS/App/CaptionStability.swift tests/CaptionStabilityTests.swift -o "$RUNNER_TEMP/caption-stability-tests"
+          "$RUNNER_TEMP/caption-stability-tests"
+      - name: Test translation circuit breaker
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationOutcome.swift ios/GameLingoIOS/App/TranslationCircuitBreaker.swift tests/TranslationCircuitBreakerTests.swift -o "$RUNNER_TEMP/translation-breaker-tests"
+          "$RUNNER_TEMP/translation-breaker-tests"
+      - name: Test bounded diagnostic performance window
+        run: |
+          swiftc ios/GameLingoIOS/App/PerformanceWindow.swift tests/PerformanceWindowTests.swift -o "$RUNNER_TEMP/performance-window-tests"
+          "$RUNNER_TEMP/performance-window-tests"
+      - name: Test independent adaptive OCR cadence
+        run: |
+          swiftc ios/GameLingoIOS/App/OCRCadence.swift ios/GameLingoIOS/App/YellowOCRFilter.swift ios/GameLingoIOS/App/DialogueWindow.swift tests/OCRCadenceTests.swift -o "$RUNNER_TEMP/ocr-cadence-tests"
+          "$RUNNER_TEMP/ocr-cadence-tests"
+      - name: Test independent translation generations
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationRevision.swift tests/TranslationRevisionTests.swift -o "$RUNNER_TEMP/translation-revision-tests"
+          "$RUNNER_TEMP/translation-revision-tests"
+      - name: Test local pairing QR validation
+        run: |
+          swiftc ios/GameLingoIOS/App/PairingQRCode.swift tests/PairingQRCodeTests.swift -o "$RUNNER_TEMP/pairing-qr-tests"
+          "$RUNNER_TEMP/pairing-qr-tests"
+      - name: Test bounded opt-in translation history
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationHistory.swift tests/TranslationHistoryTests.swift -o "$RUNNER_TEMP/translation-history-tests"
+          "$RUNNER_TEMP/translation-history-tests"
+      - name: Test profile-local glossary rules
+        run: |
+          swiftc ios/GameLingoIOS/App/GameGlossary.swift tests/GameGlossaryTests.swift -o "$RUNNER_TEMP/game-glossary-tests"
+          "$RUNNER_TEMP/game-glossary-tests"
+      - name: Parse every iOS Swift source
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v swiftc
+          while IFS= read -r -d '' file; do
+            swiftc -frontend -parse "$file"
+          done < <(find ios/GameLingoIOS/App -type f -name '*.swift' -print0)
+
+  ios:
     needs: quick
-    uses: ./.github/workflows/build-gamelingo.yml
-    secrets:
-      GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
-      GAMELINGO_TV_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_TV_KEYSTORE_PASSWORD }}
-      GAMELINGO_MOBILE_KEYSTORE_B64: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_B64 }}
-      GAMELINGO_MOBILE_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_PASSWORD }}
+    if: github.event_name != 'pull_request'
+    name: iPhone · unsigned IPA
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: mB14ck22/tp-play
+          ref: 482611539977496cad047560c9bc1ebc5809a566
+          path: ps-core
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Read shared version
+        run: python3 tools/sync_version.py --github-env
+      - name: Check iOS platform routing, device manager and PS4/PS5 OCR source contracts
+        run: python tools/verify_gamelingo.py
+      - name: Run synthetic OCR image fingerprint tests
+        run: |
+          swiftc ios/GameLingoIOS/App/OCRFrameFingerprint.swift tests/OCRFrameFingerprintTests.swift -o "$RUNNER_TEMP/ocr-fingerprint-tests"
+          "$RUNNER_TEMP/ocr-fingerprint-tests"
+      - name: Run automatic OCR block and zone tests
+        run: |
+          xcrun --sdk macosx swiftc -framework CoreGraphics ios/GameLingoIOS/App/AutomaticDialogueLayout.swift ios/GameLingoIOS/App/AutomaticOCRZone.swift ios/GameLingoIOS/App/AutomaticBlockTracker.swift tests/AutomaticDialogueLayoutTests.swift -o "$RUNNER_TEMP/automatic-ocr-tests"
+          "$RUNNER_TEMP/automatic-ocr-tests"
+      - name: Run persistent translation cache tests
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationCache.swift tests/TranslationCacheTests.swift -lsqlite3 -o "$RUNNER_TEMP/translation-cache-tests"
+          "$RUNNER_TEMP/translation-cache-tests"
+      - name: Generate original GameLingo icon
+        run: |
+          python -m pip install pillow
+          python tools/create_brand_assets.py ios ios/GameLingoIOS/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+          file ios/GameLingoIOS/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+      - name: Build native PlayStation 4/5 Chiaki streaming core
+        run: |
+          set -euo pipefail
+          brew install cmake ninja protobuf xcodegen
+          export DEVELOPER_DIR="$(xcode-select -p)"
+          # The pinned TP Play script pins Python protobuf 7.36.0, while
+          # Homebrew protoc 36.2 generates code requiring 7.36.2. The core
+          # fails before compilation unless generator/runtime versions match.
+          PROTOC_VERSION="$(protoc --version | awk '{print $2}')"
+          PROTOBUF_RUNTIME="7.$PROTOC_VERSION"
+          echo "Matching protoc $PROTOC_VERSION to protobuf $PROTOBUF_RUNTIME"
+          /usr/bin/sed -i '' "s/7\\.36\\.0/$PROTOBUF_RUNTIME/g" ps-core/ios/scripts/build-core.sh
+          bash ps-core/ios/scripts/build-core.sh iphoneos
+          test -s ps-core/ios/.build/iphoneos/libTPPlayCore.a
+          file ps-core/ios/.build/iphoneos/libTPPlayCore.a
+      - name: Prepare Xcode project
+        run: |
+          python3 tools/sync_version.py --prepare-ios
+          xcodebuild -version
+          cd ios/GameLingoIOS
+          xcodegen generate
+      - name: Build iOS app
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/GameLingoIOS/GameLingoIOS.xcodeproj \
+            -scheme GameLingoIOS -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$PWD/.build/DerivedData" \
+            -clonedSourcePackagesDirPath "$PWD/.build/SourcePackages" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee "$PWD/.build-ios.log"
+      - name: Verify GameLingo identity and package IPA
+        run: |
+          set -euo pipefail
+          APP="$PWD/.build/DerivedData/Build/Products/Release-iphoneos/GameLingoIOS.app"
+          test -f "$APP/GameLingoIOS"
+          ID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")
+          LABEL=$(/usr/libexec/PlistBuddy -c 'Print CFBundleDisplayName' "$APP/Info.plist")
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")
+          test "$ID" = "cz.caseycz.gamelingo.ios"
+          test "$LABEL" = "GameLingo"
+          test "$VERSION" = "$GAMELINGO_VERSION"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")" = "$GAMELINGO_BUILD"
+          file "$APP/GameLingoIOS"
+          python tools/package_license_notices.py ios --kit . --upstream ps-core --output "$APP"
+          mkdir -p "$PWD/.build/ipa/Payload"
+          cp -R "$APP" "$PWD/.build/ipa/Payload/"
+          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" Payload)
+          unzip -t GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa >/dev/null
+          python tools/package_license_notices.py ios --verify GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-iOS-v${{ env.GAMELINGO_VERSION }}-dev
+          path: GameLingo-iOS-v${{ env.GAMELINGO_VERSION }}-dev-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve Xcode log if failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-iOS-build-log
+          path: .build-ios.log
+          if-no-files-found: ignore
+
+  android_mobile:
+    needs: quick
+    if: github.event_name != 'pull_request'
+    name: Android phone · PS5 / PS4 foundation
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kit
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: AdamRuzick4/PlayCaption-app
+          ref: 633a847400b6c4bac1e7f034463e7847a53a9590
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Read shared version
+        run: python3 kit/tools/sync_version.py --github-env
+      - name: Brand independent Android mobile app
+        run: |
+          python -m pip install pillow
+          python -m py_compile kit/tools/polish_gamelingo.py kit/tools/redesign_gamelingo.py kit/tools/polish_all_screens.py kit/tools/android_multi_xbox.py kit/tools/wire_android_devices.py kit/tools/wire_gamelingo_languages.py
+          python kit/tools/brand_android.py mobile upstream
+          python kit/tools/create_brand_assets.py android upstream
+          python kit/tools/polish_gamelingo.py upstream
+          python kit/tools/redesign_gamelingo.py mobile upstream
+          python kit/tools/polish_all_screens.py mobile upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
+          python kit/tools/wire_gamelingo_languages.py upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode mobile
+          python kit/tools/package_license_notices.py mobile --kit kit --upstream upstream --output upstream/app/src/main/assets
+          sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
+      - name: Build Android phone APK
+        working-directory: upstream
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Run Android native automatic tracker tests
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoAutomaticTrackerTest' --no-daemon --stacktrace
+      - name: Verify Android mobile identity
+        run: |
+          set -euo pipefail
+          APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.mobile'" | grep -F "versionName='${GAMELINGO_VERSION}-dev."
+          python kit/tools/verify_tv_translation_apk.py mobile "$APK"
+          python kit/tools/package_license_notices.py mobile --verify "$APK"
+          cp "$APK" GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
+      - name: Sign mobile APK with persistent private update key
+        env:
+          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
+          GAMELINGO_MOBILE_KEYSTORE_B64: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_B64 }}
+          GAMELINGO_MOBILE_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
+          SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          if [[ -z "$GAMELINGO_MOBILE_KEYSTORE_B64" && -z "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD" ]]; then
+            if [[ "$GITHUB_REPOSITORY" == "CaseyCZ/GameLingo" && "$GITHUB_REF" == "refs/heads/Master" ]]; then
+              echo "::error::Persistent APK signing secrets missing on Master."
+              exit 1
+            fi
+            if [[ "$REQUIRE_PERMANENT_SIGNING" == true ]]; then
+              echo "::error::Permanent signing is required for this candidate."
+              exit 1
+            fi
+            echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
+          else
+            test -n "$GAMELINGO_MOBILE_KEYSTORE_B64"
+            test -n "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD"
+            umask 077
+            KEYDIR="$(mktemp -d)"
+            trap 'rm -rf "$KEYDIR"' EXIT
+            printf '%s' "$GAMELINGO_MOBILE_KEYSTORE_B64" | base64 --decode > "$KEYDIR/gamelingo-mobile.p12"
+            "$SIGNER" sign --ks "$KEYDIR/gamelingo-mobile.p12" --ks-type PKCS12 --ks-key-alias gamelingo-mobile \
+              --ks-pass env:GAMELINGO_MOBILE_KEYSTORE_PASSWORD --key-pass env:GAMELINGO_MOBILE_KEYSTORE_PASSWORD \
+              --out "$KEYDIR/signed.apk" "$APK"
+            "$SIGNER" verify --verbose --print-certs "$KEYDIR/signed.apk"
+            mv "$KEYDIR/signed.apk" "$APK"
+          fi
+          "$SIGNER" verify --verbose --print-certs "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-Android-v${{ env.GAMELINGO_VERSION }}-dev
+          path: GameLingo-Android-v${{ env.GAMELINGO_VERSION }}-dev-TEST.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  google_tv:
+    needs: quick
+    if: github.event_name != 'pull_request'
+    name: Google TV · Orange V5 receiver
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kit
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: AdamRuzick4/PlayCaption-app
+          ref: 633a847400b6c4bac1e7f034463e7847a53a9590
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Read shared version
+        run: python3 kit/tools/sync_version.py --github-env
+      - name: Apply tested receiver and GameLingo branding
+        run: |
+          python -m pip install pillow
+          python -m py_compile kit/tools/patch_tv_iphone.py kit/tools/brand_android.py kit/tools/create_brand_assets.py
+          python kit/tools/patch_tv_iphone.py upstream
+          python kit/tools/brand_android.py tv upstream
+          python kit/tools/create_brand_assets.py android upstream
+          python kit/tools/polish_gamelingo.py upstream
+          python kit/tools/redesign_gamelingo.py tv upstream
+          python kit/tools/polish_all_screens.py tv upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
+          python kit/tools/wire_gamelingo_languages.py upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
+          python kit/tools/verify_tv_navigation.py upstream
+          python kit/tools/audit_tv_ui.py upstream --output gamelingo-tv-ui-inventory.md
+          python kit/tools/package_license_notices.py tv --kit kit --upstream upstream --output upstream/app/src/main/assets
+          grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
+          grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
+          grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
+          sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
+      - name: Build Google TV APK
+        working-directory: upstream
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Test native zone tracker and bounded TV packet
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoAutomaticTrackerTest' --tests 'cz.titulky.tv.GameLingoZonePacketTest' --no-daemon --stacktrace
+      - name: Run Android circuit breaker unit tests
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoCircuitBreakerTest' --no-daemon --stacktrace
+      - name: Test Android bounded diagnostic performance window
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoPerformanceWindowTest' --no-daemon --stacktrace
+      - name: Test Android OCR mode cadence
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoOCRCadenceTest' --no-daemon --stacktrace
+      - name: Test QR payload and real QR round trip
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoPairingQRTest' --no-daemon --stacktrace
+      - name: Test Android bounded opt-in translation history
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoTranslationHistoryTest' --no-daemon --stacktrace
+      - name: Test Android profile-local glossary rules
+        working-directory: upstream
+        run: ./gradlew :app:testDebugUnitTest --tests 'cz.titulky.tv.GameLingoGlossaryTest' --no-daemon --stacktrace
+      - name: Compile receiver Keystore device tests
+        working-directory: upstream
+        run: ./gradlew :app:assembleDebugAndroidTest --no-daemon --stacktrace
+      - name: Verify Google TV identity
+        run: |
+          set -euo pipefail
+          APK=$(find upstream/app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'"
+          python kit/tools/verify_tv_translation_apk.py tv "$APK"
+          python kit/tools/verify_tv_ui_apk.py "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > tv-manifest.txt
+          python -c 'import pathlib,re; s=pathlib.Path("tv-manifest.txt").read_text(); assert "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" in s; blocks=re.split(r"(?m)^\s*E: service ",s); match=[b for b in blocks[1:] if "GameLingoScreenTranslationService" in b.split("E: ",1)[0]]; assert len(match)==1 and re.search(r"foregroundServiceType.*(?:0x0*20)\b",match[0].split("E: ",1)[0]), "APK missing mediaProjection service type"'
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'" | grep -F "versionName='${GAMELINGO_VERSION}-dev."
+          python kit/tools/package_license_notices.py tv --verify "$APK"
+          cp "$APK" GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
+      - name: Sign TV APK with persistent private update key
+        env:
+          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
+          GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
+          GAMELINGO_TV_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_TV_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
+          SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
+          if [[ -z "$GAMELINGO_TV_KEYSTORE_B64" && -z "$GAMELINGO_TV_KEYSTORE_PASSWORD" ]]; then
+            if [[ "$GITHUB_REPOSITORY" == "CaseyCZ/GameLingo" && "$GITHUB_REF" == "refs/heads/Master" ]]; then
+              echo "::error::Persistent APK signing secrets missing on Master."
+              exit 1
+            fi
+            if [[ "$REQUIRE_PERMANENT_SIGNING" == true ]]; then
+              echo "::error::Permanent signing is required for this candidate."
+              exit 1
+            fi
+            echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
+          else
+            test -n "$GAMELINGO_TV_KEYSTORE_B64"
+            test -n "$GAMELINGO_TV_KEYSTORE_PASSWORD"
+            umask 077
+            KEYDIR="$(mktemp -d)"
+            trap 'rm -rf "$KEYDIR"' EXIT
+            printf '%s' "$GAMELINGO_TV_KEYSTORE_B64" | base64 --decode > "$KEYDIR/gamelingo-tv.p12"
+            "$SIGNER" sign --ks "$KEYDIR/gamelingo-tv.p12" --ks-type PKCS12 --ks-key-alias gamelingo-tv \
+              --ks-pass env:GAMELINGO_TV_KEYSTORE_PASSWORD --key-pass env:GAMELINGO_TV_KEYSTORE_PASSWORD \
+              --out "$KEYDIR/signed.apk" "$APK"
+            "$SIGNER" verify --verbose --print-certs "$KEYDIR/signed.apk"
+            mv "$KEYDIR/signed.apk" "$APK"
+          fi
+          "$SIGNER" verify --verbose --print-certs "$APK"
+      - name: Upload generated TV UI inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-TV-UI-inventory
+          path: gamelingo-tv-ui-inventory.md
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-GoogleTV-v${{ env.GAMELINGO_VERSION }}-dev
+          path: GameLingo-GoogleTV-v${{ env.GAMELINGO_VERSION }}-dev-TEST.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  package:
+    name: Validate all packages and checksums
+    needs: [ios, android_mobile, google_tv]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read shared version
+        run: python3 tools/sync_version.py --github-env
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: GameLingo-*-v${{ env.GAMELINGO_VERSION }}-dev
+          merge-multiple: true
+          path: release
+      - name: Verify all outputs and calculate SHA-256
+        run: |
+          set -euo pipefail
+          test -s release/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa
+          test -s release/GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
+          test -s release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
+          (cd release && sha256sum "GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" "GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk" "GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk" > SHA256SUMS.txt)
+          cat release/SHA256SUMS.txt
+      - name: Record package identity and signing evidence
+        env:
+          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
+        run: |
+          set -euo pipefail
+          SDK_TOOLS="$ANDROID_HOME/build-tools/34.0.0"
+          test -x "$SDK_TOOLS/aapt"
+          test -x "$SDK_TOOLS/apksigner"
+          {
+            printf 'Source commit: %s\nWorkflow run: %s (attempt %s)\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            echo 'IPA: unsigned; requires user signing.'
+            echo 'Certificate continuity is required for signed candidates; physical upgrade QA remains separate.'
+            for kind in Android GoogleTV; do
+              APK="release/GameLingo-${kind}-v${GAMELINGO_VERSION}-dev-TEST.apk"
+              if [[ "$kind" == Android ]]; then expected=cz.caseycz.gamelingo.mobile; else expected=cz.caseycz.gamelingo.tv; fi
+              printf '\n%s\n' "$kind"
+              badging=$("$SDK_TOOLS/aapt" dump badging "$APK")
+              identity=$(printf '%s\n' "$badging" | grep "^package: name='$expected'")
+              printf '%s\n' "$identity"
+              verified=$("$SDK_TOOLS/apksigner" verify --verbose --print-certs "$APK")
+              printf '%s\n' "$verified"
+              if [[ "$REQUIRE_PERMANENT_SIGNING" == true || "$GITHUB_REF" == refs/heads/Master ]]; then
+                # Public certificate fingerprints from the verified 0.5.1 release build, not secrets.
+                if [[ "$kind" == Android ]]; then
+                  expected_cert=d45ae9b961340c4361bf2b681d57a920493e21adb967d1b311290c609349e0f4
+                else
+                  expected_cert=f2bdae07378f52642abcec8d55d04f1e6dc688f7e6b12aa39358b227a0fc1423
+                fi
+                cert=$(printf '%s\n' "$verified" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')
+                test "$cert" = "$expected_cert"
+                code=$(printf '%s\n' "$identity" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+                [[ "$code" =~ ^[0-9]+$ ]]
+                (( code > 6019901 ))
+                echo 'Published 0.5.1 signer and minimum version continuity: PASS'
+              fi
+            done
+          } > release/PACKAGE-EVIDENCE.txt
+          cat release/PACKAGE-EVIDENCE.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-v${{ env.GAMELINGO_VERSION }}-dev-all-installers
+          path: release/
+          if-no-files-found: error
+          retention-days: 30
 
   build_status:
     name: Report candidate build result
-    needs: [run_link, quick, native]
-    if: ${{ always() && !cancelled() }}
+    needs: [run_link, quick, package]
+    if: ${{ always() && !cancelled() && github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
       statuses: write
@@ -63,7 +535,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           QUICK_RESULT: ${{ needs.quick.result }}
-          NATIVE_RESULT: ${{ needs.native.result }}
+          NATIVE_RESULT: ${{ needs.package.result }}
         run: |
           state=failure
           if [ "$QUICK_RESULT" = success ] && [ "$NATIVE_RESULT" = success ]; then state=success; fi

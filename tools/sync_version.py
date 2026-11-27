@@ -11,7 +11,7 @@ VERSION_FILE = ROOT / "shared/version.json"
 PROJECT = ROOT / "ios/GameLingoIOS/project.yml"
 TOKENS = {"CFBundleShortVersionString": "$(MARKETING_VERSION)",
           "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)"}
-WORKFLOWS = ("build-gamelingo.yml", "publish-gamelingo-current.yml")
+WORKFLOWS = ("audit-0.5-ci.yml", "publish-gamelingo-current.yml")
 
 def validate(release):
     version, build = release["version"], release["build"]
