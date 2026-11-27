@@ -72,6 +72,11 @@ private struct GLCameraPalette {
         [16, 8, 0].allSatisfy { shift in abs(Int((a >> shift) & 255) - Int((b >> shift) & 255)) <= 40 }
     }
 
+    static func compatibleInk(_ first: UInt32?, _ second: UInt32?) -> Bool {
+        guard let first, let second else { return true }
+        return similar(first, second)
+    }
+
     static func color(_ rgb: UInt32) -> Color {
         Color(red: Double((rgb >> 16) & 255) / 255, green: Double((rgb >> 8) & 255) / 255,
               blue: Double(rgb & 255) / 255)
@@ -305,7 +310,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer, orientation: .up).perform([request])
             let rows = (request.results ?? []).sorted {
-                if abs($0.boundingBox.midY - $1.boundingBox.midY) < 0.00001 {
+                if $0.boundingBox.midY == $1.boundingBox.midY {
                     return $0.boundingBox.minX < $1.boundingBox.minX
                 }
                 return $0.boundingBox.midY > $1.boundingBox.midY
@@ -333,7 +338,7 @@ private final class GLCameraCapture: NSObject, AVCaptureVideoDataOutputSampleBuf
                 if wholeImage, let previous = blocks.last,
                    abs(previous.angle) < 0.12, abs(block.angle) < 0.12,
                    GLCameraPalette.similar(previous.background, block.background),
-                   previous.ink == nil || block.ink == nil || GLCameraPalette.similar(previous.ink!, block.ink!) {
+                   GLCameraPalette.compatibleInk(previous.ink, block.ink) {
                     let lineHeight = previous.rect.height / CGFloat(previous.lineCount)
                     let gap = rect.minY - previous.rect.maxY
                     let overlap = min(rect.maxX, previous.rect.maxX) - max(rect.minX, previous.rect.minX)
