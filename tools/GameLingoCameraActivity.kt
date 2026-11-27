@@ -67,9 +67,53 @@ class GameLingoCameraActivity : ComponentActivity() {
     }
 
     private data class CameraBlock(val text: String, val rect: RectF, val angle: Float = 0f,
-                                   val background: Int = Color.BLACK, val lineCount: Int = 1)
+                                   val background: Int = Color.BLACK, val lineCount: Int = 1, val ink: Int? = null)
     private data class CameraOverlay(val text: String, val rect: RectF, val angle: Float,
-                                     val background: Int, val lineCount: Int)
+                                     val background: Int, val lineCount: Int, val ink: Int?)
+
+    // Preserve an observed ink color only when repeated samples provide readable contrast.
+    private fun sampleInk(bitmap: Bitmap, rect: RectF, background: Int): Int? {
+        val bg = Color.luminance(background)
+        val bins = HashMap<Int, IntArray>()
+        fun contrast(color: Int): Float {
+            val light = Color.luminance(color)
+            return (maxOf(light, bg) + .05f) / (minOf(light, bg) + .05f)
+        }
+        for (row in 0 until 8) for (col in 0 until 24) {
+            val x = rect.left + rect.width() * (col + .5f) / 24
+            val y = rect.top + rect.height() * (row + .5f) / 8
+            val rgb = bitmap.getPixel((x * bitmap.width).toInt().coerceIn(0, bitmap.width - 1),
+                (y * bitmap.height).toInt().coerceIn(0, bitmap.height - 1))
+            if (contrast(rgb) < 4.5f) continue
+            val r = Color.red(rgb); val g = Color.green(rgb); val b = Color.blue(rgb)
+            val key = (r / 32) * 64 + (g / 32) * 8 + b / 32
+            val bin = bins.getOrPut(key) { IntArray(4) }
+            bin[0]++; bin[1] += r; bin[2] += g; bin[3] += b
+        }
+        val best = bins.values.maxByOrNull { it[0] } ?: return null
+        if (best[0] < 8) return null
+        val rgb = Color.rgb(best[1] / best[0], best[2] / best[0], best[3] / best[0])
+        return rgb.takeIf { contrast(it) >= 4.5f }
+    }
+
+    private fun columnOrder(blocks: List<CameraBlock>): List<CameraBlock> {
+        if (blocks.size < 4) return blocks
+        val sorted = blocks.sortedBy { it.rect.left }
+        var edge = sorted.first().rect.right
+        var split = 0
+        var largestGap = .045f
+        for (i in 1 until sorted.size) {
+            val gap = sorted[i].rect.left - edge
+            if (i >= 2 && sorted.size - i >= 2 && gap > largestGap) {
+                largestGap = gap; split = i
+            }
+            edge = maxOf(edge, sorted[i].rect.right)
+        }
+        if (split == 0) return blocks
+        val boundary = sorted[split].rect.left
+        return columnOrder(blocks.filter { it.rect.left < boundary }) +
+            columnOrder(blocks.filter { it.rect.left >= boundary })
+    }
 
     private fun sampleBackground(bitmap: Bitmap, rect: RectF): Int {
         val bins = HashMap<Int, IntArray>()
@@ -581,6 +625,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                             Math.toDegrees(kotlin.math.atan2((corners[1].y - corners[0].y).toDouble(),
                                 (corners[1].x - corners[0].x).toDouble())).toFloat() else 0f
                         val background = if (region.full) runCatching { sampleBackground(bitmap, rect) }.getOrDefault(Color.BLACK) else Color.BLACK
+                        val ink = if (region.full) runCatching { sampleInk(bitmap, rect, background) }.getOrNull() else null
                         if (region.full && corners != null && corners.size >= 4) {
                             val width = kotlin.math.hypot((corners[1].x - corners[0].x).toDouble(),
                                 (corners[1].y - corners[0].y).toDouble()).toFloat() / bitmap.width
@@ -589,10 +634,13 @@ class GameLingoCameraActivity : ComponentActivity() {
                             val cx = rect.centerX(); val cy = rect.centerY()
                             if (width > 0f && height > 0f) rect.set(cx - width / 2, cy - height / 2, cx + width / 2, cy + height / 2)
                         }
-                        blocks.add(CameraBlock(text, rect, angle, background, lineCount.coerceAtLeast(1)))
+                        blocks.add(CameraBlock(text, rect, angle, background, lineCount.coerceAtLeast(1), ink))
                     }
                     if (region.full) {
                         for (block in task.result.textBlocks.take(20)) {
+                            // Older ML Kit installations report zero when confidence is unavailable.
+                            val scores = block.lines.map { it.confidence }.filter { it > 0f }
+                            if (scores.isNotEmpty() && scores.average() < .30) continue
                             addBlock(block.text.trim().replace(Regex("\\s+"), " "), block.boundingBox, block.cornerPoints, block.lines.size)
                         }
                     } else {
@@ -612,10 +660,11 @@ class GameLingoCameraActivity : ComponentActivity() {
                 if (previous == null || previous.width != fallback.width || previous.height != fallback.height) updatePreviewHeight()
                 previewStatus.visibility = View.GONE
                 preview.invalidate()
-                val signature = blocks.joinToString("\n") { it.text }
+                val ordered = if (region.full) columnOrder(blocks) else blocks
+                val signature = ordered.joinToString("\n") { it.text }
                 stableFrames = if (signature.isNotBlank() && signature == previousOCR) (stableFrames + 1).coerceAtMost(3) else 0
                 previousOCR = signature
-                receive(blocks)
+                receive(ordered)
                 } finally { ocrBusy.set(false) }
             }
         } catch (_: Exception) {
@@ -627,7 +676,7 @@ class GameLingoCameraActivity : ComponentActivity() {
 
     private fun updateOverlays() {
         preview.overlays = if (region.full && overlayEnabled) currentBlocks.mapNotNull { block ->
-            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect, block.angle, block.background, block.lineCount) }
+            overlayCache[block.text]?.takeIf { it.isNotBlank() }?.let { CameraOverlay(it, block.rect, block.angle, block.background, block.lineCount, block.ink) }
         } else emptyList()
         preview.invalidate()
     }
@@ -990,7 +1039,7 @@ class GameLingoCameraActivity : ComponentActivity() {
                     paint.color = overlay.background
                     canvas.drawRect(box, paint)
                     val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                        color = if (Color.luminance(overlay.background) > .179f) Color.BLACK else Color.WHITE
+                        color = overlay.ink ?: (if (Color.luminance(overlay.background) > .179f) Color.BLACK else Color.WHITE)
                         textSize = (box.height() / overlay.lineCount * .83f).coerceAtLeast(1f)
                     }
                     val layoutWidth = box.width().toInt().coerceAtLeast(1)
