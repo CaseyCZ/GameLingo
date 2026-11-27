@@ -173,6 +173,7 @@ object GameLingoDiagnostics {
                         .setPositiveButton("OK", null).show()
                 }.show()
         }
+        action(GameLingoLanguages.ui(activity, "Nahlásit problém")) { GameLingoHelp.report(activity) }
         action(GameLingoLanguages.ui(activity, "Hotovo")) { dialog.dismiss() }
         val scroll = ScrollView(activity).apply {
             isFillViewport = true

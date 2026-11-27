@@ -64,7 +64,7 @@ object GameLingoHelp {
         else LinearLayout.LayoutParams(mobileWidth,mobileHeight)
 
     fun button(activity: Activity, topic: String = "home",
-               size: Float = 24f): TextView = TextView(activity).apply {
+               size: Float = 24f, news: Boolean = false): TextView = TextView(activity).apply {
         text = "?"
         textSize = GameLingoVisualKit.sp(activity, size)
         gravity = Gravity.CENTER
@@ -80,13 +80,13 @@ object GameLingoHelp {
         }
         isClickable = true
         isFocusable = true
-        contentDescription = GameLingoLanguages.ui(activity, "Otevřít nápovědu")
-        setOnClickListener { show(activity, topic) }
+        contentDescription = GameLingoLanguages.ui(activity, if(news) "Co je nového" else "Otevřít nápovědu")
+        setOnClickListener { if(news) showNews(activity) else show(activity, topic) }
         if (!GameLingoTVUi.isTV(activity)) {
             text = ""
             background = null
             setPadding(0,0,0,0)
-            setCompoundDrawablesWithIntrinsicBounds(GameLingoVisualKit.iconDrawable("questionmark.circle",Color.parseColor("#02D6FF"),GameLingoVisualKit.dp(activity,23)),null,null,null)
+            setCompoundDrawablesWithIntrinsicBounds(GameLingoVisualKit.iconDrawable(if(news) "rocket" else "questionmark.circle",Color.parseColor("#02D6FF"),GameLingoVisualKit.dp(activity,23)),null,null,null)
             minWidth=0;minHeight=0
         }
         if (GameLingoTVUi.isTV(activity)) {
@@ -103,7 +103,7 @@ object GameLingoHelp {
                 }
                 text=""
                 val color=if(focused)Color.WHITE else Color.parseColor("#02D6FF")
-                val drawable=GameLingoVisualKit.iconDrawable("questionmark.circle",color,GameLingoTVUi.dp(activity,38))
+                val drawable=GameLingoVisualKit.iconDrawable(if(news) "rocket" else "questionmark.circle",color,GameLingoTVUi.dp(activity,38))
                 setCompoundDrawablesWithIntrinsicBounds(drawable,null,null,null)
                 setPadding(GameLingoTVUi.dp(activity,13),0,0,0)
                 elevation=GameLingoTVUi.dp(activity,if(focused) 10 else 0).toFloat()
@@ -157,5 +157,76 @@ object GameLingoHelp {
             .setView(scroll)
             .setPositiveButton(GameLingoLanguages.ui(activity, "Hotovo"), null)
             .show()
+    }
+
+    fun newsButton(activity: Activity): TextView = button(activity, news = true)
+    private fun tr(a:Activity,key:String)=GameLingoLanguages.ui(a,key)
+    private fun d(a:Activity,n:Int)=if(GameLingoTVUi.isTV(a))GameLingoTVUi.dp(a,n) else GameLingoVisualKit.dp(a,n)
+    private fun column(a:Activity)=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
+    private fun label(a:Activity,value:String,size:Float=14f)=TextView(a).apply {
+        text=value;textSize=GameLingoVisualKit.sp(a,size);setTextColor(Color.WHITE);gravity=Gravity.START
+        val p=d(a,5);setPadding(p,p,p,p)
+    }
+    private fun version(a:Activity)=a.packageManager.getPackageInfo(a.packageName,0).versionName ?: "?"
+    private const val issues="https://github.com/CaseyCZ/GameLingo/issues/new"
+    private fun open(a:Activity,url:String) {
+        runCatching { a.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(url))) }
+            .onFailure { android.widget.Toast.makeText(a,tr(a,"Nelze otevřít GitHub."),android.widget.Toast.LENGTH_LONG).show() }
+    }
+    fun showNews(a:Activity) {
+        val body=column(a)
+        val v=version(a)
+        body.addView(label(a,"GameLingo "+v,18f))
+        val entries=if(v=="0.5.9") listOf("Hlášení problémů v diagnostice","Raketa v horní liště otevírá novinky.") else listOf("Přehled této verze je na GitHubu.")
+        entries.forEach { body.addView(label(a,"✓  "+tr(a,it))) }
+        body.addView(GameLingoTVUi.action(a,tr(a,"Historie vydání")) { open(a,"https://github.com/CaseyCZ/GameLingo/releases") })
+        GameLingoTVUi.page(a,tr(a,"Co je nového"),body)
+    }
+    // Explicit safe metadata only, no raw logs, OCR content or authentication.
+    fun report(a:Activity){
+        val tv=GameLingoTVUi.isTV(a)
+        val body=column(a)
+        val metadata="GameLingo "+version(a)+" · "+(if(tv)"Google TV" else "Android")+" "+android.os.Build.VERSION.RELEASE
+        val diagnostic="\nremotePlay="+RemotePlayService.aktivni+"\nreceiver="+PrijemService.bezi
+        val categories=listOf("Překlad a titulky","Připojení konzole","Párování TV","Kamera a OCR","Pád aplikace","Vzhled a ovládání","Ostatní")
+        body.addView(label(a,metadata,16f))
+        body.addView(label(a,tr(a,"GitHub je veřejný. Před odesláním zkontroluj hlášení; potřebuješ účet."),12f))
+        if(tv){
+            body.addView(label(a,tr(a,"Naskenuj QR kód telefonem a popiš problém na GitHubu.")))
+            val include=android.widget.CheckBox(a).apply{text=tr(a,"Přiložit základní diagnostiku");isChecked=true;setTextColor(Color.WHITE)}
+            body.addView(include)
+            val image=android.widget.ImageView(a).apply{scaleType=android.widget.ImageView.ScaleType.FIT_CENTER
+                contentDescription=tr(a,"Naskenuj QR kód telefonem a popiš problém na GitHubu.")}
+            fun render(){
+                val url=issues+"?body="+android.net.Uri.encode(metadata+if(include.isChecked)diagnostic else "")
+                val qr=runCatching{
+                    val m=com.google.zxing.qrcode.QRCodeWriter().encode(url,com.google.zxing.BarcodeFormat.QR_CODE,320,320)
+                    val pixels=IntArray(m.width*m.height){i->if(m[i%m.width,i/m.width])Color.BLACK else Color.WHITE}
+                    android.graphics.Bitmap.createBitmap(pixels,m.width,m.height,android.graphics.Bitmap.Config.ARGB_8888)
+                }.getOrNull()
+                image.setImageBitmap(qr)
+            }
+            include.setOnCheckedChangeListener{_,_->render()};render()
+            body.addView(image,LinearLayout.LayoutParams(-1,d(a,220)))
+            body.addView(label(a,issues,12f))
+        }else{
+            body.addView(label(a,tr(a,"Typ problému"),12f))
+            val type=android.widget.Spinner(a).apply{adapter=android.widget.ArrayAdapter(a,android.R.layout.simple_spinner_dropdown_item,categories.map{tr(a,it)})}
+            body.addView(type)
+            val detail=android.widget.EditText(a).apply{
+                hint=tr(a,"Popis problému");minLines=3;maxLines=5;setTextColor(Color.WHITE);filters=arrayOf(android.text.InputFilter.LengthFilter(2000))
+            }
+            body.addView(detail)
+            val include=android.widget.CheckBox(a).apply{text=tr(a,"Přiložit základní diagnostiku");isChecked=true;setTextColor(Color.WHITE)}
+            body.addView(include)
+            fun reportText()=metadata+"\n"+tr(a,categories[type.selectedItemPosition.coerceIn(categories.indices)])+"\n\n"+detail.text.toString()+(if(include.isChecked)diagnostic else "")
+            body.addView(GameLingoTVUi.action(a,tr(a,"Zkopírovat hlášení")){
+                val clipboard=a.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("GameLingo",reportText()))
+                android.widget.Toast.makeText(a,tr(a,"Zkopírováno"),android.widget.Toast.LENGTH_SHORT).show()
+            })
+            body.addView(GameLingoTVUi.action(a,tr(a,"Otevřít GitHub")){open(a,issues)})
+        }
+        GameLingoTVUi.page(a,tr(a,"Nahlásit problém"),body)
     }
 }

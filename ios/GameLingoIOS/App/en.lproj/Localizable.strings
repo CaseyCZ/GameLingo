@@ -64,6 +64,7 @@
 "Chybí souhlas nebo překryv, případně běží jiný režim" = "Consent or overlay permission is missing, or another mode is running";
 "Citlivost, režim a filtrování textu" = "Sensitivity, mode and text filtering";
 "Citlivost, režim a časování" = "Sensitivity, mode and timing";
+"Co je nového" = "What's new";
 "Cílový jazyk" = "Target language";
 "DALŠÍ" = "MORE";
 "Další nastavení" = "More settings";
@@ -120,6 +121,7 @@
 "GameLingo – veřejný repozitář" = "GameLingo – public repository";
 "GameLingo – zkušební titulek" = "GameLingo – test subtitle";
 "GameLingo, zdroje a AGPLv3" = "GameLingo, sources and AGPLv3";
+"GitHub je veřejný. Před odesláním zkontroluj hlášení; potřebuješ účet." = "GitHub is public. Review your report before submitting; an account is required.";
 "GitHub neposkytl platný soubor." = "GitHub did not provide a valid file.";
 "GitHub odpověděl HTTP" = "GitHub returned HTTP";
 "Google TV" = "Google TV";
@@ -136,6 +138,7 @@
 "Historie je volitelná a uchovává poslední překlady v paměti. Je oddělená od místní překladové paměti." = "History is optional and keeps recent translations in memory. It is separate from the local translation cache.";
 "Historie je vypnutá." = "History is disabled.";
 "Historie překladů" = "Translation history";
+"Historie vydání" = "Release history";
 "Hledat" = "Search";
 "Hledám GameLingo TV… Pokud ji nenajdu, zadej IP adresu z televize." = "Searching for GameLingo TV… If it is not found, enter the TV's IP address.";
 "Hledám PlayStation…" = "Searching for PlayStation…";
@@ -143,6 +146,7 @@
 "Hledám konzole…" = "Searching for consoles…";
 "Hledání není dostupné: %@. Zadej IP ručně." = "Search unavailable: %@. Enter the IP manually.";
 "Hledání selhalo: %@. IP lze zadat ručně." = "Search failed: %@. Enter the IP manually.";
+"Hlášení problémů v diagnostice" = "Problem reporting in diagnostics";
 "Hlídač:" = "Watchdog:";
 "Hned" = "Immediately";
 "Hotovo" = "Done";
@@ -187,6 +191,7 @@
 "Kam zobrazit titulky" = "Where to show subtitles";
 "Kam zobrazit titulky?" = "Where to show subtitles?";
 "Kamera" = "Camera";
+"Kamera a OCR" = "Camera and OCR";
 "Kontrola aktualizace se nezdařila. Zkontroluj internet a zkus to znovu." = "Update check failed. Check your internet connection and try again.";
 "Kontrola již probíhá. Zkus to znovu." = "An update check is already running. Try again.";
 "Kontrola nastavení" = "Review settings";
@@ -262,6 +267,7 @@
 "Na TV otevři obrazovku pro párování a opiš šest číslic. Po reinstalaci TV aplikace lze stejný iPhone spárovat znovu. Párovací kód není kód účtu Microsoft." = "Open the TV pairing screen and enter the six-digit code. After reinstalling the TV app, you can pair this iPhone again. This code is not your Microsoft login code.";
 "Na TV vyber Překlad z telefonu, nikoli Přímo na TV. Načti QR nebo opiš celý kód. Uložená IP neznamená spárování." = "Select Translation from phone, not Directly on TV. Scan the QR or enter the whole code. A saved IP does not mean pairing.";
 "Na telefonu" = "On phone";
+"Nahlásit problém" = "Report a problem";
 "Nahoře" = "Top";
 "Nainstalováno:" = "Installed:";
 "Najít PlayStation" = "Find PlayStation";
@@ -270,6 +276,7 @@
 "Nalezeno:" = "Found:";
 "Nalezené" = "Found";
 "Naskenuj QR kód fotoaparátem iPhonu. IPA je testovací balíček; před instalací vyžaduje podpis, například přes AltStore nebo Sideloadly." = "Scan with your iPhone camera. The test IPA requires signing before installation, for example with AltStore or Sideloadly.";
+"Naskenuj QR kód telefonem a popiš problém na GitHubu." = "Scan the QR code with your phone and describe the issue on GitHub.";
 "Naskenuj QR kód telefonem s Androidem, stáhni mobilní APK a potvrď instalaci. Systém může vyžadovat povolení instalace z tohoto zdroje." = "Scan with your Android phone, download the mobile APK and confirm installation. Android may require permission to install from this source.";
 "Nastaveno" = "Configured";
 "Nastaveno ke spuštění" = "Ready to launch";
@@ -320,6 +327,7 @@
 "Nejprve zastav překlad a příjem." = "Stop translation and receiving first.";
 "Nejprve zastav překlad." = "Stop translation first.";
 "Nelze odeslat: %@" = "Could not send: %@";
+"Nelze otevřít GitHub." = "Unable to open GitHub.";
 "Nelze přijímat: všechny UDP porty 41989–41993 jsou obsazené" = "Cannot receive: all UDP ports 41989–41993 are in use";
 "Nelze vytvořit složku aktualizací." = "Could not create the update directory.";
 "Nelze zjistit nainstalovanou verzi." = "Could not determine the installed version.";
@@ -410,6 +418,7 @@
 "Obnoví OCR, překlad, oblasti a vzhled titulků. Zařízení, účty a herní profily zůstanou zachované." = "Restores OCR, translation, regions and subtitle appearance. Paired devices, accounts and game profiles remain saved.";
 "Obnoví nastavení překladu, OCR, oblastí a titulků. Spárovaná zařízení, účty a uložené herní profily zůstanou zachované." = "Translation, OCR, region and subtitle settings will return to defaults. Paired devices, accounts and saved game profiles will remain.";
 "Obrazovka" = "Screen";
+"Obrázková a interaktivní nápověda" = "Illustrated and interactive help";
 "Odebere zařízení z GameLingo. U PlayStationu také odstraní jeho uložené párovací klíče." = "Removes the device from GameLingo. For PlayStation, this also deletes its saved pairing keys.";
 "Odebrat" = "Remove";
 "Odebrat Xbox?" = "Remove Xbox?";
@@ -430,6 +439,7 @@
 "Oranžová je výstup překladu ze žluté oblasti. Při hraní se aktuální přeložený text při změně polohy ihned přesune. Písmo můžeš měnit nezávisle na běžných titulcích." = "Orange is the translation output for the yellow region. Moving it relocates the last translated game text immediately. Its font size is separate from regular subtitles.";
 "Oranžová · přeložené texty" = "Orange · translated text";
 "Originál | chybný překlad | správný překlad" = "Original | incorrect translation | correct translation";
+"Ostatní" = "Other";
 "Ostatní telefony zůstanou spárované." = "Other phones will remain paired.";
 "Otevřený kód a původní autoři" = "Open source and original authors";
 "Otevřete GameLingo na telefonu a zadejte tento šestimístný kód." = "Open GameLingo on your phone and enter this six-digit code.";
@@ -437,6 +447,7 @@
 "Otevři GameLingo na telefonu" = "Open GameLingo on your phone";
 "Otevři QR kód v telefonu." = "Open the QR code on your phone.";
 "Otevři přihlášení Sony, dokonči jej v Safari a zkopíruj závěrečný odkaz ze stránky zpět do GameLingo. Heslo se nezadává do GameLingo a přihlašovací údaje se neukládají." = "Open Sony sign-in, complete it in Safari and paste the final redirect link into GameLingo. Passwords are not entered or stored in GameLingo.";
+"Otevřít GitHub" = "Open GitHub";
 "Otevřít Microsoft" = "Open Microsoft";
 "Otevřít a spravovat zařízení" = "Open and manage device";
 "Otevřít editor oblastí" = "Open region editor";
@@ -480,6 +491,7 @@
 "Poloha: automatická" = "Position: automatic";
 "Poloha: vlastní" = "Position: custom";
 "Polština" = "Polish";
+"Popis problému" = "Problem description";
 "Port UDP obsazen" = "UDP port in use";
 "Portugalština" = "Portuguese";
 "Poslední dialogy a herní texty" = "Recent dialogue and game text";
@@ -542,6 +554,7 @@
 "Průhledné" = "Translucent";
 "Průměr / P95 (posledních 128 vzorků)" = "Average / P95 (last 128 samples)";
 "Průvodce se nebude opakovat. Konzole a TV lze připojit v Zařízeních." = "The wizard will not appear again. You can add consoles and TVs in Devices.";
+"Pád aplikace" = "App crash";
 "Párovací PIN" = "Pairing PIN";
 "Párovací QR kód" = "Pairing QR code";
 "Párovací klíč TV je uložen, živé spojení se ověří při spuštění." = "TV pairing key saved. The live connection will be checked when starting.";
@@ -561,9 +574,11 @@
 "Písmo" = "Font";
 "Písmo, velikost a poloha na TV" = "Font, size and position on TV";
 "PŘEKLAD HRY" = "GAME TRANSLATION";
+"Přehled této verze je na GitHubu." = "See this version's notes on GitHub.";
 "Přejmenovat" = "Rename";
 "Přejmenovat konzoli" = "Rename console";
 "Překlad" = "Translation";
+"Překlad a titulky" = "Translation and subtitles";
 "Překlad běží nebo oblast není platná." = "Translation is running or the region is invalid.";
 "Překlad herních dialogů a textů" = "Game dialogue and text translation";
 "Překlad herních textů" = "Game text translation";
@@ -639,12 +654,14 @@
 "Přijímač TV: UDP %@" = "TV receiver: UDP %@";
 "Přijímač připojen" = "Receiver connected";
 "Přijímá snímky" = "Receiving frames";
+"Přiložit základní diagnostiku" = "Include basic diagnostics";
 "Připoj konzoli" = "Connect a console";
 "Připojen" = "Connected";
 "Připojeno" = "Connected";
 "Připojeno:" = "Connected:";
 "Připojení Xbox" = "Xbox connection";
 "Připojení a párování televize" = "TV connection and pairing";
+"Připojení konzole" = "Console connection";
 "Připojení, snímky a testování" = "Connections, frames and testing";
 "Připojit" = "Connect";
 "Připojit Xbox" = "Connect Xbox";
@@ -680,6 +697,7 @@
 "QR skener není dostupný" = "QR scanner unavailable";
 "ROZPOZNÁVÁNÍ A PŘEKLAD" = "OCR AND TRANSLATION";
 "RSS nedostupná" = "RSS unavailable";
+"Raketa v horní liště otevírá novinky." = "The rocket in the header opens release notes.";
 "Relace není spuštěna" = "Session not started";
 "Relace spuštěna – snímky se ověřují zvlášť" = "Session started – frames checked separately";
 "Remote Play běží" = "Remote Play running";
@@ -855,6 +873,7 @@
 "Tmavé" = "Dark";
 "Typ" = "Type";
 "Typ obsahu" = "Content type";
+"Typ problému" = "Problem type";
 "Typ: celý text" = "Type: full text";
 "Typ: volby odpovědí" = "Type: answer choices";
 "Tyrkysová" = "Cyan";
@@ -1006,6 +1025,7 @@
 "Vyzkoušet titulky" = "Test subtitles";
 "Vyžaduje povolení" = "Permission required";
 "Vyžaduje povolení překryvu" = "Requires overlay permission";
+"Vzhled a ovládání" = "Appearance and controls";
 "Vzhled titulků" = "Subtitle appearance";
 "Vítej v GameLingo" = "Welcome to GameLingo";
 "Vítej v GameLingo TV" = "Welcome to GameLingo TV";
@@ -1097,6 +1117,8 @@
 "Zjišťuji" = "Checking";
 "Zkontrolovat aktualizace" = "Check for updates";
 "Zkontroluj stejnou domácí síť, spuštěný přijímač na TV a párování." = "Check that both devices are on the same home network, the TV receiver is running and pairing is complete.";
+"Zkopírovat hlášení" = "Copy report";
+"Zkopírováno" = "Copied";
 "Zkusit titulek na TV" = "Test subtitles on TV";
 "Zkušební text" = "Test text";
 "Zkušební titulek" = "Test subtitle";

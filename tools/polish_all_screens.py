@@ -83,13 +83,8 @@ def tv(s):
             }
             hlava.addView(GameLingoTVUi.brand(this),
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            hlava.addView(GameLingoTVUi.action(this, "⚙  " + GameLingoLanguages.ui(this, "Nastavení")) {
-                GameLingoTVUi.showSettings(this) { ukazHlavni() }
-            }, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                rightMargin = dp(14)
-            })
+            hlava.addView(GameLingoHelp.newsButton(this),
+                GameLingoHelp.layout(this, dp(48), dp(48)))
             hlava.addView(GameLingoHelp.button(this, "home"),
                 GameLingoHelp.layout(this, dp(48), dp(48)))
             obsah.addView(hlava, odsazeni(bottom = 12))
@@ -195,6 +190,9 @@ def tv(s):
                 android.provider.Settings.canDrawOverlays(this)),
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             obsah.addView(statusy, odsazeni(bottom = 11))
+            obsah.addView(GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Nastavení")) {
+                GameLingoTVUi.showSettings(this) { ukazHlavni() }
+            }, odsazeni(bottom = 8))
             obsah.addView(GameLingoTVUi.title(this,
                 GameLingoLanguages.ui(this, "Ovládání: šipky pro výběr • OK potvrdit • Zpět pro návrat"),
                 14f, muted = true).apply { gravity = Gravity.CENTER })

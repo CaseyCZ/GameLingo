@@ -37,6 +37,7 @@ struct GameLingoHome: View {
     @State private var modeSheet = false
     @State private var appearanceSheet = false
     @State private var licenseSheet = false
+    @State private var newsSheet = false
     @State private var showPSLoginPIN = false
     @State private var psLoginPIN = ""
 
@@ -188,6 +189,7 @@ struct GameLingoHome: View {
         .sheet(isPresented: $settingsSheet) {
             GameLingoSettingsView(model: model)
         }
+        .sheet(isPresented: $newsSheet) { GLNewsPage() }
         .sheet(isPresented: $licenseSheet) {
             NavigationStack {
                 GameLingoLicenseView()
@@ -214,19 +216,11 @@ struct GameLingoHome: View {
                     .minimumScaleFactor(0.8)
             }
             Spacer(minLength: 0)
+            Button { newsSheet = true } label: {
+                GLRocketIcon().foregroundStyle(GLStyle.blue).frame(width: 36, height: 44)
+            }.accessibilityLabel("Co je nového")
             GLHelpButton(title: "GameLingo", explanation:
                 "Vyber Xbox nebo PlayStation, nastav výstup titulků na telefon či Google TV, uprav čtyři oblasti OCR a spusť překlad.")
-            Button { tab = .settings } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(GLNeon.panel,
-                                in: RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13)
-                        .strokeBorder(GLNeon.edge, lineWidth: 1))
-            }
-            .accessibilityLabel("Nastavení")
         }
         .padding(.bottom, 5)
     }

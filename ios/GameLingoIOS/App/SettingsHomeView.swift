@@ -855,6 +855,7 @@ private struct GameLingoCacheView: View {
 private struct GameLingoDiagnosticsView: View {
     @ObservedObject var model: CaptionAppModel
     @State private var showLog = false
+    @State private var reportSheet = false
 
     var body: some View {
         GLScreen(title: "Diagnostika", help:
@@ -902,6 +903,12 @@ private struct GameLingoDiagnosticsView: View {
                 }
                 .tint(GLStyle.blue)
             }
+            GLCard {
+                GLPrimaryButton(title: "Nahlásit problém", systemImage: "exclamationmark.bubble") { reportSheet = true }
+            }
+        }
+        .sheet(isPresented: $reportSheet) {
+            GLProblemReportPage(diagnostic: "frames=\(model.frameCount)\nrunning=\(model.isRunning)\ntvPaired=\(model.tv.receiverPaired)\ntvConnected=\(model.tv.receiverConnected)")
         }
     }
 

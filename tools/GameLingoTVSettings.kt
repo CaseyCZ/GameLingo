@@ -200,6 +200,7 @@ object GameLingoTVSettings {
                     }
         })
         body.addView(GameLingoTVUi.action(a,tr("Test OCR")) { GameLingoScreenTranslationService.diagnostics(a) })
+        body.addView(GameLingoTVUi.action(a,tr("Nahlásit problém")) { GameLingoHelp.report(a) })
         GameLingoTVUi.page(a,tr("Diagnostika TV"),body,helpTopic="diagnostics")
     }
 }

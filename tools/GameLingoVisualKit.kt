@@ -126,6 +126,7 @@ object GameLingoVisualKit {
                     "slider.horizontal.3","gearshape.fill" -> {line(3f,6f,21f,6f);line(3f,12f,21f,12f);line(3f,18f,21f,18f);circle(8f,6f,2f);circle(16f,12f,2f);circle(10f,18f,2f)}
                     "info.circle" -> {circle(12f,12f,9f);line(12f,11f,12f,17f);circle(12f,7f,.6f)}
                     "questionmark.circle" -> {circle(12f,12f,9f);canvas.drawArc(8f,6f,16f,13f,180f,200f,false,p);path(15f,11f,12f,14f,12f,15f);circle(12f,18f,.55f)}
+                    "rocket" -> {path(5f,17f,6f,10f,12f,5f,21f,3f,19f,12f,14f,18f,8f,19f,5f,17f);path(6f,10f,2f,13f,5f,17f);path(14f,18f,11f,23f,8f,19f);line(5f,20f,2f,23f);circle(15f,9f,2f)}
                     "chevron.right" -> path(9f,6f,15f,12f,9f,18f)
                     "arrow.right" -> {line(4f,12f,20f,12f);path(14f,6f,20f,12f,14f,18f)}
                     "download" -> {line(12f,3f,12f,15f);path(7f,10f,12f,15f,17f,10f);path(4f,16f,4f,21f,20f,21f,20f,16f)}
@@ -400,21 +401,8 @@ object GameLingoVisualKit {
                 maxLines=1;ellipsize=android.text.TextUtils.TruncateAt.END
             })
         },LinearLayout.LayoutParams(0,-2,1f))
+        bar.addView(GameLingoHelp.newsButton(activity),GameLingoHelp.layout(activity,dp(activity,36),dp(activity,44)))
         bar.addView(GameLingoHelp.button(activity,"home"),GameLingoHelp.layout(activity,dp(activity,36),dp(activity,44)))
-        bar.addView(TextView(activity).apply {
-            text = ""
-            setCompoundDrawablesWithIntrinsicBounds(iconDrawable("gearshape.fill",Color.WHITE,dp(activity,21)),null,null,null)
-            setPadding(dp(activity,12),0,0,0)
-            contentDescription = GameLingoLanguages.ui(activity, "Nastavení")
-            gravity = Gravity.CENTER
-            textSize = sp(activity, 26f)
-            setTextColor(Color.WHITE)
-            background = card(activity)
-            isFocusable = true
-            isClickable = true
-            setOnClickListener { onSettings() }
-            if (GameLingoTVUi.isTV(activity)) GameLingoTVUi.controlFocus(activity, this)
-        }, LinearLayout.LayoutParams(dp(activity, 48), dp(activity, 48)))
         return bar
     }
 

@@ -355,8 +355,9 @@ class ReleaseLocalizationTests(unittest.TestCase):
         self.assertIn("GLInterfaceText.localizedDiagnostics(model.performanceSummary)", settings)
         for value in ("model.tv.receiverStatus", "model.status"):
             self.assertIn(f"GLInterfaceText.localizedStatus({value})", settings)
-        self.assertIn('contentDescription = GameLingoLanguages.ui(activity, "Nastavení")',
-                      text(TOOLS / "GameLingoVisualKit.kt"))
+        self.assertIn('GameLingoHelp.newsButton(activity)', text(TOOLS / "GameLingoVisualKit.kt"))
+        self.assertIn('GLRocketIcon()', home)
+        self.assertIn('GameLingoHelp.report(a)', text(TOOLS / "GameLingoTVSettings.kt"))
 
     def test_dynamic_status_templates_exist_in_every_locale(self):
         shared = ROOT / "shared" / "locales"
