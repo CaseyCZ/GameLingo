@@ -79,7 +79,7 @@ class GameLingoCameraActivity : ComponentActivity() {
             for (i in 0 until 4) {
                 val a = i * 2; val b = ((i + 1) % 4) * 2; val c = ((i + 2) % 4) * 2
                 val cross = (dst[b]-dst[a])*(dst[c+1]-dst[b+1]) - (dst[b+1]-dst[a+1])*(dst[c]-dst[b])
-                if (cross <= .001f) return null
+                if (cross <= .00000001f) return null
             }
             val src = floatArrayOf(box.left, box.top, box.right, box.top,
                 box.right, box.bottom, box.left, box.bottom)
@@ -711,6 +711,34 @@ class GameLingoCameraActivity : ComponentActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    // Rectify a single weak skewed OCR line using its actual four corners.
+    // This is an OCR-only crop: original coordinates are never replaced.
+    private fun rectifiedCrop(bitmap: Bitmap, corners: Array<android.graphics.Point>?): Bitmap? {
+        if (corners == null || corners.size != 4 ||
+            corners.any { it.x !in 0 until bitmap.width || it.y !in 0 until bitmap.height }) return null
+        fun distance(a: Int, b: Int) = kotlin.math.hypot(
+            (corners[a].x-corners[b].x).toDouble(), (corners[a].y-corners[b].y).toDouble())
+        val top = distance(0,1); val bottom = distance(3,2)
+        val left = distance(0,3); val right = distance(1,2)
+        if (minOf(top,bottom) < 36 || minOf(left,right) < 12) return null
+        val angle = kotlin.math.atan2((corners[1].y-corners[0].y).toDouble(),
+            (corners[1].x-corners[0].x).toDouble())
+        if (kotlin.math.abs(angle) <= .10 &&
+            kotlin.math.abs(top-bottom)/maxOf(top,bottom) <= .10 &&
+            kotlin.math.abs(left-right)/maxOf(left,right) <= .10) return null
+        val w = maxOf(top,bottom).toInt().coerceIn(36,1600)
+        val h = maxOf(left,right).toInt().coerceIn(12,512)
+        val src = FloatArray(8) { i -> if (i%2 == 0) corners[i/2].x.toFloat() else corners[i/2].y.toFloat() }
+        val normalized = FloatArray(8) { i -> if (i%2 == 0) src[i]/bitmap.width else src[i]/bitmap.height }
+        if (CameraQuad(normalized).projection(RectF(0f,0f,1f,1f), RectF(0f,0f,1f,1f)) == null) return null
+        val dst = floatArrayOf(0f,0f,w.toFloat(),0f,w.toFloat(),h.toFloat(),0f,h.toFloat())
+        val warp = Matrix()
+        if (!warp.setPolyToPoly(src,0,dst,0,4)) return null
+        return Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888).also {
+            Canvas(it).drawBitmap(bitmap,warp,Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+        }
+    }
+
     private fun analyze(frame: ImageProxy, token: Int) {
         val now = SystemClock.elapsedRealtime()
         val base = if (region.full) 350L else 450L
@@ -734,10 +762,12 @@ class GameLingoCameraActivity : ComponentActivity() {
             val cropped = if (left == 0 && top == 0 && right == bitmap.width && bottom == bitmap.height) bitmap
                 else Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top)
             recognizer.process(InputImage.fromBitmap(cropped, 0)).addOnCompleteListener { task ->
-                analysisCost = (analysisCost * 7 + (SystemClock.elapsedRealtime() - now) * 3) / 10
                 if (cropped !== bitmap) cropped.recycle()
-                if (!running || token != generation || current != configRevision || isFinishing) {
-                    bitmap.recycle(); ocrBusy.set(false); return@addOnCompleteListener
+                fun validFrame() = running && token == generation && current == configRevision && !isFinishing
+                fun finishFrame(refinedIndex: Int = -1, refinedText: String? = null) {
+                analysisCost = (analysisCost * 7 + (SystemClock.elapsedRealtime() - now) * 3) / 10
+                if (!validFrame()) {
+                    bitmap.recycle(); ocrBusy.set(false); return
                 }
                 try {
                 val blocks = mutableListOf<CameraBlock>()
@@ -783,11 +813,13 @@ class GameLingoCameraActivity : ComponentActivity() {
                         blocks.add(CameraBlock(text, rect, angle, background, lineCount.coerceAtLeast(1), ink, surface, quad, appearance))
                     }
                     if (region.full) {
-                        for (block in task.result.textBlocks.take(20)) {
+                        for ((index, block) in task.result.textBlocks.take(20).withIndex()) {
                             // Older ML Kit installations report zero when confidence is unavailable.
                             val scores = block.lines.map { it.confidence }.filter { it > 0f }
-                            if (scores.isNotEmpty() && scores.average() < .30) continue
-                            addBlock(block.text.trim().replace(Regex("\\s+"), " "), block.boundingBox, block.cornerPoints, block.lines.size)
+                            val correction = refinedText?.takeIf { index == refinedIndex }
+                            if (correction == null && scores.isNotEmpty() && scores.average() < .30) continue
+                            addBlock((correction ?: block.text).trim().replace(Regex("\\s+"), " "),
+                                block.boundingBox, block.cornerPoints, block.lines.size)
                         }
                     } else {
                         for (line in task.result.textBlocks.flatMap { it.lines }.take(20)) {
@@ -812,6 +844,32 @@ class GameLingoCameraActivity : ComponentActivity() {
                 previousOCR = signature
                 receive(ordered)
                 } finally { ocrBusy.set(false) }
+                }
+                // At most one additional asynchronous recognition, only when the
+                // first OCR was quick and a single weak line has usable geometry.
+                if (validFrame() && region.full && task.isSuccessful &&
+                    SystemClock.elapsedRealtime() - now < 200L) {
+                    for ((index, block) in task.result.textBlocks.take(20).withIndex()) {
+                        val line = block.lines.singleOrNull() ?: continue
+                        val originalScore = line.confidence
+                        if (originalScore <= 0f || originalScore >= .75f) continue
+                        val rectified = runCatching { rectifiedCrop(bitmap,line.cornerPoints) }.getOrNull() ?: continue
+                        try {
+                            recognizer.process(InputImage.fromBitmap(rectified,0)).addOnCompleteListener { retry ->
+                                rectified.recycle()
+                                val candidate = if (retry.isSuccessful)
+                                    retry.result.textBlocks.flatMap { it.lines }.singleOrNull() else null
+                                val improved = candidate?.takeIf { it.text.isNotBlank() &&
+                                    it.confidence >= maxOf(.50f, originalScore+.08f) }?.text
+                                finishFrame(index, improved)
+                            }
+                        } catch (_: Exception) {
+                            rectified.recycle(); finishFrame()
+                        }
+                        return@addOnCompleteListener
+                    }
+                }
+                finishFrame()
             }
         } catch (_: Exception) {
             ocrBusy.set(false)
@@ -1200,8 +1258,11 @@ class GameLingoCameraActivity : ComponentActivity() {
                     paint.shader = null
                     val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                         color = overlay.ink ?: (if (Color.luminance(overlay.background) > .179f) Color.BLACK else Color.WHITE)
-                        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT,
-                            if (overlay.appearance.weight >= 1) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                        typeface = if (android.os.Build.VERSION.SDK_INT >= 28)
+                            android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT,
+                                when (overlay.appearance.weight) { 2 -> 700; 1 -> 600; else -> 400 }, false)
+                            else android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT,
+                                if (overlay.appearance.weight >= 1) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
                         textSize = (box.height() / overlay.lineCount * .83f).coerceAtLeast(1f)
                     }
                     val layoutWidth = box.width().toInt().coerceAtLeast(1)
