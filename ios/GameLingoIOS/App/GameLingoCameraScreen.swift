@@ -546,16 +546,10 @@ struct GameLingoCameraScreen: View {
                         Slider(value: $zoom, in: 1...4)
                         Text(String(format: "%.1f×", zoom)).monospacedDigit()
                     }.accessibilityLabel("Přiblížení")
-                    HStack {
-                        Button { state.toggleTorch() } label: {
-                            Label("Svítilna", systemImage: state.torchFailed ? "exclamationmark.triangle.fill" : (state.torchOn ? "flashlight.on.fill" : "flashlight.off.fill"))
-                                .foregroundStyle(state.torchFailed ? Color.orange : (state.torchOn ? Color.yellow : Color.white))
-                        }.disabled(state.paused || state.unavailable || state.previewSession == nil || state.torchPending)
-                        Spacer()
-                        Button { state.togglePause() } label: {
-                            Label(state.paused ? "Pokračovat" : "Pozastavit", systemImage: state.paused ? "play.fill" : "pause.fill")
-                        }.disabled(state.unavailable)
-                    }
+                    Button { state.togglePause() } label: {
+                        Label(state.paused ? "Pokračovat" : "Pozastavit", systemImage: state.paused ? "play.fill" : "pause.fill")
+                            .frame(maxWidth: .infinity)
+                    }.disabled(state.unavailable)
                     GLPrimaryButton(title: "Zastavit překlad", systemImage: "stop.fill") { state.stop(); dismiss() }
                 }
                 .padding(.horizontal, 16).padding(.vertical, 8)
@@ -564,7 +558,20 @@ struct GameLingoCameraScreen: View {
             .background(GLNeonBackground())
             .navigationTitle("Překlad kamerou")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarLeading) { GLBackButton { state.stop(); dismiss() } } }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { GLBackButton { state.stop(); dismiss() } }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { state.toggleTorch() } label: {
+                        Image(systemName: state.torchFailed ? "exclamationmark.triangle.fill" : (state.torchOn ? "flashlight.on.fill" : "flashlight.off.fill"))
+                            .foregroundStyle(state.torchFailed ? Color.orange : (state.torchOn ? Color.yellow : Color.white))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Svítilna")
+                    .accessibilityAddTraits(state.torchOn ? .isSelected : [])
+                    .disabled(state.paused || state.unavailable || state.previewSession == nil || state.torchPending)
+                }
+            }
         }
         .task {
             if !languagesInitialized {
