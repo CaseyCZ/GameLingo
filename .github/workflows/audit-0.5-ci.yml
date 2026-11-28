@@ -60,6 +60,8 @@ jobs:
         run: |
           swiftc ios/GameLingoIOS/App/GameLingoAppLanguage.swift tests/InterfaceStatusTests.swift -o "$RUNNER_TEMP/interface-status-tests"
           "$RUNNER_TEMP/interface-status-tests"
+      - name: Test Android SDK and ELF compatibility audit
+        run: python3 -m unittest discover -s tests -p 'test_android_sdk_policy.py' -v
       - name: Python tooling syntax
         run: python3 -m compileall -q tools tests
       - name: Run latest-frame mailbox tests
@@ -258,9 +260,10 @@ jobs:
           python kit/tools/wire_android_devices.py upstream
           python kit/tools/wire_gamelingo_languages.py upstream
           python kit/tools/permission_policy.py mobile --apply upstream
+          python kit/tools/android_sdk_policy.py mobile --apply upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode mobile
           python kit/tools/package_license_notices.py mobile --kit kit --upstream upstream --output upstream/app/src/main/assets
-          sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
+          sdkmanager "platforms;android-36" "build-tools;35.0.0"
       - name: Build Android phone APK
         working-directory: upstream
         run: |
@@ -277,8 +280,15 @@ jobs:
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.mobile'" | grep -F "versionName='${GAMELINGO_VERSION}-dev."
           python kit/tools/verify_tv_translation_apk.py mobile "$APK"
           python kit/tools/permission_policy.py mobile --verify "$APK" --aapt "$ANDROID_HOME/build-tools/34.0.0/aapt"
+          python kit/tools/android_sdk_policy.py mobile --apk "$APK" --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" --zipalign "$ANDROID_HOME/build-tools/35.0.0/zipalign" --output android-sdk-mobile.json
           python kit/tools/package_license_notices.py mobile --verify "$APK"
           cp "$APK" GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
+      - name: Upload Android SDK and 16 KB audit (mobile)
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-Android-SDK-mobile
+          path: android-sdk-mobile.json
+          if-no-files-found: error
       - name: Sign mobile APK with persistent private update key
         env:
           GAMELINGO_MOBILE_KEYSTORE_B64: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_B64 }}
@@ -352,6 +362,7 @@ jobs:
           python kit/tools/wire_android_devices.py upstream
           python kit/tools/wire_gamelingo_languages.py upstream
           python kit/tools/permission_policy.py tv --apply upstream
+          python kit/tools/android_sdk_policy.py tv --apply upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
           python kit/tools/verify_tv_navigation.py upstream
           python kit/tools/audit_tv_ui.py upstream --output gamelingo-tv-ui-inventory.md
@@ -359,7 +370,7 @@ jobs:
           grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
           grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
           grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
-          sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
+          sdkmanager "platforms;android-36" "build-tools;35.0.0"
       - name: Build Google TV APK
         working-directory: upstream
         run: |
@@ -397,12 +408,19 @@ jobs:
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'"
           python kit/tools/verify_tv_translation_apk.py tv "$APK"
           python kit/tools/permission_policy.py tv --verify "$APK" --aapt "$ANDROID_HOME/build-tools/34.0.0/aapt"
+          python kit/tools/android_sdk_policy.py tv --apk "$APK" --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" --zipalign "$ANDROID_HOME/build-tools/35.0.0/zipalign" --output android-sdk-tv.json
           python kit/tools/verify_tv_ui_apk.py "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > tv-manifest.txt
           python -c 'import pathlib,re; s=pathlib.Path("tv-manifest.txt").read_text(); assert "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" in s; blocks=re.split(r"(?m)^\s*E: service ",s); match=[b for b in blocks[1:] if "GameLingoScreenTranslationService" in b.split("E: ",1)[0]]; assert len(match)==1 and re.search(r"foregroundServiceType.*(?:0x0*20)\b",match[0].split("E: ",1)[0]), "APK missing mediaProjection service type"'
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'" | grep -F "versionName='${GAMELINGO_VERSION}-dev."
           python kit/tools/package_license_notices.py tv --verify "$APK"
           cp "$APK" GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
+      - name: Upload Android SDK and 16 KB audit (tv)
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-Android-SDK-tv
+          path: android-sdk-tv.json
+          if-no-files-found: error
       - name: Sign TV APK with persistent private update key
         env:
           GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
