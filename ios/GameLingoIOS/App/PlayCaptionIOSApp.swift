@@ -71,7 +71,7 @@ final class CaptionAppModel: ObservableObject {
         automaticSnapshotKey = ""
     }
     func setAutomaticGameDialogue(_ enabled: Bool) {
-        guard !isRunning else { return }
+        guard !isRunning, automaticGameDialogue != enabled else { return }
         automaticGameDialogue = enabled
         UserDefaults.standard.set(enabled, forKey: "gamelingo.automaticMode")
         invalidateDialogue()

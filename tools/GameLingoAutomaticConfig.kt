@@ -139,6 +139,7 @@ internal object GameLingoAutomaticConfig {
         }
         buttons.forEachIndexed { index, button ->
             button.setOnClickListener {
+                if (enabled(a) == (index == 1)) return@setOnClickListener
                 if (!editable(a)) return@setOnClickListener
                 prefs(a).edit().putBoolean("enabled", index == 1).apply()
                 render()

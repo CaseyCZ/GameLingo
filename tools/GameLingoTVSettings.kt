@@ -66,7 +66,7 @@ object GameLingoTVSettings {
         tile("character.book.closed.fill", "Překlad", "Dialogy, herní texty, Story") { translation(a) }
         tile("rectangle.dashed", "Oblasti obrazovky", if(GameLingoAutomaticConfig.enabled(a)) "Automatické zóny" else "Čtyři oblasti") { if (!GameLingoScreenTranslationService.running) { if(GameLingoAutomaticConfig.enabled(a)) GameLingoAutomaticConfig.showZones(a) else GameLingoDirectTVLayout.show(a) {} } }
         tile("text.bubble", "Vzhled titulků", "Barvy, pozadí a velikost") { GameLingoTVCaptionStyle.show(a) }
-        tile("gamecontroller", "Profily her", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a) }
+        tile("gamecontroller", "Profily her", "Hry, video a aplikace TV") { GameLingoTVProfiles.show(a, onApplied = ::refreshLanguage) }
         tile("display.2", "Zařízení", "Konzole a telefony") { openingDevices = true; dialog.dismiss(); onDevices() }
         tile("slider.horizontal.3", "Pokročilé nastavení", "Slovník, historie a diagnostika") {
             val options = arrayOf(

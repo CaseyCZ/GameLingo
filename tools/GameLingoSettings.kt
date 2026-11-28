@@ -400,16 +400,20 @@ object GameLingoSettings {
         page.addView(GameLingoVisualKit.detailRow(activity, "slider.horizontal.3", tr("Pokročilé nastavení"), tr("OCR a rozpoznávání · Překlad")) {
             advanced.visibility = if (advanced.visibility == android.view.View.VISIBLE) android.view.View.GONE else android.view.View.VISIBLE
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = 9 * d })
+        fun openModeAreas() {
+            if (GameLingoAutomaticConfig.enabled(activity)) GameLingoAutomaticConfig.showZones(activity)
+            else onAreas()
+        }
         menu("viewfinder", "OCR a rozpoznávání", "Citlivost, režim a filtrování textu", parent = advanced) {
-            GameLingoOCRSettings.show(activity, onAreas)
+            GameLingoOCRSettings.show(activity, ::openModeAreas)
         }
         menu("character.book.closed.fill", "Překlad", "Časování a aktuálnost titulků", parent = advanced) {
-            showTranslation(activity, settings, onAreas, onLanguage)
+            showTranslation(activity, settings, ::openModeAreas, onLanguage)
         }
         page.addView(advanced)
         menu("rectangle.dashed", "Oblasti obrazovky",
              if(GameLingoAutomaticConfig.enabled(activity)) "Automatické zóny" else "Čtyři nezávislé oblasti") {
-            if(GameLingoAutomaticConfig.enabled(activity))GameLingoAutomaticConfig.showZones(activity) else onAreas()
+            openModeAreas()
         }
 
         section(GameLingoUIContract.settingsSections[2])
@@ -419,7 +423,7 @@ object GameLingoSettings {
          }
         menu("gamecontroller", "Profily her",
              "Vlastní nastavení pro každou hru") {
-            GameLingoProfiles.show(activity, settings) {}
+            GameLingoProfiles.show(activity, settings) { onRefresh() }
         }
         section(GameLingoUIContract.settingsSections[3])
         menu("display.2", "Zařízení",

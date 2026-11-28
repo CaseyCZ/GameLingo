@@ -595,6 +595,22 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('cards[1].findViewWithTag', tv)
         self.assertIn('cards[3].findViewWithTag', tv)
 
+    def test_mode_specific_area_navigation_and_profile_refresh(self):
+        settings = code(TOOLS/"GameLingoSettings.kt")
+        tv_profiles = code(TOOLS/"GameLingoTVProfiles.kt")
+        tv_settings = code(TOOLS/"GameLingoTVSettings.kt")
+        automatic = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        ios = code(IOS/"PlayCaptionIOSApp.swift")
+        self.assertIn("if (GameLingoAutomaticConfig.enabled(activity)) GameLingoAutomaticConfig.showZones(activity)", settings)
+        self.assertIn("GameLingoOCRSettings.show(activity, ::openModeAreas)", settings)
+        self.assertIn("showTranslation(activity, settings, ::openModeAreas, onLanguage)", settings)
+        self.assertIn("GameLingoProfiles.show(activity, settings) { onRefresh() }", settings)
+        self.assertIn("if (GameLingoAutomaticConfig.enabled(a)) GameLingoAutomaticConfig.showZones(a)", tv_profiles)
+        self.assertIn("if(openLayout) openModeAreas()", tv_profiles)
+        self.assertIn("GameLingoTVProfiles.show(a, onApplied = ::refreshLanguage)", tv_settings)
+        self.assertIn("if (enabled(a) == (index == 1)) return@setOnClickListener", automatic)
+        self.assertIn("guard !isRunning, automaticGameDialogue != enabled else { return }", ios)
+
     def test_mode_page_groups_ocr_translation_and_areas(self):
         home = code(IOS/"GameLingoHome.swift")
         sheet = home.split('.sheet(isPresented: $modeSheet)', 1)[1].split('.sheet(isPresented: $appearanceSheet)', 1)[0]
@@ -1025,7 +1041,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("fun select(index: Int)",nav)
         self.assertIn(".accessibilityAddTraits(tab == option ? .isSelected : [])",code(IOS/"GameLingoHome.swift"))
         self.assertIn(".id(tab)",code(IOS/"GameLingoHome.swift"))
-        self.assertIn("GameLingoOCRSettings.show(activity, onAreas)",settings)
+        self.assertIn("GameLingoOCRSettings.show(activity, ::openModeAreas)",settings)
         self.assertIn("GameLingoOCRConfig.intervalMs()",redesign)
         self.assertIn("GameLingoOCRConfig.filterMenuText",redesign)
         self.assertIn("GameLingoPhoneSubtitleStyle.apply",redesign)
