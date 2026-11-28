@@ -34,6 +34,18 @@ class SDKPolicyTests(unittest.TestCase):
         self.assertEqual(workflow.count('"$SDK_MANAGER" --sdk_root="$SDK_ROOT"'), 2)
         self.assertEqual(workflow.count('test -f "$SDK_ROOT/platforms/android-36/android.jar"'), 2)
 
+    def test_osgi_collision_excludes_only_the_manifest(self):
+        source = Path(policy.__file__).read_text()
+        self.assertIn('resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")', source)
+        self.assertNotIn('resources.excludes.add("META-INF/**")', source)
+
+    def test_dependency_resolution_evidence_is_collected_for_three_variants(self):
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/audit-0.5-ci.yml").read_text()
+        self.assertEqual(workflow.count(":app:dependencies --configuration debugRuntimeClasspath"), 2)
+        for variant in ("ios", "mobile", "tv"):
+            self.assertIn("GameLingo-dependencies-" + variant, workflow)
+        self.assertIn("Package.resolved", workflow)
+
     def test_platform_targets(self):
         self.assertEqual(policy.MIN_SDK, 26)
         self.assertEqual(policy.TARGETS, {"mobile": 36, "tv": 34})

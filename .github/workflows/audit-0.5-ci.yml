@@ -187,6 +187,19 @@ jobs:
             -clonedSourcePackagesDirPath "$PWD/.build/SourcePackages" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build 2>&1 | tee "$PWD/.build-ios.log"
+      - name: Record resolved Swift packages
+        run: |
+          set -euo pipefail
+          RESOLVED=$(find ios/GameLingoIOS -type f -name Package.resolved -print -quit)
+          test -n "$RESOLVED" && test -s "$RESOLVED"
+          mkdir -p dependency-evidence-ios
+          cp "$RESOLVED" dependency-evidence-ios/Package.resolved
+          git -C ps-core submodule status --recursive > dependency-evidence-ios/native-submodules.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-dependencies-ios
+          path: dependency-evidence-ios/
+          if-no-files-found: error
       - name: Verify GameLingo identity and package IPA
         run: |
           set -euo pipefail
@@ -273,6 +286,18 @@ jobs:
           "$SDK_MANAGER" --sdk_root="$SDK_ROOT" "platforms;android-36" "build-tools;35.0.0"
           test -f "$SDK_ROOT/platforms/android-36/android.jar"
           test -x "$SDK_ROOT/build-tools/35.0.0/zipalign"
+      - name: Record resolved Android runtime dependencies (mobile)
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew :app:dependencies --configuration debugRuntimeClasspath --no-daemon --console=plain > "$GITHUB_WORKSPACE/dependencies-mobile.txt"
+          test -s "$GITHUB_WORKSPACE/dependencies-mobile.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-dependencies-mobile
+          path: dependencies-mobile.txt
+          if-no-files-found: error
       - name: Build Android phone APK
         working-directory: upstream
         run: |
@@ -389,6 +414,18 @@ jobs:
           "$SDK_MANAGER" --sdk_root="$SDK_ROOT" "platforms;android-36" "build-tools;35.0.0"
           test -f "$SDK_ROOT/platforms/android-36/android.jar"
           test -x "$SDK_ROOT/build-tools/35.0.0/zipalign"
+      - name: Record resolved Android runtime dependencies (tv)
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew :app:dependencies --configuration debugRuntimeClasspath --no-daemon --console=plain > "$GITHUB_WORKSPACE/dependencies-tv.txt"
+          test -s "$GITHUB_WORKSPACE/dependencies-tv.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-dependencies-tv
+          path: dependencies-tv.txt
+          if-no-files-found: error
       - name: Build Google TV APK
         working-directory: upstream
         run: |

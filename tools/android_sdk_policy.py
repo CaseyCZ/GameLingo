@@ -39,6 +39,12 @@ def apply(root, variant):
     s = once(s, "targetSdk = 34", f"targetSdk = {TARGETS[variant]}")
     if f"minSdk = {MIN_SDK}" not in s:
         raise RuntimeError("Unexpected minimum SDK")
+    # Java 9 OSGi descriptors have no role in the Android runtime. JSch and
+    # JSpecify both ship this exact resource; do not exclude LICENSE/NOTICE.
+    s = once(s, "    compileOptions {", """    packaging {
+        resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
+    }
+    compileOptions {""")
     s = once(s, '    kotlinOptions { jvmTarget = "17" }', "")
     s = once(s, "dependencies {", """kotlin {
     compilerOptions {
