@@ -2,6 +2,7 @@
 """Build-time license inventory, not a complete SBOM or release clearance."""
 import argparse
 import hashlib
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -35,6 +36,86 @@ def collect(root, label):
             continue
         found.append((label + "/" + rel, data, text))
     return revision, found
+
+def archive_notices(archive, prefix, nested=True):
+    """Read textual notices from the resolved archive, including embedded JARs."""
+    for entry in sorted(archive.infolist(), key=lambda item: item.filename):
+        name = entry.filename
+        if entry.is_dir() or any(ord(ch) < 32 for ch in name):
+            continue
+        path = Path(name)
+        if path.is_absolute() or ".." in path.parts:
+            continue
+        recognized = (license_path(path) or path.name.lower() in
+                      {"al2.0", "lgpl2.1", "dependencies", "third_party_licenses",
+                       "third_party_license_metadata"})
+        if recognized and entry.file_size <= 2_000_000:
+            data = archive.read(entry)
+            try:
+                text = data.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                continue
+            if text.strip() and "\0" not in text:
+                yield prefix + "/" + name, data, text
+        elif nested and name.endswith(".jar") and entry.file_size <= 64_000_000:
+            with zipfile.ZipFile(io.BytesIO(archive.read(entry))) as jar:
+                yield from archive_notices(jar, prefix + "/" + name, nested=False)
+
+
+def android_dependency_notices(path, manifest, parts):
+    records = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(records, list) or not records:
+        raise RuntimeError("Missing resolved Android runtime artifacts")
+    results = []
+    seen = set()
+    for record in sorted(records, key=lambda r: (r["coordinate"], r["name"])):
+        coordinate, name = record["coordinate"], record["name"]
+        file = Path(record["file"])
+        if not re.fullmatch(r"[A-Za-z0-9_.+-]+:[A-Za-z0-9_.+-]+:[A-Za-z0-9_.+-]+", coordinate):
+            raise RuntimeError("Unexpected runtime component: " + coordinate)
+        if name != file.name or not re.fullmatch(r"[A-Za-z0-9_.+-]+", name):
+            raise RuntimeError("Unexpected runtime artifact name: " + name)
+        label = "Android-runtime/" + coordinate + "/" + name
+        if label in seen:
+            raise RuntimeError("Duplicate runtime artifact: " + label)
+        seen.add(label)
+        with file.open("rb") as stream:
+            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        result = {"coordinate": coordinate, "artifact": name,
+                  "sha256": digest, "notices": []}
+        if zipfile.is_zipfile(file):
+            with zipfile.ZipFile(file) as archive:
+                for title, data, text in archive_notices(archive, label):
+                    add_notice(manifest, parts, title, data, text)
+                    result["notices"].append(title)
+        result["review"] = "notices_collected" if result["notices"] else "no_embedded_notice_found"
+        results.append(result)
+    return results
+
+
+def ios_dependency_notices(args, manifest, parts):
+    resolved = json.loads(Path(args.swift_resolved).read_text(encoding="utf-8"))
+    pins = resolved["pins"]
+    webrtc = [pin for pin in pins if pin["identity"].lower() == "webrtc"]
+    if len(webrtc) != 1:
+        raise RuntimeError("Expected one resolved WebRTC package")
+    checkout = Path(args.webrtc_checkout)
+    revision = git(checkout, "rev-parse", "HEAD")
+    if revision != webrtc[0]["state"]["revision"]:
+        raise RuntimeError("WebRTC checkout differs from Package.resolved")
+    framework = Path(args.webrtc_license)
+    if framework.parent.name != "WebRTC.xcframework" or framework.name != "LICENSE":
+        raise RuntimeError("Expected license from resolved WebRTC XCFramework")
+    files = [("SwiftPM/WebRTC/LICENSE.md", checkout / "LICENSE.md"),
+             ("SwiftPM/WebRTC.xcframework/LICENSE", framework)]
+    for name, file in files:
+        data = file.read_bytes()
+        text = data.decode("utf-8-sig")
+        if not text.strip() or "\0" in text:
+            raise RuntimeError("Empty or invalid WebRTC notice: " + name)
+        add_notice(manifest, parts, name, data, text)
+    return {"pins": pins, "webrtc_notices": [name for name, _ in files]}
+
 
 def native_provenance(upstream):
     """Validate the exact ARM prebuilts against the pinned upstream manifest."""
@@ -101,7 +182,9 @@ def generate(args):
                 add_notice(manifest, parts, label, data, text)
     if args.platform in ("mobile", "tv"):
         manifest["chiaki"] = native_provenance(upstream)
+        manifest["runtime_dependencies"] = android_dependency_notices(args.runtime_artifacts, manifest, parts)
     else:
+        manifest["swift_dependencies"] = ios_dependency_notices(args, manifest, parts)
         core = upstream / "ios/.build/iphoneos/libTPPlayCore.a"
         if not core.is_file():
             raise RuntimeError("Missing built TP Play core")
@@ -142,6 +225,14 @@ def verify(path, platform, evidence=None, expected_kit=None):
         for name in ("LICENSE", "ATTRIBUTION.md", "THIRD_PARTY_NOTICES.md"):
             if "GameLingo/" + name not in seen:
                 raise RuntimeError("Missing bundled project notice: " + name)
+        if platform == "ios":
+            swift = manifest.get("swift_dependencies", {})
+            if not swift.get("pins") or not {"SwiftPM/WebRTC/LICENSE.md", "SwiftPM/WebRTC.xcframework/LICENSE"}.issubset(seen):
+                raise RuntimeError("Missing resolved Swift dependency notices")
+        else:
+            dependencies = manifest.get("runtime_dependencies", [])
+            if not dependencies or any(not set(item["notices"]).issubset(seen) for item in dependencies):
+                raise RuntimeError("Missing resolved Android dependency evidence")
         # Report actual package contents. Android Gradle may strip symbols;
         # distinguish a changed packaged binary from a verified byte match.
         native = {}
@@ -166,6 +257,8 @@ def verify(path, platform, evidence=None, expected_kit=None):
         report = {"platform": platform, "sources": manifest["sources"],
                   "notice_count": len(seen), "native_files": native,
                   "chiaki_package_comparison": comparison,
+                  "runtime_dependencies": manifest.get("runtime_dependencies", []),
+                  "swift_dependencies": manifest.get("swift_dependencies", {}),
                   "scope": "technical evidence; not complete SBOM or distribution clearance"}
         if evidence:
             Path(evidence).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -181,10 +274,18 @@ if __name__ == "__main__":
     parser.add_argument("--verify")
     parser.add_argument("--evidence")
     parser.add_argument("--expected-kit")
+    parser.add_argument("--runtime-artifacts")
+    parser.add_argument("--swift-resolved")
+    parser.add_argument("--webrtc-checkout")
+    parser.add_argument("--webrtc-license")
     args = parser.parse_args()
     if args.verify:
         verify(args.verify, args.platform, args.evidence, args.expected_kit)
     elif args.kit and args.upstream and args.output:
+        if args.platform == "ios" and not all((args.swift_resolved, args.webrtc_checkout, args.webrtc_license)):
+            parser.error("iOS generation requires resolved Swift package and framework license inputs")
+        if args.platform != "ios" and not args.runtime_artifacts:
+            parser.error("Android generation requires resolved runtime artifacts")
         generate(args)
     else:
         parser.error("Provide --verify or --kit --upstream --output")

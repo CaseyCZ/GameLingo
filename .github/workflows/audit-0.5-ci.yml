@@ -61,7 +61,9 @@ jobs:
           swiftc ios/GameLingoIOS/App/GameLingoAppLanguage.swift tests/InterfaceStatusTests.swift -o "$RUNNER_TEMP/interface-status-tests"
           "$RUNNER_TEMP/interface-status-tests"
       - name: Test Android SDK and ELF compatibility audit
-        run: python3 -m unittest discover -s tests -p 'test_android_sdk_policy.py' -v
+        run: |
+          python3 -m unittest discover -s tests -p 'test_android_sdk_policy.py' -v
+          python3 -m unittest discover -s tests -p 'test_package_license_notices.py' -v
       - name: Python tooling syntax
         run: python3 -m compileall -q tools tests
       - name: Run latest-frame mailbox tests
@@ -213,7 +215,10 @@ jobs:
           test "$VERSION" = "$GAMELINGO_VERSION"
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")" = "$GAMELINGO_BUILD"
           file "$APP/GameLingoIOS"
-          python tools/package_license_notices.py ios --kit . --upstream ps-core --output "$APP"
+          WEBRTC_LICENSE=$(find .build/SourcePackages/artifacts -type f -path '*/WebRTC.xcframework/LICENSE' -print -quit)
+          WEBRTC_CHECKOUT=$(find .build/SourcePackages/checkouts -mindepth 1 -maxdepth 1 -type d -iname webrtc -print -quit)
+          test -s "$WEBRTC_LICENSE" && test -d "$WEBRTC_CHECKOUT"
+          python tools/package_license_notices.py ios --kit . --upstream ps-core --output "$APP" --swift-resolved dependency-evidence-ios/Package.resolved --webrtc-checkout "$WEBRTC_CHECKOUT" --webrtc-license "$WEBRTC_LICENSE"
           mkdir -p "$PWD/.build/ipa/Payload"
           cp -R "$APP" "$PWD/.build/ipa/Payload/"
           (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" Payload)
@@ -275,7 +280,6 @@ jobs:
           python kit/tools/permission_policy.py mobile --apply upstream
           python kit/tools/android_sdk_policy.py mobile --apply upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode mobile
-          python kit/tools/package_license_notices.py mobile --kit kit --upstream upstream --output upstream/app/src/main/assets
           SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
           test -n "$SDK_ROOT"
           SDK_MANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
@@ -293,6 +297,8 @@ jobs:
           chmod +x ./gradlew
           ./gradlew :app:dependencies --configuration debugRuntimeClasspath --no-daemon --console=plain > "$GITHUB_WORKSPACE/dependencies-mobile.txt"
           test -s "$GITHUB_WORKSPACE/dependencies-mobile.txt"
+          ./gradlew -I ../kit/tools/runtime_artifacts.init.gradle :app:gameLingoRuntimeArtifacts --no-daemon --console=plain
+          python ../kit/tools/package_license_notices.py mobile --kit ../kit --upstream . --output app/src/main/assets --runtime-artifacts app/build/gamelingo-runtime-artifacts.json
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-dependencies-mobile
@@ -400,7 +406,6 @@ jobs:
           python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
           python kit/tools/verify_tv_navigation.py upstream
           python kit/tools/audit_tv_ui.py upstream --output gamelingo-tv-ui-inventory.md
-          python kit/tools/package_license_notices.py tv --kit kit --upstream upstream --output upstream/app/src/main/assets
           grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
           grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
           grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
@@ -421,6 +426,8 @@ jobs:
           chmod +x ./gradlew
           ./gradlew :app:dependencies --configuration debugRuntimeClasspath --no-daemon --console=plain > "$GITHUB_WORKSPACE/dependencies-tv.txt"
           test -s "$GITHUB_WORKSPACE/dependencies-tv.txt"
+          ./gradlew -I ../kit/tools/runtime_artifacts.init.gradle :app:gameLingoRuntimeArtifacts --no-daemon --console=plain
+          python ../kit/tools/package_license_notices.py tv --kit ../kit --upstream . --output app/src/main/assets --runtime-artifacts app/build/gamelingo-runtime-artifacts.json
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-dependencies-tv
