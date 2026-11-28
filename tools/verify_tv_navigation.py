@@ -35,4 +35,8 @@ assert 'dialog.setOnDismissListener {' in settings and 'if (!reopeningForScale &
 assert 'openingDevices = true; dialog.dismiss(); onDevices()' in settings
 assert 'val back=action(a,GameLingoLanguages.ui(a,"Zpět")){dialog.dismiss()}' in ui
 assert 'dialog.setOnDismissListener { onClose() }' in ui
+phone_receiver = section(main, "private fun hratSTelefonem()", "private fun ukazPrijem()")
+assert "GameLingoScreenTranslationService.running || RemotePlayService.aktivni" in phone_receiver
+assert "GameLingoScreenTranslationService.stop(this)" not in phone_receiver
+assert phone_receiver.index("return") < phone_receiver.index("PrijemService.spust(this)")
 print("TV_NAVIGATION_SOURCE_CHECKS passed: startup, resume, remote back, on-screen back, explicit stop, settings dismissal, nested pages")

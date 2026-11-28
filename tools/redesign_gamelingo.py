@@ -17,7 +17,7 @@ def splice_once(text: str, first: str, last: str, replacement: str) -> str:
 def redesign_mobile(s: str) -> str:
     start = '        if (telefon) {\n            obsah.addView(logoRadek, odsazeni(bottom = 14))'
     end = '        } else {\n            // televize:'
-    replacement = r'''        var mobileBottomNavigation: View? = null
+    replacement = r'''        var mobileBottomNavigation: GameLingoNavigation.TabBar? = null
         if (telefon) {
             // Native GameLingo layout matches iPhone: header -> hero -> saved
             // console/TV -> single CTA -> four shortcuts -> readiness -> tabs.
@@ -185,6 +185,7 @@ def redesign_mobile(s: str) -> str:
             obsah.addView(pageHost, odsazeni(bottom = 12))
             openTab = { index ->
                 selectedMobileTab = index.coerceIn(0, 4)
+                mobileBottomNavigation?.select(selectedMobileTab)
                 pageHost.removeAllViews()
                 val page = when (selectedMobileTab) {
                     1 -> GameLingoRegions.content(this, onEdit = { editAreas() })
@@ -255,6 +256,16 @@ def redesign_mobile(s: str) -> str:
         raise RuntimeError("MainActivity native dashboard method missing")
     s = s.replace(marker,
         "    private var selectedMobileTab = 0\n" + marker, 1)
+    # System Back from a secondary tab must return to Home, not exit the app.
+    back_marker = "    override fun onBackPressed() {"
+    if s.count(back_marker) != 1:
+        raise RuntimeError("Android system back anchor changed")
+    s = s.replace(back_marker, back_marker + """
+        if (telefon && obrazovka == "hlavni" && selectedMobileTab != 0) {
+            selectedMobileTab = 0
+            ukazHlavni()
+            return
+        }""", 1)
     # The shared title replaces PlayCaption's logo on PSN, Xbox, language and
     # setup screens. Do not touch the brand's transport strings.
     old = '''    private fun nadpisLogo() = ImageView(this).apply {

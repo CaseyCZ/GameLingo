@@ -16,6 +16,11 @@ import android.widget.TextView
  * selection follows the currently displayed page (not permanently "Domů").
  */
 object GameLingoNavigation {
+    class TabBar(activity: Activity) : LinearLayout(activity) {
+        internal var updateSelection: (Int) -> Unit = {}
+        fun select(index: Int) { updateSelection(index) }
+    }
+
     fun create(
         activity: Activity,
         onHome: () -> Unit,
@@ -24,7 +29,7 @@ object GameLingoNavigation {
         onSettings: () -> Unit,
         onAbout: () -> Unit,
         initialIndex: Int = 0
-    ): LinearLayout {
+    ): TabBar {
         fun dp(value: Int): Int =
             (value * activity.resources.displayMetrics.density + 0.5f).toInt()
         val actions = listOf(onHome, onAreas, onDevices, onSettings, onAbout)
@@ -63,7 +68,11 @@ object GameLingoNavigation {
             }
         }
 
-        return LinearLayout(activity).apply {
+        return TabBar(activity).apply {
+            updateSelection = { index ->
+                activeIndex = index.coerceIn(0, actions.lastIndex)
+                refresh()
+            }
             tag = "gamelingo-bottom-nav"
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -84,8 +93,6 @@ object GameLingoNavigation {
                     isFocusable = true
                     isClickable = true
                     setOnClickListener {
-                        activeIndex = index
-                        refresh()
                         actions[index]()
                     }
                     setOnFocusChangeListener { view: View, focused: Boolean ->

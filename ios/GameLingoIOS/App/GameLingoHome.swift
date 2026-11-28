@@ -74,6 +74,7 @@ struct GameLingoHome: View {
                     .padding(.top, 12)
                     .padding(.bottom, 16)
                 }
+                .id(tab)
                 bottomTabs
             }
             .background(GLNeonBackground())
@@ -806,6 +807,7 @@ struct GameLingoHome: View {
                              .clear, radius: 10)
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(tab == option ? .isSelected : [])
             }
         }
         .padding(.horizontal, 9)

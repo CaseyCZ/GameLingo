@@ -321,8 +321,14 @@ def patch_direct_tv(folder):
     # the phone receiver merely because its background service is running.
     patch_main('        if (!telefon && PrijemService.bezi) { ukazPrijem(); return }',
                '        // Active phone reception stays in the background; its tile opens it explicitly.')
-    patch_main('private fun hratSTelefonem() {',
-               'private fun hratSTelefonem() {\n        GameLingoScreenTranslationService.stop(this)')
+    patch_main('private fun hratSTelefonem() {', """private fun hratSTelefonem() {
+        // Opening phone reception must not silently stop an active direct source.
+        if (GameLingoScreenTranslationService.running || RemotePlayService.aktivni) {
+            android.app.AlertDialog.Builder(this)
+                .setMessage(GameLingoLanguages.ui(this, "Nejdříve zastav stávající překlad."))
+                .setPositiveButton("OK", null).show()
+            return
+        }""")
     patch_main("private val SKALA = 0.72f", "private val SKALA: Float get() = GameLingoTVUi.menuScale(this)")
     m = patch_navigation(m)
     main.write_text(m, encoding="utf8")
