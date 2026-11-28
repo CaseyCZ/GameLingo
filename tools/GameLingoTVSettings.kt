@@ -165,7 +165,7 @@ object GameLingoTVSettings {
     private fun translation(a: Activity) {
         if (busy(a)) return
         GameLingoSettings.showTranslation(a, Nastaveni(a),
-            { GameLingoDirectTVLayout.show(a) {} }, { GameLingoLanguages.show(a) })
+            { if (GameLingoAutomaticConfig.enabled(a)) GameLingoAutomaticConfig.showZones(a) else GameLingoDirectTVLayout.show(a) {} }, { GameLingoLanguages.show(a) })
     }
     private fun diagnostics(a: Activity) {
         fun tr(key: String) = GameLingoLanguages.ui(a, key)
@@ -198,7 +198,14 @@ object GameLingoTVSettings {
                                 .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Povolit")) { _, _ -> GameLingoTVPairing.setLegacyEnabled(a, true) }.show()
                         } else if (!busy(a)) AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Vymazat místní diagnostické logy?"))
                             .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Vymazat")) { _, _ ->
-                                if (!busy(a)) listOf("titulky.log","titulky-private-v2.log").forEach { java.io.File(a.filesDir,it).delete() }
+                                if (!busy(a)) {
+                                    val removed = listOf("titulky.log","titulky-private-v2.log").map {
+                                        val file = java.io.File(a.filesDir,it)
+                                        !file.exists() || file.delete()
+                                    }.all { it }
+                                    AlertDialog.Builder(a).setMessage(tr(if (removed) "Místní log překladu vymazán." else "Některý log se nepodařilo vymazat."))
+                                        .setPositiveButton("OK",null).show()
+                                }
                             }.show()
                     }
         })

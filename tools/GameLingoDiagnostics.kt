@@ -136,7 +136,9 @@ object GameLingoDiagnostics {
                     verifying = true
                     GameLingoTVPairing.verify(activity, selected) { ok ->
                         verifying = false
-                        if (dialog.isShowing) {
+                        val current = TvProfily(activity)
+                        if (dialog.isShowing && current.posledniId == selected.id &&
+                            current.najdi(selected.id)?.ip == selected.ip) {
                             refresh()
                             android.widget.Toast.makeText(activity, if (ok) GameLingoLanguages.ui(activity, "Spojení ověřeno.") else GameLingoLanguages.ui(activity, "TV neodpovídá. Zkontroluj domácí síť a přijímač."), android.widget.Toast.LENGTH_LONG).show()
                         }

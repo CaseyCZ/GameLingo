@@ -924,6 +924,13 @@ private struct GameLingoDiagnosticsView: View {
     @State private var showLog = false
     @State private var reportSheet = false
 
+    private var canTestTV: Bool {
+        guard !model.isRunning, model.devices.subtitleOutput == .googleTV,
+              let selected = model.devices.chosenTelevision else { return false }
+        return model.tv.receiverPaired && model.tv.receiverConnected &&
+            model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines) == selected.ipAddress
+    }
+
     var body: some View {
         GLScreen(title: "Diagnostika", help:
             "Tady najdeš stav překladu, počet zpracovaných snímků a poslední rozpoznané titulky. Zkušební titulek ověří propojení s TV. Technický log uchovává omezené kategorie událostí a metriky. Živý náhled níže obsahuje skutečné texty; není součástí sdíleného logu. Před sdílením log zkontroluj.") {
@@ -949,8 +956,8 @@ private struct GameLingoDiagnosticsView: View {
             GLCard {
                 GLPrimaryButton(title: "Zkusit titulek na TV",
                     systemImage: "tv",
-                    disabled: model.isRunning || !model.tv.receiverPaired || !model.tv.receiverConnected) {
-                    guard !model.isRunning, model.tv.receiverPaired, model.tv.receiverConnected else { return }
+                    disabled: !canTestTV) {
+                    guard canTestTV else { return }
                     model.tv.sendSubtitle(GLInterfaceText.localized("Zkušební titulek GameLingo"), duration: 8_000, preview: true)
                 }
             }

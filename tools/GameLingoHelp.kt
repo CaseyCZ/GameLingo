@@ -163,12 +163,17 @@ object GameLingoHelp {
         }
 
     fun show(activity: Activity, topic: String) {
-        val(titleKey,descriptionKey)=if(topic=="diagnostics" && !GameLingoTVUi.isTV(activity))
+        val automaticRegions = topic == "regions" && GameLingoAutomaticConfig.enabled(activity)
+        val(titleKey,descriptionKey)=if(automaticRegions)
+            "Oblasti překladu" to "Vyber zónu a přetáhni její rámeček. Změny se ukládají automaticky."
+            else if(topic=="diagnostics" && !GameLingoTVUi.isTV(activity))
             "Diagnostika" to "Stav místních nastavení a zahájené relace. Uložené údaje nepotvrzují živé spojení s konzolí ani TV."
             else info(topic)
         val title=GameLingoLanguages.ui(activity,titleKey)
         val description=GameLingoLanguages.ui(activity, descriptionKey)
-        val custom=if(topic=="diagnostics" && !GameLingoTVUi.isTV(activity))
+        val custom=if(automaticRegions)
+            listOf("viewfinder" to "Přidat zónu","tv" to "Náhled na TV","viewfinder" to "Obnovit oblast")
+            else if(topic=="diagnostics" && !GameLingoTVUi.isTV(activity))
             listOf("wifi" to "Ověřit spojení s TV","display.2" to "Zkusit titulek na TV","info.circle" to "Technický log")
             else guide(topic)
         val steps=if(custom.isNotEmpty())custom.map{it.first to tr(activity,it.second)}
@@ -190,7 +195,7 @@ object GameLingoHelp {
         fun select(index:Int) {
             if(index !in steps.indices)return
             selected=index;details.visibility=android.view.View.VISIBLE;enlarged.removeAllViews()
-            enlarged.addView(picture(activity,topic,index,steps[index].first),android.widget.FrameLayout.LayoutParams(-1,-1))
+            enlarged.addView(picture(activity,if(automaticRegions) "automaticRegions" else topic,index,steps[index].first),android.widget.FrameLayout.LayoutParams(-1,-1))
             explanation.text=steps[index].second
             stepCounter.text="${index+1} / ${steps.size}"
             previous.isEnabled=index>0;next.isEnabled=index<steps.lastIndex

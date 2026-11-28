@@ -521,6 +521,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         for topic in ("languages", "ocr", "translation", "appearance", "profiles", "history", "cache"):
             self.assertIn('"' + topic + '" -> listOf(', help_ui)
 
+    def test_diagnostics_selected_receiver_and_automatic_help(self):
+        ios = code(IOS/"SettingsHomeView.swift")
+        android = code(TOOLS/"GameLingoDiagnostics.kt")
+        tv = code(TOOLS/"GameLingoTVSettings.kt")
+        help_ui = code(TOOLS/"GameLingoHelp.kt")
+        self.assertIn("guard canTestTV else { return }", ios)
+        self.assertIn("current.posledniId == selected.id", android)
+        self.assertIn("!file.exists() || file.delete()", tv)
+        self.assertIn('topic == "regions" && GameLingoAutomaticConfig.enabled(activity)', help_ui)
+        self.assertIn('if(automaticRegions) "automaticRegions" else topic', help_ui)
+
     def test_diagnostics_preview_and_log_are_scoped_and_safe(self):
         mobile = code(TOOLS/"GameLingoDiagnostics.kt")
         tv = code(TOOLS/"GameLingoTVSettings.kt")
