@@ -277,7 +277,7 @@ class GameLingoScreenTranslationService : Service() {
             }
             if (automaticCapture) {
                 automaticCaptureTick()
-                if (active) ui.postDelayed(this,350L)
+                if (active) ui.postDelayed(this, GameLingoOCRCadence.automaticZones(GameLingoOCRConfig.mode, false))
                 return
             }
             if (!paused) {

@@ -436,7 +436,7 @@ struct GameLingoOCRSettingsView: View {
                 Picker("Žlutá: režim OCR", selection: $model.yellowOCRMode) {
                     Text("Stejný jako modrá").tag("follow")
                     ForEach(OCRMode.allCases) { mode in Text(LocalizedStringKey(mode.title)).tag(mode.rawValue) }
-                }.pickerStyle(.menu).disabled(model.isRunning)
+                }.pickerStyle(.menu).disabled(model.isRunning || model.automaticGameDialogue)
             }
             GLCard {
                 Toggle("Filtrovat menu hry", isOn: $model.filterMenuText)
@@ -455,27 +455,27 @@ struct GameLingoOCRSettingsView: View {
                     model.minBlueHeight = 0
                 }.disabled(model.isRunning)
                 GLHeader(title: "Žlutá oblast", help: "Filtry herních textů neovlivňují dialogy.")
-                Toggle("Žlutá: filtrovat pokyny ovladače", isOn: $model.filterChoiceControls).disabled(model.isRunning)
-                TextField("Žlutá oblast", text: $model.ignoredYellowLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning)
+                Toggle("Žlutá: filtrovat pokyny ovladače", isOn: $model.filterChoiceControls).disabled(model.isRunning || model.automaticGameDialogue)
+                TextField("Žlutá oblast", text: $model.ignoredYellowLines, axis: .vertical).lineLimit(2...4).disabled(model.isRunning || model.automaticGameDialogue)
                 Picker("Žlutá: minimální výška textu", selection: $model.minYellowHeight) {
                     Text("Automaticky").tag(0)
                     ForEach(1...5, id: \.self) { value in Text("\(value) %").tag(value) }
-                }.disabled(model.isRunning)
+                }.disabled(model.isRunning || model.automaticGameDialogue)
                 Button("Obnovit filtry žluté oblasti") {
                     model.filterChoiceControls = false
                     model.ignoredYellowLines = ""
                     model.minYellowHeight = 0
-                }.disabled(model.isRunning)
+                }.disabled(model.isRunning || model.automaticGameDialogue)
                 Text("Pouze přesná shoda celého řádku, bez ohledu na velikost písmen.").font(.caption)
                 }
             }
             GLCard {
                 Toggle("Rozšířit hledání", isOn: $model.expandOnEmpty)
-                    .disabled(model.ocrMode == .classic || model.manualOCR)
+                    .disabled(model.isRunning || model.automaticGameDialogue || model.ocrMode == .classic || model.manualOCR)
                 HStack {
                     Text("Oblast")
                     Spacer()
-                    Text(LocalizedStringKey(model.manualOCR ? "Ruční" : model.subtitleRegion.title))
+                    Text(LocalizedStringKey(model.automaticGameDialogue ? "Automatické zóny" : (model.manualOCR ? "Ruční" : model.subtitleRegion.title)))
                         .foregroundStyle(GLStyle.muted)
                 }
                 .font(.subheadline)

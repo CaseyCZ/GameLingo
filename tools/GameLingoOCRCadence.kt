@@ -9,6 +9,15 @@ internal object GameLingoOCRCadence {
             else -> if (phone) 100L else 250L
         }
     }
+    /** Automatic zones share one reader. TV uses a conservative capture floor. */
+    fun automaticZones(mode: String, phone: Boolean): Long =
+        if (phone) dialogue(mode, true, false)
+        else when (mode) {
+            "automatic" -> 300L
+            "street" -> 250L
+            else -> 350L
+        }
+
     /** Two dialogue opportunities per game-text opportunity, with bounded
      * yellow starvation under slow capture/OCR. A single reader still owns the work. */
     fun standaloneRegion(blue: Boolean, yellow: Boolean, blueSinceYellow: Int, yellowAgeMs: Long): Int {

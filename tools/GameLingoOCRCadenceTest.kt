@@ -75,6 +75,16 @@ class GameLingoOCRCadenceTest {
         assertEquals(1, GameLingoOCRCadence.standaloneRegion(true,false,2,9999))
         assertEquals(2, GameLingoOCRCadence.standaloneRegion(false,true,0,0))
     }
+    @Test fun automaticZoneCadenceUsesSelectedSpeed() {
+        for (phone in listOf(true, false)) {
+            assertTrue(GameLingoOCRCadence.automaticZones("classic", phone) >
+                GameLingoOCRCadence.automaticZones("automatic", phone))
+            assertTrue(GameLingoOCRCadence.automaticZones("automatic", phone) >
+                GameLingoOCRCadence.automaticZones("street", phone))
+        }
+        assertEquals(350L, GameLingoOCRCadence.automaticZones("unknown", false))
+        assertEquals(250L, GameLingoOCRCadence.automaticZones("street", false))
+    }
     @Test fun orderedModesAndPowerFloor() {
         for (phone in listOf(true, false)) {
             assertTrue(GameLingoOCRCadence.dialogue("classic", phone, false) >

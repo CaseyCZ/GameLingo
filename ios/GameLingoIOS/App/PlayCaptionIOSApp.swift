@@ -736,7 +736,7 @@ final class CaptionAppModel: ObservableObject {
         status = "Navazuji Xbox Remote Play…"
         write("Start Remote Play: \(console.name)")
         let play = XboxRemotePlay(authorization: xbox,
-                                  minimumFrameInterval: automaticGameDialogue ? OCRMode.automatic.minimumFrameInterval : (choicesEnabled ? min(ocrMode.minimumFrameInterval, ocrModeForYellow.minimumFrameInterval) : ocrMode.minimumFrameInterval))
+                                  minimumFrameInterval: automaticGameDialogue ? ocrMode.minimumFrameInterval : (choicesEnabled ? min(ocrMode.minimumFrameInterval, ocrModeForYellow.minimumFrameInterval) : ocrMode.minimumFrameInterval))
         remotePlay = play
         play.onStatus = { [weak self] status in
             Task { @MainActor in
@@ -1183,7 +1183,7 @@ final class CaptionAppModel: ObservableObject {
         await dialogueReset?.value
         guard isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
         guard let reading = await pipeline.recognizeAutomaticZone(buffer, zones: automaticZones, gameLanguage: gameLanguage,
-              filterMenus: filterMenuText, ignoredLines: ignoredBlueLines, minimumHeight: minBlueHeight),
+              filterMenus: filterMenuText, ignoredLines: ignoredBlueLines, minimumHeight: minBlueHeight, mode: ocrMode),
               isRunning, sessionRevision == currentSession, dialogueRevision.accepts(contextRevision) else { return }
         let seen = ProcessInfo.processInfo.systemUptime
         automaticTracker.observe(zone: reading.zone, blocks: reading.blocks, now: seen)

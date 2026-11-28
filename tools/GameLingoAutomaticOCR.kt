@@ -26,6 +26,7 @@ internal class GameLingoAutomaticOCR(
     private val busy=AtomicBoolean(false)
     private val frameAt=AtomicLong(0)
     private val lastAttempt=AtomicLong(0)
+    private val intervalMs = GameLingoOCRCadence.automaticZones(GameLingoOCRConfig.mode, !GameLingoTVUi.isTV(context))
     private val source=GameLingoLanguages.game(context)
     private val target=GameLingoLanguages.target(context)
     private val translator=Prekladac(context,target,source)
@@ -54,7 +55,8 @@ internal class GameLingoAutomaticOCR(
     }
     init { ui.post(tick) }
     fun alive()=!closed.get() && valid()
-    fun readyForFrame() = alive() && !busy.get()
+    fun readyForFrame() = alive() && enabled.isNotEmpty() && !busy.get() &&
+        SystemClock.elapsedRealtime()-lastAttempt.get() >= intervalMs
     fun close() {
         if(!closed.compareAndSet(false,true))return
         ui.removeCallbacks(tick)
@@ -66,7 +68,7 @@ internal class GameLingoAutomaticOCR(
         val now=SystemClock.elapsedRealtime()
         frameAt.set(now)
         aspect=(w.toFloat()/h).coerceIn(.5f,4f)
-        if(enabled.isEmpty()||now-lastAttempt.get()<100L||!busy.compareAndSet(false,true))return
+        if(enabled.isEmpty()||now-lastAttempt.get()<intervalMs||!busy.compareAndSet(false,true))return
         lastAttempt.set(now)
         var bitmap:Bitmap?=null
         try {

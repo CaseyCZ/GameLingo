@@ -160,12 +160,13 @@ actor CaptionPipeline {
     /// No OCR of pixels outside the selected zone and no unbounded task queue.
     func recognizeAutomaticZone(_ buffer: CVPixelBuffer, zones: [AutomaticOCRZone],
                                 gameLanguage: GLGameLanguage, filterMenus: Bool = true,
-                                ignoredLines: String = "", minimumHeight: Int = 0) -> AutomaticZoneReading? {
+                                ignoredLines: String = "", minimumHeight: Int = 0,
+                                mode: OCRMode = .classic) -> AutomaticZoneReading? {
         let ignored = OCRIgnoredLines.entries(ignoredLines)
         let enabled = zones.filter { $0.enabled && $0.valid }
         guard !enabled.isEmpty else { return nil }
         let now = ProcessInfo.processInfo.systemUptime
-        guard now - lastAutomaticAttempt >= 0.10 else { return nil }
+        guard now - lastAutomaticAttempt >= mode.minimumOCRInterval else { return nil }
         let image = CIImage(cvPixelBuffer: buffer)
         let e = image.extent
         for offset in 0..<enabled.count {
@@ -174,7 +175,7 @@ actor CaptionPipeline {
             let roi = CGRect(x: zone.rect.minX, y: 1-zone.rect.maxY,
                              width: zone.rect.width, height: zone.rect.height)
             var lane = automaticLanes[zone.id] ?? AutomaticLane()
-            guard now - lane.lastAttempt >= 0.10 else { continue }
+            guard now - lane.lastAttempt >= mode.minimumOCRInterval else { continue }
             let fingerprint = OCRFrameFingerprint.read(buffer, visionROI: roi)
             guard lane.gate.shouldRead(fingerprint, now: now) else { continue }
             lane.lastAttempt = now

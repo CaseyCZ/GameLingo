@@ -1353,6 +1353,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(receiver.index("IPhoneTVPairing.verifyFresh(c, id,"), receiver.index("ACTION_SET_ZONES"))
         self.assertIn("GameLingoZonePacket.parse(inner)", receiver)
 
+    def test_automatic_ocr_speed_and_standard_only_settings(self):
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        engine = code(TOOLS/"GameLingoAutomaticOCR.kt")
+        standalone = code(TOOLS/"GameLingoScreenTranslationService.kt")
+        settings = code(TOOLS/"GameLingoOCRSettings.kt")
+        self.assertIn("lastAutomaticAttempt >= mode.minimumOCRInterval", pipeline)
+        self.assertIn("minimumHeight: minBlueHeight, mode: ocrMode", model)
+        self.assertIn("GameLingoOCRCadence.automaticZones(GameLingoOCRConfig.mode", engine)
+        self.assertIn("GameLingoOCRCadence.automaticZones(GameLingoOCRConfig.mode, false)", standalone)
+        self.assertIn("val standardOnly = !GameLingoAutomaticConfig.enabled(activity)", settings)
+        self.assertIn("canEdit && standardOnly", settings)
+
     def test_android_automatic_is_native_and_session_bounded(self):
         wiring = code(TOOLS/"automatic_android.py")
         engine = code(TOOLS/"GameLingoAutomaticOCR.kt")
@@ -2315,11 +2328,11 @@ class GameLingoIntegrationContracts(unittest.TestCase):
 
     def test_tv_profile_cancel_keeps_parent_and_editor_returns_to_list(self):
         source = code(TOOLS/"GameLingoTVProfiles.kt")
-        lane = source.split("fun show(a: Activity)",1)[1]
+        lane = source.split("fun show(a: Activity, onApplied:",1)[1]
         self.assertNotIn("page?.dismiss()\n                    when(action)",lane)
         self.assertIn("all(a).optJSONObject(name)",lane)
-        self.assertIn('onClose = { if (!a.isFinishing && !a.isDestroyed) show(a) }',source)
-        self.assertIn("GameLingoGlossaryUi.edit(a,name){page?.dismiss();show(a)}",lane)
+        self.assertIn('onClose = { if (!a.isFinishing && !a.isDestroyed) { onApplied(); show(a, onApplied) } }',source)
+        self.assertIn("GameLingoGlossaryUi.edit(a,name){page?.dismiss();show(a, onApplied)}",lane)
 
     def test_tv_fullscreen_pages_and_global_dialog_theme(self):
         ui=code(TOOLS/"GameLingoTVUi.kt")

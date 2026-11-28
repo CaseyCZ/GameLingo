@@ -23,10 +23,13 @@ object GameLingoOCRSettings {
     private fun showPage(activity: Activity, onAreas: () -> Unit, advanced: Boolean) {
         if (activity.isFinishing) return
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
-        GameLingoOCRConfig.load(activity)
-        OblastTitulku.nacti(activity)
+        if (!GameLingoLanguages.translationSettingsBusy()) {
+            GameLingoOCRConfig.load(activity)
+            OblastTitulku.nacti(activity)
+        }
         fun editable() = !GameLingoLanguages.translationSettingsBusy()
         val canEdit = editable()
+        val standardOnly = !GameLingoAutomaticConfig.enabled(activity)
         val d: (Int) -> Int = { GameLingoVisualKit.dp(activity, it) }
         val dialog = Dialog(activity, android.R.style.Theme_Material_NoActionBar_Fullscreen)
         val root = LinearLayout(activity).apply {
@@ -139,7 +142,7 @@ object GameLingoOCRSettings {
         val yellowModes = arrayOf("follow", "classic", "automatic", "street")
         val yellowLabels = arrayOf("Stejný jako modrá", "Původní · stabilní", "Automatický · vyvážený", "Krátké dialogy · rychlý").map(::tr).toTypedArray()
         val yellowModeIndex = yellowModes.indexOf(GameLingoOCRConfig.yellowOCRMode).coerceAtLeast(0)
-        action("Žlutá: režim OCR", yellowLabels[yellowModeIndex], canEdit) {
+        action("Žlutá: režim OCR", yellowLabels[yellowModeIndex], canEdit && standardOnly) {
             fun save(index: Int) {
                 if (!editable()) return
                 GameLingoOCRConfig.setYellowOCRMode(activity, yellowModes[index])
@@ -162,13 +165,13 @@ object GameLingoOCRSettings {
         if (advanced) {
         toggle("Žlutá: filtrovat pokyny ovladače",
             "Volitelně vynechá anglické pokyny jako Press A nebo Hold R2. Běžné volby ponechá.",
-            GameLingoOCRConfig.filterChoiceControls) {
+            GameLingoOCRConfig.filterChoiceControls, available = canEdit && standardOnly) {
             GameLingoOCRConfig.setFilterChoiceControls(activity, it)
         }
         for (yellow in listOf(false, true)) {
             val raw = if (yellow) GameLingoOCRConfig.ignoredYellowLines else GameLingoOCRConfig.ignoredBlueLines
             val label = tr(if (yellow) "Žlutá" else "Modrá")
-            action("$label: " + tr("Ignorované řádky"), tr("Počet") + ": " + GameLingoIgnoredLines.entries(raw).size, canEdit) {
+            action("$label: " + tr("Ignorované řádky"), tr("Počet") + ": " + GameLingoIgnoredLines.entries(raw).size, canEdit && (!yellow || standardOnly)) {
                 val input = android.widget.EditText(activity).apply {
                     setText(raw); minLines = 3; maxLines = 8
                     inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
@@ -196,7 +199,7 @@ object GameLingoOCRSettings {
                 .setSingleChoiceItems(labels, GameLingoOCRConfig.minBlueHeight) { chooser, index -> chooser.dismiss(); save(index) }
                 .setNegativeButton(tr("Zrušit"), null).show()
         }
-        action("Žlutá: minimální výška textu", if (GameLingoOCRConfig.minYellowHeight == 0) "Automaticky" else "${GameLingoOCRConfig.minYellowHeight} %", canEdit) {
+        action("Žlutá: minimální výška textu", if (GameLingoOCRConfig.minYellowHeight == 0) "Automaticky" else "${GameLingoOCRConfig.minYellowHeight} %", canEdit && standardOnly) {
             val labels = arrayOf(tr("Automaticky"), "1 %", "2 %", "3 %", "4 %", "5 %")
             fun save(index: Int) {
                 if (!editable()) return
@@ -214,7 +217,7 @@ object GameLingoOCRSettings {
             GameLingoOCRConfig.setMinBlueHeight(activity, 0)
             dialog.dismiss(); showPage(activity, onAreas, advanced)
         }
-        action("Obnovit filtry žluté oblasti", "Bez změny rámečků a modré oblasti.", canEdit) {
+        action("Obnovit filtry žluté oblasti", "Bez změny rámečků a modré oblasti.", canEdit && standardOnly) {
             GameLingoOCRConfig.setFilterChoiceControls(activity, false)
             GameLingoOCRConfig.setIgnoredLines(activity, true, "")
             GameLingoOCRConfig.setMinYellowHeight(activity, 0)
@@ -225,13 +228,13 @@ object GameLingoOCRSettings {
         toggle("Rozšířit hledání",
             "Při automatickém režimu zahrne širší část obrazu.",
             GameLingoOCRConfig.expandSearch,
-            available = canEdit && GameLingoOCRConfig.mode != "classic" &&
+            available = canEdit && standardOnly && GameLingoOCRConfig.mode != "classic" &&
                 !OblastTitulku.rucne) {
             GameLingoOCRConfig.setExpandSearch(activity, it)
         }
         toggle("Ruční oblast OCR",
             "Použít modrý rámeček místo automatického výběru.",
-            OblastTitulku.rucne) {
+            OblastTitulku.rucne, available = canEdit && standardOnly) {
             OblastTitulku.rucne = it
             OblastTitulku.uloz(activity)
             dialog.dismiss()
@@ -239,7 +242,7 @@ object GameLingoOCRSettings {
         }
         run {
             action("Výchozí oblast",GameLingoOCRConfig.regionLabels[GameLingoOCRConfig.regionKeys.indexOf(GameLingoOCRConfig.region(activity))],
-                canEdit && !OblastTitulku.rucne) {
+                canEdit && standardOnly && !OblastTitulku.rucne) {
                 GameLingoTVUi.select(activity,tr("Výchozí oblast"),GameLingoOCRConfig.regionLabels.map(::tr).toTypedArray(),
                     GameLingoOCRConfig.regionKeys.indexOf(GameLingoOCRConfig.region(activity))) { i ->
                     if (!editable()) return@select
@@ -249,7 +252,7 @@ object GameLingoOCRSettings {
             }
         }
         action("Oblasti obrazovky",
-            "Upravit modrý, zelený, žlutý a oranžový rámeček.") {
+            if (standardOnly) "Upravit modrý, zelený, žlutý a oranžový rámeček." else "Automatické zóny") {
             dialog.dismiss()
             onAreas()
         }
