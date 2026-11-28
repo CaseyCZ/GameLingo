@@ -1,5 +1,8 @@
 // Read only the app's resolved runtime artifacts, not Gradle's global cache.
 import groovy.json.JsonOutput
+import org.gradle.api.artifacts.result.ResolvedArtifactResult
+import org.gradle.maven.MavenModule
+import org.gradle.maven.MavenPomArtifact
 gradle.projectsEvaluated {
     def app = gradle.rootProject.findProject(':app')
     if (app == null) throw new GradleException('Missing app project')
@@ -7,10 +10,21 @@ gradle.projectsEvaluated {
         doLast {
             def artifacts = app.configurations.getByName('debugRuntimeClasspath')
                 .resolvedConfiguration.resolvedArtifacts
+            // Resolve metadata for exactly the components selected on the runtime classpath.
+            def componentIds = artifacts.collect { it.id.componentIdentifier }.unique()
+            def poms = app.dependencies.createArtifactResolutionQuery()
+                .forComponents(componentIds)
+                .withArtifacts(MavenModule, MavenPomArtifact)
+                .execute().resolvedComponents.collectEntries { component ->
+                    def pom = component.getArtifacts(MavenPomArtifact)
+                        .find { it instanceof ResolvedArtifactResult }
+                    pom ? [(component.id): pom.file.absolutePath] : [:]
+                }
             def records = artifacts.collect { artifact ->
                 def id = artifact.moduleVersion.id
                 [coordinate: "${id.group}:${id.name}:${id.version}".toString(),
-                 name: artifact.file.name, file: artifact.file.absolutePath]
+                 name: artifact.file.name, file: artifact.file.absolutePath,
+                 pom: poms[artifact.id.componentIdentifier]]
             }.sort { a, b -> (a.coordinate <=> b.coordinate) ?: (a.name <=> b.name) }
             if (records.isEmpty()) throw new GradleException('No runtime artifacts resolved')
             def output = app.layout.buildDirectory.file('gamelingo-runtime-artifacts.json').get().asFile

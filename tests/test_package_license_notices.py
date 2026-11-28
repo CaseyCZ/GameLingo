@@ -8,7 +8,7 @@ import unittest
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from package_license_notices import android_dependency_notices, archive_notices
+from package_license_notices import android_dependency_notices, archive_notices, pom_declarations
 
 
 class PackageNoticeTests(unittest.TestCase):
@@ -66,6 +66,34 @@ class PackageNoticeTests(unittest.TestCase):
             self.assertEqual(len({item["path"] for item in manifest["files"]}), 2)
             self.assertIn("First license", parts)
             self.assertIn("Second license", parts)
+
+
+    def test_google_third_party_notice_filenames(self):
+        aar = io.BytesIO()
+        with zipfile.ZipFile(aar, "w") as z:
+            z.writestr("third_party_licenses.txt", "License text")
+            z.writestr("third_party_licenses.json", '{"example": "metadata"}')
+            z.writestr("res/raw/third_party_license_metadata", "0:12 example")
+        with zipfile.ZipFile(aar) as z:
+            self.assertEqual(len(list(archive_notices(z, "google"))), 3)
+
+    def test_pom_license_is_evidence_not_full_license(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "demo.pom"
+            path.write_text('<project xmlns="http://maven.apache.org/POM/4.0.0">'
+                            '<licenses><license><name>Apache-2.0</name>'
+                            '<url>https://www.apache.org/licenses/LICENSE-2.0</url>'
+                            '</license></licenses></project>')
+            result = pom_declarations(path)
+            self.assertEqual(result["status"], "declared")
+            self.assertEqual(result["licenses"][0]["name"], "Apache-2.0")
+            self.assertEqual(pom_declarations(None)["status"], "pom_unavailable")
+            path.write_text("<project><parent><groupId>example</groupId>"
+                            "<artifactId>parent</artifactId><version>1</version>"
+                            "</parent></project>")
+            result = pom_declarations(path)
+            self.assertEqual(result["status"], "no_direct_declaration")
+            self.assertEqual(result["parent"]["artifactId"], "parent")
 
 
 if __name__ == "__main__":

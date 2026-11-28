@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import zipfile
 import re
+import xml.etree.ElementTree as ET
 
 def git(root, *args):
     return subprocess.check_output(["git", "-C", str(root), *args]).decode("utf-8").strip()
@@ -46,9 +47,10 @@ def archive_notices(archive, prefix, nested=True):
         path = Path(name)
         if path.is_absolute() or ".." in path.parts:
             continue
-        recognized = (license_path(path) or path.name.lower() in
-                      {"al2.0", "lgpl2.1", "dependencies", "third_party_licenses",
-                       "third_party_license_metadata"})
+        basename = path.name.lower()
+        recognized = (license_path(path) or basename in
+                      {"al2.0", "lgpl2.1", "dependencies"} or
+                      re.fullmatch(r"third_party_licenses?(?:_metadata)?(?:\.(?:txt|json))?", basename) is not None)
         if recognized and entry.file_size <= 2_000_000:
             data = archive.read(entry)
             try:
@@ -60,6 +62,30 @@ def archive_notices(archive, prefix, nested=True):
         elif nested and name.endswith(".jar") and entry.file_size <= 64_000_000:
             with zipfile.ZipFile(io.BytesIO(archive.read(entry))) as jar:
                 yield from archive_notices(jar, prefix + "/" + name, nested=False)
+
+
+def pom_declarations(path):
+    """Read direct license declarations; never infer a grant from absent metadata."""
+    if not path:
+        return {"status": "pom_unavailable", "licenses": []}
+    data = Path(path).read_bytes()
+    if len(data) > 2_000_000 or re.search(br"<!DOCTYPE|<!ENTITY", data, re.IGNORECASE):
+        raise RuntimeError("Unexpected Maven POM XML")
+    root = ET.fromstring(data)
+    namespace = root.tag.split("}")[0] + "}" if root.tag.startswith("{") else ""
+    def field(node, name):
+        return (node.findtext(namespace + name) or "").strip()
+    entries = []
+    for node in root.findall(namespace + "licenses/" + namespace + "license"):
+        entry = {key: field(node, key) for key in ("name", "url", "distribution", "comments")}
+        if any(entry.values()):
+            entries.append(entry)
+    parent = root.find(namespace + "parent")
+    result = {"status": "declared" if entries else "no_direct_declaration",
+              "licenses": entries, "sha256": hashlib.sha256(data).hexdigest()}
+    if parent is not None:
+        result["parent"] = {key: field(parent, key) for key in ("groupId", "artifactId", "version")}
+    return result
 
 
 def android_dependency_notices(path, manifest, parts):
@@ -91,6 +117,15 @@ def android_dependency_notices(path, manifest, parts):
                 for title, data, text in archive_notices(archive, label):
                     add_notice(manifest, parts, title, data, text)
                     result["notices"].append(title)
+        result["pom"] = pom_declarations(record.get("pom"))
+        if result["pom"]["licenses"]:
+            # Keep declarations visibly distinct from original license texts.
+            declaration = ("Publisher Maven license declarations (not full license text):\n" +
+                           coordinate + "\n" +
+                           json.dumps(result["pom"]["licenses"], ensure_ascii=False, indent=2) + "\n")
+            title = label + "/Maven-declared-licenses.txt"
+            add_notice(manifest, parts, title, declaration.encode("utf-8"), declaration)
+            result["pom_notice"] = title
         result["review"] = "notices_collected" if result["notices"] else "no_embedded_notice_found"
         results.append(result)
     return sorted(results, key=lambda item: (item['coordinate'], item['artifact'], item['sha256']))
@@ -234,7 +269,9 @@ def verify(path, platform, evidence=None, expected_kit=None):
                 raise RuntimeError("Missing resolved Swift dependency notices")
         else:
             dependencies = manifest.get("runtime_dependencies", [])
-            if not dependencies or any(not set(item["notices"]).issubset(seen) for item in dependencies):
+            if not dependencies or any(not set(item["notices"]).issubset(seen) or
+                                       (item.get("pom_notice") and item["pom_notice"] not in seen) or
+                                       "pom" not in item for item in dependencies):
                 raise RuntimeError("Missing resolved Android dependency evidence")
         # Report actual package contents. Android Gradle may strip symbols;
         # distinguish a changed packaged binary from a verified byte match.
