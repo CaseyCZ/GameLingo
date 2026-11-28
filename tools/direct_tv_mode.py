@@ -210,7 +210,7 @@ def patch_direct_tv(folder):
     shared_settings = folder / "GameLingoSettings.kt"
     shared_text = shared_settings.read_text(encoding="utf8")
     for old, new in (
-        ("GameLingoProfiles.show(activity, settings) {}", "GameLingoTVProfiles.show(activity)"),
+        ("GameLingoProfiles.show(activity, settings) { onRefresh() }", "GameLingoTVProfiles.show(activity) { onRefresh() }"),
         ("GameLingoSubtitleAppearance.show(activity)", "GameLingoTVCaptionStyle.show(activity)"),
         ("GameLingoDiagnostics.show(activity)", "GameLingoScreenTranslationService.diagnostics(activity)"),
     ):

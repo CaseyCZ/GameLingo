@@ -608,6 +608,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("if (GameLingoAutomaticConfig.enabled(a)) GameLingoAutomaticConfig.showZones(a)", tv_profiles)
         self.assertIn("if(openLayout) openModeAreas()", tv_profiles)
         self.assertIn("GameLingoTVProfiles.show(a, onApplied = ::refreshLanguage)", tv_settings)
+        self.assertIn('"GameLingoProfiles.show(activity, settings) { onRefresh() }", "GameLingoTVProfiles.show(activity) { onRefresh() }"', code(TOOLS/"direct_tv_mode.py"))
         self.assertIn("if (enabled(a) == (index == 1)) return@setOnClickListener", automatic)
         self.assertIn("guard !isRunning, automaticGameDialogue != enabled else { return }", ios)
 
