@@ -23,6 +23,18 @@ Xbox, PlayStation, Google TV and other marks belong to their respective owners. 
 
 Online Google GTX, Microsoft Edge and MyMemory services are separate from library licenses. Authorization, attribution and service terms are not established by this notice. A test build is not a public distribution clearance.
 
+## Resolved dependency license follow-up — run 491
+
+Run 491 passed regression, native builds and package verification: mobile 79 runtime artifacts (74 direct POM declarations, 27 with collected archive notices), TV 67 (65 direct POM declarations, 20 with collected archive notices); iOS 30 collected notices including both WebRTC files. Counts of bundled notices include POM declarations, not only full license texts.
+
+The five missing direct POM declarations refer to explicit parent POMs: auto-value-annotations 1.6.3, listenablefuture 1.0, ZXing core 3.5.3, OkHttp 3.0.0 and Okio 1.6.0. CI now requests these exact parent versions, and checks the child's parent coordinate before including any inherited license declaration. This does not establish full corresponding source or native license coverage.
+
+Additional original texts, stored under `licenses/` and included by the existing notice collector:
+- Apache-2.0 text from [AutoValue 1.6.3](https://github.com/google/auto/blob/auto-value-1.6.3/LICENSE.txt), covering the common license text for artifacts whose actual publisher declaration specifies Apache-2.0. Component-specific copyright and NOTICE obligations still apply.
+- [Guava v26.0 COPYING](https://github.com/google/guava/blob/v26.0/COPYING), upstream license evidence for the Listen­ableFuture family; exact parent declaration 26.0-android remains separately checked.
+- [ZXing 3.5.3 LICENSE](https://github.com/zxing/zxing/blob/zxing-3.5.3/LICENSE), including its additional original notices.
+- [Stream WebRTC Android 1.3.7 LICENSE](https://github.com/GetStream/webrtc-android/blob/1.3.7/LICENSE) and the release-tag README license section. The wrapper's Apache-2.0 license alone does not cover libjingle_peerconnection_so.so. Obtain the exact underlying WebRTC/third-party native source revision and notices before marking its license review complete. CameraX's libyuv BSD notice and bundled Google SDK terms also require final review.
+
 ## Translation services — distribution review (2026-11-28)
 
 | Engine | Current use | Distribution gate |

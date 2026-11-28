@@ -8,7 +8,7 @@ import unittest
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from package_license_notices import android_dependency_notices, archive_notices, pom_declarations
+from package_license_notices import android_dependency_notices, archive_notices, pom_declarations, inherited_pom_declarations
 
 
 class PackageNoticeTests(unittest.TestCase):
@@ -94,6 +94,20 @@ class PackageNoticeTests(unittest.TestCase):
             result = pom_declarations(path)
             self.assertEqual(result["status"], "no_direct_declaration")
             self.assertEqual(result["parent"]["artifactId"], "parent")
+
+
+    def test_parent_license_matches_explicit_parent(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "parent.pom"
+            path.write_text("<project><licenses><license><name>Apache-2.0</name>"
+                            "</license></licenses></project>")
+            child = {"licenses": [], "parent": {"groupId": "org.example",
+                      "artifactId": "parent", "version": "1"}}
+            record = {"coordinate": "org.example:parent:1", "file": str(path)}
+            self.assertEqual(inherited_pom_declarations(child, record)["licenses"][0]["name"], "Apache-2.0")
+            with self.assertRaises(RuntimeError):
+                inherited_pom_declarations(child, {**record, "coordinate": "org.example:other:1"})
+            self.assertIsNone(inherited_pom_declarations({"licenses": [{"name": "BSD"}]}, record))
 
 
 if __name__ == "__main__":

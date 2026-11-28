@@ -20,11 +20,34 @@ gradle.projectsEvaluated {
                         .find { it instanceof ResolvedArtifactResult }
                     pom ? [(component.id): pom.file.absolutePath] : [:]
                 }
+            // These exact parent coordinates were observed in the resolved POMs
+            // of run 491. They are metadata only, never runtime dependencies.
+            def knownParents = [
+                'com.google.auto.value:auto-value-annotations:1.6.3': 'com.google.auto.value:auto-value-parent:1.6.3',
+                'com.google.guava:listenablefuture:1.0': 'com.google.guava:guava-parent:26.0-android',
+                'com.google.zxing:core:3.5.3': 'com.google.zxing:zxing-parent:3.5.3',
+                'com.squareup.okhttp3:okhttp:3.0.0': 'com.squareup.okhttp3:parent:3.0.0',
+                'com.squareup.okio:okio:1.6.0': 'com.squareup.okio:okio-parent:1.6.0'
+            ]
+            def parentPoms = [:]
+            def selected = artifacts.collect { it.moduleVersion.id.toString() }.toSet()
+            knownParents.findAll { child, parent -> selected.contains(child) }.each { child, parent ->
+                def gav = parent.split(':')
+                def result = app.dependencies.createArtifactResolutionQuery()
+                    .forModule(gav[0], gav[1], gav[2])
+                    .withArtifacts(MavenModule, MavenPomArtifact)
+                    .execute()
+                def pom = result.resolvedComponents.collectMany { component ->
+                    component.getArtifacts(MavenPomArtifact).findAll { it instanceof ResolvedArtifactResult }
+                }.find()
+                if (pom != null) parentPoms[child] = [coordinate: parent, file: pom.file.absolutePath]
+            }
             def records = artifacts.collect { artifact ->
                 def id = artifact.moduleVersion.id
                 [coordinate: "${id.group}:${id.name}:${id.version}".toString(),
                  name: artifact.file.name, file: artifact.file.absolutePath,
-                 pom: poms[artifact.id.componentIdentifier]]
+                 pom: poms[artifact.id.componentIdentifier],
+                 parent_pom: parentPoms["${id.group}:${id.name}:${id.version}".toString()]]
             }.sort { a, b -> (a.coordinate <=> b.coordinate) ?: (a.name <=> b.name) }
             if (records.isEmpty()) throw new GradleException('No runtime artifacts resolved')
             def output = app.layout.buildDirectory.file('gamelingo-runtime-artifacts.json').get().asFile

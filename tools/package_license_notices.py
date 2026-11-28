@@ -88,6 +88,18 @@ def pom_declarations(path):
     return result
 
 
+def inherited_pom_declarations(child, parent_record):
+    """Only use a parent declaration if it matches the child's explicit parent."""
+    if not parent_record or child["licenses"] or not child.get("parent"):
+        return None
+    identity = ":".join(child["parent"].get(key, "") for key in
+                        ("groupId", "artifactId", "version"))
+    if identity != parent_record["coordinate"]:
+        raise RuntimeError("Maven parent coordinate differs from child POM: " + identity)
+    parent = pom_declarations(parent_record["file"])
+    return {"coordinate": identity, **parent}
+
+
 def android_dependency_notices(path, manifest, parts):
     records = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(records, list) or not records:
@@ -118,11 +130,16 @@ def android_dependency_notices(path, manifest, parts):
                     add_notice(manifest, parts, title, data, text)
                     result["notices"].append(title)
         result["pom"] = pom_declarations(record.get("pom"))
-        if result["pom"]["licenses"]:
+        parent = inherited_pom_declarations(result["pom"], record.get("parent_pom"))
+        if parent is not None:
+            result["parent_pom"] = parent
+        declared = result["pom"]["licenses"] or (parent["licenses"] if parent else [])
+        if declared:
             # Keep declarations visibly distinct from original license texts.
             declaration = ("Publisher Maven license declarations (not full license text):\n" +
                            coordinate + "\n" +
-                           json.dumps(result["pom"]["licenses"], ensure_ascii=False, indent=2) + "\n")
+                           ("Inherited from " + parent["coordinate"] + "\n" if parent and parent["licenses"] else "") +
+                           json.dumps(declared, ensure_ascii=False, indent=2) + "\n")
             title = label + "/Maven-declared-licenses.txt"
             add_notice(manifest, parts, title, declaration.encode("utf-8"), declaration)
             result["pom_notice"] = title
