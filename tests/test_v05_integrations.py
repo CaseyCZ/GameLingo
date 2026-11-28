@@ -1191,6 +1191,15 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertNotIn("await self?.processFrame(buffer", model)
         self.assertNotIn("await self?.processFrame(frame", model)
 
+    def test_automatic_ocr_shared_font_dependency_is_installed_in_both_variants(self):
+        installer = code(TOOLS/"automatic_android.py")
+        shared = installer.split("for name in (", 1)[1].split("):", 1)[0]
+        self.assertIn('"GameLingoAutomaticOCR.kt"', shared)
+        self.assertIn('"GameLingoPhoneSubtitleStyle.kt"', shared)
+        self.assertIn('GameLingoPhoneSubtitleStyle.scale(context)', code(TOOLS/"GameLingoAutomaticOCR.kt"))
+        self.assertIn("install_automatic(folder, television)", code(TOOLS/"wire_gamelingo_languages.py"))
+        self.assertIn('"GameLingoUIContract.kt"', code(TOOLS/"wire_android_devices.py"))
+
     def test_subtitle_font_controls_share_10_to_200_percent(self):
         settings = code(IOS/"SettingsHomeView.swift")
         regions = code(IOS/"SubtitleSettingsView.swift")

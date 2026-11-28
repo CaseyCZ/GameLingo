@@ -6,7 +6,8 @@ def install_automatic(folder, tv):
         if text.count(old)!=1:
             raise RuntimeError("Automatic OCR anchor: "+old[:100]+" count "+str(text.count(old)))
         return text.replace(old,new,1)
-    for name in ("GameLingoAutomaticTracker.kt","GameLingoAutomaticConfig.kt","GameLingoAutomaticOCR.kt","GameLingoZonePacket.kt"):
+    # Both APK variants compile the shared OCR engine, including its font preference reader.
+    for name in ("GameLingoAutomaticTracker.kt","GameLingoAutomaticConfig.kt","GameLingoAutomaticOCR.kt","GameLingoZonePacket.kt","GameLingoPhoneSubtitleStyle.kt"):
         (folder/name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"),encoding="utf8")
     unit_dir=folder.parents[4]/"test/java/cz/titulky/tv"
     unit_dir.mkdir(parents=True,exist_ok=True)

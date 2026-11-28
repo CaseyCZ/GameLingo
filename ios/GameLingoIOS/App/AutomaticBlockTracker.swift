@@ -26,12 +26,22 @@ struct AutomaticBlockTracker {
     }
     private static func stableColor(_ previous: UInt32?, _ next: UInt32?) -> UInt32? {
         guard let a = previous, let b = next else { return next }
-        let distance = [16, 8, 0].map { abs(Int((a >> $0) & 255) - Int((b >> $0) & 255)) }.max() ?? 0
+        let mask: UInt32 = 0xff
+        var distance: Int = 0
+        for shift in [16, 8, 0] {
+            let first = Int((a >> shift) & mask)
+            let second = Int((b >> shift) & mask)
+            distance = max(distance, abs(first - second))
+        }
         return distance <= 20 ? a : b
     }
     private static func stabilized(_ old: AutomaticDialogueLayout.Block, _ new: AutomaticDialogueLayout.Block) -> AutomaticDialogueLayout.Block {
         let a = old.rect, b = new.rect
-        let jitter = [abs(a.minX-b.minX), abs(a.minY-b.minY), abs(a.maxX-b.maxX), abs(a.maxY-b.maxY)].max() ?? 0
+        let dx0: CGFloat = abs(a.minX - b.minX)
+        let dy0: CGFloat = abs(a.minY - b.minY)
+        let dx1: CGFloat = abs(a.maxX - b.maxX)
+        let dy1: CGFloat = abs(a.maxY - b.maxY)
+        let jitter = max(max(dx0, dy0), max(dx1, dy1))
         return .init(text: new.text, rect: jitter <= 0.002 ? a : b,
                      layout: jitter <= 0.002 ? old.layout : new.layout,
                      background: stableColor(old.background, new.background),
