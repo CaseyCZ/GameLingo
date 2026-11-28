@@ -1,0 +1,58 @@
+name: Chiaki 16 KB candidate
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kit
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: AdamRuzick4/PlayCaption-app
+          ref: 633a847400b6c4bac1e7f034463e7847a53a9590
+          path: playcaption
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: 505e06b2/Chiaki-TV
+          ref: f814cf69d636f149ad5a3cfffd19cb22da90beda
+          path: chiaki
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare pinned native build inputs
+        run: |
+          set -euo pipefail
+          git -C chiaki submodule update --init android/app/src/main/cpp/oboe third-party/gf-complete third-party/jerasure third-party/nanopb
+          python -m pip install cmake==3.27.9 ninja==1.11.1.3 protobuf==3.20.3
+          # Obtain the exact host protobuf compiler from the upstream release.
+          curl --fail --location --retry 3 https://github.com/protocolbuffers/protobuf/releases/download/v3.20.3/protoc-3.20.3-linux-x86_64.zip -o "$RUNNER_TEMP/protoc.zip"
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          "$RUNNER_TEMP/protoc/bin/protoc" --version | grep -Fx 'libprotoc 3.20.3'
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$SDK_ROOT"
+          SDK_MANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$SDK_MANAGER" ]]; then
+            SDK_MANAGER=$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' -print | sort -V | tail -n 1)
+          fi
+          test -x "$SDK_MANAGER"
+          "$SDK_MANAGER" --sdk_root="$SDK_ROOT" "ndk;28.2.13676358"
+          echo "NATIVE_NDK=$SDK_ROOT/ndk/28.2.13676358" >> "$GITHUB_ENV"
+      - name: Build and verify isolated candidate
+        run: python kit/tools/chiaki_16kb_candidate.py playcaption chiaki "$NATIVE_NDK" "$RUNNER_TEMP/chiaki-candidate"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Chiaki-16KB-experimental-not-installed
+          path: |
+            ${{ runner.temp }}/chiaki-candidate/jniLibs/
+            ${{ runner.temp }}/chiaki-candidate/manifest.json
+            ${{ runner.temp }}/chiaki-candidate/candidate-evidence.json
+          if-no-files-found: error
