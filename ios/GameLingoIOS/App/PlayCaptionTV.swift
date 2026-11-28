@@ -459,7 +459,7 @@ final class PlayCaptionTV: ObservableObject {
                         while !Task.isCancelled {
                             guard let self, let token = ReceiverSecretStore.load(target),
                                   self.liveReceiver === conn else { break }
-                            let nonce = "Z1-2-" + UUID().uuidString
+                            let nonce = "E1-Z1-2-" + UUID().uuidString
                             self.pendingPingNonce = nonce
                             let body = self.freshBody("PING\t\(self.receiverID)\t\(nonce)")
                             if let mac = self.signature(body, tokenHex: token) {
@@ -519,15 +519,14 @@ final class PlayCaptionTV: ObservableObject {
                 guard let self, self.liveReceiver === conn, self.ip == target else { return }
                 if let data, let raw = String(data: data, encoding: .utf8) {
                     let fields = raw.components(separatedBy: "\t")
-                    if (fields.count == 4 || fields.count == 6) && fields[0] == "PCPAIR1" && fields[1] == "PONG",
+                    if fields.count == 6 && fields[0] == "PCPAIR1" && fields[1] == "PONG",
                        fields[2] == self.pendingPingNonce,
                        let token = ReceiverSecretStore.load(target),
                        let expected = self.signature("PONG\t\(self.receiverID)\t\(fields[2])", tokenHex: token),
-                       fields[3] == expected {
-                        self.receiverSupportsAdaptiveZones = fields.count == 6 && fields[4] == "PCZ2" &&
-                            self.signature("PONG\t\(self.receiverID)\t\(fields[2])|PCZ2", tokenHex: token) == fields[5]
-                        self.receiverSupportsZones = self.receiverSupportsAdaptiveZones || (fields.count == 6 && fields[4] == "PCZ1" &&
-                            self.signature("PONG\t\(self.receiverID)\t\(fields[2])|PCZ1", tokenHex: token) == fields[5])
+                       fields[3] == expected, fields[4] == "PCZ2E",
+                       self.signature("PONG\t\(self.receiverID)\t\(fields[2])|PCZ2E", tokenHex: token) == fields[5] {
+                        self.receiverSupportsAdaptiveZones = true
+                        self.receiverSupportsZones = true
                         self.pendingPingNonce = nil
                         self.lastPong = Date()
                         self.receiverRetrySeconds = 3
@@ -556,9 +555,9 @@ final class PlayCaptionTV: ObservableObject {
                                     reportStatus: Bool,
                                     forceDatagram: Bool = false) -> Bool {
         guard let token = ReceiverSecretStore.load(target) else { return false }
-        let encoded = canonicalPayload.base64EncodedString()
-        guard encoded.utf8.count < 11000 else { return false }
-        let body = freshBody("TEXT\t\(receiverID)\t\(encoded)")
+        guard let encoded = GLWireCrypto.seal(secret: token, id: receiverID, payload: canonicalPayload),
+              encoded.utf8.count <= 11000 else { return false }
+        let body = freshBody("TEXT2\t\(receiverID)\t\(encoded)")
         guard let mac = signature(body, tokenHex: token) else { return false }
         let packet = Data("PCPAIR1\t\(body)\t\(mac)".utf8)
         if !forceDatagram, liveReceiverReady,

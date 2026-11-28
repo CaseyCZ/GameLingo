@@ -66,10 +66,10 @@ object GameLingoTVPairing {
         val context = appContext ?: throw IllegalStateException("GameLingo TV není připravena")
         val secret = token(context, ip)
             ?: throw IllegalStateException("Nejdříve spáruj GameLingo TV")
-        val encoded = Base64.encodeToString(payload, Base64.NO_WRAP)
-        require(encoded.length < 11000) { "Příliš dlouhá TV zpráva" }
         val clientId = pairingId(context)
-        val body = freshBody("TEXT\t$clientId\t$encoded")
+        val encoded = GameLingoWireCrypto.seal(secret, clientId, payload)
+        require(encoded.length <= 11000) { "Příliš dlouhá TV zpráva" }
+        val body = freshBody("TEXT2\t$clientId\t$encoded")
         return ("PCPAIR1\t$body\t" + sign(secret, body)).toByteArray(Charsets.UTF_8)
     }
 
@@ -348,7 +348,7 @@ object GameLingoTVPairing {
                     Propojeni.Vysilac.outputGeneration() != generation) return@Thread
                 val clientId = pairingId(context)
                 val result = runCatching {
-                    val nonce = "Z1-2-" + UUID.randomUUID().toString()
+                    val nonce = "E1-Z1-2-" + UUID.randomUUID().toString()
                     val message = freshBody("PING\t$clientId\t$nonce")
                     val data = ("PCPAIR1\t$message\t" + sign(secret, message)).toByteArray(Charsets.UTF_8)
                     val address = InetAddress.getByName(ip)
@@ -359,13 +359,12 @@ object GameLingoTVPairing {
                         val reply = DatagramPacket(ByteArray(2048), 2048)
                         socket.receive(reply)
                         val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
-                        val extended = expected + "\tPCZ1\t" + sign(secret,"PONG\t$clientId\t$nonce|PCZ1")
-                        val adaptive = expected + "\tPCZ2\t" + sign(secret,"PONG\t$clientId\t$nonce|PCZ2")
+                        val adaptive = expected + "\tPCZ2E\t" + sign(secret,"PONG\t$clientId\t$nonce|PCZ2E")
                         val bytes=reply.data.copyOfRange(reply.offset,reply.offset+reply.length)
                         val correctPeer=reply.address==address&&reply.port==port
                         val v2=correctPeer&&MessageDigest.isEqual(adaptive.toByteArray(Charsets.UTF_8),bytes)
-                        val capable=v2 || correctPeer&&MessageDigest.isEqual(extended.toByteArray(Charsets.UTF_8),bytes)
-                        val verified = capable || correctPeer&&MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8),bytes)
+                        val capable=v2
+                        val verified = v2
                         if (verified) runCatching {
                             sendCaptionStyle(context, ip, generation, secret, socket, address, port)
                         }
@@ -400,7 +399,7 @@ object GameLingoTVPairing {
         val clientId = pairingId(activity)
         Thread {
             val result = runCatching {
-                val nonce = UUID.randomUUID().toString()
+                val nonce = "E1-Z1-2-" + UUID.randomUUID().toString()
                 val message = freshBody("PING\t$clientId\t$nonce")
                 val packetText = "PCPAIR1\t$message\t" + sign(secret, message)
                 DatagramSocket().use { socket ->
@@ -412,7 +411,8 @@ object GameLingoTVPairing {
                     val buf = ByteArray(2048)
                     val reply = DatagramPacket(buf, buf.size)
                     socket.receive(reply)
-                    val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
+                    val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce") +
+                        "\tPCZ2E\t" + sign(secret, "PONG\t$clientId\t$nonce|PCZ2E")
                     reply.address == address && reply.port == port && MessageDigest.isEqual(
                         expected.toByteArray(Charsets.UTF_8),
                         reply.data.copyOfRange(reply.offset, reply.offset + reply.length))
@@ -424,6 +424,8 @@ object GameLingoTVPairing {
                 val stillPaired = token(activity, tv.ip) == secret
                 val verified = result && stillPaired
                 if (verified) {
+                    zoneCapableIp = tv.ip
+                    adaptiveZoneIp = tv.ip
                     lastVerifiedIp = tv.ip
                     lastVerifiedAt = SystemClock.elapsedRealtime()
                 } else if (lastVerifiedIp == tv.ip && stillPaired) {

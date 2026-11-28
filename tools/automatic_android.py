@@ -11,6 +11,7 @@ def install_automatic(folder, tv):
         (folder/name).write_text(Path(__file__).with_name(name).read_text(encoding="utf8"),encoding="utf8")
     unit_dir=folder.parents[4]/"test/java/cz/titulky/tv"
     unit_dir.mkdir(parents=True,exist_ok=True)
+    (unit_dir/"GameLingoWireCryptoTest.kt").write_text(Path(__file__).with_name("GameLingoWireCryptoTest.kt").read_text(encoding="utf8"),encoding="utf8")
     (unit_dir/"GameLingoAutomaticTrackerTest.kt").write_text(Path(__file__).with_name("GameLingoAutomaticTrackerTest.kt").read_text(encoding="utf8"),encoding="utf8")
     service=folder/"RemotePlayService.kt"
     s=service.read_text(encoding="utf8")

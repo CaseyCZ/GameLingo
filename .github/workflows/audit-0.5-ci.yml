@@ -94,6 +94,10 @@ jobs:
         run: |
           swiftc ios/GameLingoIOS/App/PairingQRCode.swift tests/PairingQRCodeTests.swift -o "$RUNNER_TEMP/pairing-qr-tests"
           "$RUNNER_TEMP/pairing-qr-tests"
+      - name: Test encrypted TV wire interoperability
+        run: |
+          swiftc ios/GameLingoIOS/App/GLWireCrypto.swift tests/GLWireCryptoTests.swift -o "$RUNNER_TEMP/wire-crypto-tests"
+          "$RUNNER_TEMP/wire-crypto-tests"
       - name: Test bounded opt-in translation history
         run: |
           swiftc ios/GameLingoIOS/App/TranslationHistory.swift tests/TranslationHistoryTests.swift -o "$RUNNER_TEMP/translation-history-tests"

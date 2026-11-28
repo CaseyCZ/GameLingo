@@ -1077,12 +1077,28 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('val slot = sequenceSlot(phoneId, lane)', receiver)
         self.assertIn("sequence <= p.getLong(slot, 0L)", receiver)
         self.assertIn("if (!p.edit().putLong(slot, sequence).commit())", receiver)
-        self.assertEqual(patch.count("IPhoneTVPairing.verifyFresh(c, id,"), 3)
-        self.assertIn("IPhoneTVPairing.textLane(encoded)", patch)
+        self.assertEqual(patch.count("IPhoneTVPairing.verifyFresh(c, id,"), 2)
+        self.assertIn("IPhoneTVPairing.openFreshText(c, id, encoded", patch)
+        self.assertIn("textLane(decoded)", receiver)
         self.assertIn("fields[2] == self.pendingPingNonce", ios)
         self.assertIn("self.pendingPingNonce = nil", ios)
         self.assertIn("IPhoneTVPairing.pongSignature(c, id, nonce)", patch)
         self.assertIn("MessageDigest.isEqual(", android)
+
+    def test_tv_text2_is_encrypted_and_no_automatic_plaintext_fallback(self):
+        ios = code(IOS/"PlayCaptionTV.swift")
+        android = code(TOOLS/"GameLingoTVPairing.kt")
+        receiver = code(TOOLS/"IPhoneTVPairing.kt")
+        patch = code(TOOLS/"patch_tv_iphone.py")
+        self.assertIn("GLWireCrypto.seal(secret: token", ios)
+        self.assertIn("GameLingoWireCrypto.seal(secret, clientId, payload)", android)
+        self.assertIn("GameLingoWireCrypto.open(secret, phoneId, encoded)", receiver)
+        self.assertIn('"TEXT" -> continue', patch)
+        self.assertIn('"TEXT2" -> {', patch)
+        for sender in (ios, android, patch):
+            self.assertIn("PCZ2E", sender)
+        self.assertIn("verifyFresh(ctx, phoneId, content, timestamp, sequence, signature, lane)", receiver)
+        self.assertIn("GameLingoWireCrypto.kt", code(TOOLS/"wire_android_devices.py"))
 
     def test_p0_3_receiver_key_is_encrypted_and_migrated(self):
         receiver = code(TOOLS/"IPhoneTVPairing.kt")

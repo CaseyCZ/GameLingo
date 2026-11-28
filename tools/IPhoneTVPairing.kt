@@ -367,16 +367,30 @@ object IPhoneTVPairing {
 
     /** A separate high-water mark per renderer lane avoids dropping a clear
      *  just because a different lane's datagram arrived first. */
-    fun textLane(encoded: String): String? = runCatching {
-        if (encoded.length >= 11000) return null
-        val inner = String(android.util.Base64.decode(encoded, android.util.Base64.DEFAULT), Charsets.UTF_8)
+    private fun textLane(inner: String): String? =
         when (val kind = inner.substringBefore('\t')) {
             "PCT1", "PCV1", "PCO1", "PCZ1" -> kind
             "PCZ2" -> "PCZ1" // same replay lane, including legacy clears
             "PCQ1", "PCS1" -> "STORY"
             else -> null
         }
-    }.getOrNull()
+
+    /** Authenticate before decrypting; check and persist the lane sequence before dispatch. */
+    internal fun openFreshText(ctx: Context, phoneId: String, encoded: String,
+                               timestamp: String?, sequence: String?, signature: String): String? = synchronized(lock) {
+        if (encoded.length !in 40..11000 || timestamp == null || sequence == null) return@synchronized null
+        val time = timestamp.toLongOrNull() ?: return@synchronized null
+        val now = System.currentTimeMillis()
+        if (time < now - FRESHNESS_MS || time > now + FRESHNESS_MS || (sequence.toLongOrNull() ?: 0L) <= 0L) return@synchronized null
+        migrateLegacy(ctx)
+        val content = "TEXT2\t$phoneId\t$encoded"
+        if (!verify(ctx, phoneId, "$content\t$timestamp\t$sequence", signature)) return@synchronized null
+        val secret = loadSecret(ctx, phoneId) ?: return@synchronized null
+        val decoded = GameLingoWireCrypto.open(secret, phoneId, encoded)?.toString(Charsets.UTF_8) ?: return@synchronized null
+        val lane = textLane(decoded) ?: return@synchronized null
+        if (!verifyFresh(ctx, phoneId, content, timestamp, sequence, signature, lane)) return@synchronized null
+        decoded
+    }
 
     fun verifyFresh(ctx: Context, phoneId: String, content: String,
                     timestampText: String?, sequenceText: String?,
