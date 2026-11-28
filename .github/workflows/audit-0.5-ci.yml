@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - Master
-      - feature/camera-0.5.6
     paths:
       - "ios/**"
       - "tools/**"
@@ -20,11 +19,6 @@ on:
       - "shared/**"
       - ".github/workflows/audit-0.5-ci.yml"
   workflow_dispatch:
-    inputs:
-      require_permanent_signing:
-        description: Require published Android signing certificates
-        type: boolean
-        default: false
 
 # Preserve the original workflow identity and versionCode run-number sequence.
 # PRs run only read-only regression checks; trusted branch builds package apps.
@@ -280,7 +274,6 @@ jobs:
           cp "$APK" GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
       - name: Sign mobile APK with persistent private update key
         env:
-          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
           GAMELINGO_MOBILE_KEYSTORE_B64: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_B64 }}
           GAMELINGO_MOBILE_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_MOBILE_KEYSTORE_PASSWORD }}
         shell: bash
@@ -288,29 +281,22 @@ jobs:
           set -euo pipefail
           APK=GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
           SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
-          if [[ -z "$GAMELINGO_MOBILE_KEYSTORE_B64" && -z "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD" ]]; then
-            if [[ "$GITHUB_REPOSITORY" == "CaseyCZ/GameLingo" && "$GITHUB_REF" == "refs/heads/Master" ]]; then
-              echo "::error::Persistent APK signing secrets missing on Master."
-              exit 1
-            fi
-            if [[ "$REQUIRE_PERMANENT_SIGNING" == true ]]; then
-              echo "::error::Permanent signing is required for this candidate."
-              exit 1
-            fi
-            echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
-          else
-            test -n "$GAMELINGO_MOBILE_KEYSTORE_B64"
-            test -n "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD"
-            umask 077
-            KEYDIR="$(mktemp -d)"
-            trap 'rm -rf "$KEYDIR"' EXIT
-            printf '%s' "$GAMELINGO_MOBILE_KEYSTORE_B64" | base64 --decode > "$KEYDIR/gamelingo-mobile.p12"
-            "$SIGNER" sign --ks "$KEYDIR/gamelingo-mobile.p12" --ks-type PKCS12 --ks-key-alias gamelingo-mobile \
-              --ks-pass env:GAMELINGO_MOBILE_KEYSTORE_PASSWORD --key-pass env:GAMELINGO_MOBILE_KEYSTORE_PASSWORD \
-              --out "$KEYDIR/signed.apk" "$APK"
-            "$SIGNER" verify --verbose --print-certs "$KEYDIR/signed.apk"
-            mv "$KEYDIR/signed.apk" "$APK"
+          if [[ -z "$GAMELINGO_MOBILE_KEYSTORE_B64" || -z "$GAMELINGO_MOBILE_KEYSTORE_PASSWORD" ]]; then
+            echo "::error::Persistent APK signing secrets missing (mobile)."
+            exit 1
           fi
+          umask 077
+          KEYDIR="$(mktemp -d)"
+          trap 'rm -rf "$KEYDIR"' EXIT
+          printf '%s' "$GAMELINGO_MOBILE_KEYSTORE_B64" | base64 --decode > "$KEYDIR/gamelingo-mobile.p12"
+          "$SIGNER" sign --ks "$KEYDIR/gamelingo-mobile.p12" --ks-type PKCS12 --ks-key-alias gamelingo-mobile \
+            --ks-pass env:GAMELINGO_MOBILE_KEYSTORE_PASSWORD --key-pass env:GAMELINGO_MOBILE_KEYSTORE_PASSWORD \
+            --out "$KEYDIR/signed.apk" "$APK"
+          verified=$("$SIGNER" verify --verbose --print-certs "$KEYDIR/signed.apk")
+          printf '%s\n' "$verified"
+          cert=$(printf '%s\n' "$verified" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')
+          test "$cert" = "d45ae9b961340c4361bf2b681d57a920493e21adb967d1b311290c609349e0f4"
+          mv "$KEYDIR/signed.apk" "$APK"
           "$SIGNER" verify --verbose --print-certs "$APK"
       - uses: actions/upload-artifact@v4
         with:
@@ -410,7 +396,6 @@ jobs:
           cp "$APK" GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
       - name: Sign TV APK with persistent private update key
         env:
-          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
           GAMELINGO_TV_KEYSTORE_B64: ${{ secrets.GAMELINGO_TV_KEYSTORE_B64 }}
           GAMELINGO_TV_KEYSTORE_PASSWORD: ${{ secrets.GAMELINGO_TV_KEYSTORE_PASSWORD }}
         shell: bash
@@ -418,29 +403,22 @@ jobs:
           set -euo pipefail
           APK=GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
           SIGNER="$ANDROID_HOME/build-tools/34.0.0/apksigner"
-          if [[ -z "$GAMELINGO_TV_KEYSTORE_B64" && -z "$GAMELINGO_TV_KEYSTORE_PASSWORD" ]]; then
-            if [[ "$GITHUB_REPOSITORY" == "CaseyCZ/GameLingo" && "$GITHUB_REF" == "refs/heads/Master" ]]; then
-              echo "::error::Persistent APK signing secrets missing on Master."
-              exit 1
-            fi
-            if [[ "$REQUIRE_PERMANENT_SIGNING" == true ]]; then
-              echo "::error::Permanent signing is required for this candidate."
-              exit 1
-            fi
-            echo "::warning::Test build uses a temporary debug signature; updating an installed APK may require uninstall. Persistent signing is optional during development."
-          else
-            test -n "$GAMELINGO_TV_KEYSTORE_B64"
-            test -n "$GAMELINGO_TV_KEYSTORE_PASSWORD"
-            umask 077
-            KEYDIR="$(mktemp -d)"
-            trap 'rm -rf "$KEYDIR"' EXIT
-            printf '%s' "$GAMELINGO_TV_KEYSTORE_B64" | base64 --decode > "$KEYDIR/gamelingo-tv.p12"
-            "$SIGNER" sign --ks "$KEYDIR/gamelingo-tv.p12" --ks-type PKCS12 --ks-key-alias gamelingo-tv \
-              --ks-pass env:GAMELINGO_TV_KEYSTORE_PASSWORD --key-pass env:GAMELINGO_TV_KEYSTORE_PASSWORD \
-              --out "$KEYDIR/signed.apk" "$APK"
-            "$SIGNER" verify --verbose --print-certs "$KEYDIR/signed.apk"
-            mv "$KEYDIR/signed.apk" "$APK"
+          if [[ -z "$GAMELINGO_TV_KEYSTORE_B64" || -z "$GAMELINGO_TV_KEYSTORE_PASSWORD" ]]; then
+            echo "::error::Persistent APK signing secrets missing (tv)."
+            exit 1
           fi
+          umask 077
+          KEYDIR="$(mktemp -d)"
+          trap 'rm -rf "$KEYDIR"' EXIT
+          printf '%s' "$GAMELINGO_TV_KEYSTORE_B64" | base64 --decode > "$KEYDIR/gamelingo-tv.p12"
+          "$SIGNER" sign --ks "$KEYDIR/gamelingo-tv.p12" --ks-type PKCS12 --ks-key-alias gamelingo-tv \
+            --ks-pass env:GAMELINGO_TV_KEYSTORE_PASSWORD --key-pass env:GAMELINGO_TV_KEYSTORE_PASSWORD \
+            --out "$KEYDIR/signed.apk" "$APK"
+          verified=$("$SIGNER" verify --verbose --print-certs "$KEYDIR/signed.apk")
+          printf '%s\n' "$verified"
+          cert=$(printf '%s\n' "$verified" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')
+          test "$cert" = "f2bdae07378f52642abcec8d55d04f1e6dc688f7e6b12aa39358b227a0fc1423"
+          mv "$KEYDIR/signed.apk" "$APK"
           "$SIGNER" verify --verbose --print-certs "$APK"
       - name: Upload generated TV UI inventory
         if: always()
@@ -479,8 +457,6 @@ jobs:
           (cd release && sha256sum "GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" "GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk" "GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk" > SHA256SUMS.txt)
           cat release/SHA256SUMS.txt
       - name: Record package identity and signing evidence
-        env:
-          REQUIRE_PERMANENT_SIGNING: ${{ inputs.require_permanent_signing }}
         run: |
           set -euo pipefail
           SDK_TOOLS="$ANDROID_HOME/build-tools/34.0.0"
@@ -499,20 +475,18 @@ jobs:
               printf '%s\n' "$identity"
               verified=$("$SDK_TOOLS/apksigner" verify --verbose --print-certs "$APK")
               printf '%s\n' "$verified"
-              if [[ "$REQUIRE_PERMANENT_SIGNING" == true || "$GITHUB_REF" == refs/heads/Master ]]; then
-                # Public certificate fingerprints from the verified 0.5.1 release build, not secrets.
-                if [[ "$kind" == Android ]]; then
-                  expected_cert=d45ae9b961340c4361bf2b681d57a920493e21adb967d1b311290c609349e0f4
-                else
-                  expected_cert=f2bdae07378f52642abcec8d55d04f1e6dc688f7e6b12aa39358b227a0fc1423
-                fi
-                cert=$(printf '%s\n' "$verified" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')
-                test "$cert" = "$expected_cert"
-                code=$(printf '%s\n' "$identity" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
-                [[ "$code" =~ ^[0-9]+$ ]]
-                (( code > 6019901 ))
-                echo 'Published 0.5.1 signer and minimum version continuity: PASS'
+              # Public certificate fingerprints from the verified 0.5.1 release build, not secrets.
+              if [[ "$kind" == Android ]]; then
+                expected_cert=d45ae9b961340c4361bf2b681d57a920493e21adb967d1b311290c609349e0f4
+              else
+                expected_cert=f2bdae07378f52642abcec8d55d04f1e6dc688f7e6b12aa39358b227a0fc1423
               fi
+              cert=$(printf '%s\n' "$verified" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p')
+              test "$cert" = "$expected_cert"
+              code=$(printf '%s\n' "$identity" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+              [[ "$code" =~ ^[0-9]+$ ]]
+              (( code > 6019901 ))
+              echo 'Published 0.5.1 signer and minimum version continuity: PASS'
             done
           } > release/PACKAGE-EVIDENCE.txt
           cat release/PACKAGE-EVIDENCE.txt

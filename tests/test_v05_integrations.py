@@ -1967,7 +1967,14 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             for suffix in ("KEYSTORE_B64", "KEYSTORE_PASSWORD"):
                 name = f"GAMELINGO_{platform}_{suffix}"
                 self.assertEqual(workflow.count(name + ": ${{ secrets." + name + " }}"), 1)
-        self.assertEqual(workflow.count("Persistent APK signing secrets missing on Master."), 2)
+        self.assertEqual(workflow.count("Persistent APK signing secrets missing ("), 2)
+        self.assertNotIn("require_permanent_signing", workflow)
+        self.assertNotIn("REQUIRE_PERMANENT_SIGNING", workflow)
+        self.assertNotIn("temporary debug signature", workflow)
+        for platform in ("TV", "MOBILE"):
+            self.assertIn(f'[[ -z "$GAMELINGO_{platform}_KEYSTORE_B64" || -z "$GAMELINGO_{platform}_KEYSTORE_PASSWORD" ]]', workflow)
+        self.assertEqual(workflow.count('test "$cert" = '), 3)
+        self.assertIn("workflow_dispatch:\n", workflow)
         self.assertNotIn("uses: ./.github/workflows/", workflow)
         self.assertIn("verify_tv_navigation.py upstream", workflow)
         self.assertIn("needs: [ios, android_mobile, google_tv]", workflow)
