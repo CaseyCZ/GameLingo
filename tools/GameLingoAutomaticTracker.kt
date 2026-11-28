@@ -15,11 +15,14 @@ internal data class AutoRect(val left: Float, val top: Float, val right: Float, 
         return union > 0 && i/union >= .35f
     }
 }
-internal data class AutoZone(val id: String, val name: String, val enabled: Boolean, val rect: AutoRect, val centered: Boolean)
-internal data class AutoBlock(val text: String, val rect: AutoRect) {
+internal data class AutoZone(val id: String, val name: String, val enabled: Boolean, val rect: AutoRect, val centered: Boolean) {
+    fun restoreArea(): AutoZone = if(id=="dialogue") copy(rect=AutoRect(0f,.65f,1f,1f),centered=true)
+        else copy(rect=AutoRect(.2f,.2f,.8f,.45f),centered=false)
+}
+internal data class AutoBlock(val text: String, val rect: AutoRect, val background: Int? = null, val ink: Int? = null) {
     fun output(translated: String): GameLingoZoneBlock {
-        val width = (rect.width+.06f).coerceIn(.15f,1f)
-        return GameLingoZoneBlock(translated,rect.center.coerceIn(width/2,1-width/2),rect.bottom.coerceIn(.05f,.99f),width)
+        // Use the source box for replacement; the old protocol expands tiny labels on encode.
+        return GameLingoZoneBlock(translated,rect.center,rect.bottom,rect.width,rect.height,background,ink)
     }
 }
 internal class GameLingoAutomaticTracker {
@@ -36,12 +39,24 @@ internal class GameLingoAutomaticTracker {
             if (next.size >= 64) break
             if (next.any { it.zone == zone && same(it.block,block) }) continue
             val index = previous.indexOfFirst { same(it.block,block) }
-            next += if(index >= 0) previous.removeAt(index).let { it.copy(block=block,confirmations=min(2,it.confirmations+1),seen=now) }
+            next += if(index >= 0) previous.removeAt(index).let { it.copy(block=stabilized(it.block,block),confirmations=min(2,it.confirmations+1),seen=now) }
                 else Track(UUID.randomUUID().toString(),zone,block,1,now)
         }
         current=next
     }
     companion object {
+        private fun stableColor(a:Int?,b:Int?):Int? {
+            if(a==null||b==null)return b
+            val delta=listOf(16,8,0).maxOf { kotlin.math.abs((a shr it and 255)-(b shr it and 255)) }
+            return if(delta<=20)a else b
+        }
+        private fun stabilized(old:AutoBlock,new:AutoBlock):AutoBlock {
+            val a=old.rect;val b=new.rect
+            val delta=maxOf(kotlin.math.abs(a.left-b.left),kotlin.math.abs(a.top-b.top),
+                kotlin.math.abs(a.right-b.right),kotlin.math.abs(a.bottom-b.bottom))
+            return new.copy(rect=if(delta<=.002f)a else b,
+                background=stableColor(old.background,new.background),ink=stableColor(old.ink,new.ink))
+        }
         fun normalize(text: String) = text.trim().replace(Regex("\\s+")," ").lowercase(java.util.Locale.ROOT)
         fun same(a: AutoBlock,b: AutoBlock) = normalize(a.text)==normalize(b.text) && a.rect.overlaps(b.rect)
     }

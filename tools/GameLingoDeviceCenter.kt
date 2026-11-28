@@ -137,11 +137,16 @@ object GameLingoDeviceCenter {
             }.show()
     }
 
-    /** TV uses the branded D-pad picker. Preserve the existing mobile presentation. */
+    /** Branded device addition on mobile; TV retains its D-pad picker. */
     private fun chooseDevice(c: Activity, heading: String, options: Array<String>,
                              onSelect: (Int) -> Unit) {
         if (GameLingoTVUi.isTV(c)) {
             GameLingoTVUi.select(c, heading, options, onSelect = onSelect)
+        } else if (heading == GameLingoLanguages.ui(c, "Přidat zařízení") && options.size == 3) {
+            GameLingoVisualKit.selectSourceOrOutput(c, "Přidat zařízení",
+                listOf("Xbox" to options[0], "PlayStation" to options[1], "TV" to options[2]), null) { key ->
+                onSelect(when (key) { "Xbox" -> 0; "PlayStation" -> 1; else -> 2 })
+            }
         } else {
             AlertDialog.Builder(c).setTitle(heading).setItems(options) { _, i -> onSelect(i) }
                 .setNegativeButton(GameLingoLanguages.ui(c, "Zpět"), null).show()

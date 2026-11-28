@@ -81,6 +81,34 @@ object GameLingoTVPairing {
         val packet = signedPacket(ip, payload)
         socket.send(DatagramPacket(packet, packet.size, address, port))
     }
+    /** Explicit editor preview, independent of the active caption sender. */
+    internal fun previewOCRRegion(activity: Activity, rect: AutoRect) {
+        if (!rect.valid() || GameLingoLanguages.translationSettingsBusy()) return
+        val context=activity.applicationContext
+        val store=TvProfily(context)
+        val target=store.posledniId?.let { store.najdi(it) }
+        val ip=target?.ip
+        val secret=ip?.let { token(context,it) }
+        if (target==null || ip==null || secret==null) {
+            Toast.makeText(activity,GameLingoLanguages.ui(activity,"Nejdříve vyber a spáruj TV."),Toast.LENGTH_LONG).show()
+            return
+        }
+        initialize(context)
+        verify(activity,target) { verified ->
+            if(!verified || activity.isFinishing || activity.isDestroyed) {
+                if(!activity.isFinishing && !activity.isDestroyed)
+                    Toast.makeText(activity,GameLingoLanguages.ui(activity,"TV neodpovídá. Zkontroluj domácí síť a přijímač."),Toast.LENGTH_LONG).show()
+                return@verify
+            }
+            Thread {
+                val port=receiverPort(ip)
+                val current=TvProfily(context).let { p -> p.posledniId?.let { p.najdi(it)?.ip } }
+                if(current!=ip || token(context,ip)!=secret || GameLingoLanguages.translationSettingsBusy())return@Thread
+                val payload="PCO1\t1\t${rect.left}\t${rect.top}\t${rect.right}\t${rect.bottom}".toByteArray(Charsets.UTF_8)
+                runCatching { DatagramSocket().use { sendSigned(it,ip,InetAddress.getByName(ip),payload,port) } }
+            }.apply { isDaemon=true;name="gamelingo-zone-preview" }.start()
+        }
+    }
     private val availablePorts = 41989..41993
     private val portLock = Any()
     @Volatile private var lastPortIp = ""
@@ -154,6 +182,8 @@ object GameLingoTVPairing {
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var lastVerifiedIp = ""
     @Volatile private var zoneCapableIp = ""
+    @Volatile private var adaptiveZoneIp = ""
+    fun supportsAdaptiveZones(ip: String) = supportsZones(ip) && adaptiveZoneIp == ip
     fun supportsZones(ip: String) = connected(ip) && zoneCapableIp == ip
     @Volatile private var lastVerifiedAt = 0L
 
@@ -318,7 +348,7 @@ object GameLingoTVPairing {
                     Propojeni.Vysilac.outputGeneration() != generation) return@Thread
                 val clientId = pairingId(context)
                 val result = runCatching {
-                    val nonce = "Z1-" + UUID.randomUUID().toString()
+                    val nonce = "Z1-2-" + UUID.randomUUID().toString()
                     val message = freshBody("PING\t$clientId\t$nonce")
                     val data = ("PCPAIR1\t$message\t" + sign(secret, message)).toByteArray(Charsets.UTF_8)
                     val address = InetAddress.getByName(ip)
@@ -330,21 +360,24 @@ object GameLingoTVPairing {
                         socket.receive(reply)
                         val expected = "PCPAIR1\tPONG\t$nonce\t" + sign(secret, "PONG\t$clientId\t$nonce")
                         val extended = expected + "\tPCZ1\t" + sign(secret,"PONG\t$clientId\t$nonce|PCZ1")
+                        val adaptive = expected + "\tPCZ2\t" + sign(secret,"PONG\t$clientId\t$nonce|PCZ2")
                         val bytes=reply.data.copyOfRange(reply.offset,reply.offset+reply.length)
                         val correctPeer=reply.address==address&&reply.port==port
-                        val capable=correctPeer&&MessageDigest.isEqual(extended.toByteArray(Charsets.UTF_8),bytes)
+                        val v2=correctPeer&&MessageDigest.isEqual(adaptive.toByteArray(Charsets.UTF_8),bytes)
+                        val capable=v2 || correctPeer&&MessageDigest.isEqual(extended.toByteArray(Charsets.UTF_8),bytes)
                         val verified = capable || correctPeer&&MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8),bytes)
                         if (verified) runCatching {
                             sendCaptionStyle(context, ip, generation, secret, socket, address, port)
                         }
-                        verified to capable
+                        Triple(verified,capable,v2)
                     }
-                }.getOrDefault(false to false)
+                }.getOrDefault(Triple(false,false,false))
                 main.post {
                     if (!RemotePlayService.aktivni || Propojeni.Vysilac.cilIp != ip ||
                         Propojeni.Vysilac.outputGeneration() != generation || token(context, ip) != secret) return@post
                     if (result.first) {
                         zoneCapableIp = if(result.second)ip else ""
+                        adaptiveZoneIp = if(result.third)ip else ""
                         lastVerifiedIp = ip
                         lastVerifiedAt = SystemClock.elapsedRealtime()
                     } else {

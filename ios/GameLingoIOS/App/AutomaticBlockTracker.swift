@@ -24,6 +24,19 @@ struct AutomaticBlockTracker {
         let union = a.width * a.height + b.width * b.height - intersection
         return union > 0 && intersection / union >= 0.35
     }
+    private static func stableColor(_ previous: UInt32?, _ next: UInt32?) -> UInt32? {
+        guard let a = previous, let b = next else { return next }
+        let distance = [16, 8, 0].map { abs(Int((a >> $0) & 255) - Int((b >> $0) & 255)) }.max() ?? 0
+        return distance <= 20 ? a : b
+    }
+    private static func stabilized(_ old: AutomaticDialogueLayout.Block, _ new: AutomaticDialogueLayout.Block) -> AutomaticDialogueLayout.Block {
+        let a = old.rect, b = new.rect
+        let jitter = [abs(a.minX-b.minX), abs(a.minY-b.minY), abs(a.maxX-b.maxX), abs(a.maxY-b.maxY)].max() ?? 0
+        return .init(text: new.text, rect: jitter <= 0.002 ? a : b,
+                     layout: jitter <= 0.002 ? old.layout : new.layout,
+                     background: stableColor(old.background, new.background),
+                     ink: stableColor(old.ink, new.ink))
+    }
     mutating func reset() { tracks.removeAll() }
     mutating func expire(now: TimeInterval) {
         tracks.removeAll { now - $0.lastSeen > Self.staleAfter }
@@ -42,7 +55,7 @@ struct AutomaticBlockTracker {
                 Self.overlaps($0.block.rect, block.rect)
             }) {
                 var old = previous.remove(at: i)
-                old.block = block
+                old.block = Self.stabilized(old.block, block)
                 old.confirmations = min(2, old.confirmations + 1)
                 old.lastSeen = now
                 tracks.append(old)

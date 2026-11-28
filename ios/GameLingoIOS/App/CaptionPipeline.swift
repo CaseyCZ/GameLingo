@@ -151,6 +151,7 @@ actor CaptionPipeline {
         var gate = OCRFrameGate(maximumSkip: 1.0)
         var lastAttempt: TimeInterval = -.infinity
     }
+    private let automaticColorContext = CIContext(options: [.cacheIntermediates: false])
     private var automaticLanes: [UUID: AutomaticLane] = [:]
     private var nextAutomaticZone = 0
     private var lastAutomaticAttempt: TimeInterval = -.infinity
@@ -196,12 +197,31 @@ actor CaptionPipeline {
                     guard let text = item.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines),
                           text.filter({ $0.isLetter }).count >= 2,
                           YellowOCRFilter.keepsAutomaticDialogue(text, filterMenus: filterMenus, ignored: ignored),
-                          (!filterMenus || !looksLikeMenu(text, conservative: true)),
+                          (!zone.centered || !filterMenus || !looksLikeMenu(text, conservative: true)),
                           let rect = AutomaticDialogueLayout.fullFrameRect(croppedVision: item.boundingBox, crop: zone.rect)
                     else { return nil }
                     return .init(text: text, rect: rect)
                 }
-                return .init(zone: zone.id, blocks: AutomaticDialogueLayout.blocks(lines, centered: zone.centered))
+                var blocks = AutomaticDialogueLayout.blocks(lines, centered: zone.centered)
+                // Only sample the actual OCR crop, never send image pixels to the TV.
+                if !blocks.isEmpty, local.extent.width > 0, local.extent.height > 0 {
+                    let small = local.transformed(by: CGAffineTransform(scaleX: 256 / local.extent.width,
+                                                                        y: 256 / local.extent.height))
+                    if let rgb = automaticColorContext.createCGImage(small, from: CGRect(x: 0, y: 0, width: 256, height: 256)) {
+                        let rects = blocks.map { block in
+                            CGRect(x: (block.rect.minX - zone.rect.minX) / zone.rect.width,
+                                   y: (block.rect.minY - zone.rect.minY) / zone.rect.height,
+                                   width: block.rect.width / zone.rect.width,
+                                   height: block.rect.height / zone.rect.height)
+                        }
+                        let colors = glGamePalettes(rgb, rects: rects)
+                        for i in blocks.indices {
+                            blocks[i].background = colors[i].0
+                            blocks[i].ink = colors[i].1
+                        }
+                    }
+                }
+                return .init(zone: zone.id, blocks: blocks)
             } catch { return nil } // failed read is not an empty observation
         }
         return nil

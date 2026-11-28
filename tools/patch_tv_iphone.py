@@ -141,8 +141,9 @@ def main() -> None:
          '                                    if (casti.size == 7 && IPhoneTVPairing.verifyFresh(c, id, "PING\\t$id\\t$nonce", casti.getOrNull(4), casti.getOrNull(5), sig, "PING")) {\n'
          '                                        val pong = IPhoneTVPairing.pongSignature(c, id, nonce) ?: continue\n'
          '                                        if (IPhoneTVPairing.permitsStyle(id)) posledniZprava = System.currentTimeMillis()\n'
-         '                                        val caps = if (nonce.startsWith("Z1-")) IPhoneTVPairing.pongSignature(c, id, "$nonce|PCZ1") else null\n'
-         '                                        val suffix = caps?.let { "\\tPCZ1\\t$it" }.orEmpty()\n'
+         '                                        val version = if (nonce.startsWith("Z1-2-")) "PCZ2" else if (nonce.startsWith("Z1-")) "PCZ1" else null\n'
+         '                                        val caps = version?.let { IPhoneTVPairing.pongSignature(c, id, "$nonce|$it") }\n'
+         '                                        val suffix = caps?.let { "\\t$version\\t$it" }.orEmpty()\n'
          '                                        odpovez(s, p, "PCPAIR1\\tPONG\\t$nonce\\t$pong$suffix")\n'
          '                                    }\n'
          '                                }\n'
@@ -375,7 +376,7 @@ def main() -> None:
          '                                priVolbach?.invoke(seznam, casti[7].toIntOrNull() ?: -1, oblast, casti[2].toIntOrNull() ?: 0)\n',
          '                                val vystup = if (casti.size >= 13) runCatching {\n'
          '                                    val font = casti.getOrNull(13)?.toFloatOrNull()\n'
-         '                                        ?.takeIf { it.isFinite() && it in 0.6f..2.0f } ?: 1f\n'
+         '                                        ?.takeIf { it.isFinite() && it in 0.1f..2.0f } ?: 1f\n'
          '                                    floatArrayOf(casti[9].toFloat(), casti[10].toFloat(),\n'
          '                                        casti[11].toFloat(), casti[12].toFloat(), font)\n'
          '                                }.getOrNull()?.takeIf { r ->\n'
@@ -424,6 +425,9 @@ def main() -> None:
          '        const val ACTION_SET_NAPOVEDA = "cz.titulky.tv.SET_NAPOVEDA"\n',
          '        const val EXTRA_VYSTUP_VOLEB = "vystup_voleb"\n'
          '        const val ACTION_SET_NAPOVEDA = "cz.titulky.tv.SET_NAPOVEDA"\n')
+    once(overlay,
+         'textSize = VELIKOST_PISMA * r[3].coerceIn(0.5f, 2.5f)',
+         'textSize = VELIKOST_PISMA * r[3].coerceIn(0.1f, 2f)')
     # Explicit output geometry takes priority over automatic "next to OCR"
     # placement. Fallback remains exactly the original behavior.
     once(overlay,
@@ -432,7 +436,7 @@ def main() -> None:
          '        lp.y = (o[1] * h).toInt()\n'
          '        if (vystup != null && vystup.size == 5 &&\n'
          '            vystup.take(4).all { it.isFinite() && it in 0f..1f } &&\n'
-         '            vystup[4].isFinite() && vystup[4] in 0.6f..2f &&\n'
+         '            vystup[4].isFinite() && vystup[4] in 0.1f..2f &&\n'
          '            vystup[2] > vystup[0] + 0.1f && vystup[3] > vystup[1] + 0.05f) {\n'
          '            val sirkaVystupu = ((vystup[2] - vystup[0]) * w).toInt().coerceAtLeast(80)\n'
          '            lp.gravity = Gravity.TOP or Gravity.START\n'
@@ -574,8 +578,8 @@ def main() -> None:
          '                                            !decoded.startsWith("PCV1\\t")) continue\n'
          '                                        casti = decoded.split("\\t")\n',
          '                                        val inner = decoded.split("\\t")\n'
-         '                                        if (inner.firstOrNull() !in (listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1") + "PCZ1")) continue\n'
-         '                                        if (inner.firstOrNull() == "PCZ1" && (!PrijemService.bezi || GameLingoZonePacket.parse(inner) == null)) continue\n'
+         '                                        if (inner.firstOrNull() !in listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1", "PCZ1", "PCZ2")) continue\n'
+         '                                        if (inner.firstOrNull() in listOf("PCZ1", "PCZ2") && (!PrijemService.bezi || GameLingoZonePacket.parse(inner) == null)) continue\n'
          '                                        if (inner.firstOrNull() == "PCS1" && inner.getOrNull(1) in listOf("ZADOST", "KOD")) continue\n'
          '                                        casti = inner\n'
          '                                        if (inner.firstOrNull() == "PCQ1") {\n'
@@ -583,7 +587,7 @@ def main() -> None:
          '                                        } else if (!IPhoneTVPairing.claimGameData(id, IPhoneTVPairing.extendsSourceLease(inner))) continue\n'
          '                                        resetSourceIfChanged()\n'
          '                                        authenticatedGameData = true\n'
-         '                                        if (inner.firstOrNull() == "PCZ1") {\n'
+         '                                        if (inner.firstOrNull() in listOf("PCZ1", "PCZ2")) {\n'
          '                                            OverlayService.posli(c, android.content.Intent(c, OverlayService::class.java).setAction(OverlayService.ACTION_SET_ZONES).putExtra(OverlayService.EXTRA_ZONE_PACKET, decoded))\n'
          '                                            continue\n'
          '                                        }\n'

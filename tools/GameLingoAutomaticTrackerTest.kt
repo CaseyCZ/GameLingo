@@ -11,6 +11,17 @@ class GameLingoAutomaticTrackerTest {
         assertFalse(GameLingoYellowOCRFilter.keepsAutomaticDialogue("speed limit",false,ignored))
         assertTrue(GameLingoYellowOCRFilter.keepsAutomaticDialogue("I pressed A to continue.",true,ignored))
     }
+    @Test fun customMenuGeometryAndControllerLabels(){
+        val block=AutoBlock("Play",AutoRect(.01f,.01f,.06f,.04f))
+        val output=block.output("Hrát")
+        assertEquals(.05f,output.width,.0001f)
+        assertEquals(.03f,output.height!!,.0001f)
+        assertEquals(.08f,output.legacyGeometry().width,.0001f)
+        for (label in listOf("LT","RT","LB","R1")) {
+            assertFalse(GameLingoYellowOCRFilter.keepsAutomaticDialogue(label,false,emptySet()))
+        }
+        assertTrue(GameLingoYellowOCRFilter.keepsAutomaticDialogue("PLAY",false,emptySet()))
+    }
     @Test fun automaticMinimumHeightUsesCropAndPreservesDefault(){
         assertTrue(GameLingoYellowOCRFilter.meetsMinimumHeight(0, 0, 0))
         assertFalse(GameLingoYellowOCRFilter.meetsMinimumHeight(9, 500, 2))
@@ -32,6 +43,24 @@ class GameLingoAutomaticTrackerTest {
         t.observe("A",emptyList(),220)
         assertEquals(1,t.tracks.size);assertEquals("B",t.tracks.single().zone)
         t.expire(5300);assertTrue(t.tracks.isEmpty())
+    }
+    @Test fun smallPositionAndColorChangesDoNotFlicker(){
+        val t=GameLingoAutomaticTracker()
+        val a=AutoBlock("Play",AutoRect(.2f,.2f,.4f,.3f),0xffcc00,0)
+        val b=a.copy(rect=AutoRect(.201f,.2f,.401f,.3f),background=0xfbc900)
+        t.observe("A",listOf(a),100)
+        t.observe("A",listOf(b),200)
+        assertEquals(a,t.tracks.single().block)
+        t.observe("A",listOf(b.copy(rect=AutoRect(.22f,.2f,.42f,.3f))),300)
+        assertEquals(.22f,t.tracks.single().block.rect.left,.0001f)
+    }
+    @Test fun restoreSelectedAreaPreservesIdentityAndEnabledState(){
+        val a=AutoZone("dialogue","Renamed",false,AutoRect(0f,.02f,1f,.18f),false)
+        val b=AutoZone("custom","Menu",true,AutoRect(.1f,.1f,.5f,.3f),false)
+        val restored=listOf(a.restoreArea(),b)
+        assertEquals(a.copy(rect=AutoRect(0f,.65f,1f,1f),centered=true),restored[0])
+        assertEquals(b,restored[1])
+        assertEquals(b.copy(rect=AutoRect(.2f,.2f,.8f,.45f)),b.restoreArea())
     }
     @Test fun changedTextCannotReuseTranslation(){
         val t=GameLingoAutomaticTracker()

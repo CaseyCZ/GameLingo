@@ -42,6 +42,8 @@ final class CaptionAppModel: ObservableObject {
         let text: String
         let layout: AutomaticDialogueLayout
         let rect: CGRect
+        var background: UInt32? = nil
+        var ink: UInt32? = nil
     }
     @Published private(set) var automaticOutputs: [AutomaticOutput] = []
     private var automaticTracker = AutomaticBlockTracker()
@@ -251,11 +253,17 @@ final class CaptionAppModel: ObservableObject {
     @Published var outputWidth: Double = (UserDefaults.standard.object(forKey: "outputWidth") as? Double) ?? 0.62 {
         didSet { UserDefaults.standard.set(outputWidth, forKey: "outputWidth") }
     }
-    @Published var outputFont: Double = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1.0 {
+    @Published var outputFont: Double = {
+        let value = UserDefaults.standard.object(forKey: "outputFont") as? Double ?? 1
+        return value.isFinite ? min(2, max(0.1, value)) : 1
+    }() {
         didSet { UserDefaults.standard.set(outputFont, forKey: "outputFont") }
     }
     @Published var phoneFontScale: Double =
-        (UserDefaults.standard.object(forKey: "gamelingo.phoneFontScale") as? Double) ?? 1.0 {
+        {
+        let value = UserDefaults.standard.object(forKey: "gamelingo.phoneFontScale") as? Double ?? 1
+        return value.isFinite ? min(2, max(0.1, value)) : 1
+    }() {
         didSet { UserDefaults.standard.set(phoneFontScale, forKey: "gamelingo.phoneFontScale") }
     }
     @Published var phoneTextColor: GLPhoneSubtitleColor = GLPhoneSubtitleColor(
@@ -385,7 +393,7 @@ final class CaptionAppModel: ObservableObject {
     /// Normal dialogue subtitles continue using outputFont.
     @Published var choicesOutputFont: Double = {
         let saved = UserDefaults.standard.object(forKey: "choicesOutputFont") as? Double ?? 1.0
-        return saved.isFinite && (0.6...2.0).contains(saved) ? saved : 1.0
+        return saved.isFinite ? min(2, max(0.1, saved)) : 1.0
     }() {
         didSet { UserDefaults.standard.set(choicesOutputFont, forKey: "choicesOutputFont") }
     }
@@ -598,7 +606,7 @@ final class CaptionAppModel: ObservableObject {
         outputX = profile.outputX
         outputBottom = profile.outputBottom
         outputWidth = profile.outputWidth
-        outputFont = profile.outputFont
+        outputFont = profile.outputFont.isFinite ? min(2, max(0.1, profile.outputFont)) : 1
         outputLocked = profile.outputLocked
         choicesArea = profile.choicesArea
         choicesTextMode = profile.choicesTextMode
@@ -612,7 +620,8 @@ final class CaptionAppModel: ObservableObject {
         choicesEnabled = profile.choicesEnabled
         if let rect = profile.choicesOutputArea { choicesOutputArea = rect }
         if let locked = profile.choicesOutputLocked { choicesOutputLocked = locked }
-        choicesOutputFont = profile.choicesOutputFont ?? 1.0
+        let savedChoiceFont = profile.choicesOutputFont ?? 1.0
+        choicesOutputFont = savedChoiceFont.isFinite ? min(2, max(0.1, savedChoiceFont)) : 1
         subtitleDuration = profile.subtitleDuration
         showPreviousDialogue = profile.showPreviousDialogue ?? false
         previousDialogueCount = min(2, max(1, profile.previousDialogueCount ?? 1))
@@ -628,7 +637,7 @@ final class CaptionAppModel: ObservableObject {
            let language = GLTargetLanguage(rawValue: savedTarget) {
             targetLanguage = language
         }
-        if let value = profile.phoneFontScale, value >= 0.7 && value <= 1.8 {
+        if let value = profile.phoneFontScale, value.isFinite && value >= 0.1 && value <= 2 {
             phoneFontScale = value
         }
         if let name = profile.phoneTextColor, let value = GLPhoneSubtitleColor(rawValue: name) {
@@ -1086,7 +1095,8 @@ final class CaptionAppModel: ObservableObject {
                     AutomaticBlockTracker.overlaps($0.rect, track.block.rect)
                 }) { continue }
                 ordered.append(.init(id: track.id, zone: zone.id, text: text,
-                                     layout: track.block.layout, rect: track.block.rect))
+                                     layout: track.block.layout, rect: track.block.rect,
+                                     background: track.block.background, ink: track.block.ink))
             }
         }
         let next = Array(ordered.prefix(32))
@@ -1095,7 +1105,7 @@ final class CaptionAppModel: ObservableObject {
         devices.prepareTV(tv)
         guard verifiedTelevisionOutput else { return }
         if tv.receiverSupportsZones {
-            let key = automaticOutputs.map { "\($0.id)|\($0.text)|\($0.layout.centerX)|\($0.layout.bottomY)|\($0.layout.width)" }.joined(separator: ";")
+            let key = automaticOutputs.map { "\($0.id)|\($0.text)|\($0.rect)|\($0.background ?? 0)|\($0.ink ?? 0)" }.joined(separator: ";")
             if automaticLastTV != nil {
                 tv.sendSubtitle("", duration: 0)
                 automaticLastTV = nil

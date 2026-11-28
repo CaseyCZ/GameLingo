@@ -8,9 +8,8 @@ struct GameLingoDevicesPanel: View {
 
     let addXbox: () -> Void
     let addPlayStation: () -> Void
-    let addTV: () -> Void
 
-    @State private var showAdd = false
+    let onAddDevice: () -> Void
     @State private var renaming: GLConsoleRecord?
     @State private var newName = ""
     @State private var pendingRemove: GLConsoleRecord?
@@ -36,7 +35,7 @@ struct GameLingoDevicesPanel: View {
                 .buttonStyle(.plain)
             }
             GLPrimaryButton(title: "Přidat zařízení", systemImage: "plus.circle") {
-                showAdd = true
+                onAddDevice()
             }
             if model.isRunning {
                 Text("Překlad právě běží. Pro změnu nebo odebrání konzole ho nejprve zastav.")
@@ -172,21 +171,7 @@ struct GameLingoDevicesPanel: View {
                         .accessibilityAddTraits(devices.subtitleOutput == option ? .isSelected : [])
                     }
                 }
-                if devices.subtitleOutput == .googleTV {
-                    Button {
-                        addTV()
-                    } label: {
-                        GLSettingsLink(icon: "link", title: "Spárovat Google TV")
-                    }
-                    .buttonStyle(.plain)
-                }
             }
-        }
-        .confirmationDialog("Přidat zařízení", isPresented: $showAdd) {
-            Button("Xbox") { addXbox() }
-            Button("PlayStation 5 / 4") { addPlayStation() }
-            Button("Google TV / Android TV") { addTV() }
-            Button("Zrušit", role: .cancel) {}
         }
         .alert("Přejmenovat konzoli", isPresented: Binding(
             get: { renaming != nil },

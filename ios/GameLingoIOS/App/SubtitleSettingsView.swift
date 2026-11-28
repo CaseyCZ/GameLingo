@@ -303,7 +303,7 @@ struct SubtitleSettingsView: View {
                 Text(verbatim: GLInterfaceText.localized("Šířka titulků:") + " " + String(Int(model.outputWidth * 100)) + " %")
                 Slider(value: $model.outputWidth, in: 0.30...0.95)
                 Text(verbatim: GLInterfaceText.localized("Velikost písma:") + " " + String(Int(model.outputFont * 100)) + " %")
-                Slider(value: $model.outputFont, in: 0.70...1.80)
+                Slider(value: $model.outputFont, in: 0.10...2.00)
             }
             Button("Náhled na TV") {
                 showOnTV()
@@ -416,7 +416,7 @@ struct SubtitleSettingsView: View {
                     model.choicesOutputFont = newValue
                     scheduleOrangeRelocation()
                 }
-            ), in: 0.60...2.00, step: 0.05)
+            ), in: 0.10...2.00, step: 0.05)
                 .tint(.orange)
         }
     }

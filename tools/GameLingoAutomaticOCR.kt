@@ -2,6 +2,7 @@ package cz.titulky.tv
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -71,10 +72,11 @@ internal class GameLingoAutomaticOCR(
         try {
             val zone=enabled[next%enabled.size];next=(next+1)%enabled.size
             val r=zone.rect
-            val x=(r.left*w).toInt().coerceIn(0,w-32)
-            val y=(r.top*h).toInt().coerceIn(0,h-32)
-            val cw=((r.right*w).toInt()-x).coerceIn(32,w-x)
-            val ch=((r.bottom*h).toInt()-y).coerceIn(32,h-y)
+            val x=kotlin.math.ceil(r.left*w).toInt().coerceIn(0,w-1)
+            val y=kotlin.math.ceil(r.top*h).toInt().coerceIn(0,h-1)
+            val cw=(r.right*w).toInt().coerceAtMost(w)-x
+            val ch=(r.bottom*h).toInt().coerceAtMost(h)-y
+            if(cw<16||ch<16){busy.set(false);return}
             val pixels=readPixels(x,y,cw,ch)
             require(pixels.size==cw*ch)
             var hash=GameLingoFrameGate.seed(cw,ch)
@@ -112,7 +114,10 @@ internal class GameLingoAutomaticOCR(
                             ((y+box.top).toFloat()/h).coerceIn(0f,1f),
                             ((x+box.right).toFloat()/w).coerceIn(0f,1f),
                             ((y+box.bottom).toFloat()/h).coerceIn(0f,1f))
-                        if(rect.width<=0f||rect.height<=0f|| (zone.centered&&kotlin.math.abs(rect.center-.5f)>.2f))null else AutoBlock(text,rect)
+                        if(rect.width<.001f||rect.height<.001f|| (zone.centered&&kotlin.math.abs(rect.center-.5f)>.2f))null else {
+                            val palette=palette(pixels,cw,ch,box)
+                            AutoBlock(text,rect,palette.first,palette.second)
+                        }
                     }.sortedByDescending { it.rect.bottom-kotlin.math.abs(it.rect.center-.5f) }.take(if(zone.centered)1 else 8)
                     tracker.observe(zone.id,blocks,SystemClock.elapsedRealtime())
                     lane.confirming=tracker.tracks.any { it.zone==zone.id&&it.confirmations<2 }
@@ -127,6 +132,33 @@ internal class GameLingoAutomaticOCR(
             bitmap?.recycle();busy.set(false)
         }
     }
+    // Bounded edge histogram: dominant background, then high-contrast ink.
+    private fun palette(pixels:IntArray,w:Int,h:Int,box:android.graphics.Rect):Pair<Int?,Int?> {
+        val l=box.left.coerceIn(0,w-1);val r=(box.right-1).coerceIn(l,w-1)
+        val t=box.top.coerceIn(0,h-1);val b=(box.bottom-1).coerceIn(t,h-1)
+        fun sample(x:Int,y:Int)=pixels[y*w+x] and 0xffffff
+        fun key(c:Int)=((c shr 21) and 7)*64+((c shr 13) and 7)*8+((c shr 5) and 7)
+        val edges=ArrayList<Int>(48)
+        for(i in 0 until 12){
+            val x=l+(r-l)*i/11;val y=t+(b-t)*i/11
+            edges+=sample(x,t);edges+=sample(x,b);edges+=sample(l,y);edges+=sample(r,y)
+        }
+        fun dominant(colors:List<Int>):Int? {
+            val group=colors.groupBy(::key).values.maxByOrNull{it.size} ?: return null
+            if(group.size<maxOf(3,colors.size/4))return null
+            return (group.map{it shr 16 and 255}.average().toInt() shl 16) or
+                (group.map{it shr 8 and 255}.average().toInt() shl 8) or group.map{it and 255}.average().toInt()
+        }
+        val bg=dominant(edges) ?: return null to null
+        val light=Color.luminance(bg or 0xff000000.toInt())
+        val candidates=ArrayList<Int>(192)
+        for(y in 0 until 8)for(x in 0 until 24){
+            val c=sample(l+(r-l)*x/23,t+(b-t)*y/7)
+            val v=Color.luminance(c or 0xff000000.toInt())
+            if((maxOf(v,light)+.05f)/(minOf(v,light)+.05f)>=4.5f)candidates+=c
+        }
+        return bg to dominant(candidates)
+    }
     private fun publish(now:Long) {
         if(!alive())return
         tracker.expire(now)
@@ -138,7 +170,11 @@ internal class GameLingoAutomaticOCR(
             if(chosen.any{GameLingoAutomaticTracker.same(it.first,track.block)})continue
             if(chosen.size<32)chosen+=track.block to track.block.output(value)
         }
-        val packet=GameLingoZonePacket(aspect,1f,chosen.map{it.second})
+        val font=if(GameLingoTVUi.isTV(context)) context.getSharedPreferences("gamelingo",Context.MODE_PRIVATE).getFloat("directGreen3",1f)
+            else if(Propojeni.Vysilac.cilIp!=null) TvProfily.nastaveni(context).getFloat("tvPismo",1f)
+            else GameLingoPhoneSubtitleStyle.scale(context)
+        val scale=if(font.isFinite())font.coerceIn(.1f,2f) else 1f
+        val packet=GameLingoZonePacket(aspect,scale,chosen.map{it.second})
         if(packet!=lastPacket||(packet.blocks.isNotEmpty()&&now-publishedAt>=800L)){
             output(packet);lastPacket=packet;publishedAt=now
         }

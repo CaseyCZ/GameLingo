@@ -73,7 +73,7 @@ object GameLingoSubtitleAppearance {
         }
         addCard(previewCard)
 
-        var font = prefs.getFloat("tvPismo", 1f).coerceIn(0.70f, 1.80f)
+        var font = prefs.getFloat("tvPismo", 1f).let { if(it.isFinite()) it.coerceIn(0.1f, 2f) else 1f }
         var width = prefs.getFloat("tvSirka", 0.62f).coerceIn(0.30f, 0.95f)
         val sliders = mutableListOf<SeekBar>()
         fun publish() {
@@ -87,7 +87,7 @@ object GameLingoSubtitleAppearance {
         }
         fun scalePreview() {
             preview.textSize = (18f * GameLingoPhoneSubtitleStyle.scale(activity))
-                .coerceIn(12f, 39f)
+                .coerceIn(1.8f, 36f)
             GameLingoPhoneSubtitleStyle.apply(activity, preview)
         }
         fun slider(label: String, min: Int, max: Int, initial: Int,
@@ -128,7 +128,7 @@ object GameLingoSubtitleAppearance {
             LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dp(12) })
-        slider("Velikost písma", 70, 180,
+        slider("Velikost písma", 10, 200,
             (GameLingoPhoneSubtitleStyle.scale(activity) * 100).toInt()) {
             GameLingoPhoneSubtitleStyle.setScale(activity, it / 100f)
         }
@@ -263,7 +263,7 @@ object GameLingoSubtitleAppearance {
         }
         styleChoices("Barva textu na TV",GameLingoPhoneSubtitleStyle.colors,true)
         styleChoices("Pozadí na TV",GameLingoPhoneSubtitleStyle.backgrounds,false)
-        slider("Velikost písma TV", 70, 180, (font * 100).toInt(),
+        slider("Velikost písma TV", 10, 200, (font * 100).toInt(),
             forTelevision = true) {
             font = it / 100f
             refreshTVPreview()

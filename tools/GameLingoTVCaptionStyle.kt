@@ -159,7 +159,7 @@ object GameLingoTVCaptionStyle {
             })
             root.addView(title);root.addView(bar)
         }
-        geometry("Velikost písma",3,60,200)
+        geometry("Velikost písma",3,10,200)
         geometry("Šířka titulků",2,20,100)
         root.addView(GameLingoTVUi.action(a,tr("Náhled na TV")){
             if(RemotePlayService.aktivni || PrijemService.bezi || GameLingoScreenTranslationService.running || OverlayService.overlayTestActive) return@action

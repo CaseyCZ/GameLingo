@@ -1061,7 +1061,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoTVPairing.initialize(this)", wire)
         self.assertIn("!authenticatedGameData && !GameLingoTVPairing.legacyEnabled(c)", receiver)
         self.assertIn('p.setData(decoded.toByteArray(Charsets.UTF_8))', receiver)
-        self.assertIn('listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1")', receiver)
+        self.assertIn('listOf("PCT1", "PCV1", "PCO1", "PCQ1", "PCS1", "PCZ1", "PCZ2")', receiver)
         self.assertIn('casti.firstOrNull() == "PCS1" && casti.getOrNull(1) in listOf("ZADOST", "KOD")', receiver)
         self.assertIn("GameLingoTVPairing.setLegacyEnabled(a, it)", tv)
 
@@ -1190,6 +1190,46 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("optionsFrames?.close()", stop)
         self.assertNotIn("await self?.processFrame(buffer", model)
         self.assertNotIn("await self?.processFrame(frame", model)
+
+    def test_subtitle_font_controls_share_10_to_200_percent(self):
+        settings = code(IOS/"SettingsHomeView.swift")
+        regions = code(IOS/"SubtitleSettingsView.swift")
+        self.assertGreaterEqual(settings.count("range: 0.10...2.00"), 2)
+        self.assertGreaterEqual(regions.count("0.10...2.00"), 2)
+        appearance = code(TOOLS/"GameLingoSubtitleAppearance.kt")
+        self.assertIn('slider("Velikost písma", 10, 200', appearance)
+        self.assertIn('slider("Velikost písma TV", 10, 200', appearance)
+        self.assertIn('geometry("Velikost písma",3,10,200)', code(TOOLS/"GameLingoTVCaptionStyle.kt"))
+        self.assertIn('slider("Velikost písma", 10, 200', code(TOOLS/"GameLingoOrangeOutput.kt"))
+        self.assertIn('font in .1f..2.5f', code(TOOLS/"GameLingoZonePacket.kt"))
+        self.assertIn('posuvnik(t("tvPismo"), 10, 200,', code(TOOLS/"redesign_gamelingo.py"))
+
+    def test_automatic_zone_preview_and_independent_reset(self):
+        ios = code(IOS/"GLAutomaticZonesView.swift")
+        android = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        self.assertIn('Button("Náhled na TV")', ios)
+        self.assertIn('model.tv.showOCRRegion(rect, visible: true)', ios)
+        self.assertIn('edit(zone.id) { $0.restoreArea() }', ios)
+        self.assertIn('action("Náhled na TV")', android)
+        self.assertIn('GameLingoTVPairing.previewOCRRegion(a,zone.rect)', android)
+        self.assertIn('updateSelected({ it.restoreArea() })', android)
+        self.assertNotIn('entries.clear()', android)
+        self.assertIn('sendSigned(it,ip,InetAddress.getByName(ip),payload,port)', code(TOOLS/"GameLingoTVPairing.kt"))
+
+    def test_adaptive_zone_negotiation_and_color_capture(self):
+        tv = code(IOS/"PlayCaptionTV.swift")
+        receiver = code(TOOLS/"patch_tv_iphone.py")
+        pairing = code(TOOLS/"IPhoneTVPairing.kt")
+        android = code(TOOLS/"GameLingoTVPairing.kt")
+        self.assertIn('Z1-2-', tv)
+        self.assertIn('Z1-2-', android)
+        self.assertIn('receiverSupportsAdaptiveZones', tv)
+        self.assertIn('supportsAdaptiveZones', android)
+        self.assertIn('"PCZ2" -> "PCZ1"', pairing)
+        self.assertIn('nonce.startsWith("Z1-2-")', receiver)
+        self.assertIn('glGamePalettes(rgb, rects: rects)', code(IOS/"CaptionPipeline.swift"))
+        self.assertIn('automaticRGB(l,u,v)', code(TOOLS/"automatic_android.py"))
+        self.assertIn('canvas.clipRect(left,top,right,bottom)', code(TOOLS/"GameLingoZoneOverlay.kt"))
 
     def test_automatic_zones_use_signed_bounded_snapshots_and_old_profiles(self):
         ios = code(IOS/"PlayCaptionIOSApp.swift")
@@ -1777,7 +1817,7 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         updates = code(IOS/"GameLingoUpdates.swift")
         self.assertNotIn('.alert("Nová verze GameLingo"', home)
         self.assertIn("GameLingoUpdateOffer(version: updates.available", home)
-        self.assertIn("accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer)", home)
+        self.assertIn("accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer || addDevicePicker)", home)
         self.assertIn("guard !model.isRunning, !updates.busy", home)
         self.assertIn("GLNeonPanel(emphasized: true, radius: 24)", updates)
         self.assertIn('GLPrimaryButton(title: "Stáhnout IPA"', updates)
@@ -2305,6 +2345,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
                        'GameLingoTVUi.action(this, GameLingoLanguages.ui(this, "Zařízení"))', "dlazdiceTel.nextFocusDownId=stahnoutMobil.id",
                        "dlazdiceTv.nextFocusDownId=spravaZarizeni.id"):
             self.assertIn(marker,wiring)
+
+    def test_add_device_uses_shared_branded_picker(self):
+        home = code(IOS/"GameLingoHome.swift")
+        panel = code(IOS/"GameLingoDevicesPanel.swift")
+        android = code(TOOLS/"GameLingoDeviceCenter.kt")
+        self.assertNotIn('.confirmationDialog("Přidat zařízení"', panel)
+        self.assertIn("onAddDevice()", panel)
+        self.assertNotIn('"Spárovat Google TV"', panel)
+        self.assertIn("ForEach(GLSubtitleOutput.allCases)", panel)
+        self.assertIn('selectionRow("Google TV / Android TV"', home)
+        self.assertIn("if addDevicePicker", home)
+        self.assertIn("onAddDevice: { addDevicePicker = true }", home)
+        self.assertIn('GameLingoVisualKit.selectSourceOrOutput(c, "Přidat zařízení"', android)
 
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):
         manager=code(TOOLS/"GameLingoDeviceCenter.kt")

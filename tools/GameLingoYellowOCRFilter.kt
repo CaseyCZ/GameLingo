@@ -12,12 +12,14 @@ internal object GameLingoIgnoredLines {
 internal object GameLingoYellowOCRFilter {
     private val prompt = Regex("""(?i)^(?:press|hold|tap) +(?:button +)?(?:A|B|X|Y|LB|RB|LT|RT|L1|L2|L3|R1|R2|R3|START|SELECT|OPTIONS|MENU|\[(?:A|B|X|Y|LB|RB|LT|RT|L1|L2|L3|R1|R2|R3|START|SELECT|OPTIONS|MENU)\])(?: +to +(?:continue|confirm|skip|select|go back))?[.!]?$""")
 
+    private val controllerLabels = setOf("LB", "RB", "LT", "RT", "L1", "L2", "L3", "R1", "R2", "R3")
     // The explicit list is independent of the optional controller prompt filter.
     fun meetsMinimumHeight(lineHeight: Int, cropHeight: Int, percent: Int): Boolean =
         percent <= 0 || (lineHeight > 0 && cropHeight > 0 && lineHeight.toLong() * 100 >= cropHeight.toLong() * percent.coerceIn(1, 5))
 
     fun keepsAutomaticDialogue(text: String, filterMenus: Boolean, ignored: Set<String>): Boolean =
-        GameLingoIgnoredLines.keeps(text, ignored) && keeps(text, filterMenus)
+        GameLingoIgnoredLines.keeps(text, ignored) &&
+            text.trim().uppercase(java.util.Locale.ROOT) !in controllerLabels && keeps(text, filterMenus)
 
     fun keeps(text: String, enabled: Boolean): Boolean =
         !enabled || !prompt.matches(text.trim())

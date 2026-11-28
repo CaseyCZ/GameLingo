@@ -54,6 +54,13 @@ def install_automatic(folder, tv):
         previous.close()
         '''+clear+'''
     }
+    private fun automaticRGB(y:Int,u:Int,v:Int):Int {
+        val c=(y-16).coerceAtLeast(0);val d=u-128;val e=v-128
+        val r=((298*c+409*e+128) shr 8).coerceIn(0,255)
+        val g=((298*c-100*d-208*e+128) shr 8).coerceIn(0,255)
+        val b=((298*c+516*d+128) shr 8).coerceIn(0,255)
+        return (255 shl 24) or (r shl 16) or (g shl 8) or b
+    }
     private fun automaticXbox(f:org.webrtc.VideoFrame):Boolean =
         automaticFrame(f.rotatedWidth,f.rotatedHeight){x,y,w,h->
             val i=f.buffer.toI420()?:error("I420")
@@ -67,7 +74,9 @@ def install_automatic(folder, tv):
                         else -> xx to yy
                     }
                     val l=i.dataY.get(sy*i.strideY+sx).toInt() and 255
-                    (255 shl 24) or (l shl 16) or (l shl 8) or l
+                    val u=i.dataU.get((sy/2)*i.strideU+sx/2).toInt() and 255
+                    val v=i.dataV.get((sy/2)*i.strideV+sx/2).toInt() and 255
+                    automaticRGB(l,u,v)
                 }
             }finally{i.release()}
         }
@@ -80,10 +89,18 @@ def install_automatic(folder, tv):
                         if(GameLingoAutomaticConfig.enabled(this)) {
                             try{
                                 automaticFrame(img.width,img.height){x,y,w,h->
-                                    val p=img.planes[0];val data=p.buffer.duplicate()
+                                    val planes=img.planes
+                                    val p=planes[0];val data=p.buffer.duplicate()
+                                    val up=planes.getOrNull(1);val vp=planes.getOrNull(2)
+                                    val ub=up?.buffer?.duplicate();val vb=vp?.buffer?.duplicate()
                                     IntArray(w*h){index->
-                                        val l=data.get((y+index/w)*p.rowStride+(x+index%w)*p.pixelStride).toInt() and 255
-                                        (255 shl 24) or (l shl 16) or (l shl 8) or l
+                                        val xx=x+index%w;val yy=y+index/w
+                                        val l=data.get(data.position()+yy*p.rowStride+xx*p.pixelStride).toInt() and 255
+                                        if(up!=null&&vp!=null&&ub!=null&&vb!=null){
+                                            val u=ub.get(ub.position()+yy/2*up.rowStride+xx/2*up.pixelStride).toInt() and 255
+                                            val v=vb.get(vb.position()+yy/2*vp.rowStride+xx/2*vp.pixelStride).toInt() and 255
+                                            automaticRGB(l,u,v)
+                                        }else (255 shl 24) or (l shl 16) or (l shl 8) or l
                                     }
                                 }
                             }finally{img.close()}
@@ -116,6 +133,6 @@ def install_automatic(folder, tv):
                                         val current=if(packet!=null && android.os.SystemClock.elapsedRealtime()-automaticAt<=2000L)packet
                                             else if(packet!=null)GameLingoZonePacket(16f/9f,1f,emptyList()) else null
                                         val data = if(current==null)zprava() else if(GameLingoTVPairing.supportsZones(ip))
-                                            current.encode().toByteArray(Charsets.UTF_8) else current.legacy(++cislo)''')
+                                            current.encode(GameLingoTVPairing.supportsAdaptiveZones(ip)).toByteArray(Charsets.UTF_8) else current.legacy(++cislo)''')
     p=one(p,'"$OBLAST\\t0\\t0.1\\t0.1\\t0.9\\t0.9"\n','"$OBLAST\\t0\\t0.1\\t0.1\\t0.9\\t0.9",\n                "PCZ1\\t1.7778\\t1\\t0"\n')
     transport.write_text(p,encoding="utf8")

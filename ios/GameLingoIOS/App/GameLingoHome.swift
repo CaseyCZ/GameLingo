@@ -29,6 +29,7 @@ struct GameLingoHome: View {
     @State private var setupSheet = false
     @State private var cameraSheet = false
     @AppStorage("gamelingo.cameraSourceSelected") private var cameraSource = false
+    @State private var addDevicePicker = false
     @State private var sourcePicker = false
     @State private var outputPicker = false
     @State private var regionsSheet = false
@@ -75,7 +76,7 @@ struct GameLingoHome: View {
                 bottomTabs
             }
             .background(GLNeonBackground())
-            .accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer)
+            .accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer || addDevicePicker)
             .toolbar(.hidden, for: .navigationBar)
         }
         .tint(GLVisual.cyan)
@@ -104,7 +105,7 @@ struct GameLingoHome: View {
                     tab = .about
                     updates.download()
                 })
-            } else if sourcePicker || outputPicker {
+            } else if sourcePicker || outputPicker || addDevicePicker {
                 selectionOverlay
             }
         }
@@ -313,24 +314,37 @@ struct GameLingoHome: View {
     private var selectionOverlay: some View {
         ZStack(alignment: .bottom) {
             Color.black.opacity(0.65).ignoresSafeArea()
-                .onTapGesture { sourcePicker = false; outputPicker = false }
+                .onTapGesture { sourcePicker = false; outputPicker = false; addDevicePicker = false }
                 .accessibilityHidden(true)
             GLNeonPanel(emphasized: true, radius: 24) {
                 VStack(spacing: 10) {
                     HStack {
-                        GLBackButton { sourcePicker = false; outputPicker = false }
+                        GLBackButton { sourcePicker = false; outputPicker = false; addDevicePicker = false }
                             .labelStyle(.iconOnly)
                             .frame(width: 44, height: 44)
                             .foregroundStyle(GLNeon.cyan)
-                        Text(LocalizedStringKey(sourcePicker ? "Vybrat zařízení" : "Výstup titulků"))
+                        Text(LocalizedStringKey(addDevicePicker ? "Přidat zařízení" : (sourcePicker ? "Vybrat zařízení" : "Výstup titulků")))
                             .font(.headline).foregroundStyle(.white)
                             .accessibilityAddTraits(.isHeader)
                             .frame(maxWidth: .infinity)
-                        GLHelpButton(title: sourcePicker ? "Vybrat zařízení" : "Výstup titulků",
-                            explanation: sourcePicker ? "Vyber zdroj obrazu podle zařízení." : "Vyber zdroj obrazu a výstup titulků.")
+                        GLHelpButton(title: addDevicePicker ? "Přidat zařízení" : (sourcePicker ? "Vybrat zařízení" : "Výstup titulků"),
+                            explanation: (sourcePicker || addDevicePicker) ? "Vyber zdroj obrazu podle zařízení." : "Vyber zdroj obrazu a výstup titulků.")
                             .frame(width: 44, height: 44)
                     }
-                    if sourcePicker {
+                    if addDevicePicker {
+                        selectionRow("Xbox", icon: "gamecontroller.fill", family: .xbox, selected: false) {
+                            addDevicePicker = false
+                            xboxSheet = true
+                        }
+                        selectionRow("PlayStation 5 / 4", icon: "gamecontroller.fill", family: .playStation, selected: false) {
+                            addDevicePicker = false
+                            playStationSheet = true
+                        }
+                        selectionRow("Google TV / Android TV", icon: "tv.fill", selected: false) {
+                            addDevicePicker = false
+                            tvSheet = true
+                        }
+                    } else if sourcePicker {
                         selectionRow("Xbox", icon: "gamecontroller.fill",
                                      family: .xbox, selected: !cameraSource && devices.chosenConsole?.family == .xbox) {
                             sourcePicker = false
@@ -358,7 +372,7 @@ struct GameLingoHome: View {
                         }
                     }
                     Button {
-                        sourcePicker = false; outputPicker = false
+                        sourcePicker = false; outputPicker = false; addDevicePicker = false
                     } label: {
                         Text("Zrušit").font(.subheadline.weight(.semibold))
                             .foregroundStyle(GLNeon.cyan)
@@ -378,11 +392,14 @@ struct GameLingoHome: View {
             HStack(spacing: 12) {
                 if let family {
                     GLPlatformBadge(family: family, size: 42)
+                } else if icon == "tv.fill" {
+                    GLPlatformBadge(family: nil, isTelevision: true, size: 42)
                 } else {
                     Image(systemName: icon).font(.title2).foregroundStyle(GLNeon.cyan)
                         .frame(width: 42, height: 42)
                 }
                 Text(LocalizedStringKey(title)).font(.headline)
+                    .multilineTextAlignment(.center)
                     .foregroundStyle(.white).frame(maxWidth: .infinity)
                 Image(systemName: selected ? "checkmark.circle.fill" : "chevron.right")
                     .foregroundStyle(selected ? GLStyle.green : GLNeon.mist)
@@ -493,20 +510,20 @@ struct GameLingoHome: View {
                 tile("Vzhled titulků", icon: "paintpalette") { appearanceSheet = true }
             }
             readiness
-            if devices.subtitleOutput == .phone && model.automaticGameDialogue {
+            if devices.subtitleOutput == .phone && model.automaticGameDialogue && model.phoneFontScale > 0 {
                 ForEach(model.automaticOutputs) { output in
                     GLCard {
                         Text(model.automaticZones.first { $0.id == output.zone }?.name ?? GLInterfaceText.localized("Překlad"))
                             .font(.caption)
-                        Text(output.text).font(.headline)
+                        Text(output.text).font(.system(size: max(1, 17 * model.phoneFontScale), weight: .semibold))
                     }
                 }
             }
-            if devices.subtitleOutput == .phone && !model.phoneSubtitle.isEmpty {
+            if devices.subtitleOutput == .phone && model.phoneFontScale > 0 && !model.phoneSubtitle.isEmpty {
                 GLCard {
                     GLHeader(title: "Dialog")
                     Text(model.phoneSubtitle)
-                        .font(.system(size: 23 * model.phoneFontScale,
+                        .font(.system(size: max(1, 23 * model.phoneFontScale),
                                       weight: .bold))
                         .foregroundStyle(model.phoneTextColor.color)
                         .multilineTextAlignment(.center)
@@ -517,11 +534,11 @@ struct GameLingoHome: View {
                                     in: RoundedRectangle(cornerRadius: 12))
                 }
             }
-            if devices.subtitleOutput == .phone && !model.lastChoices.isEmpty {
+            if devices.subtitleOutput == .phone && model.phoneFontScale > 0 && !model.lastChoices.isEmpty {
                 GLCard {
                     GLHeader(title: "Přeložené herní texty")
                     Text(model.lastChoices)
-                        .font(.system(size: 21 * model.phoneFontScale,
+                        .font(.system(size: max(1, 21 * model.phoneFontScale),
                                       weight: .semibold))
                         .foregroundStyle(model.phoneTextColor.color)
                         .multilineTextAlignment(.center)
@@ -692,7 +709,7 @@ struct GameLingoHome: View {
             devices: devices,
             addXbox: { xboxSheet = true },
             addPlayStation: { playStationSheet = true },
-            addTV: { tvSheet = true }
+            onAddDevice: { addDevicePicker = true }
         )
     }
 

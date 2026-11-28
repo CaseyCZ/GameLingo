@@ -77,6 +77,7 @@ final class PlayCaptionTV: ObservableObject {
     @Published private(set) var receiverStatus = "Televize zatím není spárovaná s iPhonem."
     @Published private(set) var receiverConnected = false
     @Published private(set) var receiverSupportsZones = false
+    @Published private(set) var receiverSupportsAdaptiveZones = false
     @Published private(set) var lastCaptionAcknowledgement = ""
 
     private let receiverID: String = {
@@ -386,6 +387,7 @@ final class PlayCaptionTV: ObservableObject {
         liveReceiverReady = false
         receiverConnected = false
         receiverSupportsZones = false
+        receiverSupportsAdaptiveZones = false
         lastPong = nil
         pendingPingNonce = nil
         lastCaptionAcknowledgement = ""
@@ -457,7 +459,7 @@ final class PlayCaptionTV: ObservableObject {
                         while !Task.isCancelled {
                             guard let self, let token = ReceiverSecretStore.load(target),
                                   self.liveReceiver === conn else { break }
-                            let nonce = "Z1-" + UUID().uuidString
+                            let nonce = "Z1-2-" + UUID().uuidString
                             self.pendingPingNonce = nonce
                             let body = self.freshBody("PING\t\(self.receiverID)\t\(nonce)")
                             if let mac = self.signature(body, tokenHex: token) {
@@ -522,8 +524,10 @@ final class PlayCaptionTV: ObservableObject {
                        let token = ReceiverSecretStore.load(target),
                        let expected = self.signature("PONG\t\(self.receiverID)\t\(fields[2])", tokenHex: token),
                        fields[3] == expected {
-                        self.receiverSupportsZones = fields.count == 6 && fields[4] == "PCZ1" &&
-                            self.signature("PONG\t\(self.receiverID)\t\(fields[2])|PCZ1", tokenHex: token) == fields[5]
+                        self.receiverSupportsAdaptiveZones = fields.count == 6 && fields[4] == "PCZ2" &&
+                            self.signature("PONG\t\(self.receiverID)\t\(fields[2])|PCZ2", tokenHex: token) == fields[5]
+                        self.receiverSupportsZones = self.receiverSupportsAdaptiveZones || (fields.count == 6 && fields[4] == "PCZ1" &&
+                            self.signature("PONG\t\(self.receiverID)\t\(fields[2])|PCZ1", tokenHex: token) == fields[5])
                         self.pendingPingNonce = nil
                         self.lastPong = Date()
                         self.receiverRetrySeconds = 3
@@ -634,19 +638,28 @@ final class PlayCaptionTV: ObservableObject {
         repeatTask = nil
         let target = ip.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !target.isEmpty else { return }
-        let font = (UserDefaults.standard.object(forKey: "outputFont") as? Double) ?? 1
+        let savedFont = UserDefaults.standard.object(forKey: "outputFont") as? Double ?? 1
+        let font = savedFont.isFinite ? min(2, max(0.1, savedFont)) : 1
         var blocks = [String]()
-        let limit = min(512, 4608 / max(1, min(32, outputs.count)))
+        let adaptive = receiverSupportsAdaptiveZones && !outputs.isEmpty
+        let limit = min(512, (adaptive ? 3000 : 4608) / max(1, min(32, outputs.count)))
+        func decimal(_ value: Double) -> String { String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), value) }
         for output in outputs.prefix(32) {
             var text = output.text
             while text.utf8.count > limit { text.removeLast() }
             guard !text.isEmpty else { continue }
             let l = output.layout
-            blocks += [Data(text.utf8).base64EncodedString(), String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.centerX),
-                       String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.bottomY),
-                       String(format: "%.5f", locale: Locale(identifier: "en_US_POSIX"), l.width)]
+            if adaptive {
+                let r = output.rect
+                guard r.width >= 0.001, r.height >= 0.001 else { continue }
+                blocks += [Data(text.utf8).base64EncodedString(), decimal(Double(r.midX)), decimal(Double(r.maxY)),
+                           decimal(Double(r.width)), decimal(Double(r.height)),
+                           output.background.map { String($0) } ?? "-1", output.ink.map { String($0) } ?? "-1"]
+            } else {
+                blocks += [Data(text.utf8).base64EncodedString(), decimal(l.centerX), decimal(l.bottomY), decimal(l.width)]
+            }
         }
-        let header = ["PCZ1", String(min(4, max(0.5, aspect))), String(min(2.5, max(0.5, font))), String(blocks.count / 4)]
+        let header = [adaptive ? "PCZ2" : "PCZ1", String(min(4, max(0.5, aspect))), String(min(2, max(0.1, font))), String(blocks.count / (adaptive ? 7 : 4))]
         _ = sendSignedSubtitle(Data((header + blocks).joined(separator: "\t").utf8), to: target, reportStatus: false)
     }
 
@@ -672,7 +685,8 @@ final class PlayCaptionTV: ObservableObject {
         let x = automaticLayout?.centerX ?? (prefs.object(forKey: "outputX") as? Double) ?? 0.5
         let y = automaticLayout?.bottomY ?? (prefs.object(forKey: "outputBottom") as? Double) ?? 0.93
         let width = automaticLayout?.width ?? (prefs.object(forKey: "outputWidth") as? Double) ?? 0.62
-        let font = (prefs.object(forKey: "outputFont") as? Double) ?? 1.0
+        let savedFont = prefs.object(forKey: "outputFont") as? Double ?? 1.0
+        let font = savedFont.isFinite ? min(2, max(0.1, savedFont)) : 1
         // Original PlayCaption 0.22 protocol: field 4 is an empty hint.
         // Without it the TV misreads X/Y/width and draws a huge black strip.
         let fields = [
@@ -742,7 +756,7 @@ final class PlayCaptionTV: ObservableObject {
         // Older PlayCaption receivers ignore additional fields safely.
         let outputSuffix: String
         if let rect = outputArea {
-            let scale = outputFont.isFinite ? min(2.0, max(0.6, outputFont)) : 1.0
+            let scale = outputFont.isFinite ? min(2.0, max(0.1, outputFont)) : 1.0
             outputSuffix = "\t\(rect.minX)\t\(rect.minY)\t\(rect.maxX)\t\(rect.maxY)\t\(scale)"
         } else {
             outputSuffix = ""
