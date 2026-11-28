@@ -995,19 +995,110 @@ struct GameSubtitleProfile: Codable, Identifiable {
 }
 
 struct GameLingoPrivacyView: View {
+    @Environment(\.openURL) private var openURL
     var body: some View {
         GLScreen(title: "Soukromí", help: "Jak GameLingo pracuje s obrazem a textem") {
             GLCard {
-                Text("OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje.").font(.subheadline)
-                Text("Cache může ukládat původní i přeložený text. Lze ji vypnout a samostatně vymazat. Volitelná historie zůstává pouze v paměti aplikace.").font(.subheadline)
-                Text("Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť.").font(.subheadline)
-                Text("Přihlášení ke konzolím využívá služby Microsoft a Sony. Připojené účty a zařízení spravuj v nabídce Zařízení.").font(.subheadline)
-                Text("Snímání lze kdykoli zastavit. GameLingo nepřekládá mikrofon ani zvuk.").font(.subheadline)
+                GLHeader(title: "OCR a rozpoznávání")
+                Text("OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje.")
+                    .font(.subheadline)
+                    .foregroundStyle(GLNeon.mist)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .multilineTextAlignment(.center)
             }
             GLCard {
-                Link("Zásady ochrany osobních údajů",
-                     destination: URL(string: "https://github.com/CaseyCZ/GameLingo/blob/Master/PRIVACY.md")!)
+                GLHeader(title: "Překladová cache")
+                Text("Cache může ukládat původní i přeložený text. Lze ji vypnout a samostatně vymazat. Volitelná historie zůstává pouze v paměti aplikace.")
+                    .font(.subheadline)
+                    .foregroundStyle(GLNeon.mist)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .multilineTextAlignment(.center)
             }
+            GLCard {
+                GLHeader(title: "Výstup titulků")
+                Text("Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť.")
+                    .font(.subheadline)
+                    .foregroundStyle(GLNeon.mist)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .multilineTextAlignment(.center)
+            }
+            GLCard {
+                GLHeader(title: "Zařízení")
+                Text("Přihlášení ke konzolím využívá služby Microsoft a Sony. Připojené účty a zařízení spravuj v nabídce Zařízení.")
+                    .font(.subheadline)
+                    .foregroundStyle(GLNeon.mist)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .multilineTextAlignment(.center)
+            }
+            GLCard {
+                GLHeader(title: "Soukromí")
+                Text("Snímání lze kdykoli zastavit. GameLingo nepřekládá mikrofon ani zvuk.")
+                    .font(.subheadline)
+                    .foregroundStyle(GLNeon.mist)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .multilineTextAlignment(.center)
+            }
+            GLPrimaryButton(title: "Zásady ochrany osobních údajů", systemImage: "globe") {
+                openURL(URL(string: "https://github.com/CaseyCZ/GameLingo/blob/Master/PRIVACY.md")!)
+            }
+        }
+    }
+}
+
+/// Same centered, branded modal as the existing update offer and device picker.
+struct GLTranslationPrivacyOffer: View {
+    let onCancel: () -> Void
+    let onStart: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.72).ignoresSafeArea()
+                .onTapGesture(perform: onCancel)
+                .accessibilityHidden(true)
+            ScrollView {
+                GLNeonPanel(emphasized: true, radius: 24) {
+                    VStack(spacing: 13) {
+                        HStack {
+                            GLBackButton { onCancel() }
+                                .labelStyle(.iconOnly)
+                                .frame(width: 44, height: 44)
+                                .foregroundStyle(GLNeon.cyan)
+                            Text("Před spuštěním překladu")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .accessibilityAddTraits(.isHeader)
+                            GLHelpButton(title: "Soukromí", explanation: "Jak GameLingo pracuje s obrazem a textem")
+                                .frame(width: 44, height: 44)
+                        }
+                        Image(systemName: "hand.raised.fill")
+                            .font(.system(size: 36, weight: .medium))
+                            .foregroundStyle(GLStyle.gradient)
+                            .accessibilityHidden(true)
+                        Text("OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje.")
+                            .font(.subheadline)
+                            .foregroundStyle(GLNeon.mist)
+                            .fixedSize(horizontal: false, vertical: true)
+                        GLPrimaryButton(title: "Spustit překlad", systemImage: "play.fill", action: onStart)
+                        Button(action: onCancel) {
+                            Text("Zrušit")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(GLNeon.cyan)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .padding(4)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(maxWidth: 400)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(24)
+            .accessibilityAddTraits(.isModal)
         }
     }
 }

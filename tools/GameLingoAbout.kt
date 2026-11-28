@@ -167,48 +167,121 @@ object GameLingoAbout {
         return page
     }
 
+    private const val PRIVACY_NOTICE = "OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje."
+
+    private fun privacyText(activity: Activity, value: String): TextView =
+        TextView(activity).apply {
+            text = GameLingoLanguages.ui(activity, value)
+            gravity = Gravity.CENTER
+            textSize = GameLingoVisualKit.sp(activity, 15f)
+            setTextColor(Color.parseColor("#92A4C7"))
+            val padding = GameLingoVisualKit.dp(activity, 8)
+            setPadding(padding, padding, padding, padding)
+        }
+
     fun showPrivacy(activity: Activity) {
         if (activity.isFinishing || activity.isDestroyed) return
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
-        val body = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
-        for (paragraph in listOf(
-            "OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje.",
-            "Cache může ukládat původní i přeložený text. Lze ji vypnout a samostatně vymazat. Volitelná historie zůstává pouze v paměti aplikace.",
-            "Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť.",
-            "Přihlášení ke konzolím využívá služby Microsoft a Sony. Připojené účty a zařízení spravuj v nabídce Zařízení.",
-            "Snímání lze kdykoli zastavit. GameLingo nepřekládá mikrofon ani zvuk."
+        val body = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
+        for ((title, paragraph) in listOf(
+            "OCR a rozpoznávání" to PRIVACY_NOTICE,
+            "Překladová cache" to "Cache může ukládat původní i přeložený text. Lze ji vypnout a samostatně vymazat. Volitelná historie zůstává pouze v paměti aplikace.",
+            "Výstup titulků" to "Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť.",
+            "Zařízení" to "Přihlášení ke konzolím využívá služby Microsoft a Sony. Připojené účty a zařízení spravuj v nabídce Zařízení.",
+            "Soukromí" to "Snímání lze kdykoli zastavit. GameLingo nepřekládá mikrofon ani zvuk."
         )) {
-            body.addView(TextView(activity).apply {
-                text = tr(paragraph)
-                textSize = GameLingoVisualKit.sp(activity, 15f)
-                setTextColor(Color.WHITE)
-                val padding = GameLingoVisualKit.dp(activity, 12)
-                setPadding(padding, padding, padding, padding)
+            val card = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                background = GameLingoVisualKit.card(activity)
+                val p = GameLingoVisualKit.dp(activity, 12)
+                setPadding(p, p, p, p)
+                addView(GameLingoVisualKit.heading(activity, tr(title)), LinearLayout.LayoutParams(-1, -2))
+                addView(privacyText(activity, paragraph), LinearLayout.LayoutParams(-1, -2))
+            }
+            body.addView(card, LinearLayout.LayoutParams(-1, -2).apply {
+                bottomMargin = GameLingoVisualKit.dp(activity, 12)
             })
         }
-        body.addView(GameLingoTVUi.action(activity, tr("Zásady ochrany osobních údajů")) {
+        body.addView(GameLingoTVUi.action(activity, tr("Zásady ochrany osobních údajů"), primary = true) {
             val url = "https://github.com/CaseyCZ/GameLingo/blob/Master/PRIVACY.md"
             try { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
             catch (_: android.content.ActivityNotFoundException) {
-                android.app.AlertDialog.Builder(activity).setMessage(url)
-                    .setPositiveButton(tr("Zavřít"), null).show()
+                val fallback = LinearLayout(activity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    addView(TextView(activity).apply {
+                        text = url
+                        gravity = Gravity.CENTER
+                        setTextColor(Color.WHITE)
+                        setTextIsSelectable(true)
+                    }, LinearLayout.LayoutParams(-1, -2))
+                }
+                GameLingoTVUi.page(activity, tr("Zásady ochrany osobních údajů"), fallback, helpTopic = "privacy")
             }
-        })
-        GameLingoTVUi.page(activity, tr("Soukromí"), body, helpTopic = "about")
+        }, LinearLayout.LayoutParams(-1, -2))
+        GameLingoTVUi.page(activity, tr("Soukromí"), body, helpTopic = "privacy")
     }
 
     /** Affirmative action before user-initiated capture, not a legal consent record. */
     fun confirmTranslationPrivacy(activity: Activity, onCancel: () -> Unit = {}, onStart: () -> Unit) {
         if (activity.isFinishing || activity.isDestroyed) return
         fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
-        android.app.AlertDialog.Builder(activity)
-            .setTitle(tr("Před spuštěním překladu"))
-            .setMessage(tr("OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje."))
-            .setNegativeButton(tr("Zrušit")) { _, _ -> onCancel() }
-            .setOnCancelListener { onCancel() }
-            .setPositiveButton(tr("Spustit překlad")) { _, _ ->
-                if (!activity.isFinishing && !activity.isDestroyed) onStart()
-            }.show()
+        fun dp(value: Int) = GameLingoVisualKit.dp(activity, value)
+        val dialog = Dialog(activity)
+        var accepted = false
+        val body = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            background = GameLingoVisualKit.card(activity, selected = true)
+            setPadding(dp(16), dp(16), dp(16), dp(12))
+        }
+        val back = GameLingoTVUi.action(activity, tr("Zpět")) { dialog.dismiss() }
+        val help = GameLingoHelp.button(activity, "privacy")
+        body.addView(GameLingoTVUi.header(activity,
+            GameLingoVisualKit.heading(activity, tr("Před spuštěním překladu")), back, help))
+        val copy = privacyText(activity, PRIVACY_NOTICE)
+        val scroll = ScrollView(activity).apply {
+            isFillViewport = false
+            addView(copy, ViewGroup.LayoutParams(-1, -2))
+        }
+        body.addView(scroll, LinearLayout.LayoutParams(-1, -2))
+        val start = GameLingoTVUi.action(activity, tr("Spustit překlad"), primary = true) {
+            accepted = true
+            dialog.dismiss()
+        }
+        val cancel = GameLingoTVUi.action(activity, tr("Zrušit")) { dialog.dismiss() }
+        body.addView(start, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        body.addView(cancel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        listOf(back, help, start, cancel).forEach { it.id = android.view.View.generateViewId() }
+        back.nextFocusRightId = help.id
+        help.nextFocusLeftId = back.id
+        back.nextFocusDownId = start.id
+        help.nextFocusDownId = start.id
+        start.nextFocusUpId = back.id
+        start.nextFocusDownId = cancel.id
+        cancel.nextFocusUpId = start.id
+        dialog.setContentView(body)
+        dialog.setCanceledOnTouchOutside(true)
+        dialog.setOnDismissListener {
+            if (!accepted) onCancel()
+            else if (!activity.isFinishing && !activity.isDestroyed) onStart()
+        }
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        val screen = activity.resources.displayMetrics
+        val width = if (GameLingoTVUi.isTV(activity)) (screen.widthPixels * .66f).toInt()
+            else minOf((screen.widthPixels - dp(32)).coerceAtLeast(1), dp(560))
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        scroll.post {
+            val maxHeight = (screen.heightPixels * .40f).toInt().coerceAtLeast(dp(48))
+            if (scroll.height > maxHeight) scroll.layoutParams = LinearLayout.LayoutParams(-1, maxHeight)
+        }
+        GameLingoTVUi.applyMenuFocus(activity, body)
+        cancel.requestFocus()
     }
 
     fun show(activity: Activity) {

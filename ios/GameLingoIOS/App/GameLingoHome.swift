@@ -77,7 +77,7 @@ struct GameLingoHome: View {
                 bottomTabs
             }
             .background(GLNeonBackground())
-            .accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer || addDevicePicker)
+            .accessibilityHidden(sourcePicker || outputPicker || showUpdateOffer || addDevicePicker || showTranslationPrivacy)
             .toolbar(.hidden, for: .navigationBar)
         }
         .tint(GLVisual.cyan)
@@ -105,6 +105,12 @@ struct GameLingoHome: View {
                     guard !model.isRunning, !updates.busy, updates.available != nil else { return }
                     tab = .about
                     updates.download()
+                })
+            } else if showTranslationPrivacy {
+                GLTranslationPrivacyOffer(onCancel: { showTranslationPrivacy = false }, onStart: {
+                    showTranslationPrivacy = false
+                    guard !model.isRunning else { return }
+                    startCurrentSource()
                 })
             } else if addDevicePicker {
                 GLAddDevicePicker(onCancel: { addDevicePicker = false },
@@ -555,12 +561,6 @@ struct GameLingoHome: View {
             .shadow(color: GLNeon.purple.opacity(0.35), radius: 16, y: 7)
         }
         .buttonStyle(.plain)
-        .alert("Před spuštěním překladu", isPresented: $showTranslationPrivacy) {
-            Button("Zrušit", role: .cancel) {}
-            Button("Spustit překlad") { startCurrentSource() }
-        } message: {
-            Text("OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje.")
-        }
         .disabled(cameraSource && model.cacheChanging)
         .accessibilityHint(model.isRunning
                            ? "Ukončit aktuální Remote Play a překlad"

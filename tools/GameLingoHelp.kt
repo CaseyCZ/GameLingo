@@ -23,6 +23,8 @@ object GameLingoHelp {
             "Zvol celý obraz nebo nastav žlutý rámeček na původní titulky."
         "languages" -> "Jazyky" to
             "Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle."
+        "privacy" -> "Soukromí" to
+            "Jak GameLingo pracuje s obrazem a textem"
         "about" -> "O aplikaci / Licence" to
             "Tady najdeš verzi aplikace, aktualizace, původní autory a úplné licenční texty."
         "settings" -> "Nastavení" to
