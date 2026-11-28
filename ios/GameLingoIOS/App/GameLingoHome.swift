@@ -487,7 +487,12 @@ struct GameLingoHome: View {
                     GLCard {
                         Text(model.automaticZones.first { $0.id == output.zone }?.name ?? GLInterfaceText.localized("Překlad"))
                             .font(.caption)
-                        Text(output.text).font(.system(size: max(1, 17 * model.phoneFontScale), weight: .semibold))
+                        Text(output.text)
+                            .font(.system(size: max(1, 17 * model.phoneFontScale), weight: .semibold))
+                            .foregroundStyle(model.phoneTextColor.color)
+                            .multilineTextAlignment(.center)
+                            .padding(9)
+                            .background(model.phoneBackground.fill, in: RoundedRectangle(cornerRadius: 12))
                     }
                 }
             }

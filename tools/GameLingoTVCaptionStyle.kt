@@ -94,7 +94,9 @@ object GameLingoTVCaptionStyle {
             button.isSelected=selected
             button.contentDescription=names[i]+if(selected)" · "+tr("vybráno") else ""
         }
+        val geometryRefreshers = mutableListOf<() -> Unit>()
         fun refresh() {
+            geometryRefreshers.forEach { it() }
             swatches.indices.forEach{paintSwatch(it)}
             backgrounds.forEachIndexed{i,v->v.text=(if(p.getInt("opacity",230)==bgValues[i])"✓ " else "")+bgNames[i]}
             val percent = (p.getInt("opacity",230).coerceIn(0,255)*100+127)/255
@@ -144,11 +146,18 @@ object GameLingoTVCaptionStyle {
                 isEnabled=!GameLingoDirectTVLayout.locked(a,"Green")
                 GameLingoTVUi.controlFocus(a,this)
             }
-            title.text=tr(labelText)+": "+(bar.progress+min)+" %"
+            fun syncGeometry() {
+                val value = (GameLingoDirectTVLayout.storedGreen(a)[index]*100).toInt().coerceIn(min,max)
+                bar.progress = value-min
+                bar.isEnabled = !GameLingoDirectTVLayout.locked(a,"Green")
+                title.text=tr(labelText)+": "+value+" %"
+            }
+            geometryRefreshers.add(::syncGeometry)
+            syncGeometry()
             bar.setOnSeekBarChangeListener(object:android.widget.SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(b:android.widget.SeekBar,v:Int,fromUser:Boolean){
                     title.text=tr(labelText)+": "+(v+min)+" %"
-                    if(fromUser && !GameLingoDirectTVLayout.locked(a,"Green")){
+                    if(fromUser && !GameLingoLanguages.translationSettingsBusy() && !GameLingoDirectTVLayout.locked(a,"Green")){
                         val r=GameLingoDirectTVLayout.storedGreen(a);r[index]=(v+min)/100f
                         if(index==2)r[0]=r[0].coerceIn(r[2]/2f,1f-r[2]/2f)
                         GameLingoDirectTVLayout.saveGreen(a,r);refresh()

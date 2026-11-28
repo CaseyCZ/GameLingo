@@ -2489,6 +2489,20 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("Přejmenovat konzoli",code(TOOLS/"GameLingoDeviceCenter.kt"))
         self.assertIn("GameLingoDeviceCenter.consoleName",code(TOOLS/"polish_all_screens.py"))
 
+    def test_caption_style_low_font_range_and_live_preview_safety(self):
+        profiles = code(TOOLS/"GameLingoTVProfiles.kt")
+        self.assertIn("it[4] in 0.1f..2f", profiles)
+        self.assertIn("it[3] in 0.1f..2f", profiles)
+        self.assertNotIn("0.6f..2f", profiles)
+        phone = code(TOOLS/"GameLingoPhoneSubtitleStyle.kt")
+        self.assertIn("safeScale(prefs(c).getFloat", phone)
+        style = code(TOOLS/"GameLingoTVCaptionStyle.kt")
+        self.assertIn("geometryRefreshers.forEach { it() }", style)
+        self.assertIn("geometryRefreshers.add(::syncGeometry)", style)
+        settings = code(IOS/"SettingsHomeView.swift")
+        self.assertIn("guard !model.isRunning, let selected = model.devices.chosenTelevision", settings)
+        self.assertIn("guard tvPreviewAllowed else { return }", settings)
+
     def test_tv_review_fixes_focus_opacity_and_profile_editing(self):
         style=code(TOOLS/"GameLingoTVCaptionStyle.kt")
         self.assertIn("opacityBar.progress=percent",style)

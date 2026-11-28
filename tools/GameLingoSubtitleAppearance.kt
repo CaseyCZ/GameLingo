@@ -74,7 +74,7 @@ object GameLingoSubtitleAppearance {
         addCard(previewCard)
 
         var font = prefs.getFloat("tvPismo", 1f).let { if(it.isFinite()) it.coerceIn(0.1f, 2f) else 1f }
-        var width = prefs.getFloat("tvSirka", 0.62f).coerceIn(0.30f, 0.95f)
+        var width = prefs.getFloat("tvSirka", 0.62f).let { if(it.isFinite()) it.coerceIn(0.30f, 0.95f) else 0.62f }
         val sliders = mutableListOf<SeekBar>()
         fun publish() {
             if (!sameOutput()) return
@@ -109,6 +109,7 @@ object GameLingoSubtitleAppearance {
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                     override fun onProgressChanged(seek: SeekBar, progress: Int, fromUser: Boolean) {
                         if (!fromUser) return
+                        if (forTelevision && (!sameOutput() || prefs.getBoolean("rozvrhZamek", false))) return
                         val actual = min + progress
                         onChanged(actual)
                         refresh(actual)
@@ -271,6 +272,7 @@ object GameLingoSubtitleAppearance {
         slider("Šířka titulků", 30, 95, (width * 100).toInt(),
             forTelevision = true) {
             width = it / 100f
+            refreshTVPreview()
         }
 
         val locked = prefs.getBoolean("rozvrhZamek", false)

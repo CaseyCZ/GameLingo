@@ -540,7 +540,7 @@ struct GameLingoAppearanceSettingsView: View {
     @ObservedObject var model: CaptionAppModel
 
     private var tvPreviewAllowed: Bool {
-        guard let selected = model.devices.chosenTelevision else { return false }
+        guard !model.isRunning, let selected = model.devices.chosenTelevision else { return false }
         return model.tv.receiverPaired && model.tv.receiverConnected &&
             model.tv.ip.trimmingCharacters(in: .whitespacesAndNewlines) == selected.ipAddress
     }
@@ -622,6 +622,13 @@ struct GameLingoAppearanceSettingsView: View {
             GLCard {
                 GLHeader(title: "Titulky na TV",
                          help: "Nastavení barev a pozadí platí jen pro připojený GameLingo TV přijímač. Barvu lze měnit nezávisle na titulkách na iPhonu.")
+                Text(model.targetLanguage.sampleSubtitle)
+                    .font(.system(size: max(1, 19 * model.outputFont), weight: .bold))
+                    .foregroundStyle(model.tvTextColor.color)
+                    .multilineTextAlignment(.center)
+                    .padding(10)
+                    .background(model.tvBackground.fill, in: RoundedRectangle(cornerRadius: 9))
+                    .frame(maxWidth: .infinity, minHeight: 72)
                 Text("Barva textu na TV")
                     .font(.subheadline.bold())
                 HStack(spacing: 9) {
@@ -669,6 +676,7 @@ struct GameLingoAppearanceSettingsView: View {
                 GLPrimaryButton(title: "Náhled na TV",
                                 systemImage: "tv",
                                 disabled: !tvPreviewAllowed) {
+                    guard tvPreviewAllowed else { return }
                     model.tv.updateCaptionStyle(
                         color: model.tvTextColor.rawValue,
                         background: model.tvBackground.rawValue)

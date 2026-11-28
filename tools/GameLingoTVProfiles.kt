@@ -57,9 +57,9 @@ object GameLingoTVProfiles {
         fun rect(r: FloatArray) = r.take(4).all { it in 0f..1f } && r[2] > r[0]+0.1f && r[3] > r[1]+0.05f
         val blue = read("blue", 4)?.takeIf(::rect) ?: return false
         val yellow = read("yellow", 4)?.takeIf(::rect) ?: return false
-        val orange = read("orange", 5)?.takeIf { rect(it) && it[4] in 0.6f..2f } ?: return false
+        val orange = read("orange", 5)?.takeIf { rect(it) && it[4] in 0.1f..2f } ?: return false
         val greenEnabled = p.optBoolean("greenEnabled")
-        val green = read("green", 4)?.takeIf { it[0] in 0f..1f && it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0.6f..2f }
+        val green = read("green", 4)?.takeIf { it[0] in 0f..1f && it[1] in 0f..1f && it[2] in 0.2f..1f && it[3] in 0.1f..2f }
         if (greenEnabled && green == null) return false
         GameLingoAutomaticConfig.restore(a,p.optJSONObject("automatic"))
         GameLingoLanguages.restoreProfile(a, p.optString("source"), p.optString("target"))
