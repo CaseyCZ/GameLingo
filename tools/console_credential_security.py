@@ -46,13 +46,13 @@ def install_console_security(folder):
     for field in ("account_id", "regist_key", "rp_key"):
         s = replace_once(s, f'prefs.getString("{field}", null)',
                          f'GameLingoCredentialStore.read(prefs, "ps", "{field}")')
-    s = replace_once(s, 'prefs.edit().putString("account_id", v?.trim()).apply()',
-        '{ check(GameLingoCredentialStore.write(prefs, "ps", mapOf("account_id" to v?.trim()))) }')
+    s = replace_once(s, 'set(v) = prefs.edit().putString("account_id", v?.trim()).apply()',
+        'set(v) { check(GameLingoCredentialStore.write(prefs, "ps", mapOf("account_id" to v?.trim()))) }')
     s = replace_once(s, 'prefs.edit().putString("account_id", id).commit()',
         'GameLingoCredentialStore.write(prefs, "ps", mapOf("account_id" to id))')
     for field in ("regist_key", "rp_key"):
-        s = replace_once(s, f'prefs.edit().putString("{field}", v?.let {{ Base64.encodeToString(it, Base64.NO_WRAP) }}).apply()',
-            f'{{ check(GameLingoCredentialStore.write(prefs, "ps", mapOf("{field}" to v?.let {{ Base64.encodeToString(it, Base64.NO_WRAP) }}))) }}')
+        s = replace_once(s, f'set(v) = prefs.edit().putString("{field}", v?.let {{ Base64.encodeToString(it, Base64.NO_WRAP) }}).apply()',
+            f'set(v) {{ check(GameLingoCredentialStore.write(prefs, "ps", mapOf("{field}" to v?.let {{ Base64.encodeToString(it, Base64.NO_WRAP) }}))) }}')
     # Handle storage failure rather than claiming registration succeeded.
     s = replace_once(s, '                        udaje.registKey = udalost.host.rpRegistKey\n                        udaje.rpKey = udalost.host.rpKey\n                        hotovo(true,',
         '                        val stored = runCatching {\n                            udaje.registKey = udalost.host.rpRegistKey\n                            udaje.rpKey = udalost.host.rpKey\n                        }.isSuccess\n                        if (!stored) hotovo(false, "PlayStation: secure storage unavailable")\n                        else hotovo(true,')
