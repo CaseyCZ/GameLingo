@@ -545,7 +545,12 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("GameLingoLanguages.translationSettingsBusy()", mobile)
         self.assertIn("GameLingoHelp.showTechnicalLog(a)", tv)
         self.assertIn("refreshPage?.dismiss()", tv)
-        self.assertIn("disabled: model.isRunning || !model.tv.receiverPaired", ios)
+        self.assertIn("disabled: !canTestTV", ios)
+        guard = ios.split("private var canTestTV: Bool", 1)[1].split("var body: some View", 1)[0]
+        for condition in ("!model.isRunning", "model.devices.subtitleOutput == .googleTV",
+                          "model.tv.receiverPaired && model.tv.receiverConnected",
+                          "== selected.ipAddress"):
+            self.assertIn(condition, guard)
 
     def test_localized_device_pairing_and_diagnostics(self):
         device = code(TOOLS/"GameLingoDeviceCenter.kt")
