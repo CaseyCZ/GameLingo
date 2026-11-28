@@ -79,6 +79,11 @@ class GameLingoScreenConsentActivity : Activity() {
             Toast.makeText(this, GameLingoLanguages.ui(this, "Zastav ostatní režimy a povol překryv."), Toast.LENGTH_LONG).show()
             finish(); return
         }
+        GameLingoAbout.confirmTranslationPrivacy(this, onCancel = { finish() }) {
+            requestCaptureConsent()
+        }
+    }
+    private fun requestCaptureConsent() {
         GameLingoScreenTranslationService.resetDiagnostics()
         GameLingoScreenTranslationService.status = "Čekám na systémový souhlas"
         try {

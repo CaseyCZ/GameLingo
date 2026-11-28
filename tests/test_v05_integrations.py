@@ -1740,6 +1740,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 gate.verify(apk, "tv")
 
+    def test_privacy_notice_is_available_and_precedes_user_capture(self):
+        home = code(IOS/"GameLingoHome.swift")
+        settings = code(IOS/"SettingsHomeView.swift")
+        about = code(TOOLS/"GameLingoAbout.kt")
+        self.assertIn("GameLingoPrivacyView()", home)
+        self.assertIn("GameLingoPrivacyView()", settings)
+        self.assertIn('Button("Spustit překlad") { startCurrentSource() }', home)
+        self.assertIn("confirmTranslationPrivacy(this)", code(TOOLS/"redesign_gamelingo.py"))
+        self.assertIn("confirmTranslationPrivacy(this, onCancel = { finish() })", code(TOOLS/"GameLingoScreenTranslationService.kt"))
+        self.assertIn("GameLingoAbout.showPrivacy(activity)", code(TOOLS/"GameLingoSettings.kt"))
+        self.assertIn("6 -> GameLingoAbout.showPrivacy(a)", code(TOOLS/"GameLingoTVSettings.kt"))
+        self.assertIn("blob/Master/PRIVACY.md", about)
+        self.assertIn("blob/Master/PRIVACY.md", settings)
+        policy = code(ROOT/"PRIVACY.md")
+        for marker in ("Google", "Microsoft", "MyMemory", "20 000", "200", "GitHub"):
+            self.assertIn(marker, policy)
+
     def test_mobile_offline_isolated_and_preserves_privacy_contract(self):
         mobile = code(TOOLS/"mobile_offline_translation.py")
         helper = code(TOOLS/"GameLingoMobileOffline.kt")

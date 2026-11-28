@@ -113,6 +113,8 @@ def redesign_mobile(s: str) -> str:
                 this,
                 if (RemotePlayService.aktivni) GameLingoLanguages.ui(this, "Zastavit překlad") else GameLingoLanguages.ui(this, "Spustit překlad")
             ) {
+                if (RemotePlayService.aktivni) prepniPreklad()
+                else GameLingoAbout.confirmTranslationPrivacy(this) {
                 if (cameraSource && !RemotePlayService.aktivni) {
                     if (!tvStore.pouzeTelefon && (savedTv == null || !GameLingoTVPairing.paired(this, savedTv.ip))) vyberVystupTv()
                     else GameLingoCameraActivity.open(this)
@@ -123,6 +125,7 @@ def redesign_mobile(s: str) -> str:
                 else GameLingoVisualKit.selectSourceOrOutput(this, "Vybrat zařízení",
                     listOf("Xbox" to "Xbox", "PlayStation" to "PlayStation", "Camera" to "Kamera"),
                     primaryFamily, ::selectSource)
+                }
             }, odsazeni(bottom = 17))
 
             val prvni = vodorovne()

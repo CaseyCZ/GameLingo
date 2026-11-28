@@ -21,6 +21,7 @@ struct GameLingoHome: View {
 
     @StateObject private var updates = GameLingoUpdateModel()
     @State private var showUpdateOffer = false
+    @State private var showTranslationPrivacy = false
     @State private var offeredVersion: String?
     @State private var tab: Page = .home
     @State private var xboxSheet = false
@@ -524,7 +525,10 @@ struct GameLingoHome: View {
     }
 
     private var actionButton: some View {
-        Button(action: startCurrentSource) {
+        Button {
+            if model.isRunning { startCurrentSource() }
+            else { showTranslationPrivacy = true }
+        } label: {
             HStack(spacing: 13) {
                 Image(systemName: model.isRunning ? "stop.fill" : "play.fill")
                     .font(.system(size: 19, weight: .bold))
@@ -551,6 +555,12 @@ struct GameLingoHome: View {
             .shadow(color: GLNeon.purple.opacity(0.35), radius: 16, y: 7)
         }
         .buttonStyle(.plain)
+        .alert("Před spuštěním překladu", isPresented: $showTranslationPrivacy) {
+            Button("Zrušit", role: .cancel) {}
+            Button("Spustit překlad") { startCurrentSource() }
+        } message: {
+            Text("OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje.")
+        }
         .disabled(cameraSource && model.cacheChanging)
         .accessibilityHint(model.isRunning
                            ? "Ukončit aktuální Remote Play a překlad"
@@ -696,6 +706,13 @@ struct GameLingoHome: View {
                 .padding(23)
             }
             GameLingoUpdatePanel(updates: updates, running: model.isRunning)
+            NavigationLink {
+                GameLingoPrivacyView()
+            } label: {
+                GLDetailRow(icon: "hand.raised.fill", title: "Soukromí",
+                            detail: "Jak GameLingo pracuje s obrazem a textem")
+            }
+            .buttonStyle(.plain)
             Button {
                 licenseSheet = true
             } label: {

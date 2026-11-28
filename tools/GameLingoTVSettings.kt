@@ -75,7 +75,8 @@ object GameLingoTVSettings {
                 GameLingoLanguages.ui(a, "Historie překladů"),
                 GameLingoLanguages.ui(a, "Překladová cache"),
                 GameLingoLanguages.ui(a, "Diagnostika"),
-                GameLingoLanguages.ui(a, "Obnovit výchozí nastavení"))
+                GameLingoLanguages.ui(a, "Obnovit výchozí nastavení"),
+                GameLingoLanguages.ui(a, "Soukromí"))
             GameLingoTVUi.select(a, GameLingoLanguages.ui(a, "Pokročilé nastavení"), options, -1) { index ->
                 when (index) {
                     0 -> {
@@ -108,6 +109,7 @@ object GameLingoTVSettings {
                         onUpdate()
                         show(a, onDevices, onUpdate)
                     }
+                    6 -> GameLingoAbout.showPrivacy(a)
                 }
             }
         }

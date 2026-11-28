@@ -44,6 +44,7 @@
 "Bílá" = "Biela";
 "Během aktivního překladu nelze měnit konzoli. Nejprve překlad zastav." = "Počas aktívneho prekladu nemožno meniť konzolu. Najprv zastav preklad.";
 "Během běžícího překladu nelze změnit rychlost čtení." = "Rýchlosť OCR nie je možné meniť počas prekladu.";
+"Cache může ukládat původní i přeložený text. Lze ji vypnout a samostatně vymazat. Volitelná historie zůstává pouze v paměti aplikace." = "Cache môže ukladať pôvodný aj preložený text. Dá sa vypnúť a samostatne vymazať. Voliteľná história zostáva iba v pamäti aplikácie.";
 "Cache se nepodařilo úplně vymazat. Zkus to znovu." = "Cache sa nepodarilo úplne vymazať. Skús to znova.";
 "Cache ukládá originály i překlady na tomto zařízení. Je oddělená od volitelné historie. Vypnutí může zvýšit počet online požadavků a omezit překlady bez internetu." = "Vyrovnávacia pamäť ukladá originály aj preklady na tomto zariadení. Je oddelená od voliteľnej histórie. Vypnutie môže zvýšiť počet online požiadaviek a obmedziť preklady bez internetu.";
 "Cache vypnuta; uložené překlady lze vymazat zvlášť." = "Cache vypnutá; uložené preklady možno vymazať zvlášť.";
@@ -167,6 +168,7 @@
 "Instalace nebyla povolena. APK je stažená; otevři aktualizaci znovu." = "Inštalácia nebola povolená. APK je stiahnutá; otvor aktualizáciu znova.";
 "Italština" = "Taliančina";
 "JAZYKY" = "JAZYKY";
+"Jak GameLingo pracuje s obrazem a textem" = "Ako GameLingo pracuje s obrazom a textom";
 "Jazyk aplikace" = "Jazyk aplikácie";
 "Jazyk aplikace mění nabídky. Jazyk hry určuje původní text a jazyk překladu určuje výstup. Nastavují se nezávisle." = "Jazyk aplikácie mení ponuky. Jazyk hry určuje pôvodný text a jazyk prekladu určuje výstup. Nastavujú sa nezávisle.";
 "Jazyk aplikace určuje rozhraní. Jazyk hry vybírá OCR rozpoznávání. Jazyk překladu určuje výstup pro dialogy i herní texty. Zdroj a cíl přepínej před spuštěním hry." = "Jazyk aplikácie mení rozhranie. Jazyk hry určuje OCR. Jazyk prekladu určuje výstup dialógov a herného textu. Zdroj a cieľ nastav pred spustením.";
@@ -393,6 +395,7 @@
 "OCR a rozpoznávání · Překlad" = "OCR a rozpoznávanie · Preklad";
 "OCR herních textů" = "OCR herných textov";
 "OCR obrazovky: pouze MediaProjection" = "OCR obrazovky: iba MediaProjection";
+"OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje." = "OCR prebieha na zariadení. Online preklad môže odoslať rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímaj heslá ani iné citlivé údaje.";
 "OCR titulků" = "OCR titulkov";
 "OCR čte dialogy ve zvoleném zdrojovém jazyce. Samostatně lze zapnout dialogy, herní texty a volby. Při změně rychlosti nebo oblastí doporučujeme překlad nejdříve zastavit." = "OCR číta dialógy vo zvolenom zdrojovom jazyku. Samostatne možno zapnúť dialógy, herné texty a voľby. Pred zmenou rýchlosti alebo oblastí odporúčame zastaviť preklad.";
 "OCR, překlad, oblasti a vzhled titulků" = "OCR, preklad, oblasti a vzhľad titulkov";
@@ -585,6 +588,7 @@
 "Písmo" = "Písmo";
 "Písmo, velikost a poloha na TV" = "Písmo, veľkosť a poloha na TV";
 "PŘEKLAD HRY" = "PREKLAD HRY";
+"Před spuštěním překladu" = "Pred spustením prekladu";
 "Předchozí krok" = "Predchádzajúci krok";
 "Přehled této verze je na GitHubu." = "Prehľad tejto verzie je na GitHube.";
 "Přejmenovat" = "Premenovať";
@@ -634,6 +638,7 @@
 "Přeložené herní texty" = "Preložené herné texty";
 "Přeložené titulky" = "Preložené titulky";
 "Přeložený text přímo přes originál" = "Preložený text priamo cez originál";
+"Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť." = "Prenos titulkov na spárovanú TV je overovaný, ale zatiaľ nie je šifrovaný. Používaj dôveryhodnú domácu sieť.";
 "Přenos českých titulků přes domácí síť" = "Prenos titulkov cez domácu sieť";
 "Přepsat" = "Prepísať";
 "Přepsat profil" = "Prepísať profil";
@@ -660,6 +665,7 @@
 "Přihlášeno. Načítám Xbox konzole…" = "Prihlásené. Načítavam konzoly Xbox…";
 "Přihlášení" = "Prihlásenie";
 "Přihlášení bylo odmítnuto. Můžeš začít znovu." = "Prihlásenie bolo odmietnuté. Môžeš začať znova.";
+"Přihlášení ke konzolím využívá služby Microsoft a Sony. Připojené účty a zařízení spravuj v nabídce Zařízení." = "Prihlásenie ku konzolám využíva služby Microsoft a Sony. Pripojené účty a zariadenia spravuj v ponuke Zariadenia.";
 "Přihlášený" = "Prihlásený";
 "Přijaté snímky:" = "Prijaté snímky:";
 "Přijímač" = "Prijímač";
@@ -761,11 +767,13 @@
 "Smazat zónu" = "Odstrániť zónu";
 "Snímky" = "Snímky";
 "Snímání aktivní" = "Snímanie aktívne";
+"Snímání lze kdykoli zastavit. GameLingo nepřekládá mikrofon ani zvuk." = "Snímanie možno kedykoľvek zastaviť. GameLingo neprekladá mikrofón ani zvuk.";
 "Snímání nebylo povoleno" = "Snímanie nebolo povolené";
 "Snímání nelze spustit." = "Snímanie nemožno spustiť.";
 "Snímání:" = "Snímanie:";
 "Souhlas / projekce:" = "Súhlas / projekcia:";
 "Souhlas udělen" = "Súhlas udelený";
+"Soukromí" = "Súkromie";
 "Soukromí a licence" = "Súkromie a licencia";
 "Spojení ověřeno." = "Spojenie overené.";
 "Spojení s Microsoftem se přerušilo. Opakuji ověření…" = "Spojenie s Microsoftom sa prerušilo. Opakujem overenie…";
@@ -1172,6 +1180,7 @@
 "Zvol celý obraz nebo nastav žlutý rámeček na původní titulky." = "Vyber celý obraz alebo nastav žltý rámček na pôvodné titulky.";
 "Zvol režim rozpoznávání, filtrování menu a případně rozšířené hledání. Ruční modrá oblast omezuje čtení na místo dialogů. Před změnou zastav překlad." = "Zvoľ režim rozpoznávania, filtrovanie menu a prípadne rozšírené hľadanie. Ručná modrá oblasť obmedzuje čítanie na miesto dialógov. Pred zmenou zastav preklad.";
 "Zvětšit ukázku" = "Zväčšiť ukážku";
+"Zásady ochrany osobních údajů" = "Zásady ochrany osobných údajov";
 "Získej titulky z iPhonu nebo Androidu." = "Získaj titulky z iPhonu alebo Androidu.";
 "Získávám přihlašovací kód…" = "Získavam prihlasovací kód…";
 "Zóna" = "Zóna";

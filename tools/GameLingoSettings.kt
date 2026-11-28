@@ -424,6 +424,9 @@ object GameLingoSettings {
         section(GameLingoUIContract.settingsSections[3])
         menu("display.2", "Zařízení",
              "Xbox, PlayStation a Google TV") { onDevices() }
+        menu("hand.raised.fill", "Soukromí", "Jak GameLingo pracuje s obrazem a textem") {
+            GameLingoAbout.showPrivacy(activity)
+        }
         menu("clock.arrow.circlepath", "Historie překladů", "Poslední dialogy a herní texty") {
             GameLingoHistoryUi.show(activity)
         }

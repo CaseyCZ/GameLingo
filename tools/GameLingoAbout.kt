@@ -161,8 +161,54 @@ object GameLingoAbout {
             sources.forEach { page.addView(it, LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=pad(9) }) }
         }
 
+        page.addView(GameLingoVisualKit.detailRow(activity, "hand.raised.fill",
+            tr("Soukromí"), tr("Jak GameLingo pracuje s obrazem a textem")) { showPrivacy(activity) })
         page.addView(link("Historie vydání", "https://github.com/CaseyCZ/GameLingo/releases"))
         return page
+    }
+
+    fun showPrivacy(activity: Activity) {
+        if (activity.isFinishing || activity.isDestroyed) return
+        fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
+        val body = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+        for (paragraph in listOf(
+            "OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje.",
+            "Cache může ukládat původní i přeložený text. Lze ji vypnout a samostatně vymazat. Volitelná historie zůstává pouze v paměti aplikace.",
+            "Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť.",
+            "Přihlášení ke konzolím využívá služby Microsoft a Sony. Připojené účty a zařízení spravuj v nabídce Zařízení.",
+            "Snímání lze kdykoli zastavit. GameLingo nepřekládá mikrofon ani zvuk."
+        )) {
+            body.addView(TextView(activity).apply {
+                text = tr(paragraph)
+                textSize = GameLingoVisualKit.sp(activity, 15f)
+                setTextColor(Color.WHITE)
+                val padding = GameLingoVisualKit.dp(activity, 12)
+                setPadding(padding, padding, padding, padding)
+            })
+        }
+        body.addView(GameLingoTVUi.action(activity, tr("Zásady ochrany osobních údajů")) {
+            val url = "https://github.com/CaseyCZ/GameLingo/blob/Master/PRIVACY.md"
+            try { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+            catch (_: android.content.ActivityNotFoundException) {
+                android.app.AlertDialog.Builder(activity).setMessage(url)
+                    .setPositiveButton(tr("Zavřít"), null).show()
+            }
+        })
+        GameLingoTVUi.page(activity, tr("Soukromí"), body, helpTopic = "about")
+    }
+
+    /** Affirmative action before user-initiated capture, not a legal consent record. */
+    fun confirmTranslationPrivacy(activity: Activity, onCancel: () -> Unit = {}, onStart: () -> Unit) {
+        if (activity.isFinishing || activity.isDestroyed) return
+        fun tr(cs: String) = GameLingoLanguages.ui(activity, cs)
+        android.app.AlertDialog.Builder(activity)
+            .setTitle(tr("Před spuštěním překladu"))
+            .setMessage(tr("OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje."))
+            .setNegativeButton(tr("Zrušit")) { _, _ -> onCancel() }
+            .setOnCancelListener { onCancel() }
+            .setPositiveButton(tr("Spustit překlad")) { _, _ ->
+                if (!activity.isFinishing && !activity.isDestroyed) onStart()
+            }.show()
     }
 
     fun show(activity: Activity) {

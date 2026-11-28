@@ -124,6 +124,13 @@ struct GameLingoSettingsOverview: View {
             }
             .buttonStyle(.plain)
             NavigationLink {
+                GameLingoPrivacyView()
+            } label: {
+                GLDetailRow(icon: "hand.raised.fill", title: "Soukromí",
+                            detail: "Jak GameLingo pracuje s obrazem a textem")
+            }
+            .buttonStyle(.plain)
+            NavigationLink {
                 GameLingoHistoryView(model: model)
             } label: {
                 GLDetailRow(icon: "clock.arrow.circlepath", title: "Historie překladů",
@@ -985,4 +992,22 @@ struct GameSubtitleProfile: Codable, Identifiable {
     var glossary: GameGlossary? = nil
     var automaticMode: Bool? = nil
     var automaticZones: [AutomaticOCRZone]? = nil
+}
+
+struct GameLingoPrivacyView: View {
+    var body: some View {
+        GLScreen(title: "Soukromí", help: "Jak GameLingo pracuje s obrazem a textem") {
+            GLCard {
+                Text("OCR probíhá na zařízení. Online překlad může poslat rozpoznaný text a jazyky službám Google, Microsoft a MyMemory. Nesnímej hesla ani jiné citlivé údaje.").font(.subheadline)
+                Text("Cache může ukládat původní i přeložený text. Lze ji vypnout a samostatně vymazat. Volitelná historie zůstává pouze v paměti aplikace.").font(.subheadline)
+                Text("Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť.").font(.subheadline)
+                Text("Přihlášení ke konzolím využívá služby Microsoft a Sony. Připojené účty a zařízení spravuj v nabídce Zařízení.").font(.subheadline)
+                Text("Snímání lze kdykoli zastavit. GameLingo nepřekládá mikrofon ani zvuk.").font(.subheadline)
+            }
+            GLCard {
+                Link("Zásady ochrany osobních údajů",
+                     destination: URL(string: "https://github.com/CaseyCZ/GameLingo/blob/Master/PRIVACY.md")!)
+            }
+        }
+    }
 }

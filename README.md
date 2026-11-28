@@ -71,6 +71,8 @@ Kompatibilita závisí na zařízení a zdroji obrazu. Chráněný obsah může 
 
 OCR probíhá na zařízení. Online překladače mohou přijímat rozpoznaný text; místní cache lze vypnout a vymazat. Titulky přenášené na TV jsou podepisované, ale nejsou šifrované. TV neobsahuje offline překladový model. Nepoužívej GameLingo pro citlivý text.
 
+[Zásady ochrany osobních údajů](PRIVACY.md).
+
 GameLingo je nezávislý open-source projekt navazující na PlayCaption, vydaný pod [GNU AGPL-3.0](LICENSE). Není oficiální aplikací Microsoftu, Sony ani Googlu. [Původ projektu](ATTRIBUTION.md) · [Licence třetích stran](THIRD_PARTY_NOTICES.md).
 
 ---
@@ -102,6 +104,8 @@ Install the app, choose a console or TV mode, select the source and target langu
 Compatibility depends on the device and video source. Protected content may not be available to OCR. GameLingo does not translate audio or microphone input.
 
 **Privacy:** OCR runs locally; online translation may send recognized text to external providers. The local cache can be disabled and cleared. TV subtitle transport is authenticated but not encrypted. The TV app has no offline translation model. Do not use GameLingo for sensitive text.
+
+**[Privacy policy](PRIVACY.md)**
 
 **Open source:** [AGPL-3.0](LICENSE) · [Attribution](ATTRIBUTION.md) · [Third-party notices](THIRD_PARTY_NOTICES.md). Based on PlayCaption, independently developed and not affiliated with Microsoft, Sony or Google.
 
