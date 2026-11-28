@@ -460,6 +460,12 @@ jobs:
           test -s release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk
           (cd release && sha256sum "GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" "GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk" "GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk" > SHA256SUMS.txt)
           cat release/SHA256SUMS.txt
+      - name: Record license and native binary evidence
+        run: |
+          set -euo pipefail
+          python3 tools/package_license_notices.py ios --verify "release/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" --expected-kit "$GITHUB_SHA" --evidence release/LICENSE-EVIDENCE-ios.json
+          python3 tools/package_license_notices.py mobile --verify "release/GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk" --expected-kit "$GITHUB_SHA" --evidence release/LICENSE-EVIDENCE-mobile.json
+          python3 tools/package_license_notices.py tv --verify "release/GameLingo-GoogleTV-v${GAMELINGO_VERSION}-dev-TEST.apk" --expected-kit "$GITHUB_SHA" --evidence release/LICENSE-EVIDENCE-tv.json
       - name: Record package identity and signing evidence
         run: |
           set -euo pipefail

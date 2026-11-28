@@ -8,7 +8,7 @@ GameLingo je nezávislý open-source projekt pod licencí [GNU AGPL-3.0](LICENSE
 - [CaseyCZ/Test](https://github.com/CaseyCZ/Test): vlastní vývoj iOS Xbox OCR, párování s TV a výstupu titulků.
 - [TP Play — mB14ck22](https://github.com/mB14ck22/tp-play/tree/482611539977496cad047560c9bc1ebc5809a566), [chiaki-ng](https://github.com/streetpea/chiaki-ng) a Chiaki: základ PlayStation Remote Play, nativního jádra, registrace, discovery a dekódování (AGPL-3.0; zachovat původní oznámení a příslušné licenční výjimky, včetně případné výjimky OpenSSL).
 
-GameLingo upravuje uživatelské rozhraní, OCR, překlad, lokální párování a sestavovací postup. Odpovídající zdrojový kód zahrnuje i připnuté upstream revize a [build skripty](.github/workflows/audit-0.5-ci.yml). Původ Android/TV Chiaki binárek je doložen v upstream `native/chiaki-build.json` a `native/build_chiaki.py`; soulad konkrétních binárek, hashů a zdrojů vyžaduje ověření.
+GameLingo upravuje uživatelské rozhraní, OCR, překlad, lokální párování a sestavovací postup. Odpovídající zdrojový kód zahrnuje i připnuté upstream revize a [build skripty](.github/workflows/audit-0.5-ci.yml). Původ Android/TV Chiaki binárek je doložen v upstream `native/chiaki-build.json` a `native/build_chiaki.py`; build nyní ověřuje SHA-256 všech čtyř ARM binárek proti tomuto manifestu a zaznamenává skutečné hashe knihoven v APK. Odlišné bajty v APK (například po stripování) vyžadují další posouzení; samotná shoda hashů nedokládá reprodukovatelnost ze zdrojů.
 
 ## Další komponenty
 
