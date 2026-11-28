@@ -15,6 +15,8 @@ GameLingo upravuje uživatelské rozhraní, OCR, překlad, lokální párování
 - [Font Awesome Free 6.7.2](https://github.com/FortAwesome/Font-Awesome/tree/6.7.2): Xbox a PlayStation ikony, © 2024 Fonticons, Inc., [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). SVG převedeny na VectorDrawable, upravena barva.
 - [ZXing](https://github.com/zxing/zxing) 3.5.3 a [JourneyApps ZXing Android Embedded](https://github.com/journeyapps/zxing-android-embedded/tree/v4.3.0) 4.3.0: Apache-2.0, mobilní QR skener.
 
+Původní licenční texty Chiaki-TV včetně výjimky OpenSSL, Oboe, nanopb, GF-Complete, Jerasure a OpenSSL 1.1.1d jsou uloženy v `licenses/` s odkazy na přesné zdrojové revize v [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Mezivrstva PlayCaption `native/pcobraz.c` je AGPLv3; původní binárky nejsou doloženy reprodukovatelným sestavením.
+
 Další závislosti: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Build přikládá dostupné původní licenční texty a inventář revizí. Inventář není úplný SBOM ani potvrzení oprávnění k veřejné distribuci; podmínky externích služeb, odpovídající zdroje a licence všech skutečně distribuovaných komponent musí být ověřeny.
 
 Xbox, PlayStation, Android a Google TV jsou ochranné známky příslušných vlastníků. GameLingo není jejich oficiálním produktem ani jimi sponzorován.

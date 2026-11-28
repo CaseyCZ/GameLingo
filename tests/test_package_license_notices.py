@@ -8,7 +8,7 @@ import unittest
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from package_license_notices import android_dependency_notices, archive_notices, pom_declarations, inherited_pom_declarations
+from package_license_notices import android_dependency_notices, archive_notices, pom_declarations, inherited_pom_declarations, archive_native_files, native_archive_comparison
 
 
 class PackageNoticeTests(unittest.TestCase):
@@ -108,6 +108,27 @@ class PackageNoticeTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 inherited_pom_declarations(child, {**record, "coordinate": "org.example:other:1"})
             self.assertIsNone(inherited_pom_declarations({"licenses": [{"name": "BSD"}]}, record))
+
+
+    def test_native_archive_matches_bytes_not_just_name(self):
+        aar = io.BytesIO()
+        with zipfile.ZipFile(aar, "w") as z:
+            z.writestr("jni/arm64-v8a/libdemo.so", b"native bytes")
+            z.writestr("jni/armeabi-v7a/libdemo.so", b"other bytes")
+            z.writestr("assets/libfake.so", b"not JNI")
+        with zipfile.ZipFile(aar) as z:
+            entries = archive_native_files(z)
+        self.assertEqual(len(entries), 2)
+        arm = "lib/arm64-v8a/libdemo.so"
+        armv7 = "lib/armeabi-v7a/libdemo.so"
+        unknown = "lib/arm64-v8a/libunknown.so"
+        result = native_archive_comparison(
+            {arm: entries[arm], armv7: "changed", unknown: "unknown"},
+            [{"coordinate": "org.example:demo:1", "sha256": "archive",
+              "native_files": entries}], {})
+        self.assertEqual(result[arm]["status"], "byte_match")
+        self.assertEqual(result[armv7]["status"], "different_bytes_requires_review")
+        self.assertEqual(result[unknown]["status"], "unmapped_requires_review")
 
 
 if __name__ == "__main__":

@@ -35,6 +35,23 @@ Additional original texts, stored under `licenses/` and included by the existing
 - [ZXing 3.5.3 LICENSE](https://github.com/zxing/zxing/blob/zxing-3.5.3/LICENSE), including its additional original notices.
 - [Stream WebRTC Android 1.3.7 LICENSE](https://github.com/GetStream/webrtc-android/blob/1.3.7/LICENSE) and the release-tag README license section. The wrapper's Apache-2.0 license alone does not cover libjingle_peerconnection_so.so. Obtain the exact underlying WebRTC/third-party native source revision and notices before marking its license review complete. CameraX's libyuv BSD notice and bundled Google SDK terms also require final review.
 
+## Native source and package provenance — batch follow-up
+
+The pinned PlayCaption `native/build_chiaki.py` builds Chiaki-TV at `f814cf69d636f149ad5a3cfffd19cb22da90beda`. The AGPL OpenSSL exception in that source is retained verbatim. Its CMake external project pins OpenSSL 1.1.1d and archive SHA-256 `1e3a91bc1f9dfce01af26026f856e064eab4c8ee0a8f457b5ae30b40b8b711f2`. This unsupported crypto release is a security/compatibility review item, not a recommendation to keep using it in a new store release.
+
+Original notices for the exact referenced revisions are stored under `licenses/`. The following paths refer to the original files (GF-Complete and Jerasure use mirrors with matching exact Git commit IDs):
+
+- [505e06b2/Chiaki-TV f814cf69d636 COPYING](https://github.com/505e06b2/Chiaki-TV/blob/f814cf69d636f149ad5a3cfffd19cb22da90beda/COPYING) — `licenses/chiaki-tv-f814cf6/COPYING`; Git blob `c3ef0cb237eb1a941d0ee708baddf490fd17eb94`.
+- [google/oboe 0ab5b12a5bc3 LICENSE](https://github.com/google/oboe/blob/0ab5b12a5bc3630a3d6c83b20eed2a669ebf7a24/LICENSE) — `licenses/oboe-0ab5b12/LICENSE`; Git blob `d645695673349e3947e8e5ae42332d0ac3164cd7`.
+- [nanopb/nanopb ae9901f2a315 LICENSE.txt](https://github.com/nanopb/nanopb/blob/ae9901f2a31500e8fdc93fa9804d24851c58bb1e/LICENSE.txt) — `licenses/nanopb-ae9901f/LICENSE.txt`; Git blob `d11c9af1d7e469e9a5357a660fd184f58c3a4ff2`.
+- [streetpea/gf-complete fa54a4670a57 COPYING](https://github.com/streetpea/gf-complete/blob/fa54a4670a5705c84abf6c24b92b0cd479625478/COPYING) — `licenses/gf-complete-fa54a46/COPYING`; Git blob `df8d9ed33fac25129603eab1c9514af3057c242e`.
+- [streetpea/jerasure 505ccb4bc69e COPYING](https://github.com/streetpea/jerasure/blob/505ccb4bc69eee8d7ea40a6089a056b99671134f/COPYING) — `licenses/jerasure-505ccb4/COPYING`; Git blob `20ffbd2d7375ba972da2649f9680fc1e30bb960e`.
+- [openssl/openssl OpenSSL_1_1_ LICENSE](https://github.com/openssl/openssl/blob/OpenSSL_1_1_1d/LICENSE) — `licenses/openssl-1.1.1d/LICENSE`; Git blob `9601ab43575f9719ca6d2731580ec31ca5dfb0e7`.
+
+The PlayCaption `native/pcobraz.c` declares AGPLv3. Its ARM prebuilts in both run 491 APKs matched the Git blobs from the exact PlayCaption revision (ARM64 `e91ab4a5d5e94fa6b9d932226f54a347985da784`, ARMv7 `d2daadb9631673ee10857257181cff39f5572385`). The original build script explicitly states that the shim is not rebuilt. The new inventory records the shim source hash, tracked original binary hashes, both Chiaki patch hashes, and native files contained in every resolved Android archive. Final package evidence distinguishes byte matches, different bytes and unmapped libraries. It does not claim that the shim or Chiaki are reproducibly built, or that a byte match proves that all static third-party code is licensed.
+
+Store review remains blocked on exact native WebRTC transitive notices and source provenance, CameraX/libyuv notices, any outstanding publisher notices, 16 KB compatibility and authorization/terms questions. The iOS run 491 includes the WebRTC framework's privacy manifest; the app's own required-reason APIs and privacy manifest still need review.
+
 ## Translation services — distribution review (2026-11-28)
 
 | Engine | Current use | Distribution gate |

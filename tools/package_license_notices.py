@@ -64,6 +64,41 @@ def archive_notices(archive, prefix, nested=True):
                 yield from archive_notices(jar, prefix + "/" + name, nested=False)
 
 
+def archive_native_files(archive):
+    """Identify the actual native payload in a resolved AAR by ABI and hash."""
+    found = {}
+    for entry in archive.infolist():
+        match = re.fullmatch(r"(?:jni|lib)/(arm64-v8a|armeabi-v7a|x86|x86_64)/([A-Za-z0-9_.+-]+\.so)", entry.filename)
+        if not match or entry.is_dir():
+            continue
+        key = "lib/" + "/".join(match.groups())
+        with archive.open(entry) as stream:
+            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        if key in found and found[key] != digest:
+            raise RuntimeError("Ambiguous native archive entry: " + key)
+        found[key] = digest
+    return found
+
+
+def native_archive_comparison(native, dependencies, upstream):
+    """Match package files to actual source bytes, without guessing by library name."""
+    origins = {}
+    for item in dependencies:
+        for name, digest in item.get("native_files", {}).items():
+            origins.setdefault(name, []).append({"source": item["coordinate"],
+                                                "artifact_sha256": item["sha256"], "sha256": digest})
+    for name, digest in upstream.items():
+        origins.setdefault(name, []).append({"source": "PlayCaption pinned prebuilts", "sha256": digest})
+    result = {}
+    for name, digest in sorted(native.items()):
+        candidates = origins.get(name, [])
+        matches = [item for item in candidates if item["sha256"] == digest]
+        status = ("byte_match" if matches else "different_bytes_requires_review" if candidates
+                  else "unmapped_requires_review")
+        result[name] = {"status": status, "candidates": candidates, "matches": matches}
+    return result
+
+
 def pom_declarations(path):
     """Read direct license declarations; never infer a grant from absent metadata."""
     if not path:
@@ -123,9 +158,10 @@ def android_dependency_notices(path, manifest, parts):
         seen.add(identity)
         label = "Android-runtime/" + coordinate + "/" + digest + "/" + name
         result = {"coordinate": coordinate, "artifact": name,
-                  "sha256": digest, "notices": []}
+                  "sha256": digest, "notices": [], "native_files": {}}
         if zipfile.is_zipfile(file):
             with zipfile.ZipFile(file) as archive:
+                result["native_files"] = archive_native_files(archive)
                 for title, data, text in archive_notices(archive, label):
                     add_notice(manifest, parts, title, data, text)
                     result["notices"].append(title)
@@ -188,9 +224,37 @@ def native_provenance(upstream):
         if not re.fullmatch(r"[0-9a-f]{64}", digest) or hashlib.sha256(source.read_bytes()).hexdigest() != digest:
             raise RuntimeError("Chiaki source binary hash mismatch: " + str(source))
         entries["lib/" + abi + "/" + name] = digest
+    patches = {}
+    for filename, field in (("chiaki-audio-unlock.patch", "patchSha256"),
+                            ("chiaki-silent-audio.patch", "playbackPatchSha256")):
+        digest = hashlib.sha256((upstream / "native" / filename).read_bytes()).hexdigest()
+        if digest != data[field]:
+            raise RuntimeError("Chiaki source patch hash mismatch: " + filename)
+        patches[filename] = digest
     return {"revision": data["upstream"], "ndk": data["ndk"],
             "manifest_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-            "source_binary_sha256": entries}
+            "patch_sha256": patches, "source_binary_sha256": entries}
+
+
+def pcobraz_provenance(upstream):
+    """Record the original shim and its tracked prebuilts, not a reproducible build."""
+    revision = git(upstream, "rev-parse", "HEAD")
+    result = {"revision": revision, "source": "native/pcobraz.c",
+              "source_binary_sha256": {}, "rebuild_verified": False}
+    paths = ["native/pcobraz.c"] + [
+        "app/src/main/jniLibs/" + abi + "/libpcobraz1.so"
+        for abi in ("arm64-v8a", "armeabi-v7a")]
+    for rel in paths:
+        source = (upstream / rel).read_bytes()
+        tracked = subprocess.check_output(["git", "-C", str(upstream), "show", revision + ":" + rel])
+        if source != tracked:
+            raise RuntimeError("PlayCaption shim differs from pinned source: " + rel)
+        digest = hashlib.sha256(source).hexdigest()
+        if rel == result["source"]:
+            result["source_sha256"] = digest
+        else:
+            result["source_binary_sha256"][rel.replace("app/src/main/jniLibs/", "lib/")] = digest
+    return result
 
 def add_notice(manifest, parts, name, data, text):
     # Verify the exact UTF-8 text as embedded, separately from original bytes
@@ -237,6 +301,7 @@ def generate(args):
                 add_notice(manifest, parts, label, data, text)
     if args.platform in ("mobile", "tv"):
         manifest["chiaki"] = native_provenance(upstream)
+        manifest["pcobraz"] = pcobraz_provenance(upstream)
         manifest["runtime_dependencies"] = android_dependency_notices(args.runtime_artifacts, manifest, parts)
     else:
         manifest["swift_dependencies"] = ios_dependency_notices(args, manifest, parts)
@@ -304,16 +369,24 @@ def verify(path, platform, evidence=None, expected_kit=None):
                 with z.open(entry) as stream:
                     native[name] = hashlib.file_digest(stream, "sha256").hexdigest()
         comparison = {}
+        native_origins = {}
         if platform != "ios":
             for name, source_hash in manifest["chiaki"]["source_binary_sha256"].items():
                 if name not in native:
                     raise RuntimeError("Missing expected Chiaki package library: " + name)
                 comparison[name] = "byte_match" if native[name] == source_hash else "different_from_source_requires_review"
+            shim = manifest.get("pcobraz", {}).get("source_binary_sha256", {})
+            if len(shim) != 2 or any(name not in native for name in shim):
+                raise RuntimeError("Missing PlayCaption shim package evidence")
+            native_origins = native_archive_comparison(native, manifest["runtime_dependencies"],
+                {**manifest["chiaki"]["source_binary_sha256"], **shim})
         elif prefix + "GameLingoIOS" not in native:
             raise RuntimeError("Missing iOS main executable")
         report = {"platform": platform, "sources": manifest["sources"],
                   "notice_count": len(seen), "native_files": native,
                   "chiaki_package_comparison": comparison,
+                  "pcobraz": manifest.get("pcobraz", {}),
+                  "native_origins": native_origins,
                   "runtime_dependencies": manifest.get("runtime_dependencies", []),
                   "swift_dependencies": manifest.get("swift_dependencies", {}),
                   "scope": "technical evidence; not complete SBOM or distribution clearance"}
