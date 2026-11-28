@@ -21,3 +21,15 @@ GameLingo is an independent AGPL-3.0 project. See the accompanying project licen
 Xbox, PlayStation, Google TV and other marks belong to their respective owners. GameLingo is not sponsored by or affiliated with those owners.
 
 Online Google GTX, Microsoft Edge and MyMemory services are separate from library licenses. Authorization, attribution and service terms are not established by this notice. A test build is not a public distribution clearance.
+
+## Translation services — distribution review (2026-11-28)
+
+| Engine | Current use | Distribution gate |
+|---|---|---|
+| Google GTX | `translate.googleapis.com/translate_a/single?client=gtx`; online, first preference | Not the documented Cloud Translation v2/v3 API. No verified permission for this integration. Do not treat availability without a key as authorization. [Official API](https://docs.cloud.google.com/translate/docs/reference/rest) |
+| Microsoft Edge | `edge.microsoft.com/translate/auth` and `api-edge.cognitive.microsofttranslator.com/translate`; online fallback | Not the documented Azure Translator integration. Authorization for independent app distribution remains unverified. [Official authentication](https://learn.microsoft.com/en-us/azure/ai-services/translator/text-translation/reference/authentication) |
+| MyMemory | Public GET API; online fallback | Anonymous limit 5,000 characters/day; query limit 500 bytes per documented API; no guarantee of availability or confidentiality. Review terms and retention before production distribution. [API](https://mymemory.translated.net/doc/spec.php) · [Limits](https://mymemory.translated.net/doc/usagelimits.php) · [Terms](https://mymemory.translated.net/terms-and-conditions) |
+| Google ML Kit Translation | Android phone fallback, models downloaded on Wi-Fi; excluded from TV package | Official local SDK. [Translation terms](https://developers.google.com/ml-kit/language/translation/translation-terms) restrict embedded-device use without prior written permission. [Attribution](https://docs.cloud.google.com/translate/attribution) applies as relevant, including visible attribution alongside results; the current About notice alone is not sufficient. Resolve accurate per-result attribution (including cache and TV output), relevant branding restrictions for game content and SDK terms before store submission. [Data disclosure](https://developers.google.com/ml-kit/android-data-disclosure). |
+| Apple Translation | Not integrated | Candidate for a local iOS engine where language availability and OS support permit. Verify Czech/Slovak language pairs on target devices before adoption. [Translation framework](https://developer.apple.com/documentation/translation) |
+
+Current GitHub test behavior is unchanged. Do not add billing accounts, publish shared API credentials, circumvent provider quotas, or assume a free tier is unlimited. Production distribution remains blocked on provider authorization or replacement and attribution verification. Existing HTTPS host allowlists, cache, request limits and circuit breakers reduce exposure and load but do not establish permission.
