@@ -39,3 +39,11 @@ GameLingo is an independent open-source project by CaseyCZ. Project contact: [Ca
 The persistent cache holds up to 20 000 original/translated text entries and evicts least recently used items; no fixed time limit is configured. It can be disabled and cleared separately in Settings; disabling alone does not necessarily delete existing entries. Optional history is off by default, limited to 200 entries in process memory, and cleared when disabled. Settings and profiles remain until changed or removed. Technical diagnostics are separate.
 
 Stop capture at any time and avoid sensitive content. Do not use online translation if you do not want text sent to external services. Local deletion does not remove records external providers may hold. Provider links are listed above. Depending on applicable law, users may have rights of access, correction, deletion, restriction, portability, objection, withdrawal of consent when applicable, and complaint to a supervisory authority. This notice describes observed behavior of the test distribution, not verified legal compliance or a completed store declaration.
+
+## Oprávnění / Permissions
+
+- Mobil: kamera pro OCR a QR kódy, síť pro konzoli, překlad, TV a aktualizace. Telefon nemá požadovat přístup k historii využití aplikací ani přijímat událost startu systému.
+- TV: překryv pro titulky, snímání obrazovky po systémovém souhlasu, volitelný přístup k využití aplikací pro rozpoznání aktivního vstupu. Název aplikace v popředí zůstává v místní paměti; bez oprávnění se nevyhledává. Automatické obnovení Remote Play po startu TV je povoleno až po explicitním uložení aktivního režimu; dříve uložená volba se zachová.
+- Vlastní aktualizace nadále používají systémový instalátor. Mikrofon a široký přístup k souborům nejsou požadovány. Oznámení a služby v popředí slouží ke stavu relace.
+
+Mobile: camera for OCR and QR pairing, network for consoles, translation, TV and updates; no usage-history or boot permission. TV: subtitle overlay, system-consented screen capture, optional usage access to identify the foreground input (local memory only), boot restoration only after a stored enabled state. Existing stored choices are preserved. The system package installer remains in use for updates. No microphone or broad file permissions are requested. Foreground services and notifications indicate session state.

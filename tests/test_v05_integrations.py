@@ -1045,6 +1045,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("var shownCode: String? = IPhoneTVPairing.startCode()",native)
         self.assertIn("PrijemService.statistikaPrijmu()",native)
 
+    def test_permission_policy_is_enforced_for_both_apks_and_ipa(self):
+        policy = code(TOOLS/"permission_policy.py")
+        workflow = code(ROOT/".github/workflows/audit-0.5-ci.yml")
+        for marker in ("RECORD_AUDIO", "MANAGE_EXTERNAL_STORAGE", "PACKAGE_USAGE_STATS",
+                       "RECEIVE_BOOT_COMPLETED", "hasUsageAccess(context)", "allowBackup"):
+            self.assertIn(marker, policy)
+        for variant in ("mobile", "tv"):
+            self.assertIn(f"permission_policy.py {variant} --apply upstream", workflow)
+            self.assertIn(f'permission_policy.py {variant} --verify "$APK"', workflow)
+        self.assertIn("permission_policy.py ios --verify", workflow)
+
     def test_console_auth_security_contract(self):
         store = code(TOOLS/"GameLingoCredentialStore.kt")
         patch = code(TOOLS/"console_credential_security.py")

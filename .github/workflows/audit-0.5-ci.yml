@@ -204,6 +204,7 @@ jobs:
           (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa" Payload)
           unzip -t GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa >/dev/null
           python tools/package_license_notices.py ios --verify GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa
+          python tools/permission_policy.py ios --verify GameLingo-iOS-v${GAMELINGO_VERSION}-dev-unsigned.ipa
       - uses: actions/upload-artifact@v4
         with:
           name: GameLingo-iOS-v${{ env.GAMELINGO_VERSION }}-dev
@@ -256,6 +257,7 @@ jobs:
           python kit/tools/android_multi_xbox.py upstream
           python kit/tools/wire_android_devices.py upstream
           python kit/tools/wire_gamelingo_languages.py upstream
+          python kit/tools/permission_policy.py mobile --apply upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode mobile
           python kit/tools/package_license_notices.py mobile --kit kit --upstream upstream --output upstream/app/src/main/assets
           sed -i 's@gradle-9\.6\.0-bin\.zip@gradle-8.7-bin.zip@' upstream/gradle/wrapper/gradle-wrapper.properties
@@ -274,6 +276,7 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.mobile'" | grep -F "versionName='${GAMELINGO_VERSION}-dev."
           python kit/tools/verify_tv_translation_apk.py mobile "$APK"
+          python kit/tools/permission_policy.py mobile --verify "$APK" --aapt "$ANDROID_HOME/build-tools/34.0.0/aapt"
           python kit/tools/package_license_notices.py mobile --verify "$APK"
           cp "$APK" GameLingo-Android-v${GAMELINGO_VERSION}-dev-TEST.apk
       - name: Sign mobile APK with persistent private update key
@@ -348,6 +351,7 @@ jobs:
           python kit/tools/android_multi_xbox.py upstream
           python kit/tools/wire_android_devices.py upstream
           python kit/tools/wire_gamelingo_languages.py upstream
+          python kit/tools/permission_policy.py tv --apply upstream
           python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
           python kit/tools/verify_tv_navigation.py upstream
           python kit/tools/audit_tv_ui.py upstream --output gamelingo-tv-ui-inventory.md
@@ -392,6 +396,7 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | grep "package: name='cz.caseycz.gamelingo.tv'"
           python kit/tools/verify_tv_translation_apk.py tv "$APK"
+          python kit/tools/permission_policy.py tv --verify "$APK" --aapt "$ANDROID_HOME/build-tools/34.0.0/aapt"
           python kit/tools/verify_tv_ui_apk.py "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > tv-manifest.txt
           python -c 'import pathlib,re; s=pathlib.Path("tv-manifest.txt").read_text(); assert "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" in s; blocks=re.split(r"(?m)^\s*E: service ",s); match=[b for b in blocks[1:] if "GameLingoScreenTranslationService" in b.split("E: ",1)[0]]; assert len(match)==1 and re.search(r"foregroundServiceType.*(?:0x0*20)\b",match[0].split("E: ",1)[0]), "APK missing mediaProjection service type"'
