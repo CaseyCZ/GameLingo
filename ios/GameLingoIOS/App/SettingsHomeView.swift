@@ -692,6 +692,17 @@ struct GameLingoProfilesScreen: View {
     @ObservedObject var model: CaptionAppModel
     @State private var profileName = ""
     @State private var savedProfileMessage = ""
+    @State private var pendingOverwrite: String?
+    @State private var pendingDeletion: GameSubtitleProfile?
+
+    private var trimmedName: String { profileName.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    private func saveProfile(_ name: String) {
+        guard !name.isEmpty, name.utf16.count <= 64 else { return }
+        model.saveGameProfile(named: name)
+        savedProfileMessage = GLInterfaceText.localized("✓ Profil uložen:") + " " + name
+        profileName = ""
+    }
 
     var body: some View {
         GLScreen(title: "Profily her", help:
@@ -703,11 +714,18 @@ struct GameLingoProfilesScreen: View {
                     .padding(10)
                     .background(GLStyle.surfaceAlt, in: RoundedRectangle(cornerRadius: 11))
                 GLPrimaryButton(title: "Uložit profil", systemImage: "square.and.arrow.down",
-                    disabled: profileName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
-                    let name = profileName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    model.saveGameProfile(named: name)
-                    savedProfileMessage = GLInterfaceText.localized("✓ Profil uložen:") + " " + name
-                    profileName = ""
+                    disabled: trimmedName.isEmpty || trimmedName.utf16.count > 64) {
+                    let name = trimmedName
+                    if let existing = model.gameProfiles.first(where: {
+                        $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
+                    }) {
+                        pendingOverwrite = existing.name
+                    } else {
+                        saveProfile(name)
+                    }
+                }
+                if trimmedName.utf16.count > 64 {
+                    Text("Zadej název hry (max. 64 znaků)").font(.caption).foregroundStyle(.secondary)
                 }
                 if !savedProfileMessage.isEmpty {
                     Text(savedProfileMessage)
@@ -745,7 +763,7 @@ struct GameLingoProfilesScreen: View {
                                 .disabled(model.isRunning)
                             Spacer()
                             Button(role: .destructive) {
-                                model.deleteGameProfile(profile.id)
+                                pendingDeletion = profile
                             } label: {
                                 Label("Smazat", systemImage: "trash")
                                     .font(.subheadline)
@@ -755,6 +773,28 @@ struct GameLingoProfilesScreen: View {
                     }
                 }
             }
+        }
+        .alert("Přepsat profil", isPresented: Binding(
+            get: { pendingOverwrite != nil },
+            set: { if !$0 { pendingOverwrite = nil } }
+        ), presenting: pendingOverwrite) { name in
+            Button("Přepsat", role: .destructive) { saveProfile(name); pendingOverwrite = nil }
+            Button("Zrušit", role: .cancel) { pendingOverwrite = nil }
+        } message: { name in
+            Text(verbatim: name)
+        }
+        .alert("Smazat profil", isPresented: Binding(
+            get: { pendingDeletion != nil },
+            set: { if !$0 { pendingDeletion = nil } }
+        ), presenting: pendingDeletion) { profile in
+            Button("Smazat", role: .destructive) {
+                guard !model.isRunning else { pendingDeletion = nil; return }
+                model.deleteGameProfile(profile.id)
+                pendingDeletion = nil
+            }
+            Button("Zrušit", role: .cancel) { pendingDeletion = nil }
+        } message: { profile in
+            Text(verbatim: profile.name)
         }
     }
 }

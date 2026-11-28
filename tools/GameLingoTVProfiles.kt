@@ -132,10 +132,10 @@ object GameLingoTVProfiles {
         }
         AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Uložit profil")).setView(input).setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null)
             .setPositiveButton(GameLingoLanguages.ui(a, "Uložit")) { _,_ ->
-                val entered=input.text.toString().trim().take(64)
+                val entered=input.text.toString().trim()
                 val name=all(a).keys().asSequence().firstOrNull { it.equals(entered, ignoreCase=true) } ?: entered
-                if (name.isEmpty()) {
-                    android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Zadej název profilu."),android.widget.Toast.LENGTH_SHORT).show()
+                if (name.isEmpty() || name.length > 64) {
+                    android.widget.Toast.makeText(a,GameLingoLanguages.ui(a, "Zadej název hry (max. 64 znaků)"),android.widget.Toast.LENGTH_SHORT).show()
                 } else if (all(a).has(name)) {
                     AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Přepsat profil") + " " + name + "?")
                         .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"),null).setPositiveButton(GameLingoLanguages.ui(a, "Přepsat")){_,_->persist(name)}.show()
@@ -163,7 +163,7 @@ object GameLingoTVProfiles {
         add(GameLingoLanguages.ui(a, "Překlad")){GameLingoSettings.showTranslation(a,Nastaveni(a),::openModeAreas,{GameLingoLanguages.show(a)})}
         add(GameLingoLanguages.ui(a, "Rozložení")){openModeAreas()}
         add(GameLingoLanguages.ui(a, "Vzhled titulků")){GameLingoTVCaptionStyle.show(a)}
-        add(GameLingoLanguages.ui(a, "Herní slovník")){GameLingoGlossaryUi.edit(a,name){activateGlossary(a,name)}}
+        add(GameLingoLanguages.ui(a, "Herní slovník")){GameLingoGlossaryUi.edit(a,name)}
         var page:android.app.Dialog?=null
         add(GameLingoLanguages.ui(a, "Uložit změny do profilu")){
             if(!busy()) {

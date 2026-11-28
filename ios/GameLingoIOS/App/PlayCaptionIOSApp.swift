@@ -533,7 +533,7 @@ final class CaptionAppModel: ObservableObject {
 
     func saveGameProfile(named rawName: String) {
         let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty, name.utf16.count <= 64 else { return }
         let existingIndex = gameProfiles.firstIndex {
             $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
         }

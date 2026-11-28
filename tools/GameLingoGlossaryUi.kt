@@ -87,16 +87,21 @@ internal object GameLingoGlossaryUi {
         val labels = listOf(GameLingoLanguages.ui(a, "Bez slovníku"), GameLingoLanguages.ui(a, "Nový herní slovník")) + names.map {
             it + if (GameLingoGlossaryStore.active(a) == it) " · " + GameLingoLanguages.ui(a, "aktivní") else ""
         }
+        var page: android.app.Dialog?=null
+        fun refresh() { page?.dismiss(); show(a) }
         fun choose(i: Int) {
             if (!stopped(a)) return
             when (i) {
-                0 -> GameLingoGlossaryStore.activate(a, null)
+                0 -> { GameLingoGlossaryStore.activate(a, null); refresh() }
                 1 -> {
                     val name = EditText(a).apply { hint = GameLingoLanguages.ui(a, "Název hry"); setSingleLine(true) }
                     AlertDialog.Builder(a).setTitle(GameLingoLanguages.ui(a, "Nový herní slovník")).setView(name)
                         .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Pokračovat")) { _, _ ->
                             val value = name.text.toString().trim()
-                            if (value.isNotEmpty() && value.length <= 64) edit(a, value) { show(a) }
+                            if (value.isNotEmpty() && value.length <= 64) {
+                                val canonical = names.firstOrNull { it.equals(value, ignoreCase = true) } ?: value
+                                edit(a, canonical) { refresh() }
+                            } else android.widget.Toast.makeText(a, GameLingoLanguages.ui(a, "Zadej název hry (max. 64 znaků)"), android.widget.Toast.LENGTH_SHORT).show()
                         }.show()
                 }
                 else -> {
@@ -104,11 +109,11 @@ internal object GameLingoGlossaryUi {
                     fun action(option: Int) {
                         if (!stopped(a)) return
                         when(option) {
-                            0 -> GameLingoGlossaryStore.activate(a, name)
-                            1 -> edit(a, name) { show(a) }
+                            0 -> { GameLingoGlossaryStore.activate(a, name); refresh() }
+                            1 -> edit(a, name) { refresh() }
                             2 -> AlertDialog.Builder(a).setMessage(GameLingoLanguages.ui(a, "Smazat slovník") + " " + name + "?")
                                 .setNegativeButton(GameLingoLanguages.ui(a, "Zrušit"), null).setPositiveButton(GameLingoLanguages.ui(a, "Smazat")) { _, _ ->
-                                    if (stopped(a)) GameLingoGlossaryStore.remove(a, name)
+                                    if (stopped(a)) { GameLingoGlossaryStore.remove(a, name); refresh() }
                                 }.show()
                         }
                     }
@@ -119,9 +124,8 @@ internal object GameLingoGlossaryUi {
             }
         }
         val body=LinearLayout(a).apply { orientation=LinearLayout.VERTICAL }
-        var page: android.app.Dialog?=null
         labels.forEachIndexed { index,label ->
-            body.addView(GameLingoTVUi.action(a,label) { page?.dismiss();choose(index) })
+            body.addView(GameLingoTVUi.action(a,label) { choose(index) })
         }
         page=GameLingoTVUi.page(a,GameLingoLanguages.ui(a,"Herní slovník"),body,helpTopic="glossary")
     }

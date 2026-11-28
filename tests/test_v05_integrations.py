@@ -2337,6 +2337,23 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('val cancel = button("Zrušit"){dialog.dismiss()}',editor)
         self.assertIn("GameLingoTVUi.header(activity, heading, back",code(TOOLS/"GameLingoFirstRun.kt"))
 
+    def test_profile_confirmation_and_glossary_list_lifecycle(self):
+        ios = code(IOS/"SettingsHomeView.swift")
+        model = code(IOS/"PlayCaptionIOSApp.swift")
+        tv = code(TOOLS/"GameLingoTVProfiles.kt")
+        glossary = code(TOOLS/"GameLingoGlossaryUi.kt")
+        self.assertIn('pendingOverwrite = existing.name', ios)
+        self.assertIn('pendingDeletion = profile', ios)
+        self.assertIn('.alert("Přepsat profil"', ios)
+        self.assertIn('.alert("Smazat profil"', ios)
+        self.assertIn('name.utf16.count <= 64', model)
+        self.assertIn('name.length > 64', tv)
+        self.assertNotIn('input.text.toString().trim().take(64)', tv)
+        self.assertNotIn('GameLingoGlossaryUi.edit(a,name){activateGlossary(a,name)}', tv)
+        self.assertIn('fun refresh() { page?.dismiss(); show(a) }', glossary)
+        self.assertIn('it.equals(value, ignoreCase = true)', glossary)
+        self.assertNotIn('page?.dismiss();choose(index)', glossary)
+
     def test_tv_profile_cancel_keeps_parent_and_editor_returns_to_list(self):
         source = code(TOOLS/"GameLingoTVProfiles.kt")
         lane = source.split("fun show(a: Activity, onApplied:",1)[1]
