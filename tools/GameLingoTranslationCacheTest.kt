@@ -14,6 +14,8 @@ class GameLingoTranslationCacheTest {
         val name = "cache-test-${UUID.randomUUID()}.db"
         val first = GameLingoCacheStore(context, name, 3)
         try {
+            assertNull(first.lookup(listOf("google"), "en", "cs", " "))
+            assertFalse(context.getDatabasePath(name).exists())
             first.remember("google", "en", "cs", "Don't go", "Nechoď")
             first.remember("edge", "en", "cs", "Don't go", "Nechoďte")
             first.remember("google", "en", "sk", "Don't go", "Nechoď preč")

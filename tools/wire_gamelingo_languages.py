@@ -89,10 +89,12 @@ def main():
         if (!currentPair(source, target)) { chyba("Změna jazyka nebo relace"); return }
         if (text.isBlank()) { chyba("Prázdný vstup"); return }
         if (source == target) { zdroj = "originál"; hotovo(text); return }
+        val lookupRevision = GameLingoTranslationCache.revision()
         GameLingoTranslationCache.lookup(cacheContext, source, target, text) { cached ->
             ui.post {
                 if (!currentPair(source, target)) chyba("Změna jazyka nebo relace")
-                else if (cached != null && GameLingoControllerSymbols.valid(text, cached)) { zdroj = "paměť"; hotovo(cached) }
+                else if (cached != null && GameLingoTranslationCache.revision() == lookupRevision &&
+                    GameLingoControllerSymbols.valid(text, cached)) { zdroj = "paměť"; hotovo(cached) }
                 else miss()
             }
         }

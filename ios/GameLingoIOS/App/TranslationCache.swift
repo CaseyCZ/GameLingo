@@ -25,9 +25,10 @@ actor GLTranslationCache {
             let location: URL
             if let url { location = url }
             else {
-                location = try FileManager.default.url(for: .applicationSupportDirectory,
-                    in: .userDomainMask, appropriateFor: nil, create: false)
-                    .appendingPathComponent("GameLingoTranslationCache/translations-v1.sqlite")
+                // A never-used cache has nothing to remove; do not create a directory.
+                guard let directory = FileManager.default.urls(for: .applicationSupportDirectory,
+                    in: .userDomainMask).first else { return false }
+                location = directory.appendingPathComponent("GameLingoTranslationCache/translations-v1.sqlite")
             }
             for suffix in ["", "-wal", "-shm", "-journal"] {
                 let file = URL(fileURLWithPath: location.path + suffix)
@@ -119,7 +120,8 @@ actor GLTranslationCache {
         return statement
     }
 
-    func lookup(engine: String, source: String, target: String, original: String) -> String? {
+    func lookup(engine: String, source: String, target: String, original: String, revision: UInt64? = nil) -> String? {
+        guard enabled, revision == nil || revision == generation else { return nil }
         guard let bindings = key(engine, source, target, original), let db = open(),
               execute(db, "BEGIN IMMEDIATE") else { return nil }
         var committed = false

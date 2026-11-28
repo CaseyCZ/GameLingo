@@ -460,8 +460,10 @@ actor CaptionPipeline {
         let engines = ["google-gtx-v1", "microsoft-edge-v1", "mymemory-v1"]
         for engine in engines {
             if let cached = await translationCache.lookup(engine: engine, source: sourceCode,
-                target: target.rawValue, original: original),
-                GLControllerSymbols.valid(original: original, translated: cached) { return .success(cached) }
+                target: target.rawValue, original: original, revision: cacheRevision),
+                !Task.isCancelled,
+                GLControllerSymbols.valid(original: original, translated: cached),
+                await translationCache.revision() == cacheRevision { return .success(cached) }
         }
         var lastFailure: GLTranslationFailure = .providerUnavailable
         for engine in engines {

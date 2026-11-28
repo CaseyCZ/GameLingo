@@ -1415,6 +1415,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("currentPair(source, target)", wiring)
         self.assertIn("GameLingoTranslationCacheTest.kt", wiring)
 
+    def test_cache_privacy_generation_guards_pending_reads(self):
+        swift = code(IOS/"TranslationCache.swift")
+        pipeline = code(IOS/"CaptionPipeline.swift")
+        android = code(TOOLS/"GameLingoTranslationCache.kt")
+        wiring = code(TOOLS/"wire_gamelingo_languages.py")
+        self.assertIn("guard enabled, revision == nil || revision == generation else { return nil }", swift)
+        self.assertIn("await translationCache.revision() == cacheRevision", pipeline)
+        self.assertIn("GameLingoTranslationCache.revision() == lookupRevision", wiring)
+        self.assertIn("if (validEngines.isEmpty()) return@runCatching null", android)
+        self.assertIn("old request cannot restore deleted cache", code(ROOT/"tests/TranslationCacheTests.swift"))
+
     def test_p1_4_translation_failures_never_render_original_text(self):
         pipeline = code(IOS/"CaptionPipeline.swift")
         model = code(IOS/"PlayCaptionIOSApp.swift")

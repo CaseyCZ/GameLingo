@@ -29,12 +29,13 @@ internal class GameLingoCacheStore(context: Context, name: String = "gamelingo_t
 
     @Synchronized fun lookup(engines: List<String>, source: String, target: String, original: String): String? =
         runCatching {
+            val validEngines = engines.filter { key(it, source, target, original) }
+            if (validEngines.isEmpty()) return@runCatching null
             val db = writableDatabase
             db.beginTransaction()
             try {
                 var result: String? = null
-                for (engine in engines) {
-                    if (!key(engine, source, target, original)) continue
+                for (engine in validEngines) {
                     val args = arrayOf(engine, source, target, original)
                     result = db.rawQuery("SELECT result FROM translations WHERE engine=? AND source=? AND target=? AND original=?", args)
                         .use { if (it.moveToFirst()) it.getString(0) else null }
