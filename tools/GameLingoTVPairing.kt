@@ -491,7 +491,7 @@ object GameLingoTVPairing {
             orientation=android.widget.LinearLayout.VERTICAL
             val pad=d(13);setPadding(pad,pad,pad,pad);background=GameLingoVisualKit.card(activity)
             addView(android.widget.TextView(activity).apply {
-                text=GameLingoLanguages.ui(activity, "Na TV otevři Překlad z telefonu. Načti QR nebo opiš 32 znaků kódu. Titulky jsou podepsané, ne šifrované.")
+                text=GameLingoLanguages.ui(activity, "Text titulků na spárovanou TV se šifruje. Telefon i TV musí mít aktuální GameLingo. Starší volitelný režim přijímače není šifrovaný.")
                 gravity=Gravity.CENTER;textSize = GameLingoVisualKit.sp(activity, 14f);setTextColor(android.graphics.Color.parseColor("#92A4C7"))
             })
             pinInput.setTextColor(android.graphics.Color.WHITE)

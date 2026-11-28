@@ -13,6 +13,7 @@ struct GameLingoDevicesPanel: View {
     @State private var renaming: GLConsoleRecord?
     @State private var newName = ""
     @State private var pendingRemove: GLConsoleRecord?
+    @State private var pendingRemoveTV: GLTelevisionRecord?
 
     var body: some View {
         VStack(alignment: .center, spacing: 15) {
@@ -110,12 +111,12 @@ struct GameLingoDevicesPanel: View {
                         VStack(alignment: .center, spacing: 4) {
                             Text(television.name).font(.headline)
                             Text(LocalizedStringKey(devices.preferredTelevisionID == television.id
-                                 ? (model.tv.receiverConnected ? "TV připojena" :
+                                 ? (model.tv.ip == television.ipAddress && model.tv.receiverConnected ? "TV připojena" :
                                     "TV uložena – čekám na spojení")
                                  : "Uložená televize"))
                                 .font(.caption)
                                 .foregroundStyle(devices.preferredTelevisionID == television.id &&
-                                                 model.tv.receiverConnected
+                                                 model.tv.ip == television.ipAddress && model.tv.receiverConnected
                                                  ? GLStyle.green : GLNeon.mist)
                         }
                         .frame(maxWidth: .infinity)
@@ -129,16 +130,13 @@ struct GameLingoDevicesPanel: View {
                                 Button("Použít") {
                                     guard !model.isRunning else { return }
                                     devices.selectTelevision(television.id)
+                                    devices.subtitleOutput = .googleTV
                                     devices.prepareTV(model.tv)
                                 }
                                 .disabled(model.isRunning)
                                 Button("Odebrat", role: .destructive) {
                                     guard !model.isRunning else { return }
-                                    if model.tv.ip == television.ipAddress {
-                                        model.tv.forgetReceiver()
-                                        model.tv.ip = ""
-                                    }
-                                    devices.removeTelevision(television.id)
+                                    pendingRemoveTV = television
                                 }
                                 .disabled(model.isRunning)
                             } label: {
@@ -204,6 +202,21 @@ struct GameLingoDevicesPanel: View {
             Button("Zrušit", role: .cancel) { pendingRemove = nil }
         } message: {
             Text("Odebere zařízení z GameLingo. U PlayStationu také odstraní jeho uložené párovací klíče.")
+        }
+        .confirmationDialog("Zrušit párování TV?", isPresented: Binding(
+            get: { pendingRemoveTV != nil },
+            set: { if !$0 { pendingRemoveTV = nil } }
+        )) {
+            Button("Odebrat", role: .destructive) {
+                guard !model.isRunning, let record = pendingRemoveTV else { pendingRemoveTV = nil; return }
+                model.tv.forgetReceiver(at: record.ipAddress)
+                if model.tv.ip == record.ipAddress { model.tv.ip = "" }
+                devices.removeTelevision(record.id)
+                pendingRemoveTV = nil
+            }
+            Button("Zrušit", role: .cancel) { pendingRemoveTV = nil }
+        } message: {
+            Text("Přístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači.")
         }
     }
 

@@ -342,6 +342,17 @@ final class PlayCaptionTV: ObservableObject {
         conn.start(queue: queue)
     }
 
+    /// Remove a saved receiver without changing the currently active TV.
+    func forgetReceiver(at address: String) {
+        let target = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !target.isEmpty else { return }
+        if ip.trimmingCharacters(in: .whitespacesAndNewlines) == target {
+            forgetReceiver()
+        } else {
+            ReceiverSecretStore.remove(target)
+        }
+    }
+
     func forgetReceiver() {
         pairingGeneration &+= 1
         pairingTimeoutTask?.cancel()

@@ -2039,12 +2039,32 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertLess(workflow.index("python3 tools/cleanup_release_tags.py releases.json"),
                         workflow.index('gh api --method DELETE "repos/$REPO/git/refs/tags/$old"'))
 
+    def test_tv_pairing_ui_matches_encrypted_protocol_and_saved_device_removal(self):
+        ios = code(IOS/"GameLingoTVSetupScreen.swift")
+        android = code(TOOLS/"GameLingoTVPairing.kt")
+        panel = code(IOS/"GameLingoDevicesPanel.swift")
+        receiver = code(IOS/"PlayCaptionTV.swift")
+        for source in (ios, android):
+            self.assertIn("Text titulků na spárovanou TV se šifruje.", source)
+            self.assertNotIn("Titulky jsou podepsané, ne šifrované.", source)
+        self.assertNotIn("Použij šest číslic z televize.", ios)
+        self.assertIn("disabled: isRunning || !tv.receiverPaired || !tv.receiverConnected", ios)
+        self.assertIn("model.tv.forgetReceiver(at: record.ipAddress)", panel)
+        self.assertIn("ReceiverSecretStore.remove(target)", receiver)
+        self.assertIn("Přístup telefonu odvolej také na TV.", panel)
+
     def test_build_and_publish_workflows_preserve_signing_and_validation(self):
         folder = ROOT/".github/workflows"
         workflow = code(folder/"audit-0.5-ci.yml")
         publisher = code(folder/"publish-gamelingo-current.yml")
         self.assertEqual({p.name for p in folder.glob("*.yml")},
-                         {"audit-0.5-ci.yml", "publish-gamelingo-current.yml"})
+                         {"audit-0.5-ci.yml", "publish-gamelingo-current.yml", "chiaki-16kb-candidate.yml"})
+        candidate = code(folder/"chiaki-16kb-candidate.yml")
+        self.assertIn("workflow_dispatch:", candidate)
+        self.assertIn("contents: read", candidate)
+        self.assertNotIn("secrets.", candidate)
+        self.assertNotIn("gh release", candidate)
+        self.assertIn("Chiaki-16KB-experimental-not-installed", candidate)
         for platform in ("TV", "MOBILE"):
             for suffix in ("KEYSTORE_B64", "KEYSTORE_PASSWORD"):
                 name = f"GAMELINGO_{platform}_{suffix}"

@@ -105,7 +105,7 @@ struct GameLingoTVSetupScreen: View {
                                   ? (tv.receiverConnected
                                      ? "Přijímač TV je připojen."
                                      : "TV je spárovaná. Čekám na odpověď přijímače.")
-                                  : "TV není spárovaná. Použij šest číslic z televize.",
+                                  : "Na televizi otevři párování a v telefonu načti QR kód nebo zadej celý kód.",
                                   systemImage: tv.receiverConnected
                                       ? "checkmark.circle.fill" : "info.circle")
                                 .font(.subheadline)
@@ -242,7 +242,7 @@ private struct GameLingoTVPairingPanel: View {
                 Text("1. Na TV otevři Překlad z telefonu. 2. Načti QR nebo opiš 32 znaků kódu. 3. Zvol Spárovat.")
                     .font(.caption)
                     .foregroundStyle(GLNeon.mist)
-                Text("Párovací klíč se nepřenáší po síti. Titulky jsou podepsané, ne šifrované.")
+                Text("Text titulků na spárovanou TV se šifruje. Telefon i TV musí mít aktuální GameLingo. Starší volitelný režim přijímače není šifrovaný.")
                     .font(.caption).foregroundStyle(GLStyle.muted)
                 HStack(spacing: 10) {
                     Image(systemName: tv.receiverConnected
@@ -307,7 +307,7 @@ private struct GameLingoTVPairingPanel: View {
                             tv.forgetReceiver()
                         }
                     } message: {
-                        Text("Televizi pak bude nutné znovu spárovat.")
+                        Text("Přístup telefonu odvolej také na TV. Místní odebrání neodvolá klíč v přijímači.")
                     }
                 }
             }
@@ -317,7 +317,7 @@ private struct GameLingoTVPairingPanel: View {
                          help: "Zobrazí vlastní testovací text na vybraném, skutečně připojeném GameLingo přijímači.")
                 GLPrimaryButton(title: "Zobrazit na TV",
                                 systemImage: "play.fill",
-                                disabled: !tv.receiverPaired || !tv.receiverConnected) {
+                                disabled: isRunning || !tv.receiverPaired || !tv.receiverConnected) {
                     tv.sendSubtitle(sample, duration: 8_000, preview: true)
                 }
                 DisclosureGroup("Vlastní text") {
