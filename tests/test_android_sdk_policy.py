@@ -28,6 +28,12 @@ class SDKPolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             policy.elf_load_segments(b"not ELF")
 
+    def test_ci_resolves_sdkmanager_without_path_assumption(self):
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/audit-0.5-ci.yml").read_text()
+        self.assertEqual(workflow.count('SDK_MANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"'), 2)
+        self.assertEqual(workflow.count('"$SDK_MANAGER" --sdk_root="$SDK_ROOT"'), 2)
+        self.assertEqual(workflow.count('test -f "$SDK_ROOT/platforms/android-36/android.jar"'), 2)
+
     def test_platform_targets(self):
         self.assertEqual(policy.MIN_SDK, 26)
         self.assertEqual(policy.TARGETS, {"mobile": 36, "tv": 34})
