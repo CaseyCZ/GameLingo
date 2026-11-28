@@ -34,6 +34,8 @@ import CoreGraphics
         var custom = AutomaticOCRZone(name: "Custom", rect: crop, dialogueDefault: false)
         custom.restoreArea()
         precondition(custom.rect == CGRect(x: 0.2, y: 0.2, width: 0.6, height: 0.25) && !custom.centered)
+        let minimumAtEdge = AutomaticOCRZone(name: "Minimum", rect: CGRect(x: 0.92, y: 0.96, width: 0.08, height: 0.04))
+        precondition(AutomaticOCRZone.validated([minimumAtEdge]).count == 1)
         let invalid = AutomaticOCRZone(name: "Invalid", rect: CGRect(x: 0.9, y: 0, width: 0.5, height: 1))
         precondition(AutomaticOCRZone.validated([invalid]).isEmpty)
         let many = (0..<11).map { AutomaticOCRZone(name: String($0), rect: crop) }

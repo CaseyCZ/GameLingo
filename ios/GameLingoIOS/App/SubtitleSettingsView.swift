@@ -288,10 +288,11 @@ struct SubtitleSettingsView: View {
             }
             Toggle("Filtrovat položky herního menu", isOn: $model.filterMenuText)
             Button("Obnovit oblast") {
+                guard !model.manualOCRLocked else { return }
                 model.manualOCRBox = CGRect(x: 0.10, y: 0.72,
                                             width: 0.80, height: 0.25)
                 showOnTV()
-            }.font(.subheadline)
+            }.font(.subheadline).disabled(model.manualOCRLocked)
         }
     }
 
@@ -311,12 +312,13 @@ struct SubtitleSettingsView: View {
             .buttonStyle(.borderedProminent)
             .tint(.green)
             Button("Obnovit výchozí polohu") {
+                guard !model.outputLocked else { return }
                 model.outputX = 0.5
                 model.outputBottom = 0.93
                 model.outputWidth = 0.62
                 model.outputFont = 1
                 showOnTV()
-            }.font(.subheadline)
+            }.font(.subheadline).disabled(model.outputLocked)
         }
     }
 
@@ -358,10 +360,11 @@ struct SubtitleSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Button("Obnovit oblast") {
+                    guard !model.choicesLocked else { return }
                     model.choicesArea = CGRect(x: 0.55, y: 0.45,
                                                width: 0.40, height: 0.35)
                     showOnTV()
-                }.font(.subheadline)
+                }.font(.subheadline).disabled(model.choicesLocked)
             } else {
                 Text("Volby jsou vypnuté, takže OCR dál čte pouze oblast dialogových titulků.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -386,18 +389,20 @@ struct SubtitleSettingsView: View {
                         set: { updateChoicesOutputSize(width: nil, height: CGFloat($0)) }
                     ), in: 0.08...0.40)
                 }
-                gameTextFontControl
+                gameTextFontControl.disabled(model.choicesOutputLocked)
                 Button("Náhled na TV") {
                     showOnTV()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
                 Button("Obnovit výchozí polohu") {
+                    guard !model.choicesOutputLocked else { return }
                     model.choicesOutputArea = CGRect(x: 0.07, y: 0.43,
                                                      width: 0.43, height: 0.17)
                     showOnTV()
                 }
                 .font(.subheadline)
+                .disabled(model.choicesOutputLocked)
             } else {
                 Text("Nejdříve zapni překlad herních textů ve žluté oblasti.")
                     .font(.caption).foregroundStyle(.secondary)

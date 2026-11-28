@@ -25,7 +25,7 @@ struct AutomaticOCRZone: Identifiable, Codable, Equatable, Sendable {
 
     var valid: Bool {
         rect.minX.isFinite && rect.minY.isFinite && rect.maxX.isFinite && rect.maxY.isFinite &&
-        rect.width >= 0.08 && rect.height >= 0.04 &&
+        rect.width >= 0.08 - 0.000001 && rect.height >= 0.04 - 0.000001 &&
         rect.minX >= 0 && rect.minY >= 0 && rect.maxX <= 1.000001 && rect.maxY <= 1.000001
     }
 

@@ -411,7 +411,15 @@ internal object GameLingoAutomaticConfig {
         })
         editor.addView(remove)
 
+        // Geometry-only edits must not destroy focused D-pad targets.
+        var renderedTabs: List<Triple<String, String, Boolean>>? = null
+        var renderedSelection = -2
         refreshTabs = {
+            val signature = entries.map { Triple(it.id, it.name, it.enabled) }
+            if (signature != renderedTabs || selected != renderedSelection) {
+            val focusedIndex = (0 until tabs.childCount).firstOrNull { tabs.getChildAt(it).hasFocus() }
+            renderedTabs = signature
+            renderedSelection = selected
             tabs.removeAllViews()
             entries.forEachIndexed { index, zone ->
                 val tab = action((if (zone.enabled) "▣ " else "□ ") + zone.name) {
@@ -432,6 +440,11 @@ internal object GameLingoAutomaticConfig {
                     refresh()
                 }
                 tabs.addView(add, LinearLayout.LayoutParams(-2, dp(52)))
+            }
+            if (focusedIndex != null && tabs.childCount > 0) {
+                tabs.getChildAt(if (selected >= 0) selected.coerceAtMost(tabs.childCount - 1)
+                    else focusedIndex.coerceAtMost(tabs.childCount - 1)).requestFocus()
+            }
             }
         }
         refresh = {
@@ -496,5 +509,11 @@ internal object GameLingoAutomaticConfig {
             localPreviewHandler.removeCallbacks(clearLocalPreview)
             clearLocalPreview.run()
         })
+        if (tv) dialog.window?.decorView?.viewTreeObserver?.addOnWindowFocusChangeListener { focused ->
+            if (focused) {
+                localPreviewHandler.removeCallbacks(clearLocalPreview)
+                clearLocalPreview.run()
+            }
+        }
     }
 }

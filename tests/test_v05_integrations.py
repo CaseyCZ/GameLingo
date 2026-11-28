@@ -1305,6 +1305,17 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('font in .1f..2.5f', code(TOOLS/"GameLingoZonePacket.kt"))
         self.assertIn('posuvnik(t("tvPismo"), 10, 200,', code(TOOLS/"redesign_gamelingo.py"))
 
+    def test_region_locks_and_automatic_editor_focus(self):
+        standard = code(IOS/"SubtitleSettingsView.swift")
+        for lock in ("manualOCRLocked", "outputLocked", "choicesLocked", "choicesOutputLocked"):
+            self.assertIn("guard !model." + lock + " else { return }", standard)
+            self.assertIn(".disabled(model." + lock + ")", standard)
+        auto = code(TOOLS/"GameLingoAutomaticConfig.kt")
+        self.assertIn("signature != renderedTabs || selected != renderedSelection", auto)
+        self.assertIn("tabs.getChildAt(it).hasFocus()", auto)
+        self.assertIn("addOnWindowFocusChangeListener { focused ->", auto)
+        self.assertIn("localPreviewHandler.removeCallbacks(clearLocalPreview)", auto)
+
     def test_automatic_zone_preview_and_independent_reset(self):
         ios = code(IOS/"GLAutomaticZonesView.swift")
         android = code(TOOLS/"GameLingoAutomaticConfig.kt")
