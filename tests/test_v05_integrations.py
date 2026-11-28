@@ -695,6 +695,28 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn('getBoolean("enabled",false)', auto)
         self.assertNotIn('if(i==1) showZones(a)', auto)
 
+    def test_onboarding_language_choices_survive_interruption(self):
+        setup = code(IOS/"GameLingoSetupView.swift")
+        settings = code(IOS/"SettingsHomeView.swift")
+        mobile = code(TOOLS/"GameLingoFirstRun.kt")
+        languages = code(TOOLS/"GameLingoLanguages.kt")
+        tv = code(TOOLS/"GameLingoTVUi.kt")
+        wiring = code(TOOLS/"wire_android_devices.py")
+        self.assertIn(".interactiveDismissDisabled(!devices.completedSetup)", setup)
+        self.assertIn("guard !initializedChoices else { return }", setup)
+        self.assertIn("Text(verbatim: language.title).tag(language)", setup)
+        self.assertIn("Text(verbatim: language.title).tag(language)", settings)
+        for key in ("appLanguage", "gameLanguage", "targetLanguage"):
+            self.assertIn('forKey: "gamelingo.' + key + '"', setup)
+        self.assertIn("GameLingoLanguages.persistEffectiveChoices(activity)", mobile)
+        self.assertIn('.putString("game", gameCode).putString("target", targetCode)', languages)
+        welcome = tv.split("fun showWelcome(", 1)[1].split("fun showSettings(", 1)[0]
+        self.assertIn('putBoolean("pending", true)', welcome)
+        self.assertIn("dialog.setCancelable(false)", welcome)
+        self.assertLess(welcome.index("GameLingoLanguages.persistEffectiveChoices(a)"),
+                        welcome.index('putBoolean("pending", false)'))
+        self.assertIn("GameLingoTVUi.needsWelcome(this@MainActivity, nast.jazyk)", wiring)
+
     def test_first_run_and_device_library(self):
         home=code(IOS/"GameLingoHome.swift")
         setup=code(IOS/"GameLingoSetupView.swift")

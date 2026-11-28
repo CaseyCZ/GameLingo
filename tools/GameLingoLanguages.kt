@@ -2710,6 +2710,16 @@ object GameLingoLanguages {
             .getString("target", null)?.takeIf { code ->
                 targetLanguages.any { it.code == code }
             } ?: systemTarget(c)
+    /** Commit untouched system defaults when onboarding is explicitly completed. */
+    fun persistEffectiveChoices(c: Context) {
+        val appCode = app(c)
+        val gameCode = game(c)
+        val targetCode = target(c)
+        Nastaveni(c).jazyk = appCode
+        c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString("game", gameCode).putString("target", targetCode).apply()
+    }
+
     /** Restore only validated, existing translation languages; never change UI language. */
     fun restoreProfile(c: Context, source: String?, target: String?) {
         if (source != null && gameLanguages.any { it.code == source }) setTranslationLanguage(c, "game", source)

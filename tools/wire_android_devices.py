@@ -112,7 +112,7 @@ def main():
         code=one(code,
             '''                else if (nast.jazyk == null) ukazJazyk()
                 else if (maUkazatBetu()) ukazBetu() else pokracuj()''',
-            '''                else if (nast.jazyk == null) {
+            '''                else if (GameLingoTVUi.needsWelcome(this@MainActivity, nast.jazyk)) {
                     GameLingoTVUi.showWelcome(this@MainActivity) { language ->
                         nast.jazyk = language
                         ukazHlavni()

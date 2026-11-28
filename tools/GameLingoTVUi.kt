@@ -373,9 +373,18 @@ object GameLingoTVUi {
      * First launch is a real GameLingo welcome, not PlayCaption's beta or
      * legacy language list. Source and target are saved independently from UI.
      */
+    // Existing installations with a stored UI language keep their settings.
+    // A newly started welcome remains pending even after selecting its language.
+    fun needsWelcome(a: Activity, savedLanguage: String?): Boolean =
+        savedLanguage == null || a.getSharedPreferences("gamelingo_tv_onboarding", Activity.MODE_PRIVATE)
+            .getBoolean("pending", false)
+
     fun showWelcome(a: Activity, onFinish: (String) -> Unit) {
-        if (a.isFinishing) return
+        if (a.isFinishing || a.isDestroyed) return
+        val welcomePrefs = a.getSharedPreferences("gamelingo_tv_onboarding", Activity.MODE_PRIVATE)
+        welcomePrefs.edit().putBoolean("pending", true).apply()
         val dialog = Dialog(a, android.R.style.Theme_Material_NoActionBar_Fullscreen)
+        dialog.setCancelable(false)
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
@@ -423,6 +432,8 @@ object GameLingoTVUi {
             { GameLingoLanguages.target(a) }, GameLingoLanguages.Kind.TARGET)
 
         val begin = action(a, GameLingoLanguages.ui(a, "Pokračovat na TV"), primary = true) {
+            GameLingoLanguages.persistEffectiveChoices(a)
+            welcomePrefs.edit().putBoolean("pending", false).apply()
             dialog.dismiss()
             onFinish(GameLingoLanguages.app(a))
         }

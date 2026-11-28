@@ -180,6 +180,7 @@ object GameLingoFirstRun {
             }
             edit.apply()
             if (open == 0) {
+                GameLingoLanguages.persistEffectiveChoices(activity)
                 activity.getSharedPreferences("gamelingo_devices", Activity.MODE_PRIVATE)
                     .edit().putBoolean("cameraSourceSelected", consoleChoice == 2).apply()
                 if (consoleChoice in 0..1 && consoleRegistered() && !RemotePlayService.aktivni) RemotePlayService.prepni(activity, consoleChoice == 0)

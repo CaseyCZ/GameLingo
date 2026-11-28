@@ -280,7 +280,7 @@ struct GameLingoLanguageSettingsView: View {
                     "Jazyk tlačítek a nabídky GameLingo. Nemění jazyk hry ani překladu.")
                 Picker("Jazyk aplikace", selection: $model.appLanguage) {
                     ForEach(GLAppLanguage.allCases) { language in
-                        Text(LocalizedStringKey(language.title)).tag(language)
+                        Text(verbatim: language.title).tag(language)
                     }
                 }
                 .pickerStyle(.menu)

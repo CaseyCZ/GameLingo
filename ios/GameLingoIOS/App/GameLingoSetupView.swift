@@ -7,6 +7,7 @@ struct GameLingoSetupView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var step = 0
+    @State private var initializedChoices = false
     @State private var chosenFamily: GLConsoleFamily?
     @State private var cameraSelected = false
     @State private var showXbox = false
@@ -39,6 +40,11 @@ struct GameLingoSetupView: View {
     private func finishSetup() {
         // Completing or skipping first-run setup does not claim a console is
         // connected. The dashboard still checks Xbox/PS and TV readiness.
+        // Persist the effective defaults even when the user never touched a picker.
+        let defaults = UserDefaults.standard
+        defaults.set(model.appLanguage.rawValue, forKey: "gamelingo.appLanguage")
+        defaults.set(model.gameLanguage.rawValue, forKey: "gamelingo.gameLanguage")
+        defaults.set(model.targetLanguage.rawValue, forKey: "gamelingo.targetLanguage")
         devices.completedSetup = true
         onFinished()
         onSourceSelected(cameraSelected)
@@ -82,6 +88,7 @@ struct GameLingoSetupView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .interactiveDismissDisabled(!devices.completedSetup)
         .tint(GLStyle.blue)
         .sheet(isPresented: $showXbox) { xboxSetup }
         .sheet(isPresented: $showTV) { tvSetup }
@@ -90,6 +97,8 @@ struct GameLingoSetupView: View {
         }
         .onAppear {
             devices.refreshXbox(model.xbox.consoles)
+            guard !initializedChoices else { return }
+            initializedChoices = true
             cameraSelected = storedCameraSource
             if !cameraSelected, let family = devices.chosenConsole?.family { chosenFamily = family }
         }
@@ -149,7 +158,7 @@ struct GameLingoSetupView: View {
                         .font(.headline)
                     Picker("Jazyk aplikace", selection: $model.appLanguage) {
                         ForEach(GLAppLanguage.allCases) { language in
-                            Text(LocalizedStringKey(language.title)).tag(language)
+                            Text(verbatim: language.title).tag(language)
                         }
                     }
                     .pickerStyle(.menu)
