@@ -64,6 +64,7 @@ jobs:
         run: |
           python3 -m unittest discover -s tests -p 'test_android_sdk_policy.py' -v
           python3 -m unittest discover -s tests -p 'test_package_license_notices.py' -v
+          python3 -m unittest discover -s tests -p 'test_store_distribution.py' -v
       - name: Python tooling syntax
         run: python3 -m compileall -q tools tests
       - name: Run latest-frame mailbox tests

@@ -52,6 +52,14 @@ The PlayCaption `native/pcobraz.c` declares AGPLv3. Its ARM prebuilts in both ru
 
 Store review remains blocked on exact native WebRTC transitive notices and source provenance, CameraX/libyuv notices, any outstanding publisher notices, 16 KB compatibility and authorization/terms questions. The iOS run 491 includes the WebRTC framework's privacy manifest; the app's own required-reason APIs and privacy manifest still need review.
 
+## Store-only distribution preparation
+
+`tools/store_distribution.py` prepares a disposable generated workspace after the standard branding and permissions patches (Android), or before XcodeGen (iOS). It removes the GitHub APK installer implementation, receiver, provider, path and install permission; on iOS it replaces the GitHub IPA download implementation with an inert compatibility view. The existing GitHub build and updater remain unchanged. This is not yet a complete store build pipeline, and store variants must also remove or replace any other sideload links (including device setup QR links), validate compiled manifests and native libraries, and use correctly signed AAB / App Store archives. Do not use the GitHub APK/IPA as store uploads.
+
+The application privacy manifest declares UserDefaults CA92.1 (app-specific settings) and system boot time 35F9.1 (elapsed time and in-app timers), based on the app's actual Swift usage. It is deliberately not a final data collection declaration: third-party retention, data disclosures, remaining required-reason APIs in the linked native archive, and SDK privacy/signature obligations must be verified against the exact store build. The existing IPA permission check requires the app-level manifest in addition to any framework manifest. See [Apple required reason APIs](https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api).
+
+Current official Google Play [target requirements](https://developer.android.com/google/play/requirements/target-sdk) are API 36 mobile and API 34 TV. [TV quality requirements](https://developer.android.com/develop/adaptive-apps/quality-guidelines/tv-app-quality) require AAB and both ARM architectures plus 16 KB support from August 1, 2026. [Google Play Device and Network Abuse](https://support.google.com/googleplay/android-developer/answer/16559646) prohibits self-updates outside Play. [Apple guideline 5.2.2](https://developer.apple.com/app-store/review/guidelines/) requires permission for third-party services. Keep these as explicit gates; do not claim that a technical build substitutes for rights.
+
 ## Translation services — distribution review (2026-11-28)
 
 | Engine | Current use | Distribution gate |

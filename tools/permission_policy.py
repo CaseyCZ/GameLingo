@@ -111,6 +111,8 @@ def verify_apk(apk, variant, aapt):
 def verify_ipa(ipa):
     with zipfile.ZipFile(ipa) as z:
         info = plistlib.loads(z.read("Payload/GameLingoIOS.app/Info.plist"))
+        from store_distribution import verify_privacy_manifest
+        verify_privacy_manifest(z.read("Payload/GameLingoIOS.app/PrivacyInfo.xcprivacy"))
     for key in ("NSCameraUsageDescription", "NSLocalNetworkUsageDescription"):
         if not info.get(key):
             raise RuntimeError("Missing iOS usage description: " + key)
