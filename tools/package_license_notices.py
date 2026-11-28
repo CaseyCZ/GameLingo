@@ -75,12 +75,15 @@ def android_dependency_notices(path, manifest, parts):
             raise RuntimeError("Unexpected runtime component: " + coordinate)
         if name != file.name or not re.fullmatch(r"[A-Za-z0-9_.+-]+", name):
             raise RuntimeError("Unexpected runtime artifact name: " + name)
-        label = "Android-runtime/" + coordinate + "/" + name
-        if label in seen:
-            raise RuntimeError("Duplicate runtime artifact: " + label)
-        seen.add(label)
         with file.open("rb") as stream:
             digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        # Gradle may resolve the same module artifact through multiple variants.
+        # Collapse only byte-identical artifacts; preserve distinct contents.
+        identity = (coordinate, name, digest)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        label = "Android-runtime/" + coordinate + "/" + digest + "/" + name
         result = {"coordinate": coordinate, "artifact": name,
                   "sha256": digest, "notices": []}
         if zipfile.is_zipfile(file):
@@ -90,7 +93,7 @@ def android_dependency_notices(path, manifest, parts):
                     result["notices"].append(title)
         result["review"] = "notices_collected" if result["notices"] else "no_embedded_notice_found"
         results.append(result)
-    return results
+    return sorted(results, key=lambda item: (item['coordinate'], item['artifact'], item['sha256']))
 
 
 def ios_dependency_notices(args, manifest, parts):
