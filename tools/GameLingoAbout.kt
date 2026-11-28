@@ -189,7 +189,7 @@ object GameLingoAbout {
         for ((title, paragraph) in listOf(
             "OCR a rozpoznávání" to PRIVACY_NOTICE,
             "Překladová cache" to "Cache může ukládat původní i přeložený text. Lze ji vypnout a samostatně vymazat. Volitelná historie zůstává pouze v paměti aplikace.",
-            "Výstup titulků" to "Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť.",
+            "Výstup titulků" to "Text titulků na spárovanou TV se šifruje. Telefon i TV musí mít aktuální GameLingo. Starší volitelný režim přijímače není šifrovaný.",
             "Zařízení" to "Přihlášení ke konzolím využívá služby Microsoft a Sony. Připojené účty a zařízení spravuj v nabídce Zařízení.",
             "Soukromí" to "Snímání lze kdykoli zastavit. GameLingo nepřekládá mikrofon ani zvuk."
         )) {

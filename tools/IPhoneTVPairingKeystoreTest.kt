@@ -145,6 +145,26 @@ class IPhoneTVPairingKeystoreTest {
         assertFalse(IPhoneTVPairing.permitsStoryReadiness(second))
     }
 
+    @Test fun encryptedPayloadRejectsReplayTamperAndRevocation() {
+        val key = requireNotNull(pair(IPhoneTVPairing.startCode(), id))
+        val now = System.currentTimeMillis().toString()
+        val original = "PCT1\t1\t1800\tHello"
+        val encoded = GameLingoWireCrypto.seal(key, id, original.toByteArray(Charsets.UTF_8))
+        fun signature(payload: String, sequence: String) = mac(key, "TEXT2\t$id\t$payload\t$now\t$sequence")
+        fun open(payload: String, sequence: String, sig: String = signature(payload, sequence)) =
+            IPhoneTVPairing.openFreshText(ctx, id, payload, now, sequence, sig)
+        assertNull(open(encoded, "1", "00".repeat(32)))
+        assertEquals(original, open(encoded, "1"))
+        assertNull(open(encoded, "1"))
+        val tampered = java.util.Base64.getDecoder().decode(encoded)
+        tampered[tampered.lastIndex] = (tampered.last().toInt() xor 1).toByte()
+        assertNull(open(java.util.Base64.getEncoder().encodeToString(tampered), "2"))
+        val next = GameLingoWireCrypto.seal(key, id, original.toByteArray(Charsets.UTF_8))
+        assertEquals(original, open(next, "2"))
+        assertTrue(IPhoneTVPairing.unpair(ctx, id))
+        assertNull(open(next, "3"))
+    }
+
     @Test fun pairRetryAndClearUseEncryptedStorage() {
         val pin = IPhoneTVPairing.startCode()
         assertEquals(32, pin.length)

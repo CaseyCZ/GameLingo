@@ -69,7 +69,7 @@ Kompatibilita závisí na zařízení a zdroji obrazu. Chráněný obsah může 
 
 ## 🔒 Soukromí a licence
 
-OCR probíhá na zařízení. Online překladače mohou přijímat rozpoznaný text; místní cache lze vypnout a vymazat. Titulky přenášené na TV jsou podepisované, ale nejsou šifrované. TV neobsahuje offline překladový model. Nepoužívej GameLingo pro citlivý text.
+OCR probíhá na zařízení. Online překladače mohou přijímat rozpoznaný text; místní cache lze vypnout a vymazat. Obsah titulků při spárovaném přenosu je šifrovaný (AES-GCM); aktualizuj telefon i TV. Volitelný starší režim přijímače šifrování nepoužívá. TV neobsahuje offline překladový model. Nepoužívej GameLingo pro citlivý text.
 
 [Zásady ochrany osobních údajů](PRIVACY.md).
 
@@ -103,7 +103,7 @@ Install the app, choose a console or TV mode, select the source and target langu
 
 Compatibility depends on the device and video source. Protected content may not be available to OCR. GameLingo does not translate audio or microphone input.
 
-**Privacy:** OCR runs locally; online translation may send recognized text to external providers. The local cache can be disabled and cleared. TV subtitle transport is authenticated but not encrypted. The TV app has no offline translation model. Do not use GameLingo for sensitive text.
+**Privacy:** OCR runs locally; online translation may send recognized text to external providers. The local cache can be disabled and cleared. Paired TV subtitle payloads are encrypted (AES-GCM); update both phone and TV. The optional legacy receiver mode is not encrypted. The TV app has no offline translation model. Do not use GameLingo for sensitive text.
 
 **[Privacy policy](PRIVACY.md)**
 

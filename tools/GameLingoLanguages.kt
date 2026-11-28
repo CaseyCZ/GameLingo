@@ -704,7 +704,6 @@ object GameLingoLanguages {
         out["Přeložené herní texty"] = "Translated game text"
         out["Přeložené titulky"] = "Translated subtitles"
         out["Přeložený text přímo přes originál"] = "Translated text over the original"
-        out["Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť."] = "Subtitle transport to a paired TV is authenticated but not yet encrypted. Use a trusted home network."
         out["Přenos českých titulků přes domácí síť"] = "Subtitles sent over local network"
         out["Přepsat"] = "Overwrite"
         out["Přepsat profil"] = "Overwrite profile"
@@ -785,10 +784,10 @@ object GameLingoLanguages {
         out["ROZPOZNÁVÁNÍ A PŘEKLAD"] = "OCR AND TRANSLATION"
         out["RSS nedostupná"] = "RSS unavailable"
         out["Raketa v horní liště otevírá novinky."] = "The rocket in the header opens release notes."
+        out["Relace není spuštěna"] = "Session not started"
     }
 
     private fun fill_en_4(out: MutableMap<String, String>) {
-        out["Relace není spuštěna"] = "Session not started"
         out["Relace spuštěna – snímky se ověřují zvlášť"] = "Session started – frames checked separately"
         out["Remote Play běží"] = "Remote Play running"
         out["Remote Play běží · TV spojení neověřeno"] = "Remote Play running · TV connection unverified"
@@ -952,6 +951,7 @@ object GameLingoLanguages {
         out["Test snímání"] = "Test capture"
         out["Text (dopisy, SMS)"] = "Text (letters, messages)"
         out["Text rozpoznán"] = "Text recognized"
+        out["Text titulků na spárovanou TV se šifruje. Telefon i TV musí mít aktuální GameLingo. Starší volitelný režim přijímače není šifrovaný."] = "Subtitle text sent to a paired TV is encrypted. Both phone and TV need current GameLingo. The optional legacy receiver mode is not encrypted."
         out["Titulek předán síti. Zobrazení ověř na TV."] = "Subtitle sent to the network. Check its display on the TV."
         out["Titulky"] = "Subtitles"
         out["Titulky a překlady her v reálném čase"] = "Live game subtitles and translations"
@@ -2019,7 +2019,6 @@ object GameLingoLanguages {
         out["Přeložené herní texty"] = "Preložené herné texty"
         out["Přeložené titulky"] = "Preložené titulky"
         out["Přeložený text přímo přes originál"] = "Preložený text priamo cez originál"
-        out["Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť."] = "Prenos titulkov na spárovanú TV je overovaný, ale zatiaľ nie je šifrovaný. Používaj dôveryhodnú domácu sieť."
         out["Přenos českých titulků přes domácí síť"] = "Prenos titulkov cez domácu sieť"
         out["Přepsat"] = "Prepísať"
         out["Přepsat profil"] = "Prepísať profil"
@@ -2100,10 +2099,10 @@ object GameLingoLanguages {
         out["ROZPOZNÁVÁNÍ A PŘEKLAD"] = "ROZPOZNÁVANIE A PREKLAD"
         out["RSS nedostupná"] = "RSS nedostupná"
         out["Raketa v horní liště otevírá novinky."] = "Raketa v hornej lište otvára novinky."
+        out["Relace není spuštěna"] = "Relácia nie je spustená"
     }
 
     private fun fill_sk_4(out: MutableMap<String, String>) {
-        out["Relace není spuštěna"] = "Relácia nie je spustená"
         out["Relace spuštěna – snímky se ověřují zvlášť"] = "Relácia spustená – snímky sa overujú zvlášť"
         out["Remote Play běží"] = "Remote Play beží"
         out["Remote Play běží · TV spojení neověřeno"] = "Remote Play beží · spojenie TV neoverené"
@@ -2267,6 +2266,7 @@ object GameLingoLanguages {
         out["Test snímání"] = "Test snímania"
         out["Text (dopisy, SMS)"] = "Text (listy, SMS)"
         out["Text rozpoznán"] = "Text rozpoznaný"
+        out["Text titulků na spárovanou TV se šifruje. Telefon i TV musí mít aktuální GameLingo. Starší volitelný režim přijímače není šifrovaný."] = "Text titulkov na spárovanú TV sa šifruje. Telefón aj TV musia mať aktuálne GameLingo. Starší voliteľný režim prijímača nie je šifrovaný."
         out["Titulek předán síti. Zobrazení ověř na TV."] = "Titulok odovzdaný sieti. Zobrazenie over na TV."
         out["Titulky"] = "Titulky"
         out["Titulky a překlady her v reálném čase"] = "Titulky a preklady hier v reálnom čase"

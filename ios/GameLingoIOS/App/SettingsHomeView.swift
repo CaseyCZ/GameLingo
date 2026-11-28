@@ -1016,7 +1016,7 @@ struct GameLingoPrivacyView: View {
             }
             GLCard {
                 GLHeader(title: "Výstup titulků")
-                Text("Přenos titulků na spárovanou TV je ověřovaný, ale zatím není šifrovaný. Používej důvěryhodnou domácí síť.")
+                Text("Text titulků na spárovanou TV se šifruje. Telefon i TV musí mít aktuální GameLingo. Starší volitelný režim přijímače není šifrovaný.")
                     .font(.subheadline)
                     .foregroundStyle(GLNeon.mist)
                     .frame(maxWidth: .infinity, alignment: .center)
