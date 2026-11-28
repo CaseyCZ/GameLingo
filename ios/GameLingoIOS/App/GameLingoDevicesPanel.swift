@@ -236,3 +236,76 @@ struct GameLingoDevicesPanel: View {
         }
     }
 }
+
+/// Shared branded add-device overlay, used from the home tab and standalone settings.
+struct GLAddDevicePicker: View {
+    let onCancel: () -> Void
+    let onXbox: () -> Void
+    let onPlayStation: () -> Void
+    let onTV: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.65).ignoresSafeArea()
+                .onTapGesture(perform: onCancel)
+                .accessibilityHidden(true)
+            GLNeonPanel(emphasized: true, radius: 24) {
+                VStack(spacing: 10) {
+                    HStack {
+                        GLBackButton { onCancel() }
+                            .labelStyle(.iconOnly)
+                            .frame(width: 44, height: 44)
+                            .foregroundStyle(GLNeon.cyan)
+                        Text("Přidat zařízení")
+                            .font(.headline).foregroundStyle(.white)
+                            .accessibilityAddTraits(.isHeader)
+                            .frame(maxWidth: .infinity)
+                        GLHelpButton(title: "Přidat zařízení", explanation: "Vyber zdroj obrazu podle zařízení.")
+                            .frame(width: 44, height: 44)
+                    }
+                    selectionRow("Xbox", icon: "gamecontroller.fill", family: .xbox, selected: false, action: onXbox)
+                    selectionRow("PlayStation 5 / 4", icon: "gamecontroller.fill", family: .playStation, selected: false, action: onPlayStation)
+                    selectionRow("Google TV / Android TV", icon: "tv.fill", selected: false, action: onTV)
+                    Button(action: onCancel) {
+                        Text("Zrušit").font(.subheadline.weight(.semibold))
+                            .foregroundStyle(GLNeon.cyan)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                }.padding(16)
+            }
+            .padding(.horizontal, 16).padding(.bottom, 12)
+            .accessibilityAddTraits(.isModal)
+        }
+    }
+}
+
+func selectionRow(_ title: String, icon: String, family: GLConsoleFamily? = nil,
+                          selected: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+        HStack(spacing: 12) {
+            if let family {
+                GLPlatformBadge(family: family, size: 42)
+            } else if icon == "tv.fill" {
+                GLPlatformBadge(family: nil, isTelevision: true, size: 42)
+            } else {
+                Image(systemName: icon).font(.title2).foregroundStyle(GLNeon.cyan)
+                    .frame(width: 42, height: 42)
+            }
+            Text(LocalizedStringKey(title)).font(.headline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white).frame(maxWidth: .infinity)
+            Image(systemName: selected ? "checkmark.circle.fill" : "chevron.right")
+                .foregroundStyle(selected ? GLStyle.green : GLNeon.mist)
+                .frame(width: 24)
+        }
+        .padding(9)
+        .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 15))
+        .overlay(RoundedRectangle(cornerRadius: 15)
+            .strokeBorder(selected ? AnyShapeStyle(GLNeon.cyan) : AnyShapeStyle(GLNeon.edge), lineWidth: 1))
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityAddTraits(selected ? .isSelected : [])
+}
+

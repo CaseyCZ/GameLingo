@@ -39,6 +39,7 @@ struct GameLingoSettingsOverview: View {
     @State private var showRegions = false
     @State private var showAdvancedSettings = false
     @State private var showDevices = false
+    @State private var addDevicePicker = false
     @State private var showXbox = false
     @State private var showPlayStation = false
     @State private var showTV = false
@@ -179,7 +180,7 @@ struct GameLingoSettingsOverview: View {
                         devices: model.devices,
                         addXbox: { showXbox = true },
                         addPlayStation: { showPlayStation = true },
-                        addTV: { showTV = true }
+                        onAddDevice: { addDevicePicker = true }
                     )
                     .padding(18)
                 }
@@ -187,10 +188,20 @@ struct GameLingoSettingsOverview: View {
                 .navigationTitle("Zařízení")
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        GLBackButton { showDevices = false }
+                        GLBackButton { addDevicePicker = false; showDevices = false }
                     }
                 }
             }
+            .accessibilityHidden(addDevicePicker)
+            .overlay {
+                if addDevicePicker {
+                    GLAddDevicePicker(onCancel: { addDevicePicker = false },
+                        onXbox: { addDevicePicker = false; showXbox = true },
+                        onPlayStation: { addDevicePicker = false; showPlayStation = true },
+                        onTV: { addDevicePicker = false; showTV = true })
+                }
+            }
+            .onDisappear { addDevicePicker = false }
             .tint(GLNeon.cyan)
             .preferredColorScheme(.dark)
             // Pairing sheets must be presented from the visible Devices sheet,

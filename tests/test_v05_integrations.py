@@ -2371,9 +2371,19 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("onAddDevice()", panel)
         self.assertNotIn('"Spárovat Google TV"', panel)
         self.assertIn("ForEach(GLSubtitleOutput.allCases)", panel)
-        self.assertIn('selectionRow("Google TV / Android TV"', home)
-        self.assertIn("if addDevicePicker", home)
-        self.assertIn("onAddDevice: { addDevicePicker = true }", home)
+        self.assertIn('selectionRow("Google TV / Android TV"', panel)
+        self.assertIn("struct GLAddDevicePicker: View", panel)
+        settings = code(IOS/"SettingsHomeView.swift")
+        for caller in (home, settings):
+            self.assertIn("if addDevicePicker", caller)
+            self.assertIn("onAddDevice: { addDevicePicker = true }", caller)
+            self.assertIn("GLAddDevicePicker(onCancel:", caller)
+            self.assertNotIn("addTV:", caller)
+        # Check every actual panel initializer, not just the main dashboard.
+        for path in IOS.glob("*.swift"):
+            source = code(path)
+            if "GameLingoDevicesPanel(" in source:
+                self.assertEqual(source.count("GameLingoDevicesPanel("), source.count("onAddDevice: {"), str(path))
         self.assertIn('GameLingoVisualKit.selectSourceOrOutput(c, "Přidat zařízení"', android)
 
     def test_tv_device_management_uses_branded_picker_for_all_device_lists(self):

@@ -105,7 +105,12 @@ struct GameLingoHome: View {
                     tab = .about
                     updates.download()
                 })
-            } else if sourcePicker || outputPicker || addDevicePicker {
+            } else if addDevicePicker {
+                GLAddDevicePicker(onCancel: { addDevicePicker = false },
+                    onXbox: { addDevicePicker = false; xboxSheet = true },
+                    onPlayStation: { addDevicePicker = false; playStationSheet = true },
+                    onTV: { addDevicePicker = false; tvSheet = true })
+            } else if sourcePicker || outputPicker {
                 selectionOverlay
             }
         }
@@ -323,28 +328,15 @@ struct GameLingoHome: View {
                             .labelStyle(.iconOnly)
                             .frame(width: 44, height: 44)
                             .foregroundStyle(GLNeon.cyan)
-                        Text(LocalizedStringKey(addDevicePicker ? "Přidat zařízení" : (sourcePicker ? "Vybrat zařízení" : "Výstup titulků")))
+                        Text(LocalizedStringKey(sourcePicker ? "Vybrat zařízení" : "Výstup titulků"))
                             .font(.headline).foregroundStyle(.white)
                             .accessibilityAddTraits(.isHeader)
                             .frame(maxWidth: .infinity)
-                        GLHelpButton(title: addDevicePicker ? "Přidat zařízení" : (sourcePicker ? "Vybrat zařízení" : "Výstup titulků"),
-                            explanation: (sourcePicker || addDevicePicker) ? "Vyber zdroj obrazu podle zařízení." : "Vyber zdroj obrazu a výstup titulků.")
+                        GLHelpButton(title: sourcePicker ? "Vybrat zařízení" : "Výstup titulků",
+                            explanation: sourcePicker ? "Vyber zdroj obrazu podle zařízení." : "Vyber zdroj obrazu a výstup titulků.")
                             .frame(width: 44, height: 44)
                     }
-                    if addDevicePicker {
-                        selectionRow("Xbox", icon: "gamecontroller.fill", family: .xbox, selected: false) {
-                            addDevicePicker = false
-                            xboxSheet = true
-                        }
-                        selectionRow("PlayStation 5 / 4", icon: "gamecontroller.fill", family: .playStation, selected: false) {
-                            addDevicePicker = false
-                            playStationSheet = true
-                        }
-                        selectionRow("Google TV / Android TV", icon: "tv.fill", selected: false) {
-                            addDevicePicker = false
-                            tvSheet = true
-                        }
-                    } else if sourcePicker {
+                    if sourcePicker {
                         selectionRow("Xbox", icon: "gamecontroller.fill",
                                      family: .xbox, selected: !cameraSource && devices.chosenConsole?.family == .xbox) {
                             sourcePicker = false
@@ -386,34 +378,6 @@ struct GameLingoHome: View {
         }
     }
 
-    private func selectionRow(_ title: String, icon: String, family: GLConsoleFamily? = nil,
-                              selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                if let family {
-                    GLPlatformBadge(family: family, size: 42)
-                } else if icon == "tv.fill" {
-                    GLPlatformBadge(family: nil, isTelevision: true, size: 42)
-                } else {
-                    Image(systemName: icon).font(.title2).foregroundStyle(GLNeon.cyan)
-                        .frame(width: 42, height: 42)
-                }
-                Text(LocalizedStringKey(title)).font(.headline)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.white).frame(maxWidth: .infinity)
-                Image(systemName: selected ? "checkmark.circle.fill" : "chevron.right")
-                    .foregroundStyle(selected ? GLStyle.green : GLNeon.mist)
-                    .frame(width: 24)
-            }
-            .padding(9)
-            .background(GLNeon.panel, in: RoundedRectangle(cornerRadius: 15))
-            .overlay(RoundedRectangle(cornerRadius: 15)
-                .strokeBorder(selected ? AnyShapeStyle(GLNeon.cyan) : AnyShapeStyle(GLNeon.edge), lineWidth: 1))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
 
     private func openSelectedConsole() {
         if !model.isRunning { sourcePicker = true }
