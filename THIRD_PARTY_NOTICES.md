@@ -35,6 +35,14 @@ Additional original texts, stored under `licenses/` and included by the existing
 - [ZXing 3.5.3 LICENSE](https://github.com/zxing/zxing/blob/zxing-3.5.3/LICENSE), including its additional original notices.
 - [Stream WebRTC Android 1.3.7 LICENSE](https://github.com/GetStream/webrtc-android/blob/1.3.7/LICENSE) and the release-tag README license section. The wrapper's Apache-2.0 license alone does not cover libjingle_peerconnection_so.so. Obtain the exact underlying WebRTC/third-party native source revision and notices before marking its license review complete. CameraX's libyuv BSD notice and bundled Google SDK terms also require final review.
 
+## Verified package evidence — run 492
+
+Independent bundled-text SHA-256 verification passed (132 mobile, 113 TV, 35 iOS notices, including declarations). Mobile has 78/79 and TV 67/67 runtime coordinates with direct or explicit parent POM declarations. AutoValue annotations 1.6.3, the remaining mobile coordinate, has original upstream Apache-2.0 license and source header linked to the exact observed artifact SHA-256 in the inventory, rather than a fabricated POM declaration.
+
+Both Android APKs contain Stream WebRTC 1.3.7 ARM binaries matching release Git blobs arm64 `193297189de7fcbc0d1cfab6e56cabb59934f67e` and armv7 `2a5da428d4ec3a6c73f62075ab26cb477ee9c551`. The underlying native WebRTC source revision is still unverified. The [iOS publisher release 154.0.0](https://github.com/stasel/WebRTC/releases/tag/154.0.0) identifies core revision `3a8b0c76e6b7bf0e72141047f82eb2c3f4862c8d`, branch-heads/8037, and archive SHA-256 `a2bcdda93578c82452ceb6e49d54a2746e1bcb4caf7c2fa601ffac8028b58c16`. Complete native third-party notices are not yet verified.
+
+CameraX 1.5.2 declares Apache-2.0 and libyuv BSD in its actual POM; the embedded license is Apache only. The BSD license and patent grant from libyuv mirror commit `61bdaee13a701d2b52c6dc943ccc5c888077a591` are bundled as supplementary reference texts, not as proof of the exact CameraX libyuv revision. [Official libyuv license at that commit](https://chromium.googlesource.com/libyuv/libyuv/+/61bdaee13a701d2b52c6dc943ccc5c888077a591/LICENSE). Exact CameraX libyuv revision and full WebRTC native third-party notices remain open.
+
 ## Native source and package provenance — batch follow-up
 
 The pinned PlayCaption `native/build_chiaki.py` builds Chiaki-TV at `f814cf69d636f149ad5a3cfffd19cb22da90beda`. The AGPL OpenSSL exception in that source is retained verbatim. Its CMake external project pins OpenSSL 1.1.1d and archive SHA-256 `1e3a91bc1f9dfce01af26026f856e064eab4c8ee0a8f457b5ae30b40b8b711f2`. This unsupported crypto release is a security/compatibility review item, not a recommendation to keep using it in a new store release.

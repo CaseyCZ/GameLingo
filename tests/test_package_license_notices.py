@@ -8,7 +8,7 @@ import unittest
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from package_license_notices import android_dependency_notices, archive_notices, pom_declarations, inherited_pom_declarations, archive_native_files, native_archive_comparison
+from package_license_notices import android_dependency_notices, archive_notices, pom_declarations, inherited_pom_declarations, archive_native_files, native_archive_comparison, reviewed_source_evidence, AUTO_VALUE_COORDINATE, AUTO_VALUE_SHA256, AUTO_VALUE_NOTICES, STREAM_COORDINATE, STREAM_NATIVE_SHA256
 
 
 class PackageNoticeTests(unittest.TestCase):
@@ -129,6 +129,23 @@ class PackageNoticeTests(unittest.TestCase):
         self.assertEqual(result[arm]["status"], "byte_match")
         self.assertEqual(result[armv7]["status"], "different_bytes_requires_review")
         self.assertEqual(result[unknown]["status"], "unmapped_requires_review")
+
+
+    def test_reviewed_autovalue_requires_exact_artifact_and_original_notices(self):
+        item = {"coordinate": AUTO_VALUE_COORDINATE, "sha256": AUTO_VALUE_SHA256}
+        with self.assertRaises(RuntimeError):
+            reviewed_source_evidence(item, set())
+        evidence = reviewed_source_evidence(item, set(AUTO_VALUE_NOTICES))
+        self.assertEqual(evidence["license"], "Apache-2.0")
+        self.assertFalse(evidence["complete_transitive_review"])
+        self.assertEqual(reviewed_source_evidence({**item, "sha256": "changed"}, set()), {})
+
+    def test_stream_native_match_does_not_claim_transitive_clearance(self):
+        evidence = reviewed_source_evidence({"coordinate": STREAM_COORDINATE,
+            "native_files": STREAM_NATIVE_SHA256}, set())
+        self.assertTrue(all(evidence["arm_binary_matches"].values()))
+        self.assertFalse(evidence["underlying_source_revision_verified"])
+        self.assertFalse(evidence["complete_transitive_review"])
 
 
 if __name__ == "__main__":

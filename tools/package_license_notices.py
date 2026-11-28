@@ -135,6 +135,35 @@ def inherited_pom_declarations(child, parent_record):
     return {"coordinate": identity, **parent}
 
 
+# Exact reviewed artifact from CI 492; absent POM declarations are not inferred.
+AUTO_VALUE_COORDINATE = "com.google.auto.value:auto-value-annotations:1.6.3"
+AUTO_VALUE_SHA256 = "0e951fee8c31f60270bc46553a8586001b7b93dbb12aec06373aa99a150392c0"
+AUTO_VALUE_NOTICES = ["GameLingo/licenses/apache-2.0/LICENSE.txt",
+                      "GameLingo/licenses/auto-value-annotations-1.6.3/NOTICE.txt"]
+STREAM_COORDINATE = "io.getstream:stream-webrtc-android:1.3.7"
+STREAM_NATIVE_SHA256 = {
+    "lib/arm64-v8a/libjingle_peerconnection_so.so": "4e9d2df81f7db6d184a9d0024e6f9825c6325c3ee54a8d61ef657f02ef8d85e7",
+    "lib/armeabi-v7a/libjingle_peerconnection_so.so": "5c4e33201809f56eb41ead202000f7ba8afa0a87ce159af96d18d940622c5c78",
+}
+
+def reviewed_source_evidence(item, available_notices):
+    if item["coordinate"] == AUTO_VALUE_COORDINATE and item["sha256"] == AUTO_VALUE_SHA256:
+        if not set(AUTO_VALUE_NOTICES).issubset(available_notices):
+            raise RuntimeError("Missing reviewed AutoValue original notice")
+        return {"source": "https://github.com/google/auto/tree/auto-value-1.6.3",
+                "license": "Apache-2.0", "notices": AUTO_VALUE_NOTICES,
+                "basis": "exact_artifact_hash_and_upstream_source_header",
+                "complete_transitive_review": False}
+    if item["coordinate"] == STREAM_COORDINATE:
+        native = item.get("native_files", {})
+        return {"source": "https://github.com/GetStream/webrtc-android/tree/1.3.7",
+                "arm_binary_matches": {name: native.get(name) == digest
+                                       for name, digest in STREAM_NATIVE_SHA256.items()},
+                "underlying_source_revision_verified": False,
+                "complete_transitive_review": False}
+    return {}
+
+
 def android_dependency_notices(path, manifest, parts):
     records = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(records, list) or not records:
@@ -180,6 +209,9 @@ def android_dependency_notices(path, manifest, parts):
             add_notice(manifest, parts, title, declaration.encode("utf-8"), declaration)
             result["pom_notice"] = title
         result["review"] = "notices_collected" if result["notices"] else "no_embedded_notice_found"
+        reviewed = reviewed_source_evidence(result, {entry["path"] for entry in manifest["files"]})
+        if reviewed:
+            result["reviewed_source"] = reviewed
         results.append(result)
     return sorted(results, key=lambda item: (item['coordinate'], item['artifact'], item['sha256']))
 
@@ -205,7 +237,12 @@ def ios_dependency_notices(args, manifest, parts):
         if not text.strip() or "\0" in text:
             raise RuntimeError("Empty or invalid WebRTC notice: " + name)
         add_notice(manifest, parts, name, data, text)
-    return {"pins": pins, "webrtc_notices": [name for name, _ in files]}
+    result = {"pins": pins, "webrtc_notices": [name for name, _ in files]}
+    if revision == "0c0ad84dac6c1941c16a414dfcfba94691866e4c" and webrtc[0]["state"].get("version") == "154.0.0":
+        result["publisher_core_revision"] = "3a8b0c76e6b7bf0e72141047f82eb2c3f4862c8d"
+        result["publisher_release"] = "https://github.com/stasel/WebRTC/releases/tag/154.0.0"
+        result["complete_transitive_review"] = False
+    return result
 
 
 def native_provenance(upstream):
@@ -353,6 +390,7 @@ def verify(path, platform, evidence=None, expected_kit=None):
             dependencies = manifest.get("runtime_dependencies", [])
             if not dependencies or any(not set(item["notices"]).issubset(seen) or
                                        (item.get("pom_notice") and item["pom_notice"] not in seen) or
+                                       not set(item.get("reviewed_source", {}).get("notices", [])).issubset(seen) or
                                        "pom" not in item for item in dependencies):
                 raise RuntimeError("Missing resolved Android dependency evidence")
         # Report actual package contents. Android Gradle may strip symbols;
