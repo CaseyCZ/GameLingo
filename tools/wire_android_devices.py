@@ -774,6 +774,8 @@ def main():
             'private val KLICE = setOf("orangeL", "orangeT", "orangeR", "orangeB", "orangeFont", "orangeLocked", "tvX",',
             "migrate first receiver orange preferences")
     profiles.write_text(text,encoding="utf-8")
+    from console_credential_security import install_console_security
+    install_console_security(folder)
     print("GameLingo Android/TV: independent device center + secure multi-PS5 saved console switching installed")
 
 if __name__=="__main__":

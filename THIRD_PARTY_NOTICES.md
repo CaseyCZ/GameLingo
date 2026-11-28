@@ -33,3 +33,11 @@ Online Google GTX, Microsoft Edge and MyMemory services are separate from librar
 | Apple Translation | Not integrated | Candidate for a local iOS engine where language availability and OS support permit. Verify Czech/Slovak language pairs on target devices before adoption. [Translation framework](https://developer.apple.com/documentation/translation) |
 
 Current GitHub test behavior is unchanged. Do not add billing accounts, publish shared API credentials, circumvent provider quotas, or assume a free tier is unlimited. Production distribution remains blocked on provider authorization or replacement and attribution verification. Existing HTTPS host allowlists, cache, request limits and circuit breakers reduce exposure and load but do not establish permission.
+
+## Console authentication — distribution review (2026-11-28)
+
+Xbox uses an inherited OAuth public client ID and xHome streaming integration. Microsoft supports device-code flow for registered public clients, but that does not grant access to Xbox Remote Play endpoints. Before store distribution, register the project's own application and obtain confirmation of the required Xbox scopes and service access. [Microsoft registration](https://learn.microsoft.com/en-us/entra/identity-platform/scenario-desktop-app-registration) · [Microsoft Services Agreement](https://www.microsoft.com/en/servicesagreement).
+
+The PlayStation account-ID resolver inherits Sony Remote Play client constants from the reference implementation. These embedded values are not GameLingo-owned credentials or evidence of authorization. Obtain permission or use an authorized alternative before store distribution; do not publish any newly issued confidential secret in the app. [PlayStation Terms](https://www.playstation.com/cs-cz/legal/terms-of-service/). Local manual account-ID and console PIN registration remain available; the legal status of the Remote Play protocol itself still needs review. OAuth state/PKCE compatibility must be verified with the authorized Sony client flow; the current pasted-link flow is not a complete modern OAuth implementation.
+
+Current test-distribution protocol remains unchanged. Secure local storage and strict credential destinations reduce risk but are not a grant of service rights.

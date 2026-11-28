@@ -1045,6 +1045,27 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         self.assertIn("var shownCode: String? = IPhoneTVPairing.startCode()",native)
         self.assertIn("PrijemService.statistikaPrijmu()",native)
 
+    def test_console_auth_security_contract(self):
+        store = code(TOOLS/"GameLingoCredentialStore.kt")
+        patch = code(TOOLS/"console_credential_security.py")
+        self.assertIn('KeyStore.getInstance("AndroidKeyStore")', store)
+        self.assertIn('Cipher.getInstance("AES/GCM/NoPadding")', store)
+        self.assertIn("cipher.updateAAD", store)
+        self.assertIn("key(false)", store)
+        self.assertIn("install_console_security(folder)", code(TOOLS/"wire_android_devices.py"))
+        self.assertIn("instanceFollowRedirects = false", patch)
+        self.assertIn("regist_key", patch)
+        self.assertIn("rp_key", patch)
+        for name in ("GameLingoPSNLookup.swift", "PSNAccountIDResolver.swift"):
+            source = code(IOS/"PlayStation"/name)
+            self.assertIn("GLPSNRequestPolicy.code(from:", source)
+            self.assertIn("GLPSNTransport.session.data(for:", source)
+            self.assertNotIn("URLSession.shared.data(for:", source)
+        policy = code(IOS/"PlayStation"/"GLPSNRequestPolicy.swift")
+        self.assertIn("completionHandler(nil)", policy)
+        self.assertIn("codes.count == 1", policy)
+        self.assertIn("accountGeneration", code(IOS/"XboxAuthorization.swift"))
+
     def test_p0_1_no_unsigned_caption_fallback(self):
         ios = code(IOS/"PlayCaptionTV.swift")
         android = code(TOOLS/"GameLingoTVPairing.kt")

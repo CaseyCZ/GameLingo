@@ -139,7 +139,10 @@ private enum SecureTokenStore {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
-        SecItemDelete(search as CFDictionary)
+        let update = SecItemUpdate(search as CFDictionary,
+            [kSecValueData as String: Data(token.utf8)] as CFDictionary)
+        if update == errSecSuccess { return true }
+        guard update == errSecItemNotFound else { return false }
         var attributes = search
         attributes[kSecValueData as String] = Data(token.utf8)
         attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
@@ -195,6 +198,7 @@ final class XboxAuthorization: ObservableObject {
     private var loginForeground = true
     private var pollingTask: Task<Void, Never>?
     private var pollGeneration = 0
+    private var accountGeneration = 0
 
     init() {
         if signedIn {
@@ -269,7 +273,11 @@ final class XboxAuthorization: ObservableObject {
             guard generation == pollGeneration && !Task.isCancelled && loginForeground else { return }
 
             if let access = response["access_token"] as? String, !access.isEmpty {
-                saveTokens(response)
+                guard saveTokens(response), SecureTokenStore.get() != nil else {
+                    clearPendingLogin()
+                    status = "Nepřihlášeno"
+                    return
+                }
                 cachedAccess = (access, Date().addingTimeInterval(
                     TimeInterval(response["expires_in"] as? Int ?? 3600) - 60))
                 signedIn = true
@@ -310,6 +318,7 @@ final class XboxAuthorization: ObservableObject {
     }
 
     func signOut() {
+        accountGeneration += 1
         clearPendingLogin()
         SecureTokenStore.clear()
         cachedAccess = nil
@@ -373,10 +382,12 @@ final class XboxAuthorization: ObservableObject {
         }
         clearPendingLogin()
         status = "Získávám přihlašovací kód…"
+        let generation = accountGeneration
         do {
             let response = try await request(
                 "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode",
                 method: "POST", form: ["client_id": clientID, "scope": scope])
+            guard generation == accountGeneration, !Task.isCancelled else { return }
             guard let userCode = response["user_code"] as? String,
                   let deviceCode = response["device_code"] as? String else {
                 throw XboxError.message("Microsoft nevrátil přihlašovací kód")
@@ -394,6 +405,7 @@ final class XboxAuthorization: ObservableObject {
                 : "Kód je připraven, ale iOS nepovolil bezpečné uložení. Nezavírej aplikaci."
             resumeLoginIfNeeded()
         } catch {
+            guard generation == accountGeneration else { return }
             status = "Nelze získat kód Microsoftu: \(error.localizedDescription)"
         }
     }
@@ -412,23 +424,28 @@ final class XboxAuthorization: ObservableObject {
         return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
     }
 
-    private func saveTokens(_ response: [String: Any]) {
+    private func saveTokens(_ response: [String: Any]) -> Bool {
         if let refresh = response["refresh_token"] as? String, !refresh.isEmpty {
-            SecureTokenStore.put(refresh)
+            return SecureTokenStore.put(refresh)
         }
+        return SecureTokenStore.get() != nil
     }
 
     private func microsoftToken() async throws -> String {
         if let cache = cachedAccess, cache.expires > Date() { return cache.token }
         guard let refresh = SecureTokenStore.get() else { throw XboxError.message("Nejsi přihlášen k Microsoftu") }
+        let generation = accountGeneration
         let result = try await tokenResponse([
             "client_id": clientID, "grant_type": "refresh_token",
             "refresh_token": refresh, "scope": scope
         ])
+        guard generation == accountGeneration, !Task.isCancelled, SecureTokenStore.get() != nil else {
+            throw CancellationError()
+        }
         guard let token = result["access_token"] as? String else {
             throw XboxError.message("Microsoft obnovu přihlášení odmítl. Přihlas se znovu.")
         }
-        saveTokens(result)
+        guard saveTokens(result) else { throw XboxError.message("Microsoft obnovu přihlášení odmítl. Přihlas se znovu.") }
         cachedAccess = (token, Date().addingTimeInterval(TimeInterval(result["expires_in"] as? Int ?? 3600) - 60))
         return token
     }
@@ -449,6 +466,7 @@ final class XboxAuthorization: ObservableObject {
     }
 
     func streamingAccess() async throws -> XboxStreamingAccess {
+        let generation = accountGeneration
         if let access = cachedStreaming, access.expires > Date() { return access }
         let token = try await microsoftToken()
         let xbl = try await request("https://user.auth.xboxlive.com/user/authenticate",
@@ -477,6 +495,7 @@ final class XboxAuthorization: ObservableObject {
             token: gsToken,
             baseURL: try XboxEndpointPolicy.streamingBase(baseURL),
             expires: Date().addingTimeInterval(TimeInterval(home["durationInSeconds"] as? Int ?? 3600) - 120))
+        guard generation == accountGeneration, !Task.isCancelled, signedIn else { throw CancellationError() }
         cachedStreaming = result
         return result
     }
@@ -499,11 +518,13 @@ final class XboxAuthorization: ObservableObject {
     }
 
     func refreshConsoles() async {
+        let generation = accountGeneration
         status = "Načítám Xbox konzole…"
         do {
             let access = try await streamingAccess()
             let data = try await request("\(access.baseURL)/v6/servers/home?mr=50",
                                          headers: streamHeaders(access))
+            guard generation == accountGeneration, signedIn, !Task.isCancelled else { return }
             let items = data["results"] as? [[String: Any]] ?? []
             consoles = items.compactMap { item in
                 guard let id = item["serverId"] as? String else { return nil }
@@ -514,6 +535,7 @@ final class XboxAuthorization: ObservableObject {
             status = consoles.isEmpty ? "Nenalezena žádná konzole. Zkontroluj vzdálené funkce." :
                 "Nalezeno konzolí: \(consoles.count)"
         } catch {
+            guard generation == accountGeneration else { return }
             status = error.localizedDescription
         }
     }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// PSN account ID resolution needed to register PS4/PS5 Remote Play.
-/// Uses Sony's public Remote Play OAuth client flow. Never stores credentials,
+/// Uses an inherited Sony Remote Play OAuth adapter; distribution authorization is unverified. Never stores credentials,
 /// login passwords, authorization codes, or returned access tokens.
 @MainActor
 final class GameLingoPSNLookup: ObservableObject {
@@ -40,12 +40,7 @@ final class GameLingoPSNLookup: ObservableObject {
         defer { isLoading = false }
         do {
             let input = redirectLink.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let components = URLComponents(string: input),
-                  components.scheme?.lowercased() == "https",
-                  components.host?.lowercased() == "remoteplay.dl.playstation.net",
-                  let code = components.queryItems?
-                    .first(where: { $0.name == "code" })?.value,
-                  !code.isEmpty else {
+            guard let code = GLPSNRequestPolicy.code(from: input) else {
                 throw PSNError.message("Vlož odkaz po přihlášení k PlayStation.")
             }
             var tokenRequest = URLRequest(url: Self.tokenURL)
@@ -61,20 +56,18 @@ final class GameLingoPSNLookup: ObservableObject {
                 URLQueryItem(name: "redirect_uri", value: Self.redirect)
             ]
             tokenRequest.httpBody = body.percentEncodedQuery?.data(using: .utf8)
-            let (tokenData, response) = try await URLSession.shared.data(for: tokenRequest)
+            let (tokenData, response) = try await GLPSNTransport.session.data(for: tokenRequest)
             try Self.requireSuccess(response)
             let tokenJSON = try JSONSerialization.jsonObject(with: tokenData) as? [String: Any]
             guard let token = tokenJSON?["access_token"] as? String,
                   !token.isEmpty,
-                  let pathToken = token.addingPercentEncoding(
-                    withAllowedCharacters: .urlPathAllowed),
-                  let accountURL = URL(string: Self.tokenURL.absoluteString + "/" + pathToken)
+                  let accountURL = GLPSNRequestPolicy.accountURL(token: token)
             else {
                 throw PSNError.message("Účet PlayStation nebylo možné ověřit.")
             }
             var accountRequest = URLRequest(url: accountURL)
             accountRequest.setValue(Self.authHeader, forHTTPHeaderField: "Authorization")
-            let (data, accountResponse) = try await URLSession.shared.data(for: accountRequest)
+            let (data, accountResponse) = try await GLPSNTransport.session.data(for: accountRequest)
             try Self.requireSuccess(accountResponse)
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
             let value = json?["user_id"] as? String ??
@@ -85,7 +78,7 @@ final class GameLingoPSNLookup: ObservableObject {
             var littleEndianID = id.littleEndian
             return withUnsafeBytes(of: &littleEndianID) { Data($0) }
         } catch {
-            self.error = error.localizedDescription
+            self.error = (error as? PSNError)?.errorDescription ?? "Účet PlayStation nebylo možné ověřit."
             return nil
         }
     }

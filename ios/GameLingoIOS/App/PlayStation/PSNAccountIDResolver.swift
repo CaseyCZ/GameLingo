@@ -38,9 +38,7 @@ final class PSNAccountIDResolver: ObservableObject {
         defer { isLoading = false }
 
         do {
-            guard let components = URLComponents(string: redirectText.trimmingCharacters(in: .whitespacesAndNewlines)),
-                  let code = components.queryItems?.first(where: { $0.name == "code" })?.value,
-                  !code.isEmpty else {
+            guard let code = GLPSNRequestPolicy.code(from: redirectText) else {
                 throw ResolverError.message("The pasted URL does not contain a sign-in code.")
             }
 
@@ -56,20 +54,19 @@ final class PSNAccountIDResolver: ObservableObject {
             ]
             tokenRequest.httpBody = body.percentEncodedQuery?.data(using: .utf8)
 
-            let (tokenData, tokenResponse) = try await URLSession.shared.data(for: tokenRequest)
+            let (tokenData, tokenResponse) = try await GLPSNTransport.session.data(for: tokenRequest)
             try Self.requireSuccess(tokenResponse)
             let tokenObject = try JSONSerialization.jsonObject(with: tokenData) as? [String: Any]
             guard let token = tokenObject?["access_token"] as? String, !token.isEmpty else {
                 throw ResolverError.message("Sony did not return an access token. Sign in again.")
             }
 
-            guard let encodedToken = token.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-                  let accountURL = URL(string: Self.tokenURL.absoluteString + "/" + encodedToken) else {
+            guard let accountURL = GLPSNRequestPolicy.accountURL(token: token) else {
                 throw ResolverError.message("The returned access token is invalid.")
             }
             var accountRequest = URLRequest(url: accountURL)
             accountRequest.setValue(Self.authorizationHeader, forHTTPHeaderField: "Authorization")
-            let (accountData, accountResponse) = try await URLSession.shared.data(for: accountRequest)
+            let (accountData, accountResponse) = try await GLPSNTransport.session.data(for: accountRequest)
             try Self.requireSuccess(accountResponse)
             let accountObject = try JSONSerialization.jsonObject(with: accountData) as? [String: Any]
             let userIDText = accountObject?["user_id"] as? String ?? (accountObject?["user_id"] as? NSNumber)?.stringValue
@@ -79,7 +76,7 @@ final class PSNAccountIDResolver: ObservableObject {
             var littleEndian = userID.littleEndian
             return withUnsafeBytes(of: &littleEndian) { Data($0).base64EncodedString() }
         } catch {
-            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            errorMessage = (error as? ResolverError)?.errorDescription ?? "Sony sign-in request failed."
             return nil
         }
     }
