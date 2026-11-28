@@ -8,7 +8,11 @@ gradle.projectsEvaluated {
     if (app == null) throw new GradleException('Missing app project')
     app.tasks.register('gameLingoRuntimeArtifacts') {
         doLast {
-            def artifacts = app.configurations.getByName('debugRuntimeClasspath')
+            def runtime = app.findProperty('gameLingoRuntimeConfiguration') ?: 'debugRuntimeClasspath'
+            if (!(runtime in ['debugRuntimeClasspath', 'releaseRuntimeClasspath'])) {
+                throw new GradleException('Unsupported GameLingo runtime configuration')
+            }
+            def artifacts = app.configurations.getByName(runtime)
                 .resolvedConfiguration.resolvedArtifacts
             // Resolve metadata for exactly the components selected on the runtime classpath.
             def componentIds = artifacts.collect { it.id.componentIdentifier }.unique()

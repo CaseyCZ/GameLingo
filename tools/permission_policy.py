@@ -92,7 +92,7 @@ def apply_policy(root, variant):
                         "if (Rezim.jeTelefon(context) || !hasUsageAccess(context)) { posledni = null; kdyZjisteno = 0L; return null }")
     foreground.write_text(code, encoding="utf-8")
 
-def verify_apk(apk, variant, aapt):
+def verify_apk(apk, variant, aapt, store=False):
     output = subprocess.check_output([aapt, "dump", "permissions", str(apk)], text=True)
     actual = set(re.findall(r"uses-permission(?:-sdk-23)?: name='([^']+)'", output))
     if not actual:
@@ -101,7 +101,11 @@ def verify_apk(apk, variant, aapt):
     unexpected = sorted(actual & denied)
     if unexpected:
         raise RuntimeError("Unexpected packaged permissions: " + ", ".join(unexpected))
-    required = {"INTERNET", "FOREGROUND_SERVICE", "REQUEST_INSTALL_PACKAGES"}
+    if store and "android.permission.REQUEST_INSTALL_PACKAGES" in actual:
+        raise RuntimeError("Store APK must not request package installation")
+    required = {"INTERNET", "FOREGROUND_SERVICE"}
+    if not store:
+        required.add("REQUEST_INSTALL_PACKAGES")
     required |= {"CAMERA"} if variant == "mobile" else {"SYSTEM_ALERT_WINDOW", "FOREGROUND_SERVICE_MEDIA_PROJECTION"}
     missing = {"android.permission." + name for name in required} - actual
     if missing:
@@ -131,6 +135,7 @@ if __name__ == "__main__":
     group.add_argument("--apply", type=Path)
     group.add_argument("--verify", type=Path)
     parser.add_argument("--aapt")
+    parser.add_argument("--store", action="store_true", help="Check store variant rather than GitHub updater permissions")
     args = parser.parse_args()
     if args.apply:
         if args.variant == "ios":
@@ -141,4 +146,4 @@ if __name__ == "__main__":
     else:
         if not args.aapt:
             parser.error("--aapt required for APK")
-        verify_apk(args.verify, args.variant, args.aapt)
+        verify_apk(args.verify, args.variant, args.aapt, store=args.store)

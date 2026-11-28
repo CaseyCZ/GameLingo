@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from store_distribution import (prepare_android, prepare_ios, MOBILE_BUTTON, TV_BUTTON,
                                 STARTUP, verify_privacy_manifest)
-from permission_policy import A, T
+from permission_policy import A, T, verify_apk
+from unittest.mock import patch
 
 class StoreDistributionTests(unittest.TestCase):
     def test_android_removes_install_implementation_and_permission(self):
@@ -55,6 +56,19 @@ class StoreDistributionTests(unittest.TestCase):
             self.assertNotIn("IPAUpdates", text)
             self.assertNotIn("https://", text)
             self.assertIn("currentVersion", text)
+
+    def test_packaged_permissions_distinguish_store_and_github(self):
+        common = ["INTERNET", "FOREGROUND_SERVICE", "CAMERA"]
+        def permissions(names):
+            return "\n".join("uses-permission: name='android.permission." + name + "'" for name in names)
+        with patch("permission_policy.subprocess.check_output", return_value=permissions(common)):
+            verify_apk(Path("test.apk"), "mobile", "aapt", store=True)
+            with self.assertRaises(RuntimeError):
+                verify_apk(Path("test.apk"), "mobile", "aapt")
+        with patch("permission_policy.subprocess.check_output", return_value=permissions(common + ["REQUEST_INSTALL_PACKAGES"])):
+            verify_apk(Path("test.apk"), "mobile", "aapt")
+            with self.assertRaises(RuntimeError):
+                verify_apk(Path("test.apk"), "mobile", "aapt", store=True)
 
     def test_required_reason_declarations(self):
         path = ROOT / "ios/GameLingoIOS/App/PrivacyInfo.xcprivacy"

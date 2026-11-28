@@ -358,7 +358,8 @@ def generate(args):
 
 def verify(path, platform, evidence=None, expected_kit=None):
     with zipfile.ZipFile(path) as z:
-        prefix = "Payload/GameLingoIOS.app/" if platform == "ios" else "assets/"
+        bundle = platform != "ios" and "BundleConfig.pb" in z.namelist()
+        prefix = "Payload/GameLingoIOS.app/" if platform == "ios" else "base/assets/" if bundle else "assets/"
         notices = z.read(prefix + "GameLingoNotices.txt").decode("utf-8")
         manifest = json.loads(z.read(prefix + "GameLingoLicenseInventory.json"))
         if manifest["platform"] != platform or "GNU AFFERO GENERAL PUBLIC LICENSE" not in notices.upper():
@@ -400,12 +401,19 @@ def verify(path, platform, evidence=None, expected_kit=None):
             if entry.is_dir():
                 continue
             name = entry.filename
+            if bundle:
+                if not name.startswith("base/lib/"):
+                    continue
+                name = name[len("base/"):]
             if (platform != "ios" and name.startswith("lib/") and name.endswith(".so")) or (
                 platform == "ios" and name.startswith(prefix) and
                 (name == prefix + "GameLingoIOS" or name.endswith(".dylib")
                  or (".framework/" in name and name.rsplit("/", 1)[-1] == name.split(".framework/", 1)[0].rsplit("/", 1)[-1]))):
                 with z.open(entry) as stream:
-                    native[name] = hashlib.file_digest(stream, "sha256").hexdigest()
+                    digest = hashlib.file_digest(stream, "sha256").hexdigest()
+                    if name in native:
+                        raise RuntimeError("Duplicate native package entry: " + name)
+                    native[name] = digest
         comparison = {}
         native_origins = {}
         if platform != "ios":

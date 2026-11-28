@@ -1,0 +1,309 @@
+name: GameLingo · Store technical preflight (not publication)
+
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gamelingo-store-preflight-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    name: iOS store source · unsigned preflight
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: mB14ck22/tp-play
+          ref: 482611539977496cad047560c9bc1ebc5809a566
+          path: ps-core
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Read shared version
+        run: python3 tools/sync_version.py --github-env
+      - name: Check iOS platform routing, device manager and PS4/PS5 OCR source contracts
+        run: python tools/verify_gamelingo.py
+      - name: Run synthetic OCR image fingerprint tests
+        run: |
+          swiftc ios/GameLingoIOS/App/OCRFrameFingerprint.swift tests/OCRFrameFingerprintTests.swift -o "$RUNNER_TEMP/ocr-fingerprint-tests"
+          "$RUNNER_TEMP/ocr-fingerprint-tests"
+      - name: Test encrypted TV wire interoperability
+        run: |
+          swiftc ios/GameLingoIOS/App/GLWireCrypto.swift tests/GLWireCryptoTests.swift -o "$RUNNER_TEMP/wire-crypto-tests"
+          "$RUNNER_TEMP/wire-crypto-tests"
+      - name: Run automatic OCR block and zone tests
+        run: |
+          xcrun --sdk macosx swiftc -framework CoreGraphics ios/GameLingoIOS/App/AutomaticDialogueLayout.swift ios/GameLingoIOS/App/AutomaticOCRZone.swift ios/GameLingoIOS/App/AutomaticBlockTracker.swift tests/AutomaticDialogueLayoutTests.swift -o "$RUNNER_TEMP/automatic-ocr-tests"
+          "$RUNNER_TEMP/automatic-ocr-tests"
+      - name: Run persistent translation cache tests
+        run: |
+          swiftc ios/GameLingoIOS/App/TranslationCache.swift tests/TranslationCacheTests.swift -lsqlite3 -o "$RUNNER_TEMP/translation-cache-tests"
+          "$RUNNER_TEMP/translation-cache-tests"
+      - name: Generate original GameLingo icon
+        run: |
+          python -m pip install pillow
+          python tools/create_brand_assets.py ios ios/GameLingoIOS/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+          file ios/GameLingoIOS/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+      - name: Build native PlayStation 4/5 Chiaki streaming core
+        run: |
+          set -euo pipefail
+          brew install cmake ninja protobuf xcodegen
+          export DEVELOPER_DIR="$(xcode-select -p)"
+          # The pinned TP Play script pins Python protobuf 7.36.0, while
+          # Homebrew protoc 36.2 generates code requiring 7.36.2. The core
+          # fails before compilation unless generator/runtime versions match.
+          PROTOC_VERSION="$(protoc --version | awk '{print $2}')"
+          PROTOBUF_RUNTIME="7.$PROTOC_VERSION"
+          echo "Matching protoc $PROTOC_VERSION to protobuf $PROTOBUF_RUNTIME"
+          /usr/bin/sed -i '' "s/7\\.36\\.0/$PROTOBUF_RUNTIME/g" ps-core/ios/scripts/build-core.sh
+          bash ps-core/ios/scripts/build-core.sh iphoneos
+          test -s ps-core/ios/.build/iphoneos/libTPPlayCore.a
+          file ps-core/ios/.build/iphoneos/libTPPlayCore.a
+      - name: Prepare Xcode project
+        run: |
+          python3 tools/store_distribution.py ios . --isolated-copy
+          python3 tools/sync_version.py --prepare-ios
+          xcodebuild -version
+          cd ios/GameLingoIOS
+          xcodegen generate
+      - name: Build iOS app
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/GameLingoIOS/GameLingoIOS.xcodeproj \
+            -scheme GameLingoIOS -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$PWD/.build/DerivedData" \
+            -clonedSourcePackagesDirPath "$PWD/.build/SourcePackages" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee "$PWD/.build-ios.log"
+      - name: Record resolved Swift packages
+        run: |
+          set -euo pipefail
+          RESOLVED=$(find ios/GameLingoIOS -type f -name Package.resolved -print -quit)
+          test -n "$RESOLVED" && test -s "$RESOLVED"
+          mkdir -p dependency-evidence-ios
+          cp "$RESOLVED" dependency-evidence-ios/Package.resolved
+          git -C ps-core submodule status --recursive > dependency-evidence-ios/native-submodules.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-dependencies-ios
+          path: dependency-evidence-ios/
+          if-no-files-found: error
+      - name: Verify GameLingo identity and package IPA
+        run: |
+          set -euo pipefail
+          APP="$PWD/.build/DerivedData/Build/Products/Release-iphoneos/GameLingoIOS.app"
+          test -f "$APP/GameLingoIOS"
+          ID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")
+          LABEL=$(/usr/libexec/PlistBuddy -c 'Print CFBundleDisplayName' "$APP/Info.plist")
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")
+          test "$ID" = "cz.caseycz.gamelingo.ios"
+          test "$LABEL" = "GameLingo"
+          test "$VERSION" = "$GAMELINGO_VERSION"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Info.plist")" = "$GAMELINGO_BUILD"
+          file "$APP/GameLingoIOS"
+          WEBRTC_LICENSE=$(find .build/SourcePackages/artifacts -type f -path '*/WebRTC.xcframework/LICENSE' -print -quit)
+          WEBRTC_CHECKOUT=$(find .build/SourcePackages/checkouts -mindepth 1 -maxdepth 1 -type d -iname webrtc -print -quit)
+          test -s "$WEBRTC_LICENSE" && test -d "$WEBRTC_CHECKOUT"
+          python tools/package_license_notices.py ios --kit . --upstream ps-core --output "$APP" --swift-resolved dependency-evidence-ios/Package.resolved --webrtc-checkout "$WEBRTC_CHECKOUT" --webrtc-license "$WEBRTC_LICENSE"
+          mkdir -p "$PWD/.build/ipa/Payload"
+          cp -R "$APP" "$PWD/.build/ipa/Payload/"
+          (cd "$PWD/.build/ipa" && zip -qry "$GITHUB_WORKSPACE/GameLingo-iOS-v${GAMELINGO_VERSION}-store-preflight-UNSIGNED.ipa" Payload)
+          unzip -t GameLingo-iOS-v${GAMELINGO_VERSION}-store-preflight-UNSIGNED.ipa >/dev/null
+          python tools/package_license_notices.py ios --verify GameLingo-iOS-v${GAMELINGO_VERSION}-store-preflight-UNSIGNED.ipa
+          python tools/permission_policy.py ios --verify GameLingo-iOS-v${GAMELINGO_VERSION}-store-preflight-UNSIGNED.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-iOS-store-preflight-NOT-FOR-SUBMISSION
+          path: GameLingo-iOS-v${{ env.GAMELINGO_VERSION }}-store-preflight-UNSIGNED.ipa
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve Xcode log if failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameLingo-iOS-build-log
+          path: .build-ios.log
+          if-no-files-found: ignore
+
+
+  android_mobile:
+    name: mobile store · unsigned AAB preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kit
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: AdamRuzick4/PlayCaption-app
+          ref: 633a847400b6c4bac1e7f034463e7847a53a9590
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Read shared version
+        run: python3 kit/tools/sync_version.py --github-env
+      - name: Brand independent Android mobile app
+        run: |
+          python -m pip install pillow
+          python -m py_compile kit/tools/polish_gamelingo.py kit/tools/redesign_gamelingo.py kit/tools/polish_all_screens.py kit/tools/android_multi_xbox.py kit/tools/wire_android_devices.py kit/tools/wire_gamelingo_languages.py
+          python kit/tools/brand_android.py mobile upstream
+          python kit/tools/create_brand_assets.py android upstream
+          python kit/tools/polish_gamelingo.py upstream
+          python kit/tools/redesign_gamelingo.py mobile upstream
+          python kit/tools/polish_all_screens.py mobile upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
+          python kit/tools/wire_gamelingo_languages.py upstream
+          python kit/tools/permission_policy.py mobile --apply upstream
+          python kit/tools/android_sdk_policy.py mobile --apply upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode mobile
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$SDK_ROOT"
+          SDK_MANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$SDK_MANAGER" ]]; then
+            SDK_MANAGER=$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' -print | sort -V | tail -n 1)
+          fi
+          test -x "$SDK_MANAGER"
+          "$SDK_MANAGER" --sdk_root="$SDK_ROOT" "platforms;android-36" "build-tools;35.0.0"
+          test -f "$SDK_ROOT/platforms/android-36/android.jar"
+          test -x "$SDK_ROOT/build-tools/35.0.0/zipalign"
+      - name: Prepare isolated store distribution
+        run: python3 kit/tools/store_distribution.py mobile upstream --isolated-copy
+      - name: Collect exact release runtime license evidence and build
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew -PgameLingoRuntimeConfiguration=releaseRuntimeClasspath -I ../kit/tools/runtime_artifacts.init.gradle :app:gameLingoRuntimeArtifacts --no-daemon --console=plain
+          python ../kit/tools/package_license_notices.py mobile --kit ../kit --upstream . --output app/src/main/assets --runtime-artifacts app/build/gamelingo-runtime-artifacts.json
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --stacktrace
+      - name: Verify release package content and store permissions
+        run: |
+          set -euo pipefail
+          APK=$(find upstream/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)
+          AAB=$(find upstream/app/build/outputs/bundle/release -maxdepth 1 -name '*.aab' -print -quit)
+          test -s "$APK" && test -s "$AAB"
+          python kit/tools/permission_policy.py mobile --verify "$APK" --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" --store
+          python kit/tools/verify_tv_translation_apk.py mobile "$APK"
+          python kit/tools/package_license_notices.py mobile --verify "$APK" --expected-kit "$GITHUB_SHA" --evidence store-apk-mobile.json
+          python kit/tools/package_license_notices.py mobile --verify "$AAB" --expected-kit "$GITHUB_SHA" --evidence store-aab-mobile.json
+          python -c 'import json; a=json.load(open("store-apk-mobile.json")); b=json.load(open("store-aab-mobile.json")); assert a["native_files"] == b["native_files"], "APK/AAB native payload differs"'
+          python kit/tools/android_sdk_policy.py mobile --apk "$APK" --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" --zipalign "$ANDROID_HOME/build-tools/35.0.0/zipalign" --output store-sdk-mobile.json --strict
+      - name: Upload technical evidence even when preflight fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Store-mobile-evidence-NOT-FOR-SUBMISSION
+          path: store-*.json
+          if-no-files-found: warn
+      - name: Upload unsigned AAB for technical inspection only
+        uses: actions/upload-artifact@v4
+        with:
+          name: Store-mobile-unsigned-NOT-FOR-SUBMISSION
+          path: upstream/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+  google_tv:
+    name: tv store · unsigned AAB preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kit
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: AdamRuzick4/PlayCaption-app
+          ref: 633a847400b6c4bac1e7f034463e7847a53a9590
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Read shared version
+        run: python3 kit/tools/sync_version.py --github-env
+      - name: Apply tested receiver and GameLingo branding
+        run: |
+          python -m pip install pillow
+          python -m py_compile kit/tools/patch_tv_iphone.py kit/tools/brand_android.py kit/tools/create_brand_assets.py
+          python kit/tools/patch_tv_iphone.py upstream
+          python kit/tools/brand_android.py tv upstream
+          python kit/tools/create_brand_assets.py android upstream
+          python kit/tools/polish_gamelingo.py upstream
+          python kit/tools/redesign_gamelingo.py tv upstream
+          python kit/tools/polish_all_screens.py tv upstream
+          python kit/tools/android_multi_xbox.py upstream
+          python kit/tools/wire_android_devices.py upstream
+          python kit/tools/wire_gamelingo_languages.py upstream
+          python kit/tools/permission_policy.py tv --apply upstream
+          python kit/tools/android_sdk_policy.py tv --apply upstream
+          python kit/tools/verify_gamelingo.py --android-root upstream --mode tv
+          python kit/tools/verify_tv_navigation.py upstream
+          python kit/tools/audit_tv_ui.py upstream --output gamelingo-tv-ui-inventory.md
+          grep -q "Připojte svůj telefon" upstream/app/src/main/java/cz/titulky/tv/MainActivity.kt
+          grep -q "IPhoneTVPairing.verify" upstream/app/src/main/java/cz/titulky/tv/Propojeni.kt
+          grep -q "EXTRA_VYSTUP_VOLEB" upstream/app/src/main/java/cz/titulky/tv/OverlayService.kt
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$SDK_ROOT"
+          SDK_MANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$SDK_MANAGER" ]]; then
+            SDK_MANAGER=$(find "$SDK_ROOT/cmdline-tools" -type f -path '*/bin/sdkmanager' -print | sort -V | tail -n 1)
+          fi
+          test -x "$SDK_MANAGER"
+          "$SDK_MANAGER" --sdk_root="$SDK_ROOT" "platforms;android-36" "build-tools;35.0.0"
+          test -f "$SDK_ROOT/platforms/android-36/android.jar"
+          test -x "$SDK_ROOT/build-tools/35.0.0/zipalign"
+      - name: Prepare isolated store distribution
+        run: python3 kit/tools/store_distribution.py tv upstream --isolated-copy
+      - name: Collect exact release runtime license evidence and build
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew -PgameLingoRuntimeConfiguration=releaseRuntimeClasspath -I ../kit/tools/runtime_artifacts.init.gradle :app:gameLingoRuntimeArtifacts --no-daemon --console=plain
+          python ../kit/tools/package_license_notices.py tv --kit ../kit --upstream . --output app/src/main/assets --runtime-artifacts app/build/gamelingo-runtime-artifacts.json
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --stacktrace
+      - name: Verify release package content and store permissions
+        run: |
+          set -euo pipefail
+          APK=$(find upstream/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)
+          AAB=$(find upstream/app/build/outputs/bundle/release -maxdepth 1 -name '*.aab' -print -quit)
+          test -s "$APK" && test -s "$AAB"
+          python kit/tools/permission_policy.py tv --verify "$APK" --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" --store
+          python kit/tools/verify_tv_translation_apk.py tv "$APK"
+          python kit/tools/package_license_notices.py tv --verify "$APK" --expected-kit "$GITHUB_SHA" --evidence store-apk-tv.json
+          python kit/tools/package_license_notices.py tv --verify "$AAB" --expected-kit "$GITHUB_SHA" --evidence store-aab-tv.json
+          python -c 'import json; a=json.load(open("store-apk-tv.json")); b=json.load(open("store-aab-tv.json")); assert a["native_files"] == b["native_files"], "APK/AAB native payload differs"'
+          python kit/tools/android_sdk_policy.py tv --apk "$APK" --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" --zipalign "$ANDROID_HOME/build-tools/35.0.0/zipalign" --output store-sdk-tv.json --strict
+      - name: Upload technical evidence even when preflight fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Store-tv-evidence-NOT-FOR-SUBMISSION
+          path: store-*.json
+          if-no-files-found: warn
+      - name: Upload unsigned AAB for technical inspection only
+        uses: actions/upload-artifact@v4
+        with:
+          name: Store-tv-unsigned-NOT-FOR-SUBMISSION
+          path: upstream/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
