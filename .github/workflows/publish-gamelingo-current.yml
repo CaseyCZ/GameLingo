@@ -2,11 +2,6 @@ name: GameLingo · Publish Release
 
 on:
   workflow_dispatch:
-    inputs:
-      cleanup_only:
-        description: Remove old test tags without publishing a new version
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -19,7 +14,7 @@ concurrency:
 
 jobs:
   release:
-    if: github.repository == 'CaseyCZ/GameLingo' && github.ref == 'refs/heads/Master' && !inputs.cleanup_only
+    if: github.repository == 'CaseyCZ/GameLingo' && github.ref == 'refs/heads/Master'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -193,7 +188,7 @@ jobs:
   cleanup_tags:
     name: Remove obsolete GameLingo test tags
     needs: release
-    if: ${{ !cancelled() && github.repository == 'CaseyCZ/GameLingo' && github.ref == 'refs/heads/Master' && (needs.release.result == 'success' || (inputs.cleanup_only && needs.release.result == 'skipped')) }}
+    if: ${{ !cancelled() && github.repository == 'CaseyCZ/GameLingo' && github.ref == 'refs/heads/Master' && needs.release.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

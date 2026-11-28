@@ -1948,10 +1948,11 @@ class GameLingoIntegrationContracts(unittest.TestCase):
         with self.assertRaises(ValueError):
             plan([release], older)
         workflow = code(ROOT/".github/workflows/publish-gamelingo-current.yml")
-        self.assertIn("cleanup_only:", workflow)
-        self.assertIn("!inputs.cleanup_only", workflow)
+        self.assertNotIn("cleanup_only", workflow)
+        self.assertIn("workflow_dispatch:\n", workflow)
+        self.assertIn("needs: release", workflow)
         self.assertIn("needs.release.result == 'success'", workflow)
-        self.assertIn("inputs.cleanup_only && needs.release.result == 'skipped'", workflow)
+        self.assertIn("github.ref == 'refs/heads/Master'", workflow)
         self.assertIn("gh api --paginate --slurp", workflow)
         self.assertIn('gh api --method DELETE "repos/$REPO/git/refs/tags/$old"', workflow)
         self.assertLess(workflow.index("python3 tools/cleanup_release_tags.py releases.json"),
